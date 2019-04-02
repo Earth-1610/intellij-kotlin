@@ -59,7 +59,7 @@ object DocCommentUtils {
             ?.stream()
             ?.map { desc -> desc.text }
             ?.map { it.trim() }
-            ?.reduce { s1, s2 -> s1 + "\n" + s2 }
+            ?.reduce { s1, s2 -> s1 + s2 }
             ?.map { it.trim() }
             ?.orElse(null)
     }
@@ -73,7 +73,7 @@ object DocCommentUtils {
                 .filterNot { StringUtils.isBlank(it) }
                 .filterNotNull()
                 .map { it.trim() }
-                .reduceSafely { s1, s2 -> s1 + " " + s2 }
+                .reduceSafely { s1, s2 -> s1 + s2 }
         }
         return tagMap
     }
