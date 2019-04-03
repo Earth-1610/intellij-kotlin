@@ -3,7 +3,9 @@ package com.itangcent.intellij.context
 import com.google.inject.Guice
 import com.google.inject.Injector
 import com.google.inject.Module
+import com.google.inject.binder.AnnotatedConstantBindingBuilder
 import com.google.inject.binder.LinkedBindingBuilder
+import com.google.inject.matcher.Matcher
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.project.Project
@@ -15,7 +17,10 @@ import com.itangcent.common.utils.ThreadPoolUtils
 import com.itangcent.intellij.constant.CacheKey
 import com.itangcent.intellij.extend.guice.KotlinModule
 import com.itangcent.intellij.extend.guice.instance
+import com.itangcent.intellij.extend.guice.singleton
+import org.aopalliance.intercept.MethodInterceptor
 import java.awt.EventQueue
+import java.lang.reflect.Method
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -408,6 +413,9 @@ class ActionContext {
     }
 
     class ActionContextBuilder : ModuleActions {
+        override fun <T : Any> bind(type: KClass<T>, callBack: (LinkedBindingBuilder<T>) -> Unit) {
+            moduleActions.add(arrayOf(BIND, type, callBack))
+        }
 
         override fun <T : Any> bind(
             type: KClass<T>,
@@ -429,10 +437,6 @@ class ActionContext {
             moduleActions.add(arrayOf(BIND_WITH_NAME, type, namedText, callBack))
         }
 
-        override fun <T : Any> bind(type: KClass<T>, callBack: (LinkedBindingBuilder<T>) -> Unit) {
-            moduleActions.add(arrayOf(BIND, type, callBack))
-        }
-
         override fun <T : Any> bindInstance(name: String, instance: T) {
             moduleActions.add(arrayOf(BIND_INSTANCE_WITH_NAME, name, instance))
         }
@@ -443,6 +447,18 @@ class ActionContext {
 
         override fun <T : Any> bindInstance(cls: KClass<T>, instance: T) {
             moduleActions.add(arrayOf<Any>(BIND_INSTANCE_WITH_CLASS, cls, instance))
+        }
+
+        override fun bindInterceptor(
+            classMatcher: Matcher<in Class<*>>,
+            methodMatcher: Matcher<in Method>,
+            vararg interceptors: MethodInterceptor
+        ) {
+            moduleActions.add(arrayOf<Any>(BIND_INTERCEPTOR, classMatcher, methodMatcher, interceptors))
+        }
+
+        override fun bindConstant(callBack: (AnnotatedConstantBindingBuilder) -> Unit) {
+            moduleActions.add(arrayOf<Any>(BIND_CONSTANT, callBack))
         }
 
         private val appendModules: MutableList<Module> = ArrayList()
@@ -468,6 +484,8 @@ class ActionContext {
             const val BIND_INSTANCE = "bindInstance"
             const val BIND_INSTANCE_WITH_CLASS = "bindInstanceWithClass"
             const val BIND_INSTANCE_WITH_NAME = "bindInstanceWithName"
+            const val BIND_INTERCEPTOR = "bindInterceptor"
+            const val BIND_CONSTANT = "bindConstant"
         }
     }
 
@@ -507,19 +525,51 @@ class ActionContext {
                             bind(moduleAction[1] as KClass<*>)
                         )
                     }
+                    ActionContextBuilder.BIND_INTERCEPTOR -> {
+                        bindInterceptor(
+                            moduleAction[1] as Matcher<in Class<*>>?,
+                            moduleAction[2] as Matcher<in Method>?,
+                            moduleAction[3] as MethodInterceptor?
+                        )
+                    }
+                    ActionContextBuilder.BIND_CONSTANT -> {
+                        (moduleAction[1] as ((AnnotatedConstantBindingBuilder) -> Unit)).invoke(
+                            bindConstant()
+                        )
+                    }
                 }
             }
         }
     }
 
     interface ModuleActions {
+        fun <T : Any> bind(type: KClass<T>) {
+            bind(type) { it.singleton() }
+        }
+
+        fun <T : Any> bind(type: KClass<T>, callBack: (LinkedBindingBuilder<T>) -> Unit)
+
+        fun <T : Any> bind(
+            type: KClass<T>, annotationType: Class<out Annotation>
+        ) {
+            bind(type, annotationType) { it.singleton() }
+        }
+
         fun <T : Any> bind(
             type: KClass<T>,
             annotationType: Class<out Annotation>,
             callBack: ((LinkedBindingBuilder<T>) -> Unit)
         )
 
+        fun <T : Any> bind(type: KClass<T>, annotation: Annotation) {
+            bind(type, annotation) { it.singleton() }
+        }
+
         fun <T : Any> bind(type: KClass<T>, annotation: Annotation, callBack: ((LinkedBindingBuilder<T>) -> Unit))
+
+        fun <T : Any> bind(type: KClass<T>, namedText: String) {
+            bind(type, namedText) { it.singleton() }
+        }
 
         fun <T : Any> bind(type: KClass<T>, namedText: String, callBack: ((LinkedBindingBuilder<T>) -> Unit))
 
@@ -527,9 +577,15 @@ class ActionContext {
 
         fun <T> bindInstance(instance: T)
 
-        fun <T : Any> bind(type: KClass<T>, callBack: (LinkedBindingBuilder<T>) -> Unit)
-
         fun <T : Any> bindInstance(cls: KClass<T>, instance: T)
+
+        fun bindInterceptor(
+            classMatcher: Matcher<in Class<*>>,
+            methodMatcher: Matcher<in Method>,
+            vararg interceptors: org.aopalliance.intercept.MethodInterceptor
+        )
+
+        fun bindConstant(callBack: (AnnotatedConstantBindingBuilder) -> Unit)
     }
 
 }
