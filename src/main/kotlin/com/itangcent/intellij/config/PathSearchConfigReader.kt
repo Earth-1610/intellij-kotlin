@@ -3,7 +3,6 @@ package com.itangcent.intellij.config
 import com.google.inject.Inject
 import com.itangcent.intellij.logger.Logger
 import com.itangcent.intellij.util.ActionUtils
-import com.itangcent.intellij.config.AbstractConfigReader
 import java.io.File
 
 abstract class PathSearchConfigReader : AbstractConfigReader() {
@@ -25,10 +24,10 @@ abstract class PathSearchConfigReader : AbstractConfigReader() {
                 logger?.info("find config file:$path")
                 configFiles.add(path)
             }
-            if (currentPath.isNullOrBlank() || !currentPath!!.contains("/")) {
+            if (currentPath.isNullOrBlank() || !currentPath.contains("/")) {
                 break
             }
-            currentPath = currentPath!!.substringBeforeLast("/")
+            currentPath = currentPath.substringBeforeLast("/")
         }
 
         return configFiles

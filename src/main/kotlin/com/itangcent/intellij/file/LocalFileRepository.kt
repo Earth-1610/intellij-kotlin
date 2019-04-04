@@ -1,0 +1,7 @@
+package com.itangcent.intellij.file
+
+import java.io.File
+
+interface LocalFileRepository {
+    fun getFile(path: String): File
+}
