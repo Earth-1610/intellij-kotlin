@@ -3,7 +3,7 @@ package com.itangcent.intellij.setting
 import com.google.inject.Inject
 import com.itangcent.common.utils.CollectionUtils
 import com.itangcent.common.utils.GsonUtils
-import com.itangcent.common.utils.SystemUtils
+import com.itangcent.intellij.file.LocalFileRepository
 import com.itangcent.intellij.logger.Logger
 import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.StringUtils
@@ -19,31 +19,14 @@ open class DefaultSettingManager : SettingManager {
     @Inject
     private val logger: Logger? = null
 
+    @Inject
+    private val localFileRepository: LocalFileRepository? = null
+
     private var settingRepository: SettingRepository? = null
 
     private val repositoryFile: File
         @Synchronized get() {
-
-            var home = SystemUtils.userHome
-            if (home.endsWith("/")) {
-                home = home.substring(0, home.length - 1)
-            }
-            val repositoryFile = "$home/.tm/tm.settings"
-            val file = File(repositoryFile)
-
-            if (!file.exists()) {
-                try {
-                    FileUtils.forceMkdirParent(file)
-                    if (!file.createNewFile()) {
-                        logger!!.error("error to create new setting file:$repositoryFile")
-                    }
-                } catch (e: Throwable) {
-                    logger!!.error("error to create new setting file:$repositoryFile\n${ExceptionUtils.getStackTrace(e)}")
-                    throw RuntimeException(e)
-                }
-
-            }
-            return file
+            return localFileRepository!!.getFile("tm.settings")
         }
 
     private val repository: SettingRepository
@@ -63,7 +46,7 @@ open class DefaultSettingManager : SettingManager {
         get() = repository.tokenSettings?.toTypedArray()
 
     @Synchronized
-    open protected fun init() {
+    protected open fun init() {
         if (settingRepository == null) {
             try {
                 val str = FileUtils.readFileToString(repositoryFile, Charset.defaultCharset())

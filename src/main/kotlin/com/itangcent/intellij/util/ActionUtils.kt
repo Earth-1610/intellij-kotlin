@@ -10,7 +10,6 @@ import com.intellij.psi.PsiDirectory
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.PsiTreeUtil
-import com.itangcent.intellij.constant.CacheKey
 import com.itangcent.intellij.context.ActionContext
 import org.apache.commons.lang.StringUtils
 
@@ -56,11 +55,7 @@ object ActionUtils {
         }
 
         val project = ActionContext.getContext()!!.instance(Project::class)
-        if (project != null) {
-            return project.basePath
-        }
-
-        return null
+        return project.basePath
     }
 
     fun findCurrentPath(psiFile: PsiFile): String? {
