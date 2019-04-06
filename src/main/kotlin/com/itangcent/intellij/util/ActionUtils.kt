@@ -59,7 +59,7 @@ object ActionUtils {
     }
 
     fun findCurrentPath(psiFile: PsiFile): String? {
-        val dir = psiFile.parent
+        val dir = ActionContext.getContext()!!.callInReadUI { psiFile.parent }
         return dir?.let { findCurrentPath(it) } + "/" + psiFile.name
     }
 

@@ -2,22 +2,27 @@ package com.itangcent.intellij.util
 
 import com.intellij.psi.javadoc.PsiDocComment
 import com.intellij.util.containers.stream
+import com.itangcent.intellij.context.ActionContext
 import org.apache.commons.lang3.StringUtils
+import java.util.*
 
 object DocCommentUtils {
 
     fun hasTag(docComment: PsiDocComment?, tag: String?): Boolean {
         if (docComment != null) {
-            val tags = docComment.findTagByName(tag)
+            val tags = ActionContext.getContext()!!.callInReadUI { docComment.findTagByName(tag) }
             return tags != null
         }
         return false
     }
 
     fun findDocByTag(docComment: PsiDocComment?, tag: String?): String? {
-        if (docComment != null) {
+        if (docComment == null) {
+            return null
+        }
+        return ActionContext.getContext()!!.callInReadUI {
             val tags = docComment.findTagsByName(tag)
-            if (tags.isEmpty()) return null
+            if (tags.isEmpty()) return@callInReadUI null
             for (paramDocTag in tags) {
                 var result: String? = null
                 for (dataElement in paramDocTag.dataElements) {
@@ -29,16 +34,19 @@ object DocCommentUtils {
                         result += txt
                     }
                 }
-                if (result != null) return result
+                if (result != null) return@callInReadUI result
             }
+            return@callInReadUI null
         }
-        return null
     }
 
     fun findDocsByTag(docComment: PsiDocComment?, tag: String?): String? {
-        if (docComment != null) {
+        if (docComment == null) {
+            return null
+        }
+        return ActionContext.getContext()!!.callInReadUI {
             val tags = docComment.findTagsByName(tag)
-            if (tags.isEmpty()) return null
+            if (tags.isEmpty()) return@callInReadUI null
             val res = StringBuilder()
             for (paramDocTag in tags) {
                 paramDocTag.dataElements
@@ -48,33 +56,39 @@ object DocCommentUtils {
                     .map { it.trim() }
                     .forEach { res.append(it) }
             }
-            return res.toString()
+            return@callInReadUI res.toString()
         }
-        return null
     }
 
     fun getAttrOfDocComment(docComment: PsiDocComment?): String? {
-        val descriptions = docComment?.descriptionElements
-        return descriptions
-            ?.stream()
-            ?.map { desc -> desc.text }
-            ?.map { it.trim() }
-            ?.reduce { s1, s2 -> s1 + s2 }
-            ?.map { it.trim() }
-            ?.orElse(null)
+        if (docComment == null) {
+            return null
+        }
+        return ActionContext.getContext()!!.callInReadUI {
+            val descriptions = docComment.descriptionElements
+            return@callInReadUI descriptions.stream()
+                .map { desc -> desc.text }
+                ?.reduce { s1, s2 -> s1 + s2 }
+                ?.map { it.trim() }
+                ?.orElse(null)
+        }
     }
 
     fun getTagMapOfDocComment(docComment: PsiDocComment?): Map<String, String?> {
-
-        val tagMap: HashMap<String, String?> = HashMap()
-        docComment?.tags?.forEach { tag ->
-            tagMap[tag.name] = tag.dataElements
-                .map { it?.text }
-                .filterNot { StringUtils.isBlank(it) }
-                .filterNotNull()
-                .map { it.trim() }
-                .reduceSafely { s1, s2 -> s1 + s2 }
+        if (docComment == null) {
+            return Collections.emptyMap()
         }
-        return tagMap
+        return ActionContext.getContext()!!.callInReadUI {
+            val tagMap: HashMap<String, String?> = HashMap()
+            docComment.tags.forEach { tag ->
+                tagMap[tag.name] = tag.dataElements
+                    .map { it?.text }
+                    .filterNot { StringUtils.isBlank(it) }
+                    .filterNotNull()
+                    .map { it.trim() }
+                    .reduceSafely { s1, s2 -> s1 + s2 }
+            }
+            return@callInReadUI tagMap
+        } ?: Collections.emptyMap()
     }
 }
