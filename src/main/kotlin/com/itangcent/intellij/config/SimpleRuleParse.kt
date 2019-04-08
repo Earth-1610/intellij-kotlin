@@ -151,7 +151,7 @@ class SimpleRuleParse {
         if (str.isNullOrBlank()) return defaultValue
 
         return try {
-            str!!.toBoolean()
+            str.toBoolean()
         } catch (e: Exception) {
             defaultValue
         }

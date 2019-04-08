@@ -112,10 +112,8 @@ object FileUtils {
     @Throws(IOException::class)
     fun write(file: File, content: String) {
         val out = FileOutputStream(file)
-        try {
+        out.use {
             out.write(content.toByteArray())
-        } finally {
-            out.close()
         }
     }
 

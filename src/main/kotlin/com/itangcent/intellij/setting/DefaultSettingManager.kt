@@ -2,32 +2,21 @@ package com.itangcent.intellij.setting
 
 import com.google.inject.Inject
 import com.itangcent.common.utils.CollectionUtils
-import com.itangcent.common.utils.GsonUtils
+import com.itangcent.intellij.file.FileBeanBinder
 import com.itangcent.intellij.file.LocalFileRepository
 import com.itangcent.intellij.logger.Logger
-import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.StringUtils
-import org.apache.commons.lang3.exception.ExceptionUtils
-import java.io.File
-import java.io.IOException
-import java.nio.charset.Charset
 import java.util.*
 import kotlin.streams.toList
 
 open class DefaultSettingManager : SettingManager {
 
     @Inject
-    private val logger: Logger? = null
-
-    @Inject
     private val localFileRepository: LocalFileRepository? = null
 
     private var settingRepository: SettingRepository? = null
 
-    private val repositoryFile: File
-        @Synchronized get() {
-            return localFileRepository!!.getFile("tm.settings")
-        }
+    private var settingRepositoryBinder: FileBeanBinder<SettingRepository>? = null
 
     private val repository: SettingRepository
         get() {
@@ -47,28 +36,20 @@ open class DefaultSettingManager : SettingManager {
 
     @Synchronized
     protected open fun init() {
+        if (settingRepositoryBinder == null) {
+            settingRepositoryBinder = FileBeanBinder(
+                localFileRepository!!.getFile(".settings"),
+                SettingRepository::class
+            )
+        }
         if (settingRepository == null) {
-            try {
-                val str = FileUtils.readFileToString(repositoryFile, Charset.defaultCharset())
-                settingRepository = if (str.isBlank()) {
-                    SettingRepository()
-                } else {
-                    SettingRepository.fromJson(str)
-                }
-            } catch (e: Exception) {
-                logger!!.error("error init settingRepository:" + ExceptionUtils.getStackTrace(e))
-            }
+            settingRepository = settingRepositoryBinder!!.read()
 
         }
     }
 
     private fun saveRepository(settingRepository: SettingRepository) {
-        try {
-            FileUtils.write(repositoryFile, GsonUtils.toJson(settingRepository), Charset.defaultCharset())
-        } catch (e: IOException) {
-            logger!!.error("error save settingRepository:" + ExceptionUtils.getStackTrace(e))
-        }
-
+        settingRepositoryBinder!!.save(settingRepository)
     }
 
     override fun getSetting(host: String?): TokenSetting? {

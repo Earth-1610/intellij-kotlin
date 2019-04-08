@@ -15,17 +15,7 @@ class SettingRepository {
                 }
             } catch (e: Exception) {
             }
-            val oldSettingRepository = GsonUtils.fromJson(json, OldSettingRepository::class)
-            val settingRepository = SettingRepository()
-            settingRepository.tokenSettings = oldSettingRepository.gitSettings
-            return settingRepository
+            return SettingRepository()
         }
     }
-}
-
-/**
- * 兼容性代码
- */
-class OldSettingRepository {
-    internal var gitSettings: List<TokenSetting>? = null
 }
