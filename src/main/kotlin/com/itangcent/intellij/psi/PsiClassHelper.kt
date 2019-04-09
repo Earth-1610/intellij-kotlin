@@ -2,20 +2,20 @@ package com.itangcent.intellij.psi
 
 import com.google.inject.Inject
 import com.intellij.lang.jvm.JvmModifier
+import com.intellij.openapi.project.Project
 import com.intellij.psi.*
+import com.intellij.psi.impl.java.stubs.impl.PsiClassStubImpl
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
 import com.intellij.util.containers.isNullOrEmpty
 import com.intellij.util.containers.stream
 import com.itangcent.common.utils.CollectionUtils
+import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.logger.Logger
 import com.itangcent.intellij.spring.MultipartFile
 import com.itangcent.intellij.spring.SpringClassName
-import com.itangcent.intellij.util.DocCommentUtils
-import com.itangcent.intellij.util.KV
-import com.itangcent.intellij.util.invokeMethod
-import com.itangcent.intellij.util.reduceSafely
+import com.itangcent.intellij.util.*
 import com.sun.jmx.remote.internal.ArrayQueue
 import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.exception.ExceptionUtils
@@ -39,6 +39,12 @@ class PsiClassHelper {
 
     @Inject(optional = true)
     private val classRuleConfig: ClassRuleConfig? = null
+
+    @Inject
+    private val project: Project? = null
+
+    @Inject
+    private val actionContext: ActionContext? = null
 
     @Suppress("UNCHECKED_CAST")
     private fun <T> getResolvedInfo(key: Any?, option: Int): T? {
@@ -203,6 +209,12 @@ class PsiClassHelper {
 
     @Suppress("UNCHECKED_CAST")
     fun getFields(psiClass: PsiClass?, option: Int): KV<String, Any?> {
+
+        val psiClass = if (JsonOption.needComment(option)) {
+            psiClass?.let { getOriginalClass(it) }
+        } else {
+            psiClass
+        }
 
         if (psiClass != null) {
             val resolvedInfo = getResolvedInfo<Any>(psiClass, option)
@@ -959,6 +971,7 @@ class PsiClassHelper {
     private val staticResolvedInfo: HashMap<PsiClass, List<Map<String, Any?>>> = HashMap()
 
     fun parseStaticFields(psiClass: PsiClass): List<Map<String, Any?>> {
+        val psiClass = getOriginalClass(psiClass)
         if (staticResolvedInfo.containsKey(psiClass)) {
             return staticResolvedInfo[psiClass]!!
         }
@@ -988,6 +1001,7 @@ class PsiClassHelper {
     }
 
     fun parseEnumConstant(psiClass: PsiClass): List<Map<String, Any?>> {
+        val psiClass = getOriginalClass(psiClass)
         if (!psiClass.isEnum) return ArrayList()
 
         if (staticResolvedInfo.containsKey(psiClass)) {
@@ -1100,6 +1114,23 @@ class PsiClassHelper {
             }
         }
         return psiField.name
+    }
+
+    fun getOriginalClass(psiClass: PsiClass): PsiClass {
+        if (isLocalClass(psiClass)) {
+            return psiClass
+        }
+        return actionContext!!.cacheOrCompute("SourceHelper::instance") {
+            SourceHelper(project!!)
+        }?.getSourceClass(psiClass) ?: psiClass
+    }
+
+    private fun isLocalClass(psiClass: PsiClass): Boolean {
+        if (psiClass is StubBasedPsiElement<*>) {
+            val stub = psiClass.stub
+            return stub is PsiClassStubImpl<*> && stub.isLocalClassInner
+        }
+        return false
     }
 
     companion object {
