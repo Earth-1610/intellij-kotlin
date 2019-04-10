@@ -1,9 +1,21 @@
 package com.itangcent.intellij.util
 
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiFile
 import java.io.File
 
 object FileUtils {
+
+    fun getLastModified(psiFile: PsiFile): Long? {
+        val lastModified = psiFile.modificationStamp
+        if (lastModified > 0) return lastModified
+        val path = ActionUtils.findCurrentPath(psiFile) ?: return null
+        val file = File(path)
+        if (file.exists()) {
+            return file.lastModified()
+        }
+        return null
+    }
 
     fun forceSave(file: VirtualFile, content: ByteArray) {
         forceSave(file.path, content)
