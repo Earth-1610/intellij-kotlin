@@ -17,21 +17,42 @@ open abstract class AbstractLocalFileRepository : LocalFileRepository {
     @Named("plugin.name")
     protected val pluginName: String = "shadow"
 
-    override fun getFile(path: String): File {
+    private fun fileOf(path: String): File {
         val repositoryFile = "${basePath()}/.$pluginName/$path"
-        val file = File(repositoryFile)
+        return File(repositoryFile)
+    }
+
+    override fun getFile(path: String): File? {
+        val file = fileOf(path)
+
+        if (file.exists()) {
+            return file
+        }
+        return null
+    }
+
+    override fun getOrCreateFile(path: String): File {
+        val file = fileOf(path)
 
         if (!file.exists()) {
             try {
                 FileUtils.forceMkdirParent(file)
                 if (!file.createNewFile()) {
-                    logger!!.error("error to create new file:$repositoryFile")
+                    logger!!.error("error to create new file:${file.path}")
                 }
             } catch (e: Throwable) {
-                logger?.error("error to create new file:$repositoryFile\n${ExceptionUtils.getStackTrace(e)}")
+                logger?.error("error to create new file:${file.path}\n${ExceptionUtils.getStackTrace(e)}")
                 throw RuntimeException(e)
             }
         }
         return file
+    }
+
+    override fun deleteFile(path: String) {
+        val file = fileOf(path)
+
+        if (file.exists()) {
+            FileUtils.forceDelete(file)
+        }
     }
 }

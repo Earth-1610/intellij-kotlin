@@ -29,9 +29,8 @@ import kotlin.concurrent.withLock
 import kotlin.reflect.KClass
 
 /**
- * Action上下文
- * 包含一个guice的injector，来管理所有生成的实例
- * 包含一个CountLatch，来维持子进程状态
+ * 1.Use a guice injector to manage all generated instances
+ * 2.Use a CountLatch to holds the state of the child processes
  */
 class ActionContext {
 
@@ -48,7 +47,7 @@ class ActionContext {
 
     private var executorService: ExecutorService = ThreadPoolUtils.createPool(5, ActionContext::class.java)
 
-    //使用guice管理当前上下文实例生命周期与依赖
+    //Use guice to manage the current context instance lifecycle and dependencies
     private var injector: Injector
 
     private constructor(vararg modules: Module) {
@@ -115,7 +114,7 @@ class ActionContext {
 
     //region lock and run----------------------------------------------------------------
 
-    //锁住缓存
+    //lock current context
     fun lock(): Boolean = lock.writeLock().withLock {
         return if (locked) {
             false
@@ -287,8 +286,8 @@ class ActionContext {
     }
 
     /**
-     * 主线程完成,在异步线程上等待子线程完成
-     * warning:调用waitComplete*方法将清除当前线程绑定的ActionContext
+     * waits on the sub thread for the complete
+     * warning:call method as []waitComplete*] will clear ActionContext which bind on current Thread
      * @see ActionContext.waitComplete
      */
     fun waitCompleteAsync() {
