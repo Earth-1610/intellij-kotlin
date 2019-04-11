@@ -1,7 +1,6 @@
 package com.itangcent.intellij.psi
 
 import com.google.inject.Inject
-import com.intellij.lang.jvm.JvmModifier
 import com.intellij.openapi.project.Project
 import com.intellij.psi.*
 import com.intellij.psi.impl.java.stubs.impl.PsiClassStubImpl
@@ -10,7 +9,6 @@ import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
 import com.intellij.util.containers.isNullOrEmpty
 import com.intellij.util.containers.stream
-import com.itangcent.common.utils.CollectionUtils
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.logger.Logger
 import com.itangcent.intellij.spring.MultipartFile
@@ -211,7 +209,7 @@ class PsiClassHelper {
     fun getFields(psiClass: PsiClass?, option: Int): KV<String, Any?> {
 
         val psiClass = if (JsonOption.needComment(option)) {
-            psiClass?.let { getOriginalClass(it) }
+            psiClass?.let { getResourceClass(it) }
         } else {
             psiClass
         }
@@ -678,11 +676,11 @@ class PsiClassHelper {
         }
 
         for (field in psiClass.allFields) {
-            if (CollectionUtils.containsAny(field.modifiers, jvmStaticFinalFieldModifiers)) {
+            if (hasAnyModify(field, staticFinalFieldModifiers)) {
                 continue
             }
 
-            if (!CollectionUtils.containsAny(field.modifiers, jvmFieldModifiers)) {
+            if (!hasAnyModify(field, fieldModifiers)) {
                 continue
             }
 
@@ -699,13 +697,18 @@ class PsiClassHelper {
                 if (readGetter && !fieldNames!!.add(propertyName)) continue
                 if (method.isConstructor) continue
                 if (method.parameters.isNotEmpty()) continue
-                if (method.hasModifier(JvmModifier.STATIC)) continue
-                if (!method.hasModifier(JvmModifier.PUBLIC)) continue
+                if (method.hasModifierProperty(PsiModifier.STATIC)) continue
+                if (!method.hasModifierProperty(PsiModifier.PUBLIC)) continue
 
                 method.returnType?.let { handle(propertyName, it, method) }
             }
         }
         fieldNames?.clear()
+    }
+
+    private fun hasAnyModify(field: PsiField, modifies: Set<String>): Boolean {
+        val modifierList = field.modifierList ?: return false
+        return modifies.any { modifierList.hasModifierProperty(it) }
     }
 
     private fun propertyNameOfGetter(methodName: String): String? {
@@ -971,20 +974,20 @@ class PsiClassHelper {
     private val staticResolvedInfo: HashMap<PsiClass, List<Map<String, Any?>>> = HashMap()
 
     fun parseStaticFields(psiClass: PsiClass): List<Map<String, Any?>> {
-        val psiClass = getOriginalClass(psiClass)
+        val psiClass = getResourceClass(psiClass)
         if (staticResolvedInfo.containsKey(psiClass)) {
             return staticResolvedInfo[psiClass]!!
         }
         val res = ArrayList<Map<String, Any?>>()
-        val checkModifier: Set<JvmModifier> =
+        val checkModifier: Set<String> =
             if (psiClass.isInterface) {
-                jvmStaticFinalFieldModifiers
+                staticFinalFieldModifiers
             } else {
-                jvmPublicStaticFinalFieldModifiers
+                publicStaticFinalFieldModifiers
             }
         for (field in psiClass.allFields) {
 
-            if (!CollectionUtils.containsAll(field.modifiers, checkModifier)) {
+            if (!hasAnyModify(field, checkModifier)) {
                 continue
             }
 
@@ -1001,7 +1004,7 @@ class PsiClassHelper {
     }
 
     fun parseEnumConstant(psiClass: PsiClass): List<Map<String, Any?>> {
-        val psiClass = getOriginalClass(psiClass)
+        val psiClass = getResourceClass(psiClass)
         if (!psiClass.isEnum) return ArrayList()
 
         if (staticResolvedInfo.containsKey(psiClass)) {
@@ -1116,7 +1119,7 @@ class PsiClassHelper {
         return psiField.name
     }
 
-    fun getOriginalClass(psiClass: PsiClass): PsiClass {
+    fun getResourceClass(psiClass: PsiClass): PsiClass {
         if (isLocalClass(psiClass)) {
             return psiClass
         }
@@ -1193,11 +1196,11 @@ class PsiClassHelper {
         val multipartFileInstance = MultipartFile()
 //        val multipartFileInstance = "file"
 
-        var jvmFieldModifiers: Set<JvmModifier> = HashSet(Arrays.asList(JvmModifier.PRIVATE, JvmModifier.PROTECTED))
-        var jvmStaticFinalFieldModifiers: Set<JvmModifier> =
-            HashSet(Arrays.asList(JvmModifier.STATIC, JvmModifier.FINAL))
-        var jvmPublicStaticFinalFieldModifiers: Set<JvmModifier> = HashSet(
-            Arrays.asList(JvmModifier.PUBLIC, JvmModifier.STATIC, JvmModifier.FINAL)
+        var fieldModifiers: Set<String> = HashSet(Arrays.asList(PsiModifier.PRIVATE, PsiModifier.PROTECTED))
+        var staticFinalFieldModifiers: Set<String> =
+            HashSet(Arrays.asList(PsiModifier.STATIC, PsiModifier.FINAL))
+        var publicStaticFinalFieldModifiers: Set<String> = HashSet(
+            Arrays.asList(PsiModifier.PUBLIC, PsiModifier.STATIC, PsiModifier.FINAL)
         )
 
         private val normalTypes: HashMap<String, Any?> = HashMap()
