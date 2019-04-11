@@ -45,12 +45,8 @@ class ConsoleRunnerLogger : AbstractLogger() {
                     val project = actionContext!!.instance(Project::class)
 
                     try {
-                        val baseDir = project.baseDir
-                        if (baseDir != null) {
-                            logConsoleRunner = LogConsoleRunner(project, baseDir.path, pipedProcess!!)
-                        } else {
-                            logConsoleRunner = LogConsoleRunner(project, project.basePath!!, pipedProcess!!)
-                        }
+                        logConsoleRunner = LogConsoleRunner(project, project.basePath!!, pipedProcess!!)
+
                         logConsoleRunner!!.initAndRun()
                     } catch (ex: ExecutionException) {
                         actionContext.runInWriteUI {
