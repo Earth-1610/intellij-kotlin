@@ -14,7 +14,7 @@ import com.itangcent.common.concurrent.CountLatch
 import com.itangcent.common.concurrent.ValueHolder
 import com.itangcent.common.utils.IDUtils
 import com.itangcent.common.utils.ThreadPoolUtils
-import com.itangcent.intellij.constant.CacheKey
+import com.itangcent.intellij.constant.EventKey
 import com.itangcent.intellij.extend.guice.KotlinModule
 import com.itangcent.intellij.extend.guice.instance
 import com.itangcent.intellij.extend.guice.singleton
@@ -88,16 +88,18 @@ class ActionContext {
 
     //region event--------------------------------------------------------------
     @Suppress("UNCHECKED_CAST")
-    fun on(name: String, event: Runnable) {
+    fun on(name: String, event: () -> Unit) {
         lock.writeLock().withLock {
             val key = eventPrefix + name
             val oldEvent: Runnable? = cache[key] as Runnable?
             if (oldEvent == null) {
-                cache[key] = event
+                cache[key] = Runnable {
+                    event()
+                }
             } else {
                 cache[key] = Runnable {
                     oldEvent.run()
-                    event.run()
+                    event()
                 }
             }
         }
@@ -278,7 +280,7 @@ class ActionContext {
     fun waitComplete() {
         ActionContext.clearContext()
         this.countLatch.waitFor()
-        this.call(CacheKey.ONCOMPLETED)
+        this.call(EventKey.ONCOMPLETED)
         lock.writeLock().withLock {
             this.cache.clear()
             locked = false
@@ -294,7 +296,7 @@ class ActionContext {
         ActionContext.clearContext()
         executorService.submit {
             this.countLatch.waitFor()
-            this.call(CacheKey.ONCOMPLETED)
+            this.call(EventKey.ONCOMPLETED)
             lock.writeLock().withLock {
                 this.cache.clear()
                 locked = false

@@ -5,6 +5,7 @@ import com.intellij.execution.ExecutionException
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.itangcent.intellij.constant.CacheKey
+import com.itangcent.intellij.constant.EventKey
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.io.PipedProcess
 import org.apache.commons.lang3.exception.ExceptionUtils
@@ -27,18 +28,12 @@ class ConsoleRunnerLogger : AbstractLogger() {
         if (pipedProcess == null || logConsoleRunner == null) {
             lock.withLock {
                 if (pipedProcess == null) {
-
-//                    actionContext?.runInUi(Runnable {
-//                        Messages.showMessageDialog(actionContext.getCache<Project>(CacheKey.PROJECT),
-//                                "create pipedProcess!", "Create", Messages.getInformationIcon())
-//                    })
-
                     pipedProcess = PipedProcess()
                     actionContext!!.cache(CacheKey.LOGPROCESS, pipedProcess!!)
-                    actionContext.on(CacheKey.ONCOMPLETED, Runnable {
+                    actionContext.on(EventKey.ONCOMPLETED) {
                         pipedProcess?.setExitValue(0)
                         clear()
-                    })
+                    }
                 }
 
                 if (logConsoleRunner == null) {

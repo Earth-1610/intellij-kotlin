@@ -108,10 +108,10 @@ class DefaultShellUtils : AbstractShellUtils() {
          */
         val NEW_LINE = System.getProperty("line.separator")
 
-        val COMMAND_SU = "su"
-        val COMMAND_SH = "sh"
-        val COMMAND_EXIT = "exit\n"
-        val COMMAND_LINE_END = "\n"
+        const val COMMAND_SU = "su"
+        const val COMMAND_SH = "sh"
+        const val COMMAND_EXIT = "exit\n"
+        const val COMMAND_LINE_END = "\n"
     }
 
 }

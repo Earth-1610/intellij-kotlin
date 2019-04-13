@@ -21,8 +21,8 @@ object FileUtils {
         forceSave(file.path, content)
     }
 
-    fun forceSave(filePaht: String, content: ByteArray) {
-        val localFile = File(filePaht)
+    fun forceSave(filePath: String, content: ByteArray) {
+        val localFile = File(filePath)
         if (!localFile.exists()) {
             org.apache.commons.io.FileUtils.forceMkdirParent(localFile)
             localFile.createNewFile()
