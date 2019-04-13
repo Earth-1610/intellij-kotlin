@@ -1,6 +1,6 @@
 package com.itangcent.intellij.context
 
-import com.itangcent.intellij.constant.CacheKey
+import com.itangcent.intellij.constant.EventKey
 import java.lang.ref.WeakReference
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
@@ -41,9 +41,9 @@ object ThreadLocalContextBeanProxies {
                 cacheBean = actionContext!!.instance(clazz)
                 weakCacheBean = WeakReference(cacheBean)
                 localCache.set(weakCacheBean)
-                actionContext.on(CacheKey.ONCOMPLETED, Runnable {
+                actionContext.on(EventKey.ONCOMPLETED) {
                     weakCacheBean.clear()
-                })
+                }
 
                 return cacheBean
             }

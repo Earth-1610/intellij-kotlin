@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.itangcent.intellij.util
+package com.itangcent.intellij.psi
 
 import com.intellij.openapi.fileTypes.StdFileTypes
 import com.intellij.openapi.project.DumbService
@@ -32,33 +32,37 @@ class SourceHelper(private val myProject: Project) {
     fun getSourceClass(
         original: PsiClass
     ): PsiClass {
-        val cls = original.getUserData(SOURCE_ELEMENT)
-        if (cls != null && cls.isValid) {
-            return cls
-        }
+        try {
+            val cls = original.getUserData(SOURCE_ELEMENT)
+            if (cls != null && cls.isValid) {
+                return cls
+            }
 
-        if (!DumbService.isDumb(myProject)) {
-            val vFile = original.containingFile.virtualFile
-            val idx = ProjectRootManager.getInstance(myProject).fileIndex
-            if (vFile != null && idx.isInLibraryClasses(vFile)) {
+            if (!DumbService.isDumb(myProject)) {
+                val vFile = original.containingFile.virtualFile
+                val idx = ProjectRootManager.getInstance(myProject).fileIndex
+                if (vFile != null && idx.isInLibraryClasses(vFile)) {
 
-                val orderEntriesForFile = idx.getOrderEntriesForFile(vFile)
-                for (orderEntry in orderEntriesForFile) {
-                    for (file in orderEntry.getFiles(OrderRootType.SOURCES)) {
-                        val find = findPsiFileInRoot(file, original.qualifiedName!!) ?: file.findChild(
-                            original.qualifiedName!!
-                        )
-                        if (find != null && find is PsiJavaFile) {
-                            find.classes.forEach {
-                                if (it.qualifiedName == original.qualifiedName) {
-                                    original.putUserData(SOURCE_ELEMENT, it)
-                                    return it
+                    val orderEntriesForFile = idx.getOrderEntriesForFile(vFile)
+                    for (orderEntry in orderEntriesForFile) {
+                        for (file in orderEntry.getFiles(OrderRootType.SOURCES)) {
+                            val find = findPsiFileInRoot(file, original.qualifiedName!!) ?: file.findChild(
+                                original.qualifiedName!!
+                            )
+                            if (find != null && find is PsiJavaFile) {
+                                find.classes.forEach {
+                                    if (it.qualifiedName == original.qualifiedName) {
+                                        original.putUserData(SOURCE_ELEMENT, it)
+                                        return it
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
+        } catch (e: Exception) {
+            //ignore,if cannot find source class
         }
 
         return original
@@ -78,8 +82,8 @@ class SourceHelper(private val myProject: Project) {
         }
 
         val dirs = Stack<VirtualFile>()
-        var dir: VirtualFile? = dirFile
-        while (dir != null) {
+        var dir: VirtualFile = dirFile
+        while (true) {
             val children = dir.children
             for (child in children) {
                 dirs.push(child)
@@ -97,6 +101,9 @@ class SourceHelper(private val myProject: Project) {
                         }
                     }
                 }
+            }
+            if (dirs.isEmpty()) {
+                break
             }
             dir = dirs.pop()
         }

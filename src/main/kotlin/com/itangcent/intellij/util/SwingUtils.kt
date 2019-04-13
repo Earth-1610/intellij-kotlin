@@ -23,8 +23,8 @@ object SwingUtils {
         hSizePolicy: Int = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
         vSizePolicy: Int = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW
     ) {
-        var actionContext = ActionContext.getContext()
-        var logger = actionContext?.instance(Logger::class)
+        val actionContext = ActionContext.getContext()
+        val logger = actionContext?.instance(Logger::class)
         EventQueue.invokeLater {
             val parent = jTextArea.parent
             jTextArea.autoscrolls = true

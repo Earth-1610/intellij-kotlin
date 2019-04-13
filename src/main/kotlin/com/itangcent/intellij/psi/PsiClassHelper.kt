@@ -378,7 +378,11 @@ class PsiClassHelper {
         }
 
         if (clsWithParam == null) return null
-        val psiClass: PsiClass = clsWithParam.psiCls
+        val psiClass = if (JsonOption.needComment(option)) {
+            getResourceClass(clsWithParam.psiCls)
+        } else {
+            clsWithParam.psiCls
+        }
         val typeOfCls = PsiTypesUtil.getClassType(psiClass)
 
         val type = tryCastTo(typeOfCls, psiClass)
@@ -519,7 +523,11 @@ class PsiClassHelper {
             return resolvedInfo as KV<String, Any?>
         }
 
-        val psiClass: PsiClass? = clsWithParam.psiCls
+        val psiClass = if (JsonOption.needComment(option)) {
+            getResourceClass(clsWithParam.psiCls)
+        } else {
+            clsWithParam.psiCls
+        }
         val kv: KV<String, Any?> = KV.create()
         cacheResolvedInfo(clsWithParam, kv, option)
         var commentKV: KV<String, Any?>? = null
@@ -706,8 +714,8 @@ class PsiClassHelper {
         fieldNames?.clear()
     }
 
-    private fun hasAnyModify(field: PsiField, modifies: Set<String>): Boolean {
-        val modifierList = field.modifierList ?: return false
+    fun hasAnyModify(modifierListOwner: PsiModifierListOwner, modifies: Set<String>): Boolean {
+        val modifierList = modifierListOwner.modifierList ?: return false
         return modifies.any { modifierList.hasModifierProperty(it) }
     }
 

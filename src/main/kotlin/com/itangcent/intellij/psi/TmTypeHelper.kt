@@ -179,8 +179,8 @@ class TmTypeHelper {
     fun extractClassFromCanonicalText(typeCanonicalText: String, context: PsiElement): PsiClass? {
         val classCanonicalText = StringUtils.substringBefore(typeCanonicalText, "<")
         return classCanonicalTextCache.computeIfAbsent(
-            classCanonicalText,
-            { _ -> findClass(classCanonicalText, context) })
+            classCanonicalText
+        ) { _ -> findClass(classCanonicalText, context) }
     }
 
     fun extractTypeParams(typeCanonicalText: String): Array<String>? {
@@ -230,10 +230,10 @@ class TmTypeHelper {
     private val qualifiedInfoCache: HashMap<PsiType, Boolean> = HashMap()
 
     fun isQualified(psiType: PsiType, context: PsiElement): Boolean {
-        return qualifiedInfoCache.computeIfAbsent(psiType, {
+        return qualifiedInfoCache.computeIfAbsent(psiType) {
             val tmType = resolve(psiType, context) ?: return@computeIfAbsent true
             return@computeIfAbsent isQualified(tmType)
-        })
+        }
     }
 
     private fun isQualified(tmType: TmType): Boolean {
