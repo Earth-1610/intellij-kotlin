@@ -13,7 +13,10 @@ import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.logger.Logger
 import com.itangcent.intellij.spring.MultipartFile
 import com.itangcent.intellij.spring.SpringClassName
-import com.itangcent.intellij.util.*
+import com.itangcent.intellij.util.DocCommentUtils
+import com.itangcent.intellij.util.KV
+import com.itangcent.intellij.util.invokeMethod
+import com.itangcent.intellij.util.reduceSafely
 import com.sun.jmx.remote.internal.ArrayQueue
 import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.exception.ExceptionUtils
@@ -1031,14 +1034,33 @@ class PsiClassHelper {
             val construct = value.resolveConstructor()
             val exps = value.argumentList?.expressions
             val parameters = construct?.parameterList?.parameters
-            if (exps != null && parameters != null) {
+            if (exps != null && parameters != null && parameters.isNotEmpty()) {
+                if (parameters.last().isVarArgs) {
+
+                    for (index in 0 until parameters.size - 1) {
+                        params[parameters[index].name!!] = resolveExpr(exps[index])
+                    }
+                    try {
+                        //resolve varArgs
+                        val lastVarArgParam: ArrayList<Any?> = ArrayList(1)
+                        params[parameters[parameters.size - 1].name!!] = lastVarArgParam
+                        for (index in parameters.size - 1..exps.size) {
+                            lastVarArgParam.add(resolveExpr(exps[index]))
+                        }
+                    } catch (e: Throwable) {
+                    }
+                }
+
                 for ((index, parameter) in parameters.withIndex()) {
-                    params[parameter.name!!] = resolveExpr(exps[index])
+                    try {
+                        params[parameter.name!!] = resolveExpr(exps[index])
+                    } catch (e: Throwable) {
+                    }
                 }
             }
-            constant.put("params", params)
-            constant.put("name", field.name)
-            constant.put("desc", getAttrOfField(field))
+            constant["params"] = params
+            constant["name"] = field.name
+            constant["desc"] = getAttrOfField(field)
             res.add(constant)
         }
 
@@ -1055,6 +1077,8 @@ class PsiClassHelper {
                 val constantValue = value.computeConstantValue()
                 if (constantValue != null) return constantValue
             }
+        }else if (psiExpression is PsiField) {
+            return psiExpression.name
         }
         return psiExpression.text
     }

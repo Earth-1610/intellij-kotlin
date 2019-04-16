@@ -20,6 +20,18 @@ interface FileFilter {
             }
         }
 
+        fun filterFile(filter: (file: FileWrap) -> Boolean): FileFilter {
+            return object : FileFilter {
+                override fun accept(file: FileWrap): Boolean = file.file.isDirectory || filter(file)
+            }
+        }
+
+        fun filterDirectory(filter: (file: FileWrap) -> Boolean): FileFilter {
+            return object : FileFilter {
+                override fun accept(file: FileWrap): Boolean = file.file.isFile || filter(file)
+            }
+        }
+
     }
 }
 

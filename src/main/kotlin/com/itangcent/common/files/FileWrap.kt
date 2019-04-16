@@ -15,6 +15,10 @@ class FileWrap(private val root: String, var file: File) {
     }
 
     fun path(): String {
+        return file.path
+    }
+
+    fun parent(): String {
         return file.parent
     }
 
