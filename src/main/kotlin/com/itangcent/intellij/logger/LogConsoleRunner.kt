@@ -15,11 +15,19 @@ class LogConsoleRunner : AbstractConsoleRunnerWithHistory<LanguageConsoleView> {
 
     private var logProcess: Process? = null
 
-    constructor(myProject: Project, logProcess: Process) : super(myProject, "TM", myProject.basePath) {
+    constructor(myProject: Project, consoleTitle: String, logProcess: Process) : super(
+        myProject,
+        consoleTitle,
+        myProject.basePath
+    ) {
         this.logProcess = logProcess
     }
 
-    constructor(myProject: Project, workingDir: String, logProcess: Process) : super(myProject, "TM", workingDir) {
+    constructor(myProject: Project, consoleTitle: String, workingDir: String, logProcess: Process) : super(
+        myProject,
+        consoleTitle,
+        workingDir
+    ) {
         this.logProcess = logProcess
     }
 

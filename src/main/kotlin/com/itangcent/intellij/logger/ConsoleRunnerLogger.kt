@@ -1,6 +1,7 @@
 package com.itangcent.intellij.logger
 
 import com.google.inject.Inject
+import com.google.inject.name.Named
 import com.intellij.execution.ExecutionException
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
@@ -22,6 +23,10 @@ class ConsoleRunnerLogger : AbstractLogger() {
     @Inject
     private val actionContext: ActionContext? = null
 
+    @Inject(optional = true)
+    @Named("plugin.name")
+    private val pluginName: String = "run"
+
     private val lock = ReentrantLock()
 
     private fun checkProcess(): PipedProcess {
@@ -40,7 +45,7 @@ class ConsoleRunnerLogger : AbstractLogger() {
                     val project = actionContext!!.instance(Project::class)
 
                     try {
-                        logConsoleRunner = LogConsoleRunner(project, project.basePath!!, pipedProcess!!)
+                        logConsoleRunner = LogConsoleRunner(project, pluginName, project.basePath!!, pipedProcess!!)
 
                         logConsoleRunner!!.initAndRun()
                     } catch (ex: ExecutionException) {

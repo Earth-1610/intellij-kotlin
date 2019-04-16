@@ -2,10 +2,13 @@ package com.itangcent.intellij.util
 
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager
+import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
+import com.intellij.openapi.vfs.LocalFileSystem
 import java.io.File
 import java.util.*
+
 
 object Utils {
     /**
@@ -38,6 +41,10 @@ object Utils {
     }
 
     fun getModule(project: Project, folderLocation: String): Module? {
+        val virtualFile = LocalFileSystem.getInstance().findFileByPath(folderLocation)
+        val module = ModuleUtil.findModuleForFile(virtualFile!!, project)
+        if (module != null) return module
+
         for (m in ModuleManager.getInstance(project).modules) {
             if (getFolderLocation(m) == folderLocation) {
                 return m

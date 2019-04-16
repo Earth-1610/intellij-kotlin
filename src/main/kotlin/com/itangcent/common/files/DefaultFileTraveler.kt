@@ -13,12 +13,12 @@ class DefaultFileTraveler(private val root: String) : FileTraveler {
 
     private var onCompleted = FileCompleted.defaultHandle
     private var fileFilter = FileFilter.defaultHandle
-    private var dirFilter = DirFilter.defaultHandle
+    private var dirFilter = FileFilter.defaultHandle
 
     override fun exceptDir(vararg dirs: String): FileTraveler {
         val exceptDir = HashSet(Arrays.asList(*dirs))
         dirFilter = dirFilter.andThen { file ->
-            exceptDir.contains(file.file.getPath())
+            exceptDir.contains(file.file.path)
         }
         return this
     }

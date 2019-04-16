@@ -189,7 +189,12 @@ class AutoComputer {
 
     fun bindEnable(component: JComponent): AutoBind0<Boolean> {
         val wrapSetter = wrapJComponentEnable(component)
-        return buildBind<Boolean>(this, wrapSetter)
+        return buildBind(this, wrapSetter)
+    }
+
+    fun bindVisible(component: JComponent): AutoBind0<Boolean> {
+        val wrapSetter = wrapJComponentVisible(component)
+        return buildBind(this, wrapSetter)
     }
 
     fun bindIndex(component: JList<*>): AutoBind0<Int?> {
@@ -223,6 +228,12 @@ class AutoComputer {
         return wrapCache.get(component) {
             JComponentEnableWrap(component)
         } as JComponentEnableWrap
+    }
+
+    private fun wrapJComponentVisible(component: JComponent): JComponentVisibleWrap {
+        return wrapCache.get(component) {
+            JComponentVisibleWrap(component)
+        } as JComponentVisibleWrap
     }
 
     internal fun wrapJTextComponent(component: JTextComponent): JTextComponentWrap {
@@ -908,7 +919,41 @@ class JComponentEnableWrap : ASetter<Boolean?>, AGetter<Boolean?> {
     override fun hashCode(): Int {
         return component.hashCode()
     }
+}
 
+class JComponentVisibleWrap : ASetter<Boolean?>, AGetter<Boolean?> {
+    private val component: JComponent
+
+    constructor(component: JComponent) {
+        this.component = component
+    }
+
+    override fun set(value: Boolean?) {
+        if (value != null) {
+            if (this.component.isVisible != value) {
+                EventQueue.invokeLater { this.component.isVisible = value }
+            }
+        }
+    }
+
+    override fun get(): Boolean? {
+        return this.component.isVisible
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as JComponentVisibleWrap
+
+        if (component != other.component) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return component.hashCode()
+    }
 }
 
 class JListComponentIndexWrap : ASetter<Int?>, AGetter<Int?> {

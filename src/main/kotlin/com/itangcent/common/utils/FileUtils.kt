@@ -1,5 +1,8 @@
 package com.itangcent.common.utils
 
+import com.itangcent.common.files.DefaultFileTraveler
+import com.itangcent.common.files.FileHandle
+import com.itangcent.common.files.FileTraveler
 import org.apache.commons.io.DirectoryWalker
 import org.apache.commons.lang3.StringUtils
 import java.io.*
@@ -16,7 +19,8 @@ object FileUtils {
         if (StringUtils.endsWith(localPath, "/")) {
             localPath = localPath.substring(0, localPath.length - 1)
         }
-        var fileFilter: FileFilter? = null
+        val fileTraveler: FileTraveler = DefaultFileTraveler(localPath)
+
         if (StringUtils.isNotEmpty(filePattern)) {
             if (StringUtils.startsWith(filePattern, "./")) {
                 filePattern = "$localPath${filePattern.substring(1)}"
@@ -26,17 +30,15 @@ object FileUtils {
             }
             filePattern = formatPattern(filePattern)
             val pattern = Pattern.compile("^$filePattern$")
-            fileFilter = KTFileFilter { file -> file != null && pattern.matcher(file.path).matches() }
-        }
 
-        val fileCollector: FileCollector
-        fileCollector = if (fileFilter == null) {
-            FileCollector()
-        } else {
-            FileCollector(fileFilter, Integer.MAX_VALUE)
+            fileTraveler.filter(com.itangcent.common.files.FileFilter.filterFile {
+                pattern.matcher(it.path()).matches()
+            })
         }
-
-        return fileCollector.collect(localPath)
+        val files = ArrayList<File>()
+        fileTraveler.onFile(FileHandle.collectFiles(files) { it.file })
+        fileTraveler.travel()
+        return files
     }
 
     /**
@@ -53,41 +55,6 @@ object FileUtils {
             }
         }
         return sb.toString()
-    }
-
-    private class FileCollector : DirectoryWalker<File> {
-        private var fileFilter: FileFilter
-
-        internal constructor() {
-            fileFilter = KTFileFilter { file -> file != null && file.isDirectory }
-        }
-
-        internal constructor(
-            filter: FileFilter,
-            depthLimit: Int
-        ) : super(KTFileFilter { file -> file != null && (file.isDirectory || filter.accept(file)) }, depthLimit) {
-            this.fileFilter = filter
-        }
-
-        @Throws(IOException::class)
-        override fun handleDirectory(directory: File, depth: Int, results: MutableCollection<File>): Boolean {
-            if (fileFilter.accept(directory)) {
-                results.add(directory)
-            }
-            return true
-        }
-
-        @Throws(IOException::class)
-        override fun handleFile(file: File, depth: Int, results: MutableCollection<File>) {
-            results.add(file)
-        }
-
-        @Throws(IOException::class)
-        internal fun collect(localPath: String): List<File> {
-            val result = ArrayList<File>()
-            this.walk(File(localPath), result)
-            return result
-        }
     }
 
     fun read(file: File): String {
@@ -216,12 +183,6 @@ object FileUtils {
             return flag
         } else
             return false
-    }
-
-    private class KTFileFilter(val filter: (File?) -> Boolean) : FileFilter {
-        override fun accept(pathname: File?): Boolean {
-            return filter(pathname)
-        }
     }
 
 }

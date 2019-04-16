@@ -20,6 +20,24 @@ interface FileHandle {
                 }
             }
         }
+
+        fun collectFiles(files: MutableList<FileWrap>): FileHandle {
+            return object : FileHandle {
+                override fun handle(file: FileWrap) {
+                    files.add(file)
+                }
+
+            }
+        }
+
+        fun <T> collectFiles(files: MutableList<T>, transform: (FileWrap) -> T): FileHandle {
+            return object : FileHandle {
+                override fun handle(file: FileWrap) {
+                    files.add(transform(file))
+                }
+
+            }
+        }
     }
 }
 
