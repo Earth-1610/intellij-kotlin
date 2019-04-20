@@ -1096,15 +1096,15 @@ class PsiClassHelper {
             val convertTo = classRuleConfig.tryConvert(canonicalText)
 
             val convertToType: PsiType
-            when (convertTo) {
-                null -> convertToType = psiType
-                "null" -> convertToType = PsiType.NULL
+            convertToType = when (convertTo) {
+                null -> psiType
+                "null" -> PsiType.NULL
                 else -> {
                     val cls = tmTypeHelper!!.findClass(convertTo, context)
                     if (cls != null) {
-                        convertToType = PsiTypesUtil.getClassType(cls)
+                        PsiTypesUtil.getClassType(cls)
                     } else {
-                        convertToType = psiType
+                        psiType
                     }
                 }
             }

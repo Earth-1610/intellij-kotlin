@@ -7,16 +7,11 @@ import com.itangcent.intellij.util.changePropertyValue
 import com.itangcent.intellij.util.getPropertyValue
 import org.apache.commons.lang3.StringUtils
 import org.junit.Assert
+import java.awt.Component
 import java.awt.EventQueue
 import java.util.*
-import javax.swing.DefaultComboBoxModel
-import javax.swing.JComponent
-import javax.swing.JLabel
-import javax.swing.JList
-import javax.swing.event.DocumentEvent
-import javax.swing.event.DocumentListener
-import javax.swing.event.ListDataEvent
-import javax.swing.event.ListDataListener
+import javax.swing.*
+import javax.swing.event.*
 import javax.swing.text.JTextComponent
 import kotlin.collections.ArrayList
 import kotlin.jvm.internal.CallableReference
@@ -182,18 +177,28 @@ class AutoComputer {
         return buildBind(this, wrapSetter)
     }
 
+    fun bindText(component: AbstractButton): AutoBind0<String?> {
+        val wrapSetter = wrapJButtonTextComponent(component)
+        return buildBind(this, wrapSetter)
+    }
+
     fun bind(component: JLabel): AutoBind0<String?> {
         val wrapSetter = wrapJLabel(component)
         return buildBind(this, wrapSetter)
     }
 
     fun bindEnable(component: JComponent): AutoBind0<Boolean> {
-        val wrapSetter = wrapJComponentEnable(component)
+        val wrapSetter = wrapComponentEnable(component)
         return buildBind(this, wrapSetter)
     }
 
     fun bindVisible(component: JComponent): AutoBind0<Boolean> {
-        val wrapSetter = wrapJComponentVisible(component)
+        val wrapSetter = wrapComponentVisible(component)
+        return buildBind(this, wrapSetter)
+    }
+
+    fun bindName(component: JComponent): AutoBind0<String> {
+        val wrapSetter = wrapComponentName(component)
         return buildBind(this, wrapSetter)
     }
 
@@ -224,22 +229,34 @@ class AutoComputer {
         } as ASetter<T?>
     }
 
-    private fun wrapJComponentEnable(component: JComponent): JComponentEnableWrap {
-        return wrapCache.get(component) {
-            JComponentEnableWrap(component)
-        } as JComponentEnableWrap
+    private fun wrapComponentEnable(component: Component): ComponentEnableWrap {
+        return wrapCache.get(component to "enable") {
+            ComponentEnableWrap(component)
+        } as ComponentEnableWrap
     }
 
-    private fun wrapJComponentVisible(component: JComponent): JComponentVisibleWrap {
-        return wrapCache.get(component) {
-            JComponentVisibleWrap(component)
-        } as JComponentVisibleWrap
+    private fun wrapComponentVisible(component: Component): ComponentVisibleWrap {
+        return wrapCache.get(component to "visible") {
+            ComponentVisibleWrap(component)
+        } as ComponentVisibleWrap
+    }
+
+    private fun wrapComponentName(component: Component): ComponentNameWrap {
+        return wrapCache.get(component to "name") {
+            ComponentNameWrap(component)
+        } as ComponentNameWrap
     }
 
     internal fun wrapJTextComponent(component: JTextComponent): JTextComponentWrap {
         return wrapCache.get(component) {
             JTextComponentWrap(component)
         } as JTextComponentWrap
+    }
+
+    internal fun wrapJButtonTextComponent(component: AbstractButton): JButtonTextComponentWrap {
+        return wrapCache.get(component) {
+            JButtonTextComponentWrap(component)
+        } as JButtonTextComponentWrap
     }
 
     internal fun wrapJLabel(component: JLabel): JLabelWrap {
@@ -841,6 +858,72 @@ class JTextComponentWrap : ASetter<String?>, AGetter<String?> {
     }
 }
 
+class JButtonTextComponentWrap : ASetter<String?>, AGetter<String?> {
+    val component: AbstractButton
+
+    constructor(component: AbstractButton) {
+        this.component = component
+    }
+
+    @Volatile
+    private var cache: String? = null
+
+    @Volatile
+    private var manual: Boolean = false
+
+    override fun set(value: String?) {
+        cache = value
+        EventQueue.invokeLater {
+            manual = true
+            this.component.text = value
+            manual = false
+        }
+    }
+
+    override fun get(): String? {
+        return when {
+            cache != null -> cache
+            else -> this.component.text
+        }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as JButtonTextComponentWrap
+
+        if (component != other.component) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return component.hashCode()
+    }
+
+    private var hasListen = false;
+
+    override fun onListen(computer: AutoComputer) {
+        listenChange(computer)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun listenChange(computer: AutoComputer) {
+        if (!hasListen) {
+            val jTextComponentWrap: AGetter<Any?> = this as AGetter<Any?>
+            component.addChangeListener(ChangeListener {
+                if (manual) {
+                    return@ChangeListener
+                }
+                cache = null
+                computer.call(jTextComponentWrap)
+            })
+            hasListen = true
+        }
+    }
+}
+
 class JLabelWrap : ASetter<String?>, AGetter<String?> {
     private val component: JLabel
 
@@ -886,73 +969,86 @@ class JLabelWrap : ASetter<String?>, AGetter<String?> {
     }
 }
 
-class JComponentEnableWrap : ASetter<Boolean?>, AGetter<Boolean?> {
-    private val component: JComponent
+abstract class NoListenComponentWrap<T> : ASetter<T?>, AGetter<T?> {
+    private val component: Component
 
-    constructor(component: JComponent) {
+    constructor(component: Component) {
         this.component = component
     }
 
-    override fun set(value: Boolean?) {
+    override fun set(value: T?) {
         if (value != null) {
-            if (this.component.isEnabled != value) {
-                EventQueue.invokeLater { this.component.isEnabled = value }
+            if (get() != value) {
+                EventQueue.invokeLater { set(this.component, value) }
             }
         }
     }
 
-    override fun get(): Boolean? {
-        return this.component.isEnabled
+    abstract fun set(component: Component, value: T?)
+
+    override fun get(): T? {
+        return get(this.component)
     }
+
+    abstract fun get(component: Component): T?
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as JComponentEnableWrap
+        other as NoListenComponentWrap<*>
 
         if (component != other.component) return false
 
         return true
     }
 
+    abstract fun magicHashCode(): Int
+
     override fun hashCode(): Int {
-        return component.hashCode()
+        return magicHashCode() xor component.hashCode()
     }
 }
 
-class JComponentVisibleWrap : ASetter<Boolean?>, AGetter<Boolean?> {
-    private val component: JComponent
-
-    constructor(component: JComponent) {
-        this.component = component
+class ComponentEnableWrap(component: Component) : NoListenComponentWrap<Boolean>(component) {
+    override fun set(component: Component, value: Boolean?) {
+        value?.let { component.isEnabled = it }
     }
 
-    override fun set(value: Boolean?) {
-        if (value != null) {
-            if (this.component.isVisible != value) {
-                EventQueue.invokeLater { this.component.isVisible = value }
-            }
-        }
+    override fun get(component: Component): Boolean? {
+        return component.isEnabled
     }
 
-    override fun get(): Boolean? {
-        return this.component.isVisible
+    override fun magicHashCode(): Int {
+        return "enable".hashCode()
+    }
+}
+
+class ComponentVisibleWrap(component: Component) : NoListenComponentWrap<Boolean>(component) {
+    override fun set(component: Component, value: Boolean?) {
+        value?.let { component.isVisible = it }
     }
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as JComponentVisibleWrap
-
-        if (component != other.component) return false
-
-        return true
+    override fun get(component: Component): Boolean? {
+        return component.isVisible
     }
 
-    override fun hashCode(): Int {
-        return component.hashCode()
+    override fun magicHashCode(): Int {
+        return "visible".hashCode()
+    }
+}
+
+class ComponentNameWrap(component: Component) : NoListenComponentWrap<String>(component) {
+    override fun set(component: Component, value: String?) {
+        value?.let { component.name = it }
+    }
+
+    override fun get(component: Component): String? {
+        return component.name
+    }
+
+    override fun magicHashCode(): Int {
+        return "name".hashCode()
     }
 }
 
