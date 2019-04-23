@@ -21,18 +21,24 @@ object SelectedHelper {
     class Builder {
 
         private var fileHandle: ((PsiFile) -> Unit)? = null
-        private var dirHandle: DirHandle? = null
+        private var dirFilter: DirFilter? = null
         private var classHandle: ((PsiClass) -> Unit)? = null
         private var onCompleted: (() -> Unit)? = null
         private var timeOut: Long? = null
+        private var fileFilter: FileFilter = { true }
 
         fun fileHandle(fileHandle: (PsiFile) -> Unit): Builder {
             this.fileHandle = fileHandle
             return this
         }
 
-        fun dirHandle(dirHandle: DirHandle): Builder {
-            this.dirHandle = dirHandle
+        fun fileFilter(fileFilter: FileFilter): Builder {
+            this.fileFilter = fileFilter
+            return this
+        }
+
+        fun dirFilter(dirFilter: DirFilter): Builder {
+            this.dirFilter = dirFilter
             return this
         }
 
@@ -45,7 +51,6 @@ object SelectedHelper {
             this.onCompleted = onCompleted
             return this
         }
-
 
         private val aqsCount = AQSCountLatch()
 
@@ -156,10 +161,10 @@ object SelectedHelper {
         }
 
         private fun onDirectory(psiDirectory: PsiDirectory) {
-            if (dirHandle == null) {
+            if (dirFilter == null) {
                 try {
                     actionContext.runInReadUI {
-                        SelectedHelper.traversal(psiDirectory, { true }, {
+                        SelectedHelper.traversal(psiDirectory, fileFilter, {
                             aqsCount.down()
                             onFile(it)
                         })
@@ -168,13 +173,13 @@ object SelectedHelper {
                     aqsCount.up()
                 }
             } else {
-                dirHandle!!(psiDirectory, {
+                dirFilter!!(psiDirectory) {
                     if (it) {
                         actionContext.runInReadUI {
                             try {
-                                SelectedHelper.traversal(psiDirectory, { true }, {
+                                SelectedHelper.traversal(psiDirectory, fileFilter, { file ->
                                     aqsCount.down()
-                                    onFile(it)
+                                    onFile(file)
                                 })
                             } finally {
                                 aqsCount.up()
@@ -183,14 +188,14 @@ object SelectedHelper {
                     } else {
                         aqsCount.up()
                     }
-                })
+                }
             }
         }
     }
 
     fun traversal(
         psiDirectory: PsiDirectory,
-        fileFilter: (PsiFile) -> Boolean,
+        fileFilter: FileFilter,
         fileHandle: (PsiFile) -> Unit
     ) {
 
@@ -209,4 +214,6 @@ object SelectedHelper {
     }
 }
 
-typealias DirHandle = (PsiDirectory, (Boolean) -> Unit) -> Unit
+typealias FileFilter = (PsiFile) -> Boolean
+
+typealias DirFilter = (PsiDirectory, (Boolean) -> Unit) -> Unit
