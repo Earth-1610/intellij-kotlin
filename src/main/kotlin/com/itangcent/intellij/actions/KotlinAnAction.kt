@@ -30,12 +30,13 @@ abstract class KotlinAnAction : AnAction {
     }
 
     override fun actionPerformed(anActionEvent: AnActionEvent) {
-        val project = anActionEvent.getData(PlatformDataKeys.PROJECT) ?: return
+
+        val project = anActionEvent.project ?: return
 
         val actionContextBuilder = ActionContext.builder()
         onBuildActionContext(actionContextBuilder)
         actionContextBuilder.bindInstance(Project::class, project)
-        actionContextBuilder.bindInstance(anActionEvent)
+        actionContextBuilder.bindInstance(AnActionEvent::class, anActionEvent)
         val actionContext = actionContextBuilder.build()
         actionContext.init(this)
 

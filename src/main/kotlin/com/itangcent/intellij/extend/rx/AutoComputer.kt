@@ -6,7 +6,6 @@ import com.intellij.util.containers.Stack
 import com.itangcent.intellij.util.changePropertyValue
 import com.itangcent.intellij.util.getPropertyValue
 import org.apache.commons.lang3.StringUtils
-import org.junit.Assert
 import java.awt.Component
 import java.awt.EventQueue
 import java.util.*
@@ -212,6 +211,16 @@ class AutoComputer {
         return buildBind(this, wrapSetter)
     }
 
+    fun bindIndex(component: JComboBox<*>): AutoBind0<Int?> {
+        val wrapSetter = wrapJComboBoxIndexComponent(component)
+        return buildBind(this, wrapSetter)
+    }
+
+    fun <T> bind(component: JComboBox<T>): AutoBind0<T?> {
+        val wrapSetter = wrapJComboBoxComponent(component)
+        return buildBind(this, wrapSetter)
+    }
+
     fun <T> bind(target: Any, property: String): AutoBind0<T?> {
         val wrapSetter: ASetter<T?> = wrapBeanProperty<T>(target, property)
         return buildBind<T?>(this, wrapSetter)
@@ -219,7 +228,7 @@ class AutoComputer {
 
     fun <T : Any> bind(target: Any, property: String, type: KClass<T>): AutoBind0<T> {
         val wrapSetter: ASetter<T?> = wrapBeanProperty<T>(target, property)
-        return buildBind<T>(this, wrapSetter)
+        return buildBind(this, wrapSetter)
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -277,6 +286,19 @@ class AutoComputer {
         } as JListComponentWrap
     }
 
+    internal fun wrapJComboBoxIndexComponent(component: JComboBox<*>): JComboBoxComponentIndexWrap {
+        return wrapCache.get(component to "index") {
+            JComboBoxComponentIndexWrap(component)
+        } as JComboBoxComponentIndexWrap
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    internal fun <T> wrapJComboBoxComponent(component: JComboBox<T>): JComboBoxComponentWrap<T> {
+        return wrapCache.get(component) {
+            JComboBoxComponentWrap(component)
+        } as JComboBoxComponentWrap<T>
+    }
+
     @Suppress("UNCHECKED_CAST")
     internal fun <T> wrapBeanProperty(target: Any, property: String): BeanPropertyWrap<T> {
         return wrapCache.get(Pair(target, property)) {
@@ -327,27 +349,27 @@ class AutoComputer {
         }
     }
 
-    fun parseProperty(property: KProperty0<*>): AProperty {
+    private fun parseProperty(property: KProperty0<*>): AProperty {
         return when (property) {
             is CallableReference -> BeanProperty(property.boundReceiver, property.name)
             else -> BeanProperty(null, property.name)
         }
     }
 
-    fun addListeners(exp: () -> Unit, vararg properties: AGetter<Any?>) {
+    private fun addListeners(exp: () -> Unit, vararg properties: AGetter<Any?>) {
         for (property in properties) {
             mergeListeners(exp, property)
         }
     }
 
-    fun addListeners(exp: () -> Unit, properties: List<AGetter<Any?>>) {
+    private fun addListeners(exp: () -> Unit, properties: List<AGetter<Any?>>) {
         for (property in properties) {
             mergeListeners(exp, property)
         }
     }
 
-    fun mergeListeners(exp: () -> Unit, property: AGetter<Any?>) {
-        val old = listeners.get(property)
+    private fun mergeListeners(exp: () -> Unit, property: AGetter<Any?>) {
+        val old = listeners[property]
         if (old == null) {
             property.onListen(this)
             listeners[property] = exp
@@ -359,12 +381,18 @@ class AutoComputer {
         }
     }
 
-    /**
-     * 一个属性只能被绑定一次，故不存在merge
-     */
-    fun addPassiveListeners(property: ASetter<Any?>, exp: () -> Unit) {
-        val put = passiveListeners.put(property, exp)
-        Assert.assertNull("a property should not bind twice!", put)
+    private fun addPassiveListeners(property: ASetter<Any?>, exp: () -> Unit) {
+        val old = passiveListeners[property]
+        if (old == null) {
+            passiveListeners[property] = exp
+        } else {
+            passiveListeners[property] = {
+                old()
+                exp()
+            }
+        }
+//        val put = passiveListeners.put(property, exp)
+//        Assert.assertNull("a property should not bind twice!", put)
     }
 
     fun listenOn(pool: (() -> Unit) -> Unit): AutoComputer {
@@ -402,7 +430,7 @@ class AutoComputer {
             val getter: AGetter<Any?> = core.computer.wrapGetter(param)
             if (core.linkedParams == null) {
                 core.linkedParams = ArrayList()
-                (core.linkedParams as MutableList<AGetter<Any?>>).add(getter)
+                core.linkedParams!!.add(getter)
             }
             return this as C
         }
@@ -429,6 +457,10 @@ class AutoComputer {
             return this as C
         }
 
+        protected fun computer(): AutoComputer {
+            return core.computer
+        }
+
         protected abstract fun evalFun(exp: E): () -> Unit
     }
 
@@ -437,16 +469,14 @@ class AutoComputer {
 
         @Suppress("UNCHECKED_CAST")
         fun <P> with(param: KProperty0<P>): AutoBind1<T, P> {
-            val wrapGetter: AGetter<Any?> = core.computer.wrapGetter(param) as AGetter<Any?>
-            this.core.params.add(wrapGetter)
-            return AutoBind1<T, P>(core)
+            val wrapGetter: AGetter<P> = computer().wrapGetter(param) as AGetter<P>
+            return withGetter(wrapGetter)
         }
 
         @Suppress("UNCHECKED_CAST")
         fun <P> with(target: Any, property: String): AutoBind1<T, P> {
-            val wrapGetter: AGetter<Any?> = core.computer.wrapBeanProperty<P>(target, property) as AGetter<Any?>
-            this.core.params.add(wrapGetter)
-            return AutoBind1<T, P>(core)
+            val wrapGetter: AGetter<P> = computer().wrapBeanProperty<P>(target, property) as AGetter<P>
+            return withGetter(wrapGetter)
         }
 
         fun <P : Any> with(target: Any, property: String, type: KClass<P>): AutoBind1<T, P> {
@@ -455,29 +485,56 @@ class AutoComputer {
 
         @Suppress("UNCHECKED_CAST")
         fun with(param: JTextComponent): AutoBind1<T, String?> {
-            val wrapGetter: AGetter<String?> = core.computer.wrapJTextComponent(param)
-            this.core.params.add(wrapGetter as AGetter<Any?>)
-            return AutoBind1(core)
+            val wrapGetter: AGetter<String?> = computer().wrapJTextComponent(param)
+            return withGetter(wrapGetter)
         }
 
         @Suppress("UNCHECKED_CAST")
         fun with(param: JLabel): AutoBind1<T, String?> {
-            val wrapGetter: AGetter<String?> = core.computer.wrapJLabel(param)
-            this.core.params.add(wrapGetter as AGetter<Any?>)
-            return AutoBind1(core)
+            val wrapGetter: AGetter<String?> = computer().wrapJLabel(param)
+            return withGetter(wrapGetter)
         }
 
         @Suppress("UNCHECKED_CAST")
         fun withIndex(param: JList<*>): AutoBind1<T, Int?> {
-            val wrapGetter: AGetter<Int?> = core.computer.wrapJListIndexComponent(param)
-            this.core.params.add(wrapGetter as AGetter<Any?>)
-            return AutoBind1(core)
+            val wrapGetter: AGetter<Int?> = computer().wrapJListIndexComponent(param)
+            return withGetter(wrapGetter)
+        }
+
+        fun withEnable(component: JComponent): AutoBind1<T, Boolean?> {
+            val wrapGetter: AGetter<Boolean?> = computer().wrapComponentEnable(component)
+            return withGetter(wrapGetter)
+        }
+
+        fun withVisible(component: JComponent): AutoBind1<T, Boolean?> {
+            val wrapGetter: AGetter<Boolean?> = computer().wrapComponentVisible(component)
+            return withGetter(wrapGetter)
+        }
+
+        fun withName(component: JComponent): AutoBind1<T, String?> {
+            val wrapGetter: AGetter<String?> = computer().wrapComponentName(component)
+            return withGetter(wrapGetter)
+        }
+
+        fun with(component: JList<*>): AutoBind1<T, List<*>?> {
+            val wrapGetter: AGetter<List<*>?> = computer().wrapJListComponent(component)
+            return withGetter(wrapGetter)
+        }
+
+        fun withIndex(component: JComboBox<*>): AutoBind1<T, Int?> {
+            val wrapGetter: AGetter<Int?> = computer().wrapJComboBoxIndexComponent(component)
+            return withGetter(wrapGetter)
+        }
+
+        fun <P> with(component: JComboBox<P>): AutoBind1<T, P?> {
+            val wrapGetter: AGetter<P?> = computer().wrapJComboBoxComponent(component)
+            return withGetter(wrapGetter)
         }
 
         @Suppress("UNCHECKED_CAST")
         fun <P> withGetter(getter: AGetter<P>): AutoBind1<T, P> {
             this.core.params.add(getter as AGetter<Any?>)
-            return AutoBind1<T, P>(core)
+            return AutoBind1(core)
         }
 
         internal fun peakCore(): AutoBindData<T> {
@@ -485,7 +542,7 @@ class AutoComputer {
         }
 
         override fun evalFun(exp: () -> T): () -> Unit {
-            return { core.computer.value(core.property, exp()) }
+            return { computer().value(core.property, exp()) }
         }
     }
 
@@ -493,43 +550,79 @@ class AutoComputer {
     class AutoBind1<T, P1> : AutoBind<T, (P1) -> T, AutoBind1<T, P1>> {
         constructor(core: AutoBindData<T>) : super(core)
 
-        fun <P> with(param: KProperty0<P>): AutoBind2<T, P1, P> {
-            val wrapGetter: AGetter<Any?> = core.computer.wrapGetter(param) as AGetter<Any?>
-            this.core.params.add(wrapGetter)
-            return AutoBind2<T, P1, P>(core)
+        @Suppress("UNCHECKED_CAST")
+        fun <P2> with(param: KProperty0<P2>): AutoBind2<T, P1, P2> {
+            val wrapGetter: AGetter<P2> = computer().wrapGetter(param) as AGetter<P2>
+            return withGetter(wrapGetter)
         }
 
-        fun <P> with(target: Any, property: String): AutoBind2<T, P1, P> {
-            val wrapGetter: AGetter<Any?> = core.computer.wrapBeanProperty<P>(target, property) as AGetter<Any?>
-            this.core.params.add(wrapGetter)
-            return AutoBind2<T, P1, P>(core)
+        @Suppress("UNCHECKED_CAST")
+        fun <P2> with(target: Any, property: String): AutoBind2<T, P1, P2> {
+            val wrapGetter: AGetter<P2> = computer().wrapBeanProperty<P2>(target, property) as AGetter<P2>
+            return withGetter(wrapGetter)
         }
 
-        fun <P : Any> with(target: Any, property: String, type: KClass<P>): AutoBind2<T, P1, P> {
+        fun <P2 : Any> with(target: Any, property: String, type: KClass<P2>): AutoBind2<T, P1, P2> {
             return with(target, property)
         }
 
+        @Suppress("UNCHECKED_CAST")
         fun with(param: JTextComponent): AutoBind2<T, P1, String?> {
-            val wrapGetter: AGetter<String?> = core.computer.wrapJTextComponent(param)
-            this.core.params.add(wrapGetter as AGetter<Any?>)
-            return AutoBind2(core)
+            val wrapGetter: AGetter<String?> = computer().wrapJTextComponent(param)
+            return withGetter(wrapGetter)
         }
 
+        @Suppress("UNCHECKED_CAST")
         fun with(param: JLabel): AutoBind2<T, P1, String?> {
-            val wrapGetter: AGetter<String?> = core.computer.wrapJLabel(param)
-            this.core.params.add(wrapGetter as AGetter<Any?>)
-            return AutoBind2(core)
+            val wrapGetter: AGetter<String?> = computer().wrapJLabel(param)
+            return withGetter(wrapGetter)
         }
 
-        fun withIndex(param: JList<Any?>): AutoBind2<T, P1, Boolean?> {
-            val wrapGetter: AGetter<Int?> = core.computer.wrapJListIndexComponent(param)
-            this.core.params.add(wrapGetter as AGetter<Any?>)
+        @Suppress("UNCHECKED_CAST")
+        fun withIndex(param: JList<*>): AutoBind2<T, P1, Int?> {
+            val wrapGetter: AGetter<Int?> = computer().wrapJListIndexComponent(param)
+            return withGetter(wrapGetter)
+        }
+
+        fun withEnable(component: JComponent): AutoBind2<T, P1, Boolean?> {
+            val wrapGetter: AGetter<Boolean?> = computer().wrapComponentEnable(component)
+            return withGetter(wrapGetter)
+        }
+
+        fun withVisible(component: JComponent): AutoBind2<T, P1, Boolean?> {
+            val wrapGetter: AGetter<Boolean?> = computer().wrapComponentVisible(component)
+            return withGetter(wrapGetter)
+        }
+
+        fun withName(component: JComponent): AutoBind2<T, P1, String?> {
+            val wrapGetter: AGetter<String?> = computer().wrapComponentName(component)
+            return withGetter(wrapGetter)
+        }
+
+        fun with(component: JList<*>): AutoBind2<T, P1, List<*>?> {
+            val wrapGetter: AGetter<List<*>?> = computer().wrapJListComponent(component)
+            return withGetter(wrapGetter)
+        }
+
+        fun withIndex(component: JComboBox<*>): AutoBind2<T, P1, Int?> {
+            val wrapGetter: AGetter<Int?> = computer().wrapJComboBoxIndexComponent(component)
+            return withGetter(wrapGetter)
+        }
+
+        fun <P2> with(component: JComboBox<P2>): AutoBind2<T, P1, P2?> {
+            val wrapGetter: AGetter<P2?> = computer().wrapJComboBoxComponent(component)
+            return withGetter(wrapGetter)
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        fun <P2> withGetter(getter: AGetter<P2>): AutoBind2<T, P1, P2> {
+            this.core.params.add(getter as AGetter<Any?>)
             return AutoBind2(core)
         }
 
         override fun evalFun(exp: (P1) -> T): () -> Unit {
             return {
-                core.computer.value(core.property, exp(core.params.get(0).get() as P1))
+                computer().value(core.property, exp(core.params[0].get() as P1))
             }
         }
     }
@@ -540,14 +633,14 @@ class AutoComputer {
 
         @Suppress("UNCHECKED_CAST")
         fun <P> with(param: KProperty0<P>): AutoBind3<T, P1, P2, P> {
-            val wrapGetter: AGetter<Any?> = core.computer.wrapGetter(param) as AGetter<Any?>
+            val wrapGetter: AGetter<Any?> = computer().wrapGetter(param) as AGetter<Any?>
             this.core.params.add(wrapGetter)
             return AutoBind3<T, P1, P2, P>(core)
         }
 
         @Suppress("UNCHECKED_CAST")
         fun <P> with(target: Any, property: String): AutoBind3<T, P1, P2, P> {
-            val wrapGetter: AGetter<Any?> = core.computer.wrapBeanProperty<P>(target, property) as AGetter<Any?>
+            val wrapGetter: AGetter<Any?> = computer().wrapBeanProperty<P>(target, property) as AGetter<Any?>
             this.core.params.add(wrapGetter)
             return AutoBind3(core)
         }
@@ -558,21 +651,56 @@ class AutoComputer {
 
         @Suppress("UNCHECKED_CAST")
         fun with(param: JTextComponent): AutoBind3<T, P1, P2, String?> {
-            val wrapGetter: AGetter<String?> = core.computer.wrapJTextComponent(param)
+            val wrapGetter: AGetter<String?> = computer().wrapJTextComponent(param)
             this.core.params.add(wrapGetter as AGetter<Any?>)
             return AutoBind3(core)
         }
 
         @Suppress("UNCHECKED_CAST")
         fun with(param: JLabel): AutoBind3<T, P1, P2, String?> {
-            val wrapGetter: AGetter<String?> = core.computer.wrapJLabel(param)
+            val wrapGetter: AGetter<String?> = computer().wrapJLabel(param)
             this.core.params.add(wrapGetter as AGetter<Any?>)
             return AutoBind3(core)
         }
 
         @Suppress("UNCHECKED_CAST")
-        fun withIndex(param: JList<Any?>): AutoBind3<T, P1, P2, Boolean?> {
-            val wrapGetter: AGetter<Int?> = core.computer.wrapJListIndexComponent(param)
+        fun withIndex(param: JList<Any?>): AutoBind3<T, P1, P2, Int?> {
+            val wrapGetter: AGetter<Int?> = computer().wrapJListIndexComponent(param)
+            return withGetter(wrapGetter)
+        }
+
+        fun withEnable(component: JComponent): AutoBind3<T, P1, P2, Boolean?> {
+            val wrapGetter: AGetter<Boolean?> = computer().wrapComponentEnable(component)
+            return withGetter(wrapGetter)
+        }
+
+        fun withVisible(component: JComponent): AutoBind3<T, P1, P2, Boolean?> {
+            val wrapGetter: AGetter<Boolean?> = computer().wrapComponentVisible(component)
+            return withGetter(wrapGetter)
+        }
+
+        fun withName(component: JComponent): AutoBind3<T, P1, P2, String?> {
+            val wrapGetter: AGetter<String?> = computer().wrapComponentName(component)
+            return withGetter(wrapGetter)
+        }
+
+        fun with(component: JList<*>): AutoBind3<T, P1, P2, List<*>?> {
+            val wrapGetter: AGetter<List<*>?> = computer().wrapJListComponent(component)
+            return withGetter(wrapGetter)
+        }
+
+        fun withIndex(component: JComboBox<*>): AutoBind3<T, P1, P2, Int?> {
+            val wrapGetter: AGetter<Int?> = computer().wrapJComboBoxIndexComponent(component)
+            return withGetter(wrapGetter)
+        }
+
+        fun <P3> with(component: JComboBox<P3>): AutoBind3<T, P1, P2, P3?> {
+            val wrapGetter: AGetter<P3?> = computer().wrapJComboBoxComponent(component)
+            return withGetter(wrapGetter)
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        private fun <P3> withGetter(wrapGetter: AGetter<P3>): AutoBind3<T, P1, P2, P3> {
             this.core.params.add(wrapGetter as AGetter<Any?>)
             return AutoBind3(core)
         }
@@ -580,9 +708,9 @@ class AutoComputer {
         @Suppress("UNCHECKED_CAST")
         override fun evalFun(exp: (P1?, P2?) -> T?): () -> Unit {
             return {
-                core.computer.value(
+                computer().value(
                     core.property,
-                    exp(this.core.params.get(0).get() as P1, this.core.params.get(1).get() as P2)
+                    exp(this.core.params[0].get() as P1, this.core.params[1].get() as P2)
                 )
             }
         }
@@ -594,11 +722,11 @@ class AutoComputer {
         @Suppress("UNCHECKED_CAST")
         override fun evalFun(exp: (P1?, P2?, P3?) -> T?): () -> Unit {
             return {
-                core.computer.value(
+                computer().value(
                     core.property, exp(
-                        this.core.params.get(0).get() as P1,
-                        this.core.params.get(1).get() as P2,
-                        this.core.params.get(2).get() as P3
+                        this.core.params[0].get() as P1,
+                        this.core.params[1].get() as P2,
+                        this.core.params[2].get() as P3
                     )
                 )
             }
@@ -1153,9 +1281,9 @@ class JListComponentWrap : ASetter<List<*>?>, AGetter<List<*>?> {
         }
         val modelElements: ArrayList<Any?> = ArrayList()
         (0..model.size).forEach { modelElements.add(model.getElementAt(it)) }
+        cache = modelElements
         return modelElements
     }
-
 
     private var hasListen = false
 
@@ -1198,6 +1326,156 @@ class JListComponentWrap : ASetter<List<*>?>, AGetter<List<*>?> {
         if (javaClass != other?.javaClass) return false
 
         other as JListComponentWrap
+
+        if (component != other.component) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return component.hashCode()
+    }
+}
+
+class JComboBoxComponentIndexWrap : ASetter<Int?>, AGetter<Int?> {
+    private val component: JComboBox<*>
+
+    constructor(component: JComboBox<*>) {
+        this.component = component
+    }
+
+    @Volatile
+    private var cache: Int? = null
+
+    @Volatile
+    private var manual: Boolean = false
+
+    override fun set(value: Int?) {
+        if (value != null) {
+            cache = value
+            EventQueue.invokeLater {
+                manual = true
+                this.component.selectedIndex = value
+                manual = false
+            }
+        }
+    }
+
+    override fun get(): Int? {
+        return when {
+            cache != null -> cache
+            else -> this.component.selectedIndex
+        }
+    }
+
+
+    private var hasListen = false
+
+    override fun onListen(computer: AutoComputer) {
+        listenChange(computer)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun listenChange(computer: AutoComputer) {
+        if (!hasListen) {
+            val componentWrap: AGetter<Any?> = this as AGetter<Any?>
+            component.addItemListener {
+                cache = null
+                if (!manual) {
+                    computer.call(componentWrap)
+                }
+            }
+            hasListen = true
+        }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as JComboBoxComponentIndexWrap
+
+        if (component != other.component) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return "index".hashCode() xor component.hashCode()
+    }
+}
+
+class JComboBoxComponentWrap<T> : ASetter<T?>, AGetter<T?> {
+    private val component: JComboBox<T>
+
+    constructor(component: JComboBox<T>) {
+        this.component = component
+    }
+
+    @Volatile
+    private var cache: T? = null
+
+    @Volatile
+    private var manual: Boolean = false
+
+    override fun set(value: T?) {
+        if (value != null) {
+            EventQueue.invokeLater {
+                manual = true
+                this.component.selectedItem = value
+                manual = false
+            }
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override fun get(): T? {
+        if (cache != null) return cache
+        cache = this.component.selectedItem as T?
+        return cache
+    }
+
+    private var hasListen = false
+
+    override fun onListen(computer: AutoComputer) {
+        listenChange(computer)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun listenChange(computer: AutoComputer) {
+        if (!hasListen) {
+            val componentWrap: AGetter<Any?> = this as AGetter<Any?>
+            component.model.addListDataListener(object : ListDataListener {
+                override fun contentsChanged(e: ListDataEvent?) {
+                    cache = null
+                    if (!manual) {
+                        computer.call(componentWrap)
+                    }
+                }
+
+                override fun intervalRemoved(e: ListDataEvent?) {
+                    cache = null
+                    if (!manual) {
+                        computer.call(componentWrap)
+                    }
+                }
+
+                override fun intervalAdded(e: ListDataEvent?) {
+                    cache = null
+                    if (!manual) {
+                        computer.call(componentWrap)
+                    }
+                }
+            })
+            hasListen = true
+        }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as JComboBoxComponentWrap<*>
 
         if (component != other.component) return false
 
@@ -1260,6 +1538,7 @@ class BeanPropertyWrap<T> : ASetter<T?>, AGetter<T?>, HasProperty<T> {
         return "BeanPropertyWrap(aProperty=$aProperty)"
     }
 }
+
 //endregion wraps------------------------------------------------------------------
 
 //region 增强AutoBind0------------------------------------------------------------
