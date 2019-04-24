@@ -19,6 +19,8 @@ import kotlin.reflect.jvm.isAccessible
 
 class AutoComputer {
 
+    private val throttle: Throttle = Throttle()
+
     private val listeners = HashMap<AGetter<Any?>, () -> Unit>()
 
     private val passiveListeners = HashMap<ASetter<Any?>, () -> Unit>()
@@ -404,6 +406,8 @@ class AutoComputer {
 
         var computer: AutoComputer
 
+        var filter: (() -> Boolean)? = null
+
         var property: ASetter<T?>
 
         var params: MutableList<AGetter<Any?>>
@@ -438,18 +442,45 @@ class AutoComputer {
         @Suppress("UNCHECKED_CAST")
         open fun eval(exp: E) {
 //            val evalFun: () -> Unit = { pool { evalFun(exp) } }
-            val evalFun: () -> Unit = evalFun(exp)
-            val pooledEvalFun: () -> Unit = { pool(evalFun) }
-            core.computer.addPassiveListeners(core.property as ASetter<Any?>, pooledEvalFun)
-            core.computer.addListeners(pooledEvalFun, core.params)
+            var evalFun: () -> Unit = evalFun(exp)
+            val wrapPool = pool
+            if (wrapPool != null) {
+                val wrapFun = evalFun
+                evalFun = { wrapPool(wrapFun) }
+            }
+            val wrapFilter = core.filter
+            if (wrapFilter != null) {
+                val wrapFun = evalFun
+                evalFun = {
+                    if (wrapFilter()) {
+                        wrapFun()
+                    }
+                }
+            }
+
+            core.computer.addPassiveListeners(core.property as ASetter<Any?>, evalFun)
+            core.computer.addListeners(evalFun, core.params)
             if (core.linkedParams != null) {
                 for (kProperty in (core.linkedParams as List<AGetter<Any?>>)) {
-                    core.computer.addListeners(pooledEvalFun, kProperty)
+                    core.computer.addListeners(evalFun, kProperty)
                 }
             }
         }
 
-        private var pool: (() -> Unit) -> Unit = { it() }
+        fun throttle(cd: Long): C  {
+            val throttleFilter = { computer().throttle.acquire(core.property, cd) }
+            val filter = this.core.filter
+            if (filter == null) {
+                this.core.filter = throttleFilter
+            } else {
+                this.core.filter = {
+                    filter() && throttleFilter()
+                }
+            }
+            return this as C
+        }
+
+        private var pool: ((() -> Unit) -> Unit)? = null
 
         @Suppress("UNCHECKED_CAST")
         fun listenOn(pool: (() -> Unit) -> Unit): C {
