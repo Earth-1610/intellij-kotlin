@@ -233,6 +233,89 @@ class AutoComputer {
         return buildBind(this, wrapSetter)
     }
 
+    //region ***************listen***************
+
+    fun <T : Any?> listen(property: KMutableProperty0<T>, action: (T?) -> Unit) {
+        val wrapGetter = wrapGetter(property)
+        singleListen(wrapGetter, action)
+    }
+
+    fun listen(component: JTextComponent, action: (String?) -> Unit) {
+        val wrapGetter = wrapJTextComponent(component)
+        singleListen(wrapGetter, action)
+    }
+
+    fun listenText(component: AbstractButton, action: (String?) -> Unit) {
+        val wrapGetter = wrapJButtonTextComponent(component)
+        singleListen(wrapGetter, action)
+    }
+
+    fun listen(component: JLabel, action: (String?) -> Unit) {
+        val wrapGetter = wrapJLabel(component)
+        singleListen(wrapGetter, action)
+    }
+
+    fun listenEnable(component: JComponent, action: (Boolean?) -> Unit) {
+        val wrapGetter = wrapComponentEnable(component)
+        singleListen(wrapGetter, action)
+    }
+
+    fun listenVisible(component: JComponent, action: (Boolean?) -> Unit) {
+        val wrapGetter = wrapComponentVisible(component)
+        singleListen(wrapGetter, action)
+    }
+
+    fun listenName(component: JComponent, action: (String?) -> Unit) {
+        val wrapGetter = wrapComponentName(component)
+        singleListen(wrapGetter, action)
+    }
+
+    fun listenIndex(component: JList<*>, action: (Int?) -> Unit) {
+        val wrapGetter = wrapJListIndexComponent(component)
+        singleListen(wrapGetter, action)
+    }
+
+    fun listen(component: JList<*>, action: (List<*>?) -> Unit) {
+        val wrapGetter = wrapJListComponent(component)
+        singleListen(wrapGetter, action)
+    }
+
+    fun listenIndex(component: JComboBox<*>, action: (Int?) -> Unit) {
+        val wrapGetter = wrapJComboBoxIndexComponent(component)
+        singleListen(wrapGetter, action)
+    }
+
+    fun <T> listen(component: JComboBox<T>, action: (T?) -> Unit) {
+        val wrapGetter = wrapJComboBoxComponent(component)
+        singleListen(wrapGetter, action)
+    }
+
+    fun <T> listen(target: Any, property: String, action: (T?) -> Unit) {
+        val wrapGetter: AGetter<T?> = wrapBeanProperty<T>(target, property)
+        singleListen(wrapGetter, action)
+    }
+
+    fun <T : Any> listen(
+        target: Any,
+        property: String,
+        type: KClass<T>,
+        action: (T?) -> Unit
+    ) {
+        val wrapGetter: AGetter<T?> = wrapBeanProperty<T>(target, property)
+        singleListen(wrapGetter, action)
+    }
+
+    private fun <T> singleListen(
+        wrapGetter: AGetter<T?>,
+        action: (T?) -> Unit
+    ) {
+        addListeners({
+            action(wrapGetter.get())
+        }, wrapGetter as AGetter<Any?>)
+    }
+
+    //endregion ***************listen***************
+
     @Suppress("UNCHECKED_CAST")
     private fun <T> wrapSetter(property: KMutableProperty0<T>): ASetter<T?> {
         return wrapCache.get(property) {
@@ -467,7 +550,7 @@ class AutoComputer {
             }
         }
 
-        fun throttle(cd: Long): C  {
+        fun throttle(cd: Long): C {
             val throttleFilter = { computer().throttle.acquire(core.property, cd) }
             val filter = this.core.filter
             if (filter == null) {
