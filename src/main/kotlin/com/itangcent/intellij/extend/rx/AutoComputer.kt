@@ -3,6 +3,8 @@ package com.itangcent.intellij.extend.rx
 import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
 import com.intellij.util.containers.Stack
+import com.itangcent.common.utils.IDUtils
+import com.itangcent.intellij.extend.rx.AutoComputerUtils.mergeFilter
 import com.itangcent.intellij.util.changePropertyValue
 import com.itangcent.intellij.util.getPropertyValue
 import org.apache.commons.lang3.StringUtils
@@ -235,77 +237,76 @@ class AutoComputer {
 
     //region ***************listen***************
 
-    fun <T : Any?> listen(property: KMutableProperty0<T>, action: (T?) -> Unit) {
+    fun <T : Any?> listen(property: KMutableProperty0<T>): ListenAble<T> {
         val wrapGetter = wrapGetter(property)
-        singleListen(wrapGetter, action)
+        return ListenAble(this, wrapGetter)
     }
 
-    fun listen(component: JTextComponent, action: (String?) -> Unit) {
+    fun listen(component: JTextComponent): ListenAble<String> {
         val wrapGetter = wrapJTextComponent(component)
-        singleListen(wrapGetter, action)
+        return ListenAble(this, wrapGetter)
     }
 
-    fun listenText(component: AbstractButton, action: (String?) -> Unit) {
+    fun listenText(component: AbstractButton): ListenAble<String> {
         val wrapGetter = wrapJButtonTextComponent(component)
-        singleListen(wrapGetter, action)
+        return ListenAble(this, wrapGetter)
     }
 
-    fun listen(component: JLabel, action: (String?) -> Unit) {
+    fun listen(component: JLabel): ListenAble<String> {
         val wrapGetter = wrapJLabel(component)
-        singleListen(wrapGetter, action)
+        return ListenAble(this, wrapGetter)
     }
 
-    fun listenEnable(component: JComponent, action: (Boolean?) -> Unit) {
+    fun listenEnable(component: JComponent): ListenAble<Boolean> {
         val wrapGetter = wrapComponentEnable(component)
-        singleListen(wrapGetter, action)
+        return ListenAble(this, wrapGetter)
     }
 
-    fun listenVisible(component: JComponent, action: (Boolean?) -> Unit) {
+    fun listenVisible(component: JComponent): ListenAble<Boolean> {
         val wrapGetter = wrapComponentVisible(component)
-        singleListen(wrapGetter, action)
+        return ListenAble(this, wrapGetter)
     }
 
-    fun listenName(component: JComponent, action: (String?) -> Unit) {
+    fun listenName(component: JComponent): ListenAble<String> {
         val wrapGetter = wrapComponentName(component)
-        singleListen(wrapGetter, action)
+        return ListenAble(this, wrapGetter)
     }
 
-    fun listenIndex(component: JList<*>, action: (Int?) -> Unit) {
+    fun listenIndex(component: JList<*>): ListenAble<Int> {
         val wrapGetter = wrapJListIndexComponent(component)
-        singleListen(wrapGetter, action)
+        return ListenAble(this, wrapGetter)
     }
 
-    fun listen(component: JList<*>, action: (List<*>?) -> Unit) {
+    fun listen(component: JList<*>): ListenAble<List<*>> {
         val wrapGetter = wrapJListComponent(component)
-        singleListen(wrapGetter, action)
+        return ListenAble(this, wrapGetter)
     }
 
-    fun listenIndex(component: JComboBox<*>, action: (Int?) -> Unit) {
+    fun listenIndex(component: JComboBox<*>, action: (Int?) -> Unit): ListenAble<Int> {
         val wrapGetter = wrapJComboBoxIndexComponent(component)
-        singleListen(wrapGetter, action)
+        return ListenAble(this, wrapGetter)
     }
 
-    fun <T> listen(component: JComboBox<T>, action: (T?) -> Unit) {
+    fun <T> listen(component: JComboBox<T>): ListenAble<T> {
         val wrapGetter = wrapJComboBoxComponent(component)
-        singleListen(wrapGetter, action)
+        return ListenAble(this, wrapGetter)
     }
 
-    fun <T> listen(target: Any, property: String, action: (T?) -> Unit) {
-        val wrapGetter: AGetter<T?> = wrapBeanProperty<T>(target, property)
-        singleListen(wrapGetter, action)
+    fun <T> listen(target: Any, property: String): ListenAble<T> {
+        val wrapGetter: AGetter<T?> = wrapBeanProperty(target, property)
+        return ListenAble(this, wrapGetter)
     }
 
     fun <T : Any> listen(
         target: Any,
         property: String,
-        type: KClass<T>,
-        action: (T?) -> Unit
-    ) {
-        val wrapGetter: AGetter<T?> = wrapBeanProperty<T>(target, property)
-        singleListen(wrapGetter, action)
+        type: KClass<T>
+    ): ListenAble<T> {
+        val wrapGetter: AGetter<T?> = wrapBeanProperty(target, property)
+        return ListenAble(this, wrapGetter)
     }
 
-    private fun <T> singleListen(
+    internal fun <T> singleListen(
         wrapGetter: AGetter<T?>,
         action: (T?) -> Unit
     ) {
@@ -489,7 +490,7 @@ class AutoComputer {
 
         var computer: AutoComputer
 
-        var filter: (() -> Boolean)? = null
+        var filter: (Filter)? = null
 
         var property: ASetter<T?>
 
@@ -844,6 +845,47 @@ class AutoComputer {
                     )
                 )
             }
+        }
+    }
+
+    class ListenAble<T> {
+
+        private val computer: AutoComputer
+
+        private val wrapGetter: AGetter<T?>
+
+        private var filter: (Filter)? = null
+
+        constructor(computer: AutoComputer, wrapGetter: AGetter<T?>) {
+            this.wrapGetter = wrapGetter
+            this.computer = computer
+        }
+
+        fun throttle(cd: Long): ListenAble<T> {
+            val id = IDUtils.shortUUID()
+            val throttleFilter = { computer.throttle.acquire(wrapGetter to id, cd) }
+            mergeFilter(this::filter, throttleFilter)
+            return this
+        }
+
+        fun filter(filter: Filter): ListenAble<T> {
+            mergeFilter(this::filter, filter)
+            return this
+        }
+
+        fun action(action: (T?) -> Unit) {
+            var buildAction = action
+            if (this.filter != null) {
+                val wrapAction = buildAction
+                val filter = this.filter!!
+                buildAction = {
+                    if (filter()) {
+                        wrapAction(it)
+                    }
+                }
+
+            }
+            this.computer.singleListen(wrapGetter, buildAction)
         }
     }
 
@@ -1740,6 +1782,17 @@ fun AutoComputer.AutoBind0<Int?>.consistent(param: JList<*>) {
 
 object AutoComputerUtils {
 
+    fun mergeFilter(filterProperty: KMutableProperty0<Filter?>, filter: Filter) {
+        val oldFilter = filterProperty.get()
+        if (oldFilter == null) {
+            filterProperty.set(filter)
+        } else {
+            filterProperty.set {
+                oldFilter() && filter()
+            }
+        }
+    }
+
     fun <T> from(autoBind: AutoComputer.AutoBind0<T>, param: KProperty0<T>) {
         autoBind.from(param)
     }
@@ -1788,3 +1841,5 @@ object AutoComputerUtils {
         autoBind.consistent(param)
     }
 }
+
+typealias Filter = () -> Boolean
