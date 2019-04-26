@@ -105,14 +105,14 @@ class Throttle(private var throttleHelper: ThrottleHelper, private val key: Any)
     /**
      * try force update stamp to now
      */
-    fun refresh(key: Any): Boolean {
+    fun refresh(): Boolean {
         return throttleHelper.refresh(key)
     }
 
     /**
      * try force update stamp
      */
-    fun refresh(key: Any, stamp: Long): Boolean {
+    fun refresh(stamp: Long): Boolean {
         return throttleHelper.refresh(key, stamp)
     }
 
