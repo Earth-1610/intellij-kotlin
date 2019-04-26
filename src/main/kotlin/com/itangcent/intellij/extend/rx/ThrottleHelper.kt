@@ -6,7 +6,7 @@ import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import java.util.concurrent.atomic.AtomicReference
 
-class Throttle {
+class ThrottleHelper {
 
     private var weakCache: LoadingCache<Any, TimeStamp> = CacheBuilder
         .newBuilder()
@@ -28,6 +28,31 @@ class Throttle {
             }
         }
         return false
+    }
+
+    /**
+     * try force update stamp to now
+     */
+    fun refresh(key: Any): Boolean {
+        return refresh(key, System.currentTimeMillis())
+    }
+
+    /**
+     * try force update stamp
+     */
+    fun refresh(key: Any, stamp: Long): Boolean {
+        val timeStamp = weakCache.getUnchecked(key)
+        for (i in 0..maxTry) {
+            val timeAndIndex = timeStamp.timeAndIndex()
+            if (timeStamp.tryUpdate(timeAndIndex.second, stamp)) {
+                return true
+            }
+        }
+        return false
+    }
+
+    fun build(key: Any): Throttle {
+        return Throttle(this, key)
     }
 
     class TimeStamp {
@@ -69,4 +94,26 @@ class Throttle {
         private const val split = ','
         private const val maxTry = 10
     }
+
+}
+
+class Throttle(private var throttleHelper: ThrottleHelper, private val key: Any) {
+    fun acquire(cd: Long): Boolean {
+        return throttleHelper.acquire(key, cd)
+    }
+
+    /**
+     * try force update stamp to now
+     */
+    fun refresh(key: Any): Boolean {
+        return throttleHelper.refresh(key)
+    }
+
+    /**
+     * try force update stamp
+     */
+    fun refresh(key: Any, stamp: Long): Boolean {
+        return throttleHelper.refresh(key, stamp)
+    }
+
 }
