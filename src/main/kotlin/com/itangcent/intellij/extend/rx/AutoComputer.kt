@@ -21,7 +21,7 @@ import kotlin.reflect.jvm.isAccessible
 
 class AutoComputer {
 
-    private val throttle: Throttle = Throttle()
+    private val throttle: ThrottleHelper = ThrottleHelper()
 
     private val listeners = HashMap<AGetter<Any?>, () -> Unit>()
 
