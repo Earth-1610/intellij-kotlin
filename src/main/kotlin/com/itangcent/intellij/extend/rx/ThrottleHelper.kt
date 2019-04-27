@@ -8,15 +8,15 @@ import java.util.concurrent.atomic.AtomicReference
 
 class ThrottleHelper {
 
-    private var weakCache: LoadingCache<Any, TimeStamp> = CacheBuilder
+    private var stampCache: LoadingCache<Any, TimeStamp> = CacheBuilder
         .newBuilder()
-        .weakKeys()
+//        .weakKeys()
         .build<Any, TimeStamp>(CacheLoader.from(Supplier { TimeStamp() }))
 
     fun acquire(key: Any, cd: Long): Boolean {
         val now = System.currentTimeMillis()
         val maxPre = now - cd
-        val timeStamp = weakCache.getUnchecked(key)
+        val timeStamp = stampCache.getUnchecked(key)
         for (i in 0..maxTry) {
             val timeAndIndex = timeStamp.timeAndIndex()
             if (timeAndIndex.first > maxPre) {
@@ -41,7 +41,7 @@ class ThrottleHelper {
      * try force update stamp
      */
     fun refresh(key: Any, stamp: Long): Boolean {
-        val timeStamp = weakCache.getUnchecked(key)
+        val timeStamp = stampCache.getUnchecked(key)
         for (i in 0..maxTry) {
             val timeAndIndex = timeStamp.timeAndIndex()
             if (timeStamp.tryUpdate(timeAndIndex.second, stamp)) {
