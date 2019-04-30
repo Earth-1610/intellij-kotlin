@@ -3,8 +3,10 @@ package com.itangcent.intellij.setting
 import com.google.inject.Inject
 import com.google.inject.name.Named
 import com.itangcent.common.utils.CollectionUtils
+import com.itangcent.intellij.file.BeanBinder
 import com.itangcent.intellij.file.FileBeanBinder
 import com.itangcent.intellij.file.LocalFileRepository
+import com.itangcent.intellij.file.lazy
 import org.apache.commons.lang3.StringUtils
 import java.util.*
 import kotlin.streams.toList
@@ -16,7 +18,7 @@ open class DefaultSettingManager : SettingManager {
 
     private var settingRepository: SettingRepository? = null
 
-    private var settingRepositoryBinder: FileBeanBinder<SettingRepository>? = null
+    private var settingRepositoryBinder: BeanBinder<SettingRepository>? = null
 
     @Inject(optional = true)
     @Named("setting.file")
@@ -44,7 +46,7 @@ open class DefaultSettingManager : SettingManager {
             settingRepositoryBinder = FileBeanBinder(
                 localFileRepository!!.getOrCreateFile(settingFileName),
                 SettingRepository::class
-            )
+            ).lazy()
         }
         if (settingRepository == null) {
             settingRepository = settingRepositoryBinder!!.read()

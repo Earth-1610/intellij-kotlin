@@ -9,7 +9,7 @@ import kotlin.reflect.full.createInstance
 /**
  * bind a file which content present a bean
  */
-class FileBeanBinder<T : Any> {
+open class FileBeanBinder<T : Any> : BeanBinder<T> {
 
     private val file: File
 
@@ -29,13 +29,13 @@ class FileBeanBinder<T : Any> {
         this.init = init
     }
 
-    fun read(): T {
+    override fun read(): T {
         val fileContent = FileUtils.read(file)
         if (fileContent.isBlank()) return init!!.invoke()
         return GsonUtils.fromJson(fileContent, beanType)
     }
 
-    fun save(t: T) {
+    override fun save(t: T) {
         FileUtils.write(file, GsonUtils.toJson(t))
     }
 }

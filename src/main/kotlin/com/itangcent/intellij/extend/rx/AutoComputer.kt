@@ -11,8 +11,16 @@ import org.apache.commons.lang3.StringUtils
 import java.awt.Component
 import java.awt.EventQueue
 import java.util.*
+<<<<<<< Updated upstream
 import javax.swing.*
 import javax.swing.event.*
+=======
+import javax.swing.JComponent
+import javax.swing.JLabel
+import javax.swing.JList
+import javax.swing.event.DocumentEvent
+import javax.swing.event.DocumentListener
+>>>>>>> Stashed changes
 import javax.swing.text.JTextComponent
 import kotlin.collections.ArrayList
 import kotlin.jvm.internal.CallableReference
@@ -178,6 +186,7 @@ class AutoComputer {
     fun bind(component: JTextComponent): AutoBind0<String?> {
         val wrapSetter = wrapJTextComponent(component)
         return buildBind(this, wrapSetter)
+<<<<<<< Updated upstream
     }
 
     fun bindText(component: AbstractButton): AutoBind0<String?> {
@@ -203,6 +212,18 @@ class AutoComputer {
     fun bindName(component: JComponent): AutoBind0<String> {
         val wrapSetter = wrapComponentName(component)
         return buildBind(this, wrapSetter)
+=======
+    }
+
+    fun bind(component: JLabel): AutoBind0<String?> {
+        val wrapSetter = wrapJLabel(component)
+        return buildBind(this, wrapSetter)
+    }
+
+    fun bindEnable(component: JComponent): AutoBind0<Boolean> {
+        val wrapSetter = wrapJComponentEnable(component)
+        return buildBind<Boolean>(this, wrapSetter)
+>>>>>>> Stashed changes
     }
 
     fun bindIndex(component: JList<*>): AutoBind0<Int?> {
@@ -348,6 +369,7 @@ class AutoComputer {
         } as JTextComponentWrap
     }
 
+<<<<<<< Updated upstream
     internal fun wrapJButtonTextComponent(component: AbstractButton): JButtonTextComponentWrap {
         return wrapCache.get(component) {
             JButtonTextComponentWrap(component)
@@ -355,6 +377,15 @@ class AutoComputer {
     }
 
     internal fun wrapJLabel(component: JLabel): JLabelWrap {
+=======
+    internal fun wrapJLabel(component: JLabel): JLabelWrap {
+        return wrapCache.get(component) {
+            JLabelWrap(component)
+        } as JLabelWrap
+    }
+
+    internal fun wrapJListIndexComponent(component: JList<*>): JListComponentIndexWrap {
+>>>>>>> Stashed changes
         return wrapCache.get(component) {
             JLabelWrap(component)
         } as JLabelWrap
@@ -611,6 +642,13 @@ class AutoComputer {
         }
 
         @Suppress("UNCHECKED_CAST")
+        fun with(param: JLabel): AutoBind1<T, String?> {
+            val wrapGetter: AGetter<String?> = core.computer.wrapJLabel(param)
+            this.core.params.add(wrapGetter as AGetter<Any?>)
+            return AutoBind1(core)
+        }
+
+        @Suppress("UNCHECKED_CAST")
         fun withIndex(param: JList<*>): AutoBind1<T, Int?> {
             val wrapGetter: AGetter<Int?> = computer().wrapJListIndexComponent(param)
             return withGetter(wrapGetter)
@@ -683,6 +721,7 @@ class AutoComputer {
 
         @Suppress("UNCHECKED_CAST")
         fun with(param: JTextComponent): AutoBind2<T, P1, String?> {
+<<<<<<< Updated upstream
             val wrapGetter: AGetter<String?> = computer().wrapJTextComponent(param)
             return withGetter(wrapGetter)
         }
@@ -732,6 +771,22 @@ class AutoComputer {
         @Suppress("UNCHECKED_CAST")
         fun <P2> withGetter(getter: AGetter<P2>): AutoBind2<T, P1, P2> {
             this.core.params.add(getter as AGetter<Any?>)
+=======
+            val wrapGetter: AGetter<String?> = core.computer.wrapJTextComponent(param)
+            this.core.params.add(wrapGetter as AGetter<Any?>)
+            return AutoBind2(core)
+        }
+
+        fun with(param: JLabel): AutoBind2<T, P1, String?> {
+            val wrapGetter: AGetter<String?> = core.computer.wrapJLabel(param)
+            this.core.params.add(wrapGetter as AGetter<Any?>)
+            return AutoBind2(core)
+        }
+
+        fun withIndex(param: JList<Any?>): AutoBind2<T, P1, Boolean?> {
+            val wrapGetter: AGetter<Int?> = core.computer.wrapJListIndexComponent(param)
+            this.core.params.add(wrapGetter as AGetter<Any?>)
+>>>>>>> Stashed changes
             return AutoBind2(core)
         }
 
@@ -779,6 +834,7 @@ class AutoComputer {
         }
 
         @Suppress("UNCHECKED_CAST")
+<<<<<<< Updated upstream
         fun withIndex(param: JList<Any?>): AutoBind3<T, P1, P2, Int?> {
             val wrapGetter: AGetter<Int?> = computer().wrapJListIndexComponent(param)
             return withGetter(wrapGetter)
@@ -812,6 +868,12 @@ class AutoComputer {
         fun <P3> with(component: JComboBox<P3>): AutoBind3<T, P1, P2, P3?> {
             val wrapGetter: AGetter<P3?> = computer().wrapJComboBoxComponent(component)
             return withGetter(wrapGetter)
+=======
+        fun with(param: JLabel): AutoBind3<T, P1, P2, String?> {
+            val wrapGetter: AGetter<String?> = core.computer.wrapJLabel(param)
+            this.core.params.add(wrapGetter as AGetter<Any?>)
+            return AutoBind3(core)
+>>>>>>> Stashed changes
         }
 
         @Suppress("UNCHECKED_CAST")
@@ -854,7 +916,17 @@ class AutoComputer {
 
         private val wrapGetter: AGetter<T?>
 
+<<<<<<< Updated upstream
         private var filter: (Filter)? = null
+=======
+fun AutoComputer.AutoBind0<String?>.from(param: JLabel) {
+    this.with(param).eval()
+}
+
+fun AutoComputer.AutoBind0<Int?>.from(param: JList<*>) {
+    this.withIndex(param).eval()
+}
+>>>>>>> Stashed changes
 
         constructor(computer: AutoComputer, wrapGetter: AGetter<T?>) {
             this.wrapGetter = wrapGetter
@@ -889,11 +961,31 @@ class AutoComputer {
         }
     }
 
+<<<<<<< Updated upstream
     companion object {
         fun <T> buildBind(computer: AutoComputer, property: ASetter<T?>): AutoBind0<T> {
             val data: AutoBindData<T> = AutoBindData(computer, property, ArrayList())
             return AutoBind0(data)
         }
+=======
+@Suppress("UNCHECKED_CAST")
+fun AutoComputer.AutoBind0<String?>.consistent(param: JLabel) {
+    val core = peakCore()
+    val wrapGetter: AGetter<String?> = core.computer.wrapJLabel(param)
+    withGetter(wrapGetter).eval { s -> s }
+    if (core.property is AGetter<*>) {
+        core.computer.bind(param).withGetter(core.property as AGetter<String?>).eval { r -> r }
+    }
+}
+
+@Suppress("UNCHECKED_CAST")
+fun AutoComputer.AutoBind0<Int?>.consistent(param: JList<*>) {
+    val core = peakCore()
+    val wrapGetter: AGetter<Int?> = core.computer.wrapJListIndexComponent(param)
+    withGetter(wrapGetter).eval { index -> index }
+    if (core.property is AGetter<*>) {
+        core.computer.bindIndex(param).withGetter(core.property as AGetter<Int?>).eval { r -> r }
+>>>>>>> Stashed changes
     }
 }
 
@@ -1142,8 +1234,58 @@ class JTextComponentWrap : ASetter<String?>, AGetter<String?> {
     }
 }
 
+<<<<<<< Updated upstream
 class JButtonTextComponentWrap : ASetter<String?>, AGetter<String?> {
     val component: AbstractButton
+=======
+class JLabelWrap : ASetter<String?>, AGetter<String?> {
+    private val component: JLabel
+
+    constructor(component: JLabel) {
+        this.component = component
+    }
+
+    @Volatile
+    private var cache: String? = null
+
+    @Volatile
+    private var manual: Boolean = false
+
+    override fun set(value: String?) {
+        cache = value
+        EventQueue.invokeLater {
+            manual = true
+            this.component.text = value
+            manual = false
+        }
+    }
+
+    override fun get(): String? {
+        return when {
+            cache != null -> cache
+            else -> this.component.text
+        }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as JLabelWrap
+
+        if (component != other.component) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return component.hashCode()
+    }
+}
+
+class JComponentEnableWrap : ASetter<Boolean?>, AGetter<Boolean?> {
+    private val component: JComponent
+>>>>>>> Stashed changes
 
     constructor(component: AbstractButton) {
         this.component = component
