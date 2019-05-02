@@ -92,7 +92,7 @@ object TimeSpanUtils {
             stringBuilder.insert(0, unitStrs[index])
                 .insert(0, _duration)
         }
-        return if (stringBuilder.length == 0) {
+        return if (stringBuilder.isEmpty()) {
             "0" + unitStrs[ArrayUtils.indexOf(units, unit)]
         } else stringBuilder.toString()
 

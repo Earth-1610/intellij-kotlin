@@ -11,16 +11,8 @@ import org.apache.commons.lang3.StringUtils
 import java.awt.Component
 import java.awt.EventQueue
 import java.util.*
-<<<<<<< Updated upstream
 import javax.swing.*
 import javax.swing.event.*
-=======
-import javax.swing.JComponent
-import javax.swing.JLabel
-import javax.swing.JList
-import javax.swing.event.DocumentEvent
-import javax.swing.event.DocumentListener
->>>>>>> Stashed changes
 import javax.swing.text.JTextComponent
 import kotlin.collections.ArrayList
 import kotlin.jvm.internal.CallableReference
@@ -29,7 +21,7 @@ import kotlin.reflect.jvm.isAccessible
 
 class AutoComputer {
 
-    private val throttle: ThrottleHelper = ThrottleHelper()
+    private val throttleHelper: ThrottleHelper = ThrottleHelper()
 
     private val listeners = HashMap<AGetter<Any?>, () -> Unit>()
 
@@ -42,7 +34,7 @@ class AutoComputer {
     private var pool: (() -> Unit) -> Unit = { it() }
 
     /**
-     * 赋值，并触发相应计算
+     * set value,and compute
      */
     public fun <T> value(property: KMutableProperty0<T>, value: T) {
         property.safeSet(value)
@@ -51,7 +43,7 @@ class AutoComputer {
     }
 
     /**
-     * 赋值，并触发相应计算
+     * set value,and compute
      */
     @Suppress("UNCHECKED_CAST")
     public fun <T : Any?> value(setter: ASetter<T>, value: T?) {
@@ -62,13 +54,13 @@ class AutoComputer {
     }
 
     /**
-     * 赋值，并触发相应计算
+     * set value,and compute
      */
     public fun <T> value(target: Any, property: String, value: T?) {
         value(wrapBeanProperty<T>(target, property), value)
     }
 
-    //region 触发计算---------------------------------------------------------------
+    //region try compute---------------------------------------------------------------
     internal fun call(getter: AGetter<Any?>) {
         val action = listeners[getter as AGetter<*>]
         var doAction = false
@@ -112,14 +104,8 @@ class AutoComputer {
 
     }
 
-    /**
-     * 调用堆栈
-     */
     private val actionThreadLocal: ThreadLocal<Stack<() -> Unit>> = ThreadLocal<Stack<() -> Unit>>()
 
-    /**
-     * 将一个计算Action推入堆栈，如果堆栈中已经有此Action，则推入失败
-     */
     private fun pushAction(action: () -> Unit): Boolean {
         var actionStack = actionThreadLocal.get()
         return when {
@@ -137,9 +123,6 @@ class AutoComputer {
         }
     }
 
-    /**
-     * 弹出一个计算Action
-     */
     private fun popAction() {
         val actionStack = actionThreadLocal.get()
         actionStack.pop()
@@ -147,7 +130,7 @@ class AutoComputer {
             actionThreadLocal.remove()
         }
     }
-    //endregion 触发计算---------------------------------------------------------------
+    //endregion try compute---------------------------------------------------------------
 
     private fun isRelative(getter: AGetter<*>, anotherGetter: AGetter<*>): Boolean {
         return when {
@@ -175,9 +158,6 @@ class AutoComputer {
         };
     }
 
-    /**
-     * 开始绑定一个属性
-     */
     fun <T : Any?> bind(property: KMutableProperty0<T>): AutoBind0<T> {
         val wrapSetter = wrapSetter(property)
         return buildBind<T>(this, wrapSetter)
@@ -186,7 +166,6 @@ class AutoComputer {
     fun bind(component: JTextComponent): AutoBind0<String?> {
         val wrapSetter = wrapJTextComponent(component)
         return buildBind(this, wrapSetter)
-<<<<<<< Updated upstream
     }
 
     fun bindText(component: AbstractButton): AutoBind0<String?> {
@@ -212,18 +191,6 @@ class AutoComputer {
     fun bindName(component: JComponent): AutoBind0<String> {
         val wrapSetter = wrapComponentName(component)
         return buildBind(this, wrapSetter)
-=======
-    }
-
-    fun bind(component: JLabel): AutoBind0<String?> {
-        val wrapSetter = wrapJLabel(component)
-        return buildBind(this, wrapSetter)
-    }
-
-    fun bindEnable(component: JComponent): AutoBind0<Boolean> {
-        val wrapSetter = wrapJComponentEnable(component)
-        return buildBind<Boolean>(this, wrapSetter)
->>>>>>> Stashed changes
     }
 
     fun bindIndex(component: JList<*>): AutoBind0<Int?> {
@@ -256,7 +223,7 @@ class AutoComputer {
         return buildBind(this, wrapSetter)
     }
 
-    //region ***************listen***************
+    //region ***************listen***************-------------------------------
 
     fun <T : Any?> listen(property: KMutableProperty0<T>): ListenAble<T> {
         val wrapGetter = wrapGetter(property)
@@ -336,7 +303,7 @@ class AutoComputer {
         }, wrapGetter as AGetter<Any?>)
     }
 
-    //endregion ***************listen***************
+    //endregion ***************listen***************-------------------------------
 
     @Suppress("UNCHECKED_CAST")
     private fun <T> wrapSetter(property: KMutableProperty0<T>): ASetter<T?> {
@@ -369,7 +336,6 @@ class AutoComputer {
         } as JTextComponentWrap
     }
 
-<<<<<<< Updated upstream
     internal fun wrapJButtonTextComponent(component: AbstractButton): JButtonTextComponentWrap {
         return wrapCache.get(component) {
             JButtonTextComponentWrap(component)
@@ -377,15 +343,6 @@ class AutoComputer {
     }
 
     internal fun wrapJLabel(component: JLabel): JLabelWrap {
-=======
-    internal fun wrapJLabel(component: JLabel): JLabelWrap {
-        return wrapCache.get(component) {
-            JLabelWrap(component)
-        } as JLabelWrap
-    }
-
-    internal fun wrapJListIndexComponent(component: JList<*>): JListComponentIndexWrap {
->>>>>>> Stashed changes
         return wrapCache.get(component) {
             JLabelWrap(component)
         } as JLabelWrap
@@ -583,7 +540,7 @@ class AutoComputer {
         }
 
         fun throttle(cd: Long): C {
-            val throttleFilter = { computer().throttle.acquire(core.property, cd) }
+            val throttleFilter = { computer().throttleHelper.acquire(core.property, cd) }
             val filter = this.core.filter
             if (filter == null) {
                 this.core.filter = throttleFilter
@@ -639,13 +596,6 @@ class AutoComputer {
         fun with(param: JLabel): AutoBind1<T, String?> {
             val wrapGetter: AGetter<String?> = computer().wrapJLabel(param)
             return withGetter(wrapGetter)
-        }
-
-        @Suppress("UNCHECKED_CAST")
-        fun with(param: JLabel): AutoBind1<T, String?> {
-            val wrapGetter: AGetter<String?> = core.computer.wrapJLabel(param)
-            this.core.params.add(wrapGetter as AGetter<Any?>)
-            return AutoBind1(core)
         }
 
         @Suppress("UNCHECKED_CAST")
@@ -721,7 +671,6 @@ class AutoComputer {
 
         @Suppress("UNCHECKED_CAST")
         fun with(param: JTextComponent): AutoBind2<T, P1, String?> {
-<<<<<<< Updated upstream
             val wrapGetter: AGetter<String?> = computer().wrapJTextComponent(param)
             return withGetter(wrapGetter)
         }
@@ -771,22 +720,6 @@ class AutoComputer {
         @Suppress("UNCHECKED_CAST")
         fun <P2> withGetter(getter: AGetter<P2>): AutoBind2<T, P1, P2> {
             this.core.params.add(getter as AGetter<Any?>)
-=======
-            val wrapGetter: AGetter<String?> = core.computer.wrapJTextComponent(param)
-            this.core.params.add(wrapGetter as AGetter<Any?>)
-            return AutoBind2(core)
-        }
-
-        fun with(param: JLabel): AutoBind2<T, P1, String?> {
-            val wrapGetter: AGetter<String?> = core.computer.wrapJLabel(param)
-            this.core.params.add(wrapGetter as AGetter<Any?>)
-            return AutoBind2(core)
-        }
-
-        fun withIndex(param: JList<Any?>): AutoBind2<T, P1, Boolean?> {
-            val wrapGetter: AGetter<Int?> = core.computer.wrapJListIndexComponent(param)
-            this.core.params.add(wrapGetter as AGetter<Any?>)
->>>>>>> Stashed changes
             return AutoBind2(core)
         }
 
@@ -834,7 +767,6 @@ class AutoComputer {
         }
 
         @Suppress("UNCHECKED_CAST")
-<<<<<<< Updated upstream
         fun withIndex(param: JList<Any?>): AutoBind3<T, P1, P2, Int?> {
             val wrapGetter: AGetter<Int?> = computer().wrapJListIndexComponent(param)
             return withGetter(wrapGetter)
@@ -868,12 +800,6 @@ class AutoComputer {
         fun <P3> with(component: JComboBox<P3>): AutoBind3<T, P1, P2, P3?> {
             val wrapGetter: AGetter<P3?> = computer().wrapJComboBoxComponent(component)
             return withGetter(wrapGetter)
-=======
-        fun with(param: JLabel): AutoBind3<T, P1, P2, String?> {
-            val wrapGetter: AGetter<String?> = core.computer.wrapJLabel(param)
-            this.core.params.add(wrapGetter as AGetter<Any?>)
-            return AutoBind3(core)
->>>>>>> Stashed changes
         }
 
         @Suppress("UNCHECKED_CAST")
@@ -916,17 +842,7 @@ class AutoComputer {
 
         private val wrapGetter: AGetter<T?>
 
-<<<<<<< Updated upstream
         private var filter: (Filter)? = null
-=======
-fun AutoComputer.AutoBind0<String?>.from(param: JLabel) {
-    this.with(param).eval()
-}
-
-fun AutoComputer.AutoBind0<Int?>.from(param: JList<*>) {
-    this.withIndex(param).eval()
-}
->>>>>>> Stashed changes
 
         constructor(computer: AutoComputer, wrapGetter: AGetter<T?>) {
             this.wrapGetter = wrapGetter
@@ -935,7 +851,7 @@ fun AutoComputer.AutoBind0<Int?>.from(param: JList<*>) {
 
         fun throttle(cd: Long): ListenAble<T> {
             val id = IDUtils.shortUUID()
-            val throttleFilter = { computer.throttle.acquire(wrapGetter to id, cd) }
+            val throttleFilter = { computer.throttleHelper.acquire(wrapGetter to id, cd) }
             mergeFilter(this::filter, throttleFilter)
             return this
         }
@@ -961,31 +877,11 @@ fun AutoComputer.AutoBind0<Int?>.from(param: JList<*>) {
         }
     }
 
-<<<<<<< Updated upstream
     companion object {
         fun <T> buildBind(computer: AutoComputer, property: ASetter<T?>): AutoBind0<T> {
             val data: AutoBindData<T> = AutoBindData(computer, property, ArrayList())
             return AutoBind0(data)
         }
-=======
-@Suppress("UNCHECKED_CAST")
-fun AutoComputer.AutoBind0<String?>.consistent(param: JLabel) {
-    val core = peakCore()
-    val wrapGetter: AGetter<String?> = core.computer.wrapJLabel(param)
-    withGetter(wrapGetter).eval { s -> s }
-    if (core.property is AGetter<*>) {
-        core.computer.bind(param).withGetter(core.property as AGetter<String?>).eval { r -> r }
-    }
-}
-
-@Suppress("UNCHECKED_CAST")
-fun AutoComputer.AutoBind0<Int?>.consistent(param: JList<*>) {
-    val core = peakCore()
-    val wrapGetter: AGetter<Int?> = core.computer.wrapJListIndexComponent(param)
-    withGetter(wrapGetter).eval { index -> index }
-    if (core.property is AGetter<*>) {
-        core.computer.bindIndex(param).withGetter(core.property as AGetter<Int?>).eval { r -> r }
->>>>>>> Stashed changes
     }
 }
 
@@ -1234,58 +1130,8 @@ class JTextComponentWrap : ASetter<String?>, AGetter<String?> {
     }
 }
 
-<<<<<<< Updated upstream
 class JButtonTextComponentWrap : ASetter<String?>, AGetter<String?> {
     val component: AbstractButton
-=======
-class JLabelWrap : ASetter<String?>, AGetter<String?> {
-    private val component: JLabel
-
-    constructor(component: JLabel) {
-        this.component = component
-    }
-
-    @Volatile
-    private var cache: String? = null
-
-    @Volatile
-    private var manual: Boolean = false
-
-    override fun set(value: String?) {
-        cache = value
-        EventQueue.invokeLater {
-            manual = true
-            this.component.text = value
-            manual = false
-        }
-    }
-
-    override fun get(): String? {
-        return when {
-            cache != null -> cache
-            else -> this.component.text
-        }
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as JLabelWrap
-
-        if (component != other.component) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        return component.hashCode()
-    }
-}
-
-class JComponentEnableWrap : ASetter<Boolean?>, AGetter<Boolean?> {
-    private val component: JComponent
->>>>>>> Stashed changes
 
     constructor(component: AbstractButton) {
         this.component = component

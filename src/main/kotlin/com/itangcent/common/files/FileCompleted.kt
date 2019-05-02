@@ -5,9 +5,9 @@ package com.itangcent.common.files
  */
 interface FileCompleted {
     /**
-     * @param fileCnt -文件数
-     * @param folderCnt  -文件夹数
-     * @param time    -用时
+     * @param fileCnt -amount of files
+     * @param folderCnt  -amount of folders
+     * @param time    -elapse time
      */
     fun onCompleted(fileCnt: Int, folderCnt: Int, time: Long)
 

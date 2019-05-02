@@ -73,7 +73,7 @@ object ArrayUtils {
                     return i
                 }
             }
-        } else if (array.javaClass.getComponentType().isInstance(objectToFind)) {
+        } else if (array.javaClass.componentType.isInstance(objectToFind)) {
             for (i in startIndex until array.size) {
                 if (objectToFind == array[i]) {
                     return i
