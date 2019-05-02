@@ -99,9 +99,6 @@ object DateUtils {
         return Date(timestamp!!)
     }
 
-    /**
-     * 方法描述：获取当前时间的
-     */
     fun now(): Date {
         return Date()
     }
@@ -110,9 +107,6 @@ object DateUtils {
         return System.currentTimeMillis()
     }
 
-    /**
-     * 方法描述：格式化日期
-     */
     fun formatDate(d: Date, fmt: String): String {
         return FastDateFormat.getInstance(fmt).format(d)
     }
@@ -177,9 +171,6 @@ object DateUtils {
 
     }
 
-    /**
-     * 是否是同一天
-     */
     fun isSameDay(date: Date?, date2: Date?): Boolean {
         if (date == null || date2 == null) {
             return false

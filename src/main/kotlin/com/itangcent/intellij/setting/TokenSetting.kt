@@ -1,7 +1,7 @@
 package com.itangcent.intellij.setting
 
 /**
- * token 配置
+ * host and token
  */
 class TokenSetting {
 
@@ -12,7 +12,6 @@ class TokenSetting {
 
     constructor()
 
-    //私钥
     var privateToken: String? = null
 
     // host of git-

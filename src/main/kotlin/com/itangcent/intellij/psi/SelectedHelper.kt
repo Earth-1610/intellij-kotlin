@@ -12,7 +12,9 @@ import com.intellij.psi.PsiFile
 import com.itangcent.common.concurrent.AQSCountLatch
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.logger.Logger
-import java.util.*
+import com.itangcent.intellij.util.DirFilter
+import com.itangcent.intellij.util.FileFilter
+import com.itangcent.intellij.util.FileUtils
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 
@@ -164,7 +166,7 @@ object SelectedHelper {
             if (dirFilter == null) {
                 try {
                     actionContext.runInReadUI {
-                        SelectedHelper.traversal(psiDirectory, fileFilter, {
+                        FileUtils.traversal(psiDirectory, fileFilter, {
                             aqsCount.down()
                             onFile(it)
                         })
@@ -177,7 +179,7 @@ object SelectedHelper {
                     if (it) {
                         actionContext.runInReadUI {
                             try {
-                                SelectedHelper.traversal(psiDirectory, fileFilter, { file ->
+                                FileUtils.traversal(psiDirectory, fileFilter, { file ->
                                     aqsCount.down()
                                     onFile(file)
                                 })
@@ -193,27 +195,4 @@ object SelectedHelper {
         }
     }
 
-    fun traversal(
-        psiDirectory: PsiDirectory,
-        fileFilter: FileFilter,
-        fileHandle: (PsiFile) -> Unit
-    ) {
-
-        val dirStack: Stack<PsiDirectory> = Stack()
-        var dir: PsiDirectory? = psiDirectory
-        while (dir != null) {
-            dir.files.filter { fileFilter(it) }
-                .forEach { fileHandle(it) }
-
-            for (subdirectory in dir.subdirectories) {
-                dirStack.push(subdirectory)
-            }
-            if (dirStack.isEmpty()) break
-            dir = dirStack.pop()
-        }
-    }
 }
-
-typealias FileFilter = (PsiFile) -> Boolean
-
-typealias DirFilter = (PsiDirectory, (Boolean) -> Unit) -> Unit

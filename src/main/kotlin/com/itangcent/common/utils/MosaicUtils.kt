@@ -5,9 +5,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.function.Function
 
-/**
- * 打码工具类
- */
+
 object MosaicUtils {
 
     private const val mask = 0x00ff
@@ -112,7 +110,8 @@ object MosaicUtils {
     }
 
     /**
-     * 通常打码后的长度均不会超出原字符长度，故暂不支持打码后长度超出原字符长度
+     * In general, the length of the code will not exceed the length of the original character,
+     * so it is not supported to exceed the length of the original character
      */
     class DefaultMosaicBuild : MosaicBuild {
 
@@ -178,9 +177,6 @@ object MosaicUtils {
             return this
         }
 
-        /**
-         * 跳过多少位
-         */
         override fun skip(len: Int): DefaultMosaicBuild {
             addAction(object : SimpleMosaicAction {
                 override fun next(src: CharArray, result: CharArray, indexes: IntArray) {
@@ -191,10 +187,6 @@ object MosaicUtils {
             return this
         }
 
-        /**
-         * 跳到多少位
-         * 负数从后往前算
-         */
         override fun skipTo(index: Int): DefaultMosaicBuild {
 
             if (index < 0) {
@@ -216,9 +208,6 @@ object MosaicUtils {
             return this
         }
 
-        /**
-         * 加入剩余字符
-         */
         override fun appendTail(): DefaultMosaicBuild {
             if (tail == -1) {
                 addAction(object : SimpleMosaicAction {
@@ -242,20 +231,10 @@ object MosaicUtils {
             return this
         }
 
-        /**
-         * 打码
-         *
-         * @param asterisks -打码
-         */
         override fun mosaic(asterisks: String): DefaultMosaicBuild {
             return mosaic(asterisks.toCharArray())
         }
 
-        /**
-         * 打码
-         *
-         * @param asterisks -打码
-         */
         override fun mosaic(asterisks: CharArray): DefaultMosaicBuild {
             addAction(object : SimpleMosaicAction {
                 override fun next(src: CharArray, result: CharArray, indexes: IntArray) {
@@ -267,30 +246,14 @@ object MosaicUtils {
             return this
         }
 
-        /**
-         * 打码
-         *
-         * @param len      -位数
-         * @param asterisk -打码字符
-         */
         override fun mosaic(len: Int, asterisk: Char): DefaultMosaicBuild {
             return mosaic(getAsterisks(len, asterisk))
         }
 
-        /**
-         * 打码并跳过相同位数
-         *
-         * @param asterisks -打码
-         */
         override fun mosaicAndSkip(asterisks: String): DefaultMosaicBuild {
             return mosaic(asterisks.toCharArray())
         }
 
-        /**
-         * 打码并跳过相同位数
-         *
-         * @param asterisks -打码
-         */
         override fun mosaicAndSkip(asterisks: CharArray): DefaultMosaicBuild {
             addAction(object : SimpleMosaicAction {
                 override fun next(src: CharArray, result: CharArray, indexes: IntArray) {
@@ -304,47 +267,25 @@ object MosaicUtils {
             return this
         }
 
-        /**
-         * 打码并跳过相同位数
-         *
-         * @param len      -位数
-         * @param asterisk -打码字符
-         */
         override fun mosaicAndSkip(len: Int, asterisk: Char): DefaultMosaicBuild {
             return mosaicAndSkip(getAsterisks(len, asterisk))
         }
 
-        /**
-         * 设置异常处理行为
-         *
-         * @param exceptionHandle -异常处理行为
-         */
         override fun onException(exceptionHandle: MosaicExceptionHandle): DefaultMosaicBuild {
             this.exceptionHandle = exceptionHandle
             return this
         }
 
-        /**
-         * 异常时返回源字符串
-         */
         override fun returnSrcOnError(): DefaultMosaicBuild {
             this.exceptionHandle = { _, src, _ -> src }
             return this
         }
 
-        /**
-         * 异常时返回已完成的打码字符串
-         */
         override fun returnDefectOnError(): DefaultMosaicBuild {
             this.exceptionHandle = { _, _, defect -> defect }
             return this
         }
 
-        /**
-         * 异常时返回指定文本
-         *
-         * @param defaultTxt -异常时返回的文本
-         */
         override fun returnOnError(defaultTxt: String): DefaultMosaicBuild {
             this.exceptionHandle = { _, _, _ -> defaultTxt }
             return this
@@ -356,7 +297,7 @@ object MosaicUtils {
     }
 
     /**
-     * 每次操作前都会检查长度
+     * The length is checked before each operation
      */
     class SafetyMosaicBuild : MosaicBuild {
 
@@ -411,9 +352,6 @@ object MosaicUtils {
             return fixLen
         }
 
-        /**
-         * 保留位数
-         */
         override fun keep(len: Int): SafetyMosaicBuild {
             addAction(object : SafetyMosaicAction {
                 override fun next(
@@ -432,10 +370,6 @@ object MosaicUtils {
             return this
         }
 
-        /**
-         * 保留位数至
-         * 负数从后往前算
-         */
         override fun keepTo(index: Int): SafetyMosaicBuild {
             if (index < 0) {
                 addAction(object : SafetyMosaicAction {
@@ -472,9 +406,6 @@ object MosaicUtils {
             return this
         }
 
-        /**
-         * 跳过多少位
-         */
         override fun skip(len: Int): SafetyMosaicBuild {
 
             addAction(object : SafetyMosaicAction {
@@ -491,10 +422,7 @@ object MosaicUtils {
             return this
         }
 
-        /**
-         * 跳到多少位
-         * 负数从后往前算
-         */
+
         override fun skipTo(index: Int): SafetyMosaicBuild {
 
             if (index < 0) {
@@ -526,9 +454,6 @@ object MosaicUtils {
             return this
         }
 
-        /**
-         * 加入剩余字符
-         */
         override fun appendTail(): SafetyMosaicBuild {
             if (tail == -1) {
                 addAction(object : SafetyMosaicAction {
@@ -562,20 +487,10 @@ object MosaicUtils {
             return this
         }
 
-        /**
-         * 打码
-         *
-         * @param asterisks -打码
-         */
         override fun mosaic(asterisks: String): SafetyMosaicBuild {
             return mosaic(asterisks.toCharArray())
         }
 
-        /**
-         * 打码
-         *
-         * @param asterisks -打码
-         */
         override fun mosaic(asterisks: CharArray): SafetyMosaicBuild {
             addAction(object : SafetyMosaicAction {
                 override fun next(
@@ -592,30 +507,15 @@ object MosaicUtils {
             return this
         }
 
-        /**
-         * 打码
-         *
-         * @param len      -位数
-         * @param asterisk -打码字符
-         */
+
         override fun mosaic(len: Int, asterisk: Char): SafetyMosaicBuild {
             return mosaic(getAsterisks(len, asterisk))
         }
 
-        /**
-         * 打码并跳过相同位数
-         *
-         * @param asterisks -打码
-         */
         override fun mosaicAndSkip(asterisks: String): SafetyMosaicBuild {
             return mosaic(asterisks.toCharArray())
         }
 
-        /**
-         * 打码并跳过相同位数
-         *
-         * @param asterisks -打码
-         */
         override fun mosaicAndSkip(asterisks: CharArray): SafetyMosaicBuild {
             addAction(object : SafetyMosaicAction {
                 override fun next(
@@ -634,47 +534,25 @@ object MosaicUtils {
             return this
         }
 
-        /**
-         * 打码并跳过相同位数
-         *
-         * @param len      -位数
-         * @param asterisk -打码字符
-         */
         override fun mosaicAndSkip(len: Int, asterisk: Char): SafetyMosaicBuild {
             return mosaicAndSkip(getAsterisks(len, asterisk))
         }
 
-        /**
-         * 设置异常处理行为
-         *
-         * @param exceptionHandle -异常处理行为
-         */
         override fun onException(exceptionHandle: MosaicExceptionHandle): SafetyMosaicBuild {
             this.exceptionHandle = exceptionHandle
             return this
         }
 
-        /**
-         * 异常时返回源字符串
-         */
         override fun returnSrcOnError(): SafetyMosaicBuild {
             this.exceptionHandle = { _, src, _ -> src }
             return this
         }
 
-        /**
-         * 异常时返回已完成的打码字符串
-         */
         override fun returnDefectOnError(): SafetyMosaicBuild {
             this.exceptionHandle = { _, _, defect -> defect }
             return this
         }
 
-        /**
-         * 异常时返回指定文本
-         *
-         * @param defaultTxt -异常时返回的文本
-         */
         override fun returnOnError(defaultTxt: String): SafetyMosaicBuild {
             this.exceptionHandle = { _, _, _ -> defaultTxt }
             return this

@@ -31,7 +31,7 @@ object IDUtils {
     }
 
     /**
-     * uuid压缩至16位短id
+     * compress uuid to 16bit
      */
     fun shortUUID(): String {
         val uuid = UUID.randomUUID()
@@ -40,16 +40,16 @@ object IDUtils {
     }
 
     /**
-     * 生成一个简单的id
+     * create id
      *
-     * @param length      -id长度
-     * @param supportCase -区分大小写
+     * @param length      -length of id
+     * @param ignoringCase -ignoring case
      * @return -liteId
      * @see .liteId
      */
     @JvmOverloads
-    fun liteId(length: Int, supportCase: Boolean = true): String {
-        val chars = if (supportCase) digitChars else lowSChars
+    fun liteId(length: Int, ignoringCase: Boolean = true): String {
+        val chars = if (ignoringCase) lowSChars else digitChars
 
         val unit = 128 / (32 - Integer.numberOfLeadingZeros(chars.length - 1))
 
@@ -84,7 +84,7 @@ object IDUtils {
     }
 
     fun timeId(): String {
-        //第一部分是当前时间串-17位
+        //first part 17bit represent time
         val SDF = SimpleDateFormat("YYYYMMddHHmmssSSS")
         val timed = SDF.format(Date())
         val tail = java.lang.Long.parseLong(timed.substring(16))

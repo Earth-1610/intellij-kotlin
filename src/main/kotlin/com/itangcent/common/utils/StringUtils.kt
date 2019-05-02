@@ -9,13 +9,6 @@ object StringUtils {
         return (0 until charSequence.length).firstOrNull { charSequence[it] > ' ' } ?: -1
     }
 
-
-    /**
-     * 驼峰格式字符串转换为下划线格式字符串
-     *
-     * @param param
-     * @return
-     */
     fun camelToUnderline(param: String?): String {
         if (param == null || "" == param.trim { it <= ' ' }) {
             return ""
@@ -36,12 +29,6 @@ object StringUtils {
         return sb.toString()
     }
 
-    /**
-     * 下划线格式字符串转换为驼峰格式字符串
-     *
-     * @param param
-     * @return
-     */
     fun underlineToCamel(param: String?): String {
         if (param == null || "" == param.trim { it <= ' ' }) {
             return ""

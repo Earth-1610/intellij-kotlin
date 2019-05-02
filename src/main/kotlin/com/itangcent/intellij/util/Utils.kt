@@ -11,9 +11,7 @@ import java.util.*
 
 
 object Utils {
-    /**
-     * 获取当前系统的换行符
-     */
+
     private val NEW_LINE = System.getProperty("line.separator")
 
     val isWindows: Boolean
