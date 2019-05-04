@@ -22,7 +22,9 @@ import org.aopalliance.intercept.MethodInterceptor
 import java.awt.EventQueue
 import java.lang.reflect.Method
 import java.util.*
+import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Future
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.collections.ArrayList
 import kotlin.concurrent.withLock
@@ -45,7 +47,7 @@ class ActionContext {
 
     private var countLatch: CountLatch = AQSCountLatch()
 
-    private var executorService: ExecutorService = ThreadPoolUtils.createPool(5, ActionContext::class.java)
+    private var executorService: ExecutorService = ThreadPoolUtils.createPool(3, 99, ActionContext::class.java)
 
     //Use guice to manage the current context instance lifecycle and dependencies
     private var injector: Injector
@@ -135,9 +137,9 @@ class ActionContext {
         countLatch.up()
     }
 
-    fun runAsync(runnable: Runnable) {
+    fun runAsync(runnable: Runnable): Future<*>? {
         countLatch.down()
-        executorService.submit {
+        return executorService.submit {
             try {
                 ActionContext.setContext(this, 0)
                 runnable.run()
@@ -148,9 +150,9 @@ class ActionContext {
         }
     }
 
-    fun runAsync(runnable: () -> Unit) {
+    fun runAsync(runnable: () -> Unit): Future<*>? {
         countLatch.down()
-        executorService.submit {
+        return executorService.submit {
             try {
                 ActionContext.setContext(this, 0)
                 runnable()
@@ -159,6 +161,20 @@ class ActionContext {
                 countLatch.up()
             }
         }
+    }
+
+    fun <T> callAsync(callable: () -> T): Future<T>? {
+        countLatch.down()
+        val actionContext = this
+        return executorService.submit(Callable<T> {
+            try {
+                ActionContext.setContext(actionContext, 0)
+                return@Callable callable()
+            } finally {
+                ActionContext.clearContext()
+                countLatch.up()
+            }
+        })
     }
 
     fun runInSwingUI(runnable: () -> Unit) {
@@ -182,24 +198,26 @@ class ActionContext {
     }
 
     fun <T> callInSwingUI(callable: () -> T?): T? {
-        if (getFlag() == swingThreadFlag) {
-            return callable()
-        } else if (EventQueue.isDispatchThread()) {
-            ActionContext.setContext(this, swingThreadFlag)
-            return callable()
-        } else {
-            countLatch.down()
-            val valueHolder: ValueHolder<T> = ValueHolder()
-            EventQueue.invokeLater {
-                try {
-                    ActionContext.setContext(this, swingThreadFlag)
-                    valueHolder.compute { callable() }
-                } finally {
-                    ActionContext.clearContext()
-                    countLatch.up()
-                }
+        when {
+            getFlag() == swingThreadFlag -> return callable()
+            EventQueue.isDispatchThread() -> {
+                ActionContext.setContext(this, swingThreadFlag)
+                return callable()
             }
-            return valueHolder.getData()
+            else -> {
+                countLatch.down()
+                val valueHolder: ValueHolder<T> = ValueHolder()
+                EventQueue.invokeLater {
+                    try {
+                        ActionContext.setContext(this, swingThreadFlag)
+                        valueHolder.compute { callable() }
+                    } finally {
+                        ActionContext.clearContext()
+                        countLatch.up()
+                    }
+                }
+                return valueHolder.getData()
+            }
         }
     }
 
@@ -279,8 +297,8 @@ class ActionContext {
     }
 
     /**
-     * 等待完成
-     * warning:调用waitComplete*方法将清除当前线程绑定的ActionContext
+     * waits on the sub thread for the complete
+     * warning:call method as []waitComplete*] will clear ActionContext which bind on current Thread
      * @see ActionContext.waitCompleteAsync
      */
     fun waitComplete() {
@@ -425,17 +443,17 @@ class ActionContext {
         }
 
         override fun <T : Any> bind(
-                type: KClass<T>,
-                annotationType: Class<out Annotation>,
-                callBack: (LinkedBindingBuilder<T>) -> Unit
+            type: KClass<T>,
+            annotationType: Class<out Annotation>,
+            callBack: (LinkedBindingBuilder<T>) -> Unit
         ) {
             moduleActions.add(arrayOf(BIND_WITH_ANNOTATION_TYPE, type, annotationType, callBack))
         }
 
         override fun <T : Any> bind(
-                type: KClass<T>,
-                annotation: Annotation,
-                callBack: (LinkedBindingBuilder<T>) -> Unit
+            type: KClass<T>,
+            annotation: Annotation,
+            callBack: (LinkedBindingBuilder<T>) -> Unit
         ) {
             moduleActions.add(arrayOf(BIND_WITH_ANNOTATION, type, annotation, callBack))
         }
@@ -457,9 +475,9 @@ class ActionContext {
         }
 
         override fun bindInterceptor(
-                classMatcher: Matcher<in Class<*>>,
-                methodMatcher: Matcher<in Method>,
-                vararg interceptors: MethodInterceptor
+            classMatcher: Matcher<in Class<*>>,
+            methodMatcher: Matcher<in Method>,
+            vararg interceptors: MethodInterceptor
         ) {
             moduleActions.add(arrayOf<Any>(BIND_INTERCEPTOR, classMatcher, methodMatcher, interceptors))
         }
@@ -505,17 +523,17 @@ class ActionContext {
                 when (moduleAction[0]) {
                     ActionContextBuilder.BIND_WITH_ANNOTATION_TYPE -> {
                         (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit)).invoke(
-                                bind(moduleAction[1] as KClass<*>, moduleAction[2] as Class<Annotation>)
+                            bind(moduleAction[1] as KClass<*>, moduleAction[2] as Class<Annotation>)
                         )
                     }
                     ActionContextBuilder.BIND_WITH_ANNOTATION -> {
                         (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit)).invoke(
-                                bind(moduleAction[1] as KClass<*>, moduleAction[2] as Annotation)
+                            bind(moduleAction[1] as KClass<*>, moduleAction[2] as Annotation)
                         )
                     }
                     ActionContextBuilder.BIND_WITH_NAME -> {
                         (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit)).invoke(
-                                bind(moduleAction[1] as KClass<*>, moduleAction[2] as String)
+                            bind(moduleAction[1] as KClass<*>, moduleAction[2] as String)
                         )
                     }
                     ActionContextBuilder.BIND_INSTANCE_WITH_NAME -> {
@@ -529,19 +547,19 @@ class ActionContext {
                     }
                     ActionContextBuilder.BIND -> {
                         (moduleAction[2] as ((LinkedBindingBuilder<*>) -> Unit)).invoke(
-                                bind(moduleAction[1] as KClass<*>)
+                            bind(moduleAction[1] as KClass<*>)
                         )
                     }
                     ActionContextBuilder.BIND_INTERCEPTOR -> {
                         bindInterceptor(
-                                moduleAction[1] as Matcher<in Class<*>>?,
-                                moduleAction[2] as Matcher<in Method>?,
-                                moduleAction[3] as MethodInterceptor?
+                            moduleAction[1] as Matcher<in Class<*>>?,
+                            moduleAction[2] as Matcher<in Method>?,
+                            moduleAction[3] as MethodInterceptor?
                         )
                     }
                     ActionContextBuilder.BIND_CONSTANT -> {
                         (moduleAction[1] as ((AnnotatedConstantBindingBuilder) -> Unit)).invoke(
-                                bindConstant()
+                            bindConstant()
                         )
                     }
                 }
@@ -557,15 +575,15 @@ class ActionContext {
         fun <T : Any> bind(type: KClass<T>, callBack: (LinkedBindingBuilder<T>) -> Unit)
 
         fun <T : Any> bind(
-                type: KClass<T>, annotationType: Class<out Annotation>
+            type: KClass<T>, annotationType: Class<out Annotation>
         ) {
             bind(type, annotationType) { it.singleton() }
         }
 
         fun <T : Any> bind(
-                type: KClass<T>,
-                annotationType: Class<out Annotation>,
-                callBack: ((LinkedBindingBuilder<T>) -> Unit)
+            type: KClass<T>,
+            annotationType: Class<out Annotation>,
+            callBack: ((LinkedBindingBuilder<T>) -> Unit)
         )
 
         fun <T : Any> bind(type: KClass<T>, annotation: Annotation) {
@@ -587,9 +605,9 @@ class ActionContext {
         fun <T : Any> bindInstance(cls: KClass<T>, instance: T)
 
         fun bindInterceptor(
-                classMatcher: Matcher<in Class<*>>,
-                methodMatcher: Matcher<in Method>,
-                vararg interceptors: org.aopalliance.intercept.MethodInterceptor
+            classMatcher: Matcher<in Class<*>>,
+            methodMatcher: Matcher<in Method>,
+            vararg interceptors: org.aopalliance.intercept.MethodInterceptor
         )
 
         fun bindConstant(callBack: (AnnotatedConstantBindingBuilder) -> Unit)

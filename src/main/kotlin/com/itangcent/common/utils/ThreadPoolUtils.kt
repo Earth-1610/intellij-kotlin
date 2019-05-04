@@ -29,6 +29,20 @@ object ThreadPoolUtils {
         )
     }
 
+    fun createPool(poolSize: Int, maximumPoolSize: Int, clazz: Class<*>): ExecutorService {
+        return createPool(poolSize, maximumPoolSize, clazz.simpleName)
+    }
+
+    fun createPool(poolSize: Int, maximumPoolSize: Int, name: String): ExecutorService {
+        return ThreadPoolExecutor(
+            poolSize, maximumPoolSize,
+            0L, TimeUnit.MILLISECONDS,
+            LinkedBlockingQueue(),
+            BasicThreadFactory.Builder().daemon(true)
+                .namingPattern("$name-%d").build()
+        )
+    }
+
     fun createSinglePool(clazz: Class<*>): ExecutorService {
         return createPool(1, clazz)
     }
