@@ -3,25 +3,25 @@ package com.itangcent.common.concurrent
 interface CountLatch {
 
     /**
-     * 等待计数全部释放
+     * wait all acquired be released
      */
     @Throws(InterruptedException::class)
     fun waitFor()
 
     /**
-     * 尝试等待计数全部释放
+     * wait all acquired be released
      */
     @Throws(InterruptedException::class)
     fun waitFor(msTimeout: Long): Boolean
 
 
     /**
-     * 计数-1
+     * acquire
      */
     fun down()
 
     /**
-     * 计数+1
+     * release
      */
     fun up()
 
