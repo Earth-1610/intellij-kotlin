@@ -1,7 +1,10 @@
 package com.itangcent.intellij.config
 
 import com.google.inject.Singleton
-import com.intellij.psi.*
+import com.intellij.psi.PsiClass
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiMember
+import com.itangcent.intellij.config.context.PsiElementContext
 import com.itangcent.intellij.psi.PsiAnnotationUtils
 import com.itangcent.intellij.util.DocCommentUtils
 import java.util.regex.Pattern
@@ -36,13 +39,13 @@ class SimpleRuleParse {
             val annStr = tinyRuleStr.substringAfter("@")
             val annName = annStr.substringBefore("#").trim()
             val annValue = annStr.substringAfter("#", "value").trim()
-            srule = { _, _, ann ->
-                PsiAnnotationUtils.findAttr(ann, annName, annValue)
+            srule = { ann ->
+                PsiAnnotationUtils.findAttr(ann.asPsiDocCommentOwner(), annName, annValue)
             }
         } else if (tinyRuleStr.startsWith("#")) {
             val tag = tinyRuleStr.substringAfter("#").trim()
-            srule = { _, doc, _ ->
-                DocCommentUtils.findDocsByTag(doc.docComment, tag)
+            srule = { context ->
+                DocCommentUtils.findDocsByTag(context.asPsiDocCommentOwner().docComment, tag)
             }
         }
 
@@ -85,18 +88,21 @@ class SimpleRuleParse {
             val annName = annStr.substringBefore("#").trim()
             val annValue = annStr.substringAfter("#", "").trim()
             srule = if (annValue.isBlank()) {
-                { _, _, ann ->
-                    PsiAnnotationUtils.findAnn(ann, annName) != null
+                { context ->
+                    PsiAnnotationUtils.findAnn(context.asPsiDocCommentOwner(), annName) != null
                 }
             } else {
-                { _, _, ann ->
-                    str2Bool(PsiAnnotationUtils.findAttr(ann, annName, annValue), defaultValue)
+                { context ->
+                    str2Bool(
+                        PsiAnnotationUtils.findAttr(context.asPsiDocCommentOwner(), annName, annValue),
+                        defaultValue
+                    )
                 }
             }
         } else if (tinyRuleStr.startsWith("#")) {
             val tag = tinyRuleStr.substringAfter("#").trim()
-            srule = { _, doc, _ ->
-                DocCommentUtils.hasTag(doc.docComment, tag)
+            srule = { context ->
+                DocCommentUtils.hasTag(context.asPsiDocCommentOwner().docComment, tag)
             }
         } else if (tinyRuleStr.startsWith("$")) {
             val prefix = tinyRuleStr.substringBefore(":").trim()
@@ -105,14 +111,14 @@ class SimpleRuleParse {
                 if (content.startsWith("? extend")) {
                     val extendClass = content.removePrefix("? extend").trim()
                     val extendClassRegex = parseRegexOrConstant(extendClass)
-                    srule = { named, _, _ ->
-                        checkExtend(findClass(named), extendClassRegex)
+                    srule = { context ->
+                        checkExtend(findClass(context.getResource()), extendClassRegex)
                     }
 
                 } else {
                     val contentRegex = parseRegexOrConstant(content)
-                    srule = { named, _, _ ->
-                        findClass(named)?.let { contentRegex(it.qualifiedName) } ?: false
+                    srule = { context ->
+                        findClass(context.getResource())?.let { contentRegex(it.qualifiedName) } ?: false
                     }
                 }
 
@@ -139,7 +145,7 @@ class SimpleRuleParse {
 
     }
 
-    private fun findClass(named: PsiNameIdentifierOwner): PsiClass? {
+    private fun findClass(named: PsiElement): PsiClass? {
         return when (named) {
             is PsiClass -> named
             is PsiMember -> named.containingClass
@@ -200,5 +206,5 @@ class SimpleRuleParse {
     }
 }
 
-typealias SimpleStringRule = (PsiNameIdentifierOwner, PsiDocCommentOwner, PsiModifierListOwner) -> String?
-typealias SimpleBooleanRule = (PsiNameIdentifierOwner, PsiDocCommentOwner, PsiModifierListOwner) -> Boolean
+typealias SimpleStringRule = (PsiElementContext) -> String?
+typealias SimpleBooleanRule = (PsiElementContext) -> Boolean

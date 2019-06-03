@@ -13,20 +13,24 @@ import kotlin.reflect.KClass
 object GsonUtils {
     private val gson = GsonBuilder()
         .setExclusionStrategies(RegisterExclusionStrategy().exclude(Visional::class.java))
+        .registerTypeAdapterFactory(NumberObjectTypeAdapter.FACTORY)
         .create()
 
     private val gsonWithNulls = GsonBuilder()
         .setExclusionStrategies(RegisterExclusionStrategy().exclude(Visional::class.java))
+        .registerTypeAdapterFactory(NumberObjectTypeAdapter.FACTORY)
         .serializeNulls()
         .create()
 
     private val pretty_gson = GsonBuilder()
         .setExclusionStrategies(RegisterExclusionStrategy().exclude(Visional::class.java))
+        .registerTypeAdapterFactory(NumberObjectTypeAdapter.FACTORY)
         .setPrettyPrinting()
         .create()
 
     private val pretty_gson_with_nulls = GsonBuilder()
         .setExclusionStrategies(RegisterExclusionStrategy().exclude(Visional::class.java))
+        .registerTypeAdapterFactory(NumberObjectTypeAdapter.FACTORY)
         .setPrettyPrinting()
         .serializeNulls()
         .create()

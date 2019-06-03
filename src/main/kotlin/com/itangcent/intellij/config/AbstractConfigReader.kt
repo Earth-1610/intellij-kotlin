@@ -1,38 +1,39 @@
 package com.itangcent.intellij.config
 
 import com.itangcent.common.utils.FileUtils
+import com.itangcent.intellij.util.MultiValuesMap
 import java.io.File
 import java.util.regex.Pattern
 
-abstract class AbstractConfigReader : ConfigReader {
+abstract class AbstractConfigReader : MutableConfigReader {
 
-    //维持key的顺序
-    var keys: ArrayList<String> = ArrayList()
-    var configInfo: HashMap<String, String> = HashMap()
+    var configInfo: MultiValuesMap<String, String> = MultiValuesMap(true)
 
-    fun loadConfigInfo(): Map<String, String> {
-        if (configInfo.isNotEmpty()) return configInfo
+    fun loadConfigInfo() {
+        if (configInfo.isNotEmpty()) return
 
-        val configFiles = findConfigFiles() ?: return configInfo
+        val configFiles = findConfigFiles() ?: return
         if (configInfo.isEmpty()) {
             configFiles.forEach { path ->
                 val configFile = File(path)
                 if (configFile.exists() && configFile.isFile) {
                     val configInfoContent = FileUtils.read(configFile)
-                    for (line in configInfoContent.lines()) {
-                        if (line.isBlank() || line.startsWith("#")) continue
-                        val name = resolveProperty(line.substringBefore("="))
-                        if (name.isBlank()) continue
-                        val value = resolveProperty(line.substringAfter("=", ""))
-                        if (!configInfo.containsKey(name)) {
-                            keys.add(name)
-                            configInfo[name] = value
-                        }
-                    }
+                    loadConfigInfoContent(configInfoContent)
                 }
             }
         }
-        return configInfo
+    }
+
+    override fun loadConfigInfoContent(configInfoContent: String) {
+        for (line in configInfoContent.lines()) {
+            if (line.isBlank() || line.startsWith("#")) continue
+            val name = resolveProperty(line.substringBefore("="))
+            if (name.isBlank()) continue
+            val value = resolveProperty(line.substringAfter("=", ""))
+            if (!configInfo.containsKey(name)) {
+                configInfo.put(name, value)
+            }
+        }
     }
 
     protected abstract fun findConfigFiles(): List<String>?
@@ -46,27 +47,47 @@ abstract class AbstractConfigReader : ConfigReader {
         val sb = StringBuffer()
         while (match.find()) {
             val key = match.group(1)
-            val value = configInfo[key] ?: ""
+            val value = try {
+                configInfo.getOne(key)
+            } catch (e: IllegalArgumentException) {
+                throw IllegalArgumentException("unable to resolve $key")
+            }
             match.appendReplacement(sb, value)
         }
         match.appendTail(sb)
         return sb.toString()
     }
 
-    override fun readConfigInfo(): Map<String, String> {
-        return configInfo
+    override fun put(key: String, vararg value: String) {
+        configInfo.putAll(key, *value)
     }
 
-    override fun read(key: String): String? {
+    override fun remove(key: String) {
+        configInfo.removeAll(key)
+    }
+
+    override fun remove(key: String, value: String) {
+        configInfo.remove(key, value)
+    }
+
+    override fun first(key: String): String? {
+        return configInfo.getFirst(key)
+    }
+
+    override fun read(key: String): Collection<String>? {
         return configInfo[key]
     }
 
     override fun foreach(action: (String, String) -> Unit) {
-        keys.forEach { key -> action(key, configInfo[key]!!) }
+        configInfo.flattenForEach(action)
     }
 
     override fun foreach(keyFilter: (String) -> Boolean, action: (String, String) -> Unit) {
-        keys.filter(keyFilter).forEach { key -> action(key, configInfo[key]!!) }
+        configInfo.flattenForEach { key, value ->
+            if (keyFilter(key)) {
+                action(key, value)
+            }
+        }
     }
 
 }
