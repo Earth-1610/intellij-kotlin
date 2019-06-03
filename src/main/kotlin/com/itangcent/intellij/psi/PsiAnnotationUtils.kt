@@ -35,6 +35,7 @@ object PsiAnnotationUtils {
     }
 
     private val logger: Logger = ActionContext.local()
+
     /**
      * clean the str of param in annotaion
      * 1.remove {}  e.g.{*}->*

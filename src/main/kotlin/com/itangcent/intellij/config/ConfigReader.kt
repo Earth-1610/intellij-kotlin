@@ -2,9 +2,9 @@ package com.itangcent.intellij.config
 
 interface ConfigReader {
 
-    fun readConfigInfo(): Map<String, String>
+    fun first(key: String): String?
 
-    fun read(key: String): String?
+    fun read(key: String): Collection<String>?
 
     fun foreach(action: (String, String) -> Unit)
 

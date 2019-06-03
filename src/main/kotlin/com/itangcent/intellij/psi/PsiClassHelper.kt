@@ -1114,11 +1114,11 @@ class PsiClassHelper {
     }
 
     fun isNormalType(typeName: String): Boolean {
-        return Companion.normalTypes.containsKey(classRuleConfig?.tryConvert(typeName) ?: typeName)
+        return normalTypes.containsKey(classRuleConfig?.tryConvert(typeName) ?: typeName)
     }
 
     fun getDefaultValue(typeName: String): Any? {
-        return Companion.normalTypes[classRuleConfig?.tryConvert(typeName) ?: typeName]
+        return normalTypes[classRuleConfig?.tryConvert(typeName) ?: typeName]
     }
 
     fun unboxArrayOrList(psiType: PsiType): PsiType {
