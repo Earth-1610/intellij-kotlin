@@ -2,22 +2,33 @@ package com.itangcent.intellij.psi
 
 import com.google.inject.Inject
 import com.intellij.psi.*
+import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.logger.Logger
-import com.itangcent.intellij.spring.MultipartFile
+import com.itangcent.intellij.psi.PsiClassHelper.Companion.ELEMENT_OF_COLLECTION
+import com.itangcent.intellij.psi.PsiClassHelper.Companion.JAVA_OBJECT_METHODS
+import com.itangcent.intellij.psi.PsiClassHelper.Companion.KEY_OF_MAP
+import com.itangcent.intellij.psi.PsiClassHelper.Companion.VALUE_OF_MAP
+import com.itangcent.intellij.psi.PsiClassHelper.Companion.fieldModifiers
+import com.itangcent.intellij.psi.PsiClassHelper.Companion.hasAnyModify
+import com.itangcent.intellij.psi.PsiClassHelper.Companion.isCollection
+import com.itangcent.intellij.psi.PsiClassHelper.Companion.isMap
+import com.itangcent.intellij.psi.PsiClassHelper.Companion.multipartFileInstance
+import com.itangcent.intellij.psi.PsiClassHelper.Companion.normalTypes
+import com.itangcent.intellij.psi.PsiClassHelper.Companion.staticFinalFieldModifiers
 import com.itangcent.intellij.spring.SpringClassName
+import com.itangcent.intellij.util.DocCommentUtils
 import com.itangcent.intellij.util.KV
 import com.itangcent.intellij.util.invokeMethod
-import com.sun.jmx.remote.internal.ArrayQueue
+import com.itangcent.intellij.util.reduceSafely
+import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.exception.ExceptionUtils
 import java.util.*
-import java.util.concurrent.ArrayBlockingQueue
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
-import kotlin.collections.LinkedHashMap
 import kotlin.reflect.full.createInstance
 
 abstract class AbstractPsiClassHelper : PsiClassHelper {
@@ -217,15 +228,16 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             beforeParseClass(resourcePsiClass, option, kv)
 
             foreachField(resourcePsiClass, option) { fieldName, fieldType, fieldOrMethod ->
-                if (!kv.contains(fieldName)) {
 
-                    if (!beforeParseFieldOrMethod(fieldName, fieldType, fieldOrMethod, resourcePsiClass, option, kv)) {
-                        return@foreachField
-                    }
+                if (!beforeParseFieldOrMethod(fieldType, fieldOrMethod, resourcePsiClass, option, kv)) {
+                    return@foreachField
+                }
+                val name = fieldName()
+                if (!kv.contains(name)) {
 
-                    parseFieldOrMethod(fieldName, fieldType, fieldOrMethod, resourcePsiClass, option, kv)
+                    parseFieldOrMethod(name, fieldType, fieldOrMethod, resourcePsiClass, option, kv)
 
-                    afterParseFieldOrMethod(fieldName, fieldType, fieldOrMethod, resourcePsiClass, option, kv)
+                    afterParseFieldOrMethod(name, fieldType, fieldOrMethod, resourcePsiClass, option, kv)
                 }
             }
 
@@ -235,7 +247,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         return copy(kv) as KV<String, Any?>
     }
 
-    private fun getTypeObject(duckType: DuckType?, context: PsiElement, option: Int): Any? {
+    protected open fun getTypeObject(duckType: DuckType?, context: PsiElement, option: Int): Any? {
 
         val resolvedInfo = getResolvedInfo<Any>(duckType, option)
         if (resolvedInfo != null) {
@@ -257,7 +269,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         return null
     }
 
-    private fun getTypeObject(clsWithParam: SingleDuckType?, context: PsiElement, option: Int): Any? {
+    protected open fun getTypeObject(clsWithParam: SingleDuckType?, context: PsiElement, option: Int): Any? {
 
         if (clsWithParam != null) {
             val resolvedInfo = getResolvedInfo<Any>(clsWithParam, option)
@@ -405,7 +417,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun getFields(clsWithParam: SingleDuckType, option: Int): KV<String, Any?> {
+    protected open fun getFields(clsWithParam: SingleDuckType, option: Int): KV<String, Any?> {
 
         val resolvedInfo = getResolvedInfo<Any>(clsWithParam, option)
         if (resolvedInfo != null) {
@@ -422,24 +434,25 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         beforeParseType(psiClass, clsWithParam, option, kv)
 
         foreachField(psiClass, option) { fieldName, fieldType, fieldOrMethod ->
-            if (!kv.contains(fieldName)) {
 
-                if (!beforeParseFieldOrMethod(
-                        fieldName,
-                        fieldType,
-                        fieldOrMethod,
-                        psiClass,
-                        clsWithParam,
-                        option,
-                        kv
-                    )
-                ) {
-                    return@foreachField
-                }
+            if (!beforeParseFieldOrMethod(
+                    fieldType,
+                    fieldOrMethod,
+                    psiClass,
+                    clsWithParam,
+                    option,
+                    kv
+                )
+            ) {
+                return@foreachField
+            }
 
-                parseFieldOrMethod(fieldName, fieldType, fieldOrMethod, psiClass, clsWithParam, option, kv)
+            val name = fieldName()
+            if (!kv.contains(name)) {
 
-                afterParseFieldOrMethod(fieldName, fieldType, fieldOrMethod, psiClass, clsWithParam, option, kv)
+                parseFieldOrMethod(name, fieldType, fieldOrMethod, psiClass, clsWithParam, option, kv)
+
+                afterParseFieldOrMethod(name, fieldType, fieldOrMethod, psiClass, clsWithParam, option, kv)
             }
         }
 
@@ -448,10 +461,10 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         return copy(kv) as KV<String, Any?>
     }
 
-    private fun foreachField(
+    protected open fun foreachField(
         psiClass: PsiClass,
         option: Int,
-        handle: (name: String, type: PsiType, fieldOrMethod: PsiElement) -> Unit
+        handle: (name: () -> String, type: PsiType, fieldOrMethod: PsiElement) -> Unit
     ) {
 
         val readGetter = JsonOption.readGetter(option)
@@ -470,7 +483,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             }
 
             if (!readGetter || fieldNames!!.add(field.name)) {
-                handle(getJsonFieldName(field), field.type, field)
+                handle({ getJsonFieldName(field) }, field.type, field)
             }
         }
 
@@ -485,15 +498,10 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 if (method.hasModifierProperty(PsiModifier.STATIC)) continue
                 if (!method.hasModifierProperty(PsiModifier.PUBLIC)) continue
 
-                method.returnType?.let { handle(propertyName, it, method) }
+                method.returnType?.let { handle({ propertyName }, it, method) }
             }
         }
         fieldNames?.clear()
-    }
-
-    protected fun hasAnyModify(modifierListOwner: PsiModifierListOwner, modifies: Set<String>): Boolean {
-        val modifierList = modifierListOwner.modifierList ?: return false
-        return modifies.any { modifierList.hasModifierProperty(it) }
     }
 
     protected fun propertyNameOfGetter(methodName: String): String? {
@@ -551,6 +559,268 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
+    override fun resolveEnumOrStatic(
+        classNameWithProperty: String,
+        psiMember: PsiMember,
+        defaultPropertyName: String
+    ): ArrayList<HashMap<String, Any?>>? {
+        val options: ArrayList<HashMap<String, Any?>> = ArrayList()
+        var clsName: String? = null
+        var property: String? = null
+        var cls: PsiClass? = null
+
+        if (classNameWithProperty.contains("#")) {
+            clsName = classNameWithProperty.substringBefore("#")
+            property = classNameWithProperty.substringAfter("#").trim()
+        } else {
+            clsName = classNameWithProperty
+        }
+        cls = resolveClass(clsName, psiMember)
+        if (cls == null) return null
+
+        if (cls.isEnum) {
+            val enumConstants = parseEnumConstant(cls)
+
+            if (property == null) {
+                property = defaultPropertyName
+            }
+
+            for (enumConstant in enumConstants) {
+                val mappedVal = (enumConstant["params"] as HashMap<String, Any?>?)
+                    ?.get(property) ?: continue
+
+                var desc = enumConstant["desc"]
+                if (desc == null) {
+                    desc = (enumConstant["params"] as HashMap<String, Any?>?)!!
+                        .filterKeys { k -> k != property }
+                        .map { entry -> entry.value.toString() }
+                        .reduceSafely { s1, s2 -> "$s1 $s2" }
+                        ?.trim()
+                }
+                if (desc == null || (desc is String && desc.isBlank())) {
+                    desc = enumConstant["name"]
+                }
+                options.add(
+                    KV.create<String, Any?>()
+                        .set("value", mappedVal)
+                        .set("desc", desc)
+                )
+
+            }
+
+        } else {
+            val constants = parseStaticFields(cls)
+
+            if (property.isNullOrBlank()) {
+                for (constant in constants) {
+                    val mappedVal = constant["value"]
+                    val desc = constant["desc"] ?: constant["name"]
+                    options.add(
+                        KV.create<String, Any?>()
+                            .set("value", mappedVal)
+                            .set("desc", desc)
+                    )
+                }
+            } else {
+                for (constant in constants) {
+                    val name = constant["name"] as String
+
+                    if (name != property) continue
+                    val mappedVal = constant["value"]
+                    val desc = constant["desc"] ?: constant["name"]
+
+                    options.add(
+                        KV.create<String, Any?>()
+                            .set("value", mappedVal)
+                            .set("desc", desc)
+                    )
+                    break
+                }
+            }
+        }
+        return options
+    }
+
+    override fun resolveClass(className: String, psiMember: PsiMember): PsiClass? {
+        return when {
+            className.contains(".") -> tmTypeHelper!!.findClass(className, psiMember)
+            else -> getContainingClass(psiMember)?.let { resolveClassFromImport(it, className) }
+                ?: tmTypeHelper!!.findClass(className, psiMember)
+        }
+    }
+
+    override fun getContainingClass(psiMember: PsiMember): PsiClass? {
+        psiMember.containingClass?.let { return it }
+        if (psiMember is PsiClass) return psiMember
+        return null
+    }
+
+    protected open fun resolveClassFromImport(psiClass: PsiClass, clsName: String): PsiClass? {
+
+        val imports = PsiTreeUtil.findChildrenOfType(psiClass.context, PsiImportStatement::class.java)
+
+        var cls = imports
+            .mapNotNull { it.qualifiedName }
+            .firstOrNull { it.endsWith(".$clsName") }
+            ?.let { tmTypeHelper!!.findClass(it, psiClass) }
+        if (cls != null) {
+            return cls
+        }
+
+        val defaultPackage = psiClass.qualifiedName!!.substringBeforeLast(".")
+        cls = tmTypeHelper!!.findClass("$defaultPackage.$clsName", psiClass)
+        if (cls != null) {
+            return cls
+        }
+        cls = imports
+            .mapNotNull { it.qualifiedName }
+            .filter { it.endsWith(".*") }
+            .map { it -> it.removeSuffix("*") + clsName }
+            .map { tmTypeHelper.findClass(it, psiClass) }
+            .firstOrNull()
+
+        return cls
+    }
+
+    protected open val staticResolvedInfo: HashMap<PsiClass, List<Map<String, Any?>>> = HashMap()
+
+    override fun parseStaticFields(psiClass: PsiClass): List<Map<String, Any?>> {
+        val resourceClass = getResourceClass(psiClass)
+        if (staticResolvedInfo.containsKey(resourceClass)) {
+            return staticResolvedInfo[resourceClass]!!
+        }
+        val res = ArrayList<Map<String, Any?>>()
+        val checkModifier: Set<String> =
+            if (resourceClass.isInterface) {
+                staticFinalFieldModifiers
+            } else {
+                PsiClassHelper.publicStaticFinalFieldModifiers
+            }
+        for (field in resourceClass.allFields) {
+
+            if (!hasAnyModify(field, checkModifier)) {
+                continue
+            }
+
+            val value = field.computeConstantValue() ?: continue
+
+            val constant = HashMap<String, Any?>()
+            constant.put("name", field.name)
+            constant.put("value", value.toString())
+            constant.put("desc", getAttrOfField(field))
+            res.add(constant)
+        }
+        staticResolvedInfo[resourceClass] = res
+        return res
+    }
+
+    override fun parseEnumConstant(psiClass: PsiClass): List<Map<String, Any?>> {
+        val psiClass = getResourceClass(psiClass)
+        if (!psiClass.isEnum) return ArrayList()
+
+        if (staticResolvedInfo.containsKey(psiClass)) {
+            return staticResolvedInfo[psiClass]!!
+        }
+
+        val res = ArrayList<Map<String, Any?>>()
+        for (field in psiClass.allFields) {
+
+            val value = field.computeConstantValue() ?: continue
+
+            if (value !is PsiEnumConstant) continue
+
+            val constant = HashMap<String, Any?>()
+            val params = HashMap<String, Any?>()
+            val construct = value.resolveConstructor()
+            val expressions = value.argumentList?.expressions
+            val parameters = construct?.parameterList?.parameters
+            if (expressions != null && parameters != null && parameters.isNotEmpty()) {
+                if (parameters.last().isVarArgs) {
+
+                    for (index in 0 until parameters.size - 1) {
+                        params[parameters[index].name!!] = resolveExpr(expressions[index])
+                    }
+                    try {
+                        //resolve varArgs
+                        val lastVarArgParam: ArrayList<Any?> = ArrayList(1)
+                        params[parameters[parameters.size - 1].name!!] = lastVarArgParam
+                        for (index in parameters.size - 1..expressions.size) {
+                            lastVarArgParam.add(resolveExpr(expressions[index]))
+                        }
+                    } catch (e: Throwable) {
+                    }
+                }
+
+                for ((index, parameter) in parameters.withIndex()) {
+                    try {
+                        params[parameter.name!!] = resolveExpr(expressions[index])
+                    } catch (e: Throwable) {
+                    }
+                }
+            }
+            constant["params"] = params
+            constant["name"] = field.name
+            constant["desc"] = getAttrOfField(field)
+            res.add(constant)
+        }
+
+        staticResolvedInfo[psiClass] = res
+        return res
+    }
+
+    protected open fun resolveExpr(psiExpression: PsiExpression): Any? {
+        if (psiExpression is PsiLiteralExpression) {
+            return psiExpression.value
+        } else if (psiExpression is PsiReferenceExpression) {
+            val value = psiExpression.resolve()
+            if (value is PsiField) {
+                val constantValue = value.computeConstantValue()
+                if (constantValue != null) return constantValue
+            }
+        } else if (psiExpression is PsiField) {
+            return psiExpression.name
+        }
+        return psiExpression.text
+    }
+
+    override fun getAttrOfField(field: PsiField): String? {
+
+        var result: String? = null
+
+        val attrInDoc = DocCommentUtils.getAttrOfDocComment(field.docComment)
+        if (StringUtils.isNotBlank(attrInDoc)) {
+            result = (result ?: "") + attrInDoc
+        }
+
+        var fieldText = field.text
+        if (fieldText.contains("//")) {
+            fieldText = fieldText.trim()
+
+            val lines = fieldText.split('\r', '\n')
+            var innerDoc = ""
+            for (line in lines) {
+                if (StringUtils.isBlank(line)) {
+                    continue
+                }
+                //ignore region/endregion
+                if (!line.contains("//")
+                    || line.startsWith("//region")
+                    || line.startsWith("//endregion")
+                ) {
+                    continue
+                }
+                if (innerDoc.isNotEmpty()) innerDoc += ","
+                innerDoc += line.substringAfter("//").trim()
+            }
+            if (StringUtils.isNotBlank(innerDoc)) {
+                result = (result ?: "") + innerDoc
+            }
+        }
+
+        return result
+    }
+
     override fun isNormalType(typeName: String): Boolean {
         return normalTypes.containsKey(typeName)
     }
@@ -579,7 +849,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         }
     }
 
-    open fun getJsonFieldName(psiField: PsiField): String {
+    override fun getJsonFieldName(psiField: PsiField): String {
         return psiField.name
     }
 
@@ -597,7 +867,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     //return false to ignore current fieldOrMethod
     open fun beforeParseFieldOrMethod(
-        fieldName: String,
         fieldType: PsiType,
         fieldOrMethod: PsiElement,
         resourcePsiClass: PsiClass,
@@ -723,7 +992,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     //return false to ignore current fieldOrMethod
     open fun beforeParseFieldOrMethod(
-        fieldName: String,
         fieldType: PsiType,
         fieldOrMethod: PsiElement,
         resourcePsiClass: PsiClass,
@@ -864,145 +1132,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     }
 
-    companion object {
-
-        val JAVA_OBJECT_METHODS: Array<String> = arrayOf(
-            "registerNatives",
-            "getClass",
-            "hashCode",
-            "equals",
-            "clone",
-            "toString",
-            "notify",
-            "notifyAll",
-            "wait",
-            "finalize"
-        )
-
-        val ELEMENT_OF_COLLECTION = "E"
-        val KEY_OF_MAP = "K"
-        val VALUE_OF_MAP = "V"
-
-        fun isCollection(psiType: PsiType): Boolean {
-            if (collectionClasses!!.contains(psiType.presentableText)) {
-                return true
-            }
-
-            val cls = PsiUtil.resolveClassInType(psiType)
-            if (cls != null) {
-                for (superCls in cls.supers) {
-                    if (collectionClasses!!.contains(superCls.qualifiedName)) {
-                        return true
-                    }
-                }
-            }
-
-            return false
-        }
-
-        fun isMap(psiType: PsiType): Boolean {
-            if (mapClasses!!.contains(psiType.presentableText)) {
-                return true
-            }
-
-            val cls = PsiUtil.resolveClassInType(psiType)
-            if (cls != null) {
-                if (mapClasses!!.contains(cls.qualifiedName)) {
-                    return true
-                }
-                for (superCls in cls.supers) {
-                    if (mapClasses!!.contains(superCls.qualifiedName)) {
-                        return true
-                    }
-                }
-            }
-
-            return false
-        }
-
-        //represent spring MultipartFile
-        val multipartFileInstance = MultipartFile()
-//        val multipartFileInstance = "file"
-
-        var fieldModifiers: Set<String> = HashSet(Arrays.asList(PsiModifier.PRIVATE, PsiModifier.PROTECTED))
-        var staticFinalFieldModifiers: Set<String> =
-            HashSet(Arrays.asList(PsiModifier.STATIC, PsiModifier.FINAL))
-        var publicStaticFinalFieldModifiers: Set<String> = HashSet(
-            Arrays.asList(PsiModifier.PUBLIC, PsiModifier.STATIC, PsiModifier.FINAL)
-        )
-
-        val normalTypes: HashMap<String, Any?> = HashMap()
-
-        var collectionClasses: Set<String>? = null
-        var mapClasses: Set<String>? = null
-        var castToString: Set<String>? = null
-        fun init() {
-            if (normalTypes.isEmpty()) {
-                normalTypes["Boolean"] = false
-                normalTypes["Void"] = null
-                normalTypes["Byte"] = 0
-                normalTypes["Short"] = 0
-                normalTypes["Integer"] = 0
-                normalTypes["Long"] = 0L
-                normalTypes["Float"] = 0.0F
-                normalTypes["Double"] = 0.0
-                normalTypes["String"] = ""
-                normalTypes["BigDecimal"] = 0.0
-                normalTypes["Class"] = null
-                normalTypes["java.lang.Boolean"] = false
-                normalTypes["java.lang.Void"] = null
-                normalTypes["java.lang.Byte"] = 0
-                normalTypes["java.lang.Short"] = 0
-                normalTypes["java.lang.Integer"] = 0
-                normalTypes["java.lang.Long"] = 0L
-                normalTypes["java.lang.Float"] = 0.0F
-                normalTypes["java.lang.Double"] = 0.0
-                normalTypes["java.lang.String"] = ""
-                normalTypes["java.math.BigDecimal"] = 0.0
-                normalTypes["java.lang.Class"] = null
-            }
-            if (collectionClasses == null) {
-                val collectionClasses = HashSet<String>()
-                addClass(Collection::class.java, collectionClasses)
-                addClass(List::class.java, collectionClasses)
-                addClass(ArrayList::class.java, collectionClasses)
-                addClass(LinkedList::class.java, collectionClasses)
-                addClass(Set::class.java, collectionClasses)
-                addClass(HashSet::class.java, collectionClasses)
-                addClass(TreeSet::class.java, collectionClasses)
-                addClass(SortedSet::class.java, collectionClasses)
-                addClass(Queue::class.java, collectionClasses)
-                addClass(Deque::class.java, collectionClasses)
-                addClass(ArrayQueue::class.java, collectionClasses)
-                addClass(ArrayBlockingQueue::class.java, collectionClasses)
-                addClass(Stack::class.java, collectionClasses)
-                this.collectionClasses = collectionClasses
-            }
-            if (mapClasses == null) {
-                val mapClasses = HashSet<String>()
-                addClass(Map::class.java, mapClasses)
-                addClass(HashMap::class.java, mapClasses)
-                addClass(LinkedHashMap::class.java, mapClasses)
-                this.mapClasses = mapClasses
-            }
-            if (castToString == null) {
-                val castToString = HashSet<String>()
-                addClass(Date::class.java, castToString)
-                castToString.add("ObjectId")
-                castToString.add("org.bson.types.ObjectId")
-                this.castToString = castToString
-            }
-        }
-
-        init {
-            init()
-        }
-
-        private fun addClass(cls: Class<*>, classSet: HashSet<String>) {
-            classSet.add(cls.name!!)
-            classSet.add(cls.simpleName!!)
-        }
-    }
 }
 
 object JsonOption {

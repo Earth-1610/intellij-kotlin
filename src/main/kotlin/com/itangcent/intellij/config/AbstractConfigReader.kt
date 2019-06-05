@@ -30,9 +30,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
             val name = resolveProperty(line.substringBefore("="))
             if (name.isBlank()) continue
             val value = resolveProperty(line.substringAfter("=", ""))
-            if (!configInfo.containsKey(name)) {
-                configInfo.put(name, value)
-            }
+            configInfo.put(name, value)
         }
     }
 

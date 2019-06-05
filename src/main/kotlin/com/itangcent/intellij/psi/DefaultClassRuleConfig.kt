@@ -1,10 +1,20 @@
 package com.itangcent.intellij.psi
 
+import com.google.inject.Inject
+import com.itangcent.intellij.config.ConfigReader
+import com.itangcent.intellij.config.SimpleBooleanRule
+import com.itangcent.intellij.config.SimpleRuleParse
 import com.itangcent.intellij.config.SimpleStringRule
 import java.util.*
 import kotlin.collections.HashMap
 
 open class DefaultClassRuleConfig : AbstractClassRuleConfig() {
+
+    @Inject
+    protected val simpleRuleParse: SimpleRuleParse? = null
+
+    @Inject
+    protected val configReader: ConfigReader? = null
 
     override fun findConvertRule(): Map<String, String> {
         if (configReader == null) return Collections.emptyMap()
@@ -48,6 +58,21 @@ open class DefaultClassRuleConfig : AbstractClassRuleConfig() {
         })
 
         return fieldNameRules
+    }
+
+    override fun findFieldIgnoreRules(): List<SimpleBooleanRule>? {
+
+        if (configReader == null) return Collections.emptyList()
+
+        val fieldIgnoreRules: ArrayList<SimpleBooleanRule> = ArrayList()
+
+        configReader.foreach({ key ->
+            key.startsWith("json.rule.field.ignore")
+        }, { _, value ->
+            fieldIgnoreRules.addAll(simpleRuleParse!!.parseBooleanRule(value))
+        })
+
+        return fieldIgnoreRules
     }
 
 }
