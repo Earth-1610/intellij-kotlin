@@ -1,7 +1,9 @@
 package com.itangcent.intellij.file
 
+import com.google.inject.Inject
 import com.itangcent.common.utils.FileUtils
 import com.itangcent.common.utils.GsonUtils
+import com.itangcent.intellij.logger.Logger
 import java.io.File
 import kotlin.reflect.KClass
 import kotlin.reflect.full.createInstance
@@ -10,6 +12,9 @@ import kotlin.reflect.full.createInstance
  * bind a file which content present a bean
  */
 open class FileBeanBinder<T : Any> : BeanBinder<T> {
+
+    @Inject
+    protected val logger: Logger? = null
 
     private val file: File
 
@@ -29,13 +34,27 @@ open class FileBeanBinder<T : Any> : BeanBinder<T> {
         this.init = init
     }
 
-    override fun read(): T {
+    override fun tryRead(): T? {
         val fileContent = FileUtils.read(file)
-        if (fileContent.isBlank()) return init!!.invoke()
+        if (fileContent.isBlank()) return null
         return GsonUtils.fromJson(fileContent, beanType)
     }
 
-    override fun save(t: T) {
+    override fun read(): T {
+        return tryRead() ?: init!!.invoke()
+    }
+
+    override fun save(t: T?) {
+        if (t == null) {
+            FileUtils.remove(file)
+            return
+        }
+        if (!file.exists()) {
+            if (!file.createNewFile()) {
+                logger!!.error("error to create new file:${file.path}")
+                return
+            }
+        }
         FileUtils.write(file, GsonUtils.toJson(t))
     }
 }

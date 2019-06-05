@@ -83,7 +83,13 @@ class SimpleRuleParse {
 
         var srule: SimpleBooleanRule? = null
 
-        if (tinyRuleStr.startsWith("@")) {
+        if (tinyRuleStr.startsWith("!")) {
+            val inverseRuleStr = tinyRuleStr.substring(1)
+            val inverseRule: SimpleBooleanRule = parseSingleBooleanRule(inverseRuleStr, !defaultValue) ?: return null
+            return { context ->
+                !inverseRule(context)
+            }
+        } else if (tinyRuleStr.startsWith("@")) {
             val annStr = tinyRuleStr.substringAfter("@")
             val annName = annStr.substringBefore("#").trim()
             val annValue = annStr.substringAfter("#", "").trim()
