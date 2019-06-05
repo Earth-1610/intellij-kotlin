@@ -1,9 +1,9 @@
 package com.itangcent.intellij.psi
 
-class ArrayTmType : TmType {
-    val componentType: TmType
+class ArrayDuckType : DuckType {
+    val componentType: DuckType
 
-    constructor(componentClass: TmType) {
+    constructor(componentClass: DuckType) {
         this.componentType = componentClass
     }
 
@@ -11,7 +11,7 @@ class ArrayTmType : TmType {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as ArrayTmType
+        other as ArrayDuckType
 
         if (componentType != other.componentType) return false
 

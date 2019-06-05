@@ -2,17 +2,17 @@ package com.itangcent.intellij.psi
 
 import com.intellij.psi.PsiClass
 
-class SingleTmType : TmType {
+class SingleDuckType : DuckType {
     val psiCls: PsiClass
 
-    val typeParams: Map<String, TmType?>?//泛型类型
+    val typeParams: Map<String, DuckType?>?//泛型类型
 
     constructor(psiCls: PsiClass) {
         this.psiCls = psiCls
         this.typeParams = null
     }
 
-    constructor(psiCls: PsiClass, typeParams: Map<String, TmType?>?) {
+    constructor(psiCls: PsiClass, typeParams: Map<String, DuckType?>?) {
         this.psiCls = psiCls
         this.typeParams = typeParams
     }
@@ -34,7 +34,7 @@ class SingleTmType : TmType {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as SingleTmType
+        other as SingleDuckType
 
         if (psiCls != other.psiCls) return false
         if (typeParams != other.typeParams) return false
