@@ -227,7 +227,7 @@ class ActionContext {
         } else {
             val project = this.instance(Project::class)
             countLatch.down()
-            WriteCommandAction.runWriteCommandAction(project) {
+            WriteCommandAction.runWriteCommandAction(project, "callInWriteUI", "easy-api", Runnable {
                 try {
                     ActionContext.setContext(this, writeThreadFlag)
                     runnable()
@@ -235,7 +235,7 @@ class ActionContext {
                     ActionContext.clearContext()
                     countLatch.up()
                 }
-            }
+            })
         }
     }
 
@@ -246,7 +246,7 @@ class ActionContext {
             val project = this.instance(Project::class)
             countLatch.down()
             val valueHolder: ValueHolder<T> = ValueHolder()
-            WriteCommandAction.runWriteCommandAction(project) {
+            WriteCommandAction.runWriteCommandAction(project, "callInWriteUI", "easy-api", Runnable {
                 try {
                     ActionContext.setContext(this, writeThreadFlag)
                     valueHolder.compute { callable() }
@@ -254,7 +254,7 @@ class ActionContext {
                     ActionContext.clearContext()
                     countLatch.up()
                 }
-            }
+            })
             return valueHolder.getData()
         }
     }

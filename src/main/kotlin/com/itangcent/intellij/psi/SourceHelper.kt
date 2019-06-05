@@ -29,6 +29,7 @@ import com.intellij.psi.PsiManager
 import java.util.*
 
 class SourceHelper(private val myProject: Project) {
+
     fun getSourceClass(
         original: PsiClass
     ): PsiClass {

@@ -27,7 +27,7 @@ open class DefaultClassRuleConfig : AbstractClassRuleConfig() {
         val fieldDocReadRules: ArrayList<SimpleStringRule> = ArrayList()
 
         configReader.foreach({ key ->
-            key.startsWith("doc.resource")
+            key.startsWith("doc.field")
         }, { _, value ->
             fieldDocReadRules.addAll(simpleRuleParse!!.parseStringRule(value))
         })

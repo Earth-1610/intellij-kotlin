@@ -59,8 +59,6 @@ object SelectedHelper {
         private val actionContext = ActionContext.getContext()!!
         private val logger = actionContext.instance(Logger::class)
 
-        private var semaphoreForDirHandle = Semaphore(1)
-
         public fun traversal() {
             aqsCount.down()
 

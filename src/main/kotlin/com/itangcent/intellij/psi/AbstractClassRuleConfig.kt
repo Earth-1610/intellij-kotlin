@@ -33,7 +33,7 @@ abstract class AbstractClassRuleConfig : ClassRuleConfig {
         return fieldDocReadRules!!
             .map { it(context) }
             .filter { !it.isNullOrBlank() }
-            .reduceSafely { s1, s2 -> s1 + s2 }
+            .reduceSafely { s1, s2 -> s1 + '\n' + s2 }
     }
 
     protected abstract fun findFieldDocReadRules(): List<SimpleStringRule>
