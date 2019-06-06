@@ -83,22 +83,22 @@ object FileUtils {
         }
     }
 
-    fun renameFile(path: String, oldname: String, newname: String) {
-        if (oldname != newname) {
+    fun renameFile(path: String, oldName: String, newName: String) {
+        if (oldName != newName) {
             //Renaming is necessary if the new file name is different from the previous file name
-            val oldfile = File("$path/$oldname")
-            if (!oldfile.exists()) {
+            val oldFile = File("$path/$oldName")
+            if (!oldFile.exists()) {
                 return //The rename file does not exist
             }
-            val newfile = File("$path/$newname")
+            val newFile = File("$path/$newName")
 
-            if (newfile.exists()) {
-                if (!newfile.delete()) {
-                    throw IllegalStateException("failed to rename [" + file.name + "] to [" + newName + "]!")
+            if (newFile.exists()) {
+                if (!newFile.delete()) {
+                    throw IllegalStateException("failed to rename [$oldName] to [$newName]!")
                 }
             }
 
-            oldfile.renameTo(newfile)
+            oldFile.renameTo(newFile)
         }
     }
 
@@ -150,17 +150,28 @@ object FileUtils {
             return
         }
         val errorFiles = Stack<File>()
-        removeEmptyDir(file, Consumer { errorFiles.push(it) })
+        cleanEmptyDir(file, Consumer { errorFiles.push(it) })
         while (!errorFiles.empty()) {
             errorFiles.pop().delete()
         }
     }
 
-    fun removeEmptyDir(file: File): Boolean {
-        return removeEmptyDir(file, null)
+    fun cleanEmptyDir(file: File): Boolean {
+        return cleanEmptyDir(file, null)
     }
 
-    fun removeEmptyDir(file: File, onDeleteFailed: Consumer<File>?): Boolean {
+    /**
+     * @see cleanEmptyDir
+     */
+    @Deprecated(
+        "replace with cleanEmptyDir",
+        ReplaceWith("cleanEmptyDir(file)", "com.itangcent.common.utils.FileUtils.removeEmptyDir")
+    )
+    fun removeEmptyDir(file: File): Boolean {
+        return cleanEmptyDir(file)
+    }
+
+    fun cleanEmptyDir(file: File, onDeleteFailed: Consumer<File>?): Boolean {
         var flag = true
         if (file.isDirectory) {
             val files = file.listFiles()
@@ -179,6 +190,20 @@ object FileUtils {
             return flag
         } else
             return false
+
+    }
+
+    /**
+     * @see cleanEmptyDir
+     */
+    @Deprecated(
+        "", ReplaceWith(
+            "cleanEmptyDir(file, onDeleteFailed)",
+            "com.itangcent.common.utils.FileUtils.cleanEmptyDir"
+        )
+    )
+    fun removeEmptyDir(file: File, onDeleteFailed: Consumer<File>?): Boolean {
+        return cleanEmptyDir(file, onDeleteFailed)
     }
 
 }
