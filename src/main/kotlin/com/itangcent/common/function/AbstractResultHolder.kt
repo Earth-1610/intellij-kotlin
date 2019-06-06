@@ -2,6 +2,7 @@ package com.itangcent.common.function
 
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 open class AbstractResultHolder : Runnable {
     protected var throwable: Throwable? = null
@@ -11,25 +12,19 @@ open class AbstractResultHolder : Runnable {
 
     fun error(throwable: Throwable) {
         if (running) {
-            resultLock.lock()
-            try {
+            resultLock.withLock {
                 this.throwable = throwable
                 running = false
                 completed.signalAll()
-            } finally {
-                resultLock.unlock()
             }
         }
     }
 
     fun complete() {
         if (running) {
-            resultLock.lock()
-            try {
+            resultLock.withLock {
                 running = false
                 completed.signalAll()
-            } finally {
-                resultLock.unlock()
             }
         }
     }

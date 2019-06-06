@@ -4,8 +4,11 @@ import java.util.function.Function
 
 interface Holder<T> {
     fun updateData(data: T?)
+
     fun getData(): T?
+
     fun updateData(updater: Function<T?, T?>): T?
+
     fun clear()
 
     companion object {
