@@ -23,15 +23,15 @@ object DigitUtils {
         }
     }
 
-    fun sub(`val`: Long, index: Int, length: Int): Long {
+    fun sub(l: Long, index: Int, length: Int): Long {
         return if (length == 0) {
             0
-        } else (`val` shl index).ushr(64 - length)
+        } else (l shl index).ushr(64 - length)
         //remove pre
     }
 
     /**
-     * 翻转取均值
+     * reversal and take the mean
      */
     fun reversalMean(x: Long, y: Long): Long {
         var x = x
@@ -44,8 +44,8 @@ object DigitUtils {
     /**
      * Returns val represented by the specified number of hex digits.
      */
-    fun digits(`val`: Long, digits: Int): String {
+    fun digits(l: Long, digits: Int): String {
         val hi = 1L shl digits * 4
-        return java.lang.Long.toHexString(hi or (`val` and hi - 1)).substring(1)
+        return java.lang.Long.toHexString(hi or (l and hi - 1)).substring(1)
     }
 }
