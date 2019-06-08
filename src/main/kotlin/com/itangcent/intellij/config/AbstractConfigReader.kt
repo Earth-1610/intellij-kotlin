@@ -81,11 +81,11 @@ abstract class AbstractConfigReader : MutableConfigReader {
     }
 
     override fun foreach(keyFilter: (String) -> Boolean, action: (String, String) -> Unit) {
-        configInfo.flattenForEach { key, value ->
+        configInfo.flattenForEach(keyFilter, { key, value ->
             if (keyFilter(key)) {
                 action(key, value)
             }
-        }
+        })
     }
 
 }

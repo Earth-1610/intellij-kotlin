@@ -10,15 +10,15 @@ import com.itangcent.intellij.util.DocCommentUtils
 import java.util.regex.Pattern
 
 @Singleton
-class SimpleRuleParse {
+class SimpleRuleParser : RuleParser {
 
     private val simpleStringRuleParseCache: HashMap<String, SimpleStringRule> = HashMap()
 
-    fun parseStringRule(rule: String): List<SimpleStringRule> {
+    override fun parseStringRule(rule: String): List<SimpleStringRule> {
         return parseStringRule(rule, "|")
     }
 
-    fun parseStringRule(rule: String, delimiters: String): List<SimpleStringRule> {
+    override fun parseStringRule(rule: String, delimiters: String): List<SimpleStringRule> {
         return rule.split(delimiters)
             .mapNotNull { sr -> parseSingleStringRule(sr) }
             .toList()
@@ -58,11 +58,11 @@ class SimpleRuleParse {
 
     private val simpleBooleanRuleParseCache: HashMap<String, SimpleBooleanRule> = HashMap()
 
-    fun parseBooleanRule(rule: String): List<SimpleBooleanRule> {
+    override fun parseBooleanRule(rule: String): List<SimpleBooleanRule> {
         return parseBooleanRule(rule, "|", false)
     }
 
-    fun parseBooleanRule(rule: String, delimiters: String, defaultValue: Boolean): List<SimpleBooleanRule> {
+    override fun parseBooleanRule(rule: String, delimiters: String, defaultValue: Boolean): List<SimpleBooleanRule> {
         return rule.split(delimiters)
             .mapNotNull { sr -> parseSingleBooleanRule(sr, defaultValue) }
             .toList()
@@ -211,6 +211,12 @@ class SimpleRuleParse {
         var STAR = "@O_N_L_Y_S_T_A_R@"
     }
 }
+
+@Deprecated(
+    "replace with SimpleRuleParser",
+    ReplaceWith("com.itangcent.intellij.config.SimpleRuleParser")
+)
+typealias SimpleRuleParse = SimpleRuleParser
 
 typealias SimpleStringRule = (PsiElementContext) -> String?
 typealias SimpleBooleanRule = (PsiElementContext) -> Boolean

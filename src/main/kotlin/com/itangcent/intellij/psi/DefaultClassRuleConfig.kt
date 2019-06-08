@@ -3,7 +3,7 @@ package com.itangcent.intellij.psi
 import com.google.inject.Inject
 import com.itangcent.intellij.config.ConfigReader
 import com.itangcent.intellij.config.SimpleBooleanRule
-import com.itangcent.intellij.config.SimpleRuleParse
+import com.itangcent.intellij.config.SimpleRuleParser
 import com.itangcent.intellij.config.SimpleStringRule
 import java.util.*
 import kotlin.collections.HashMap
@@ -11,7 +11,7 @@ import kotlin.collections.HashMap
 open class DefaultClassRuleConfig : AbstractClassRuleConfig() {
 
     @Inject
-    protected val simpleRuleParse: SimpleRuleParse? = null
+    protected val simpleRuleParse: SimpleRuleParser? = null
 
     @Inject
     protected val configReader: ConfigReader? = null

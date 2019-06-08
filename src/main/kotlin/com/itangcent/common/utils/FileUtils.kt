@@ -3,6 +3,7 @@ package com.itangcent.common.utils
 import com.itangcent.common.files.DefaultFileTraveler
 import com.itangcent.common.files.FileHandle
 import com.itangcent.common.files.FileTraveler
+import com.itangcent.common.utils.FileUtils.cleanEmptyDir
 import org.apache.commons.lang3.StringUtils
 import java.io.*
 import java.util.*
@@ -177,7 +178,7 @@ object FileUtils {
             val files = file.listFiles()
             if (files != null) {
                 for (subFile in files) {
-                    if (subFile.isFile || !removeEmptyDir(subFile)) {
+                    if (subFile.isFile || !cleanEmptyDir(subFile)) {
                         flag = false
                     }
                 }

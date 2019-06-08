@@ -86,6 +86,16 @@ class MultiValuesMap<K, V>(private val myOrdered: Boolean = false) : Map<K, Coll
         }
     }
 
+    fun flattenForEach(keyFilter: (K) -> Boolean, action: (K, V) -> Unit) {
+        forEach { key, values ->
+            if (keyFilter(key)) {
+                values?.forEach { value ->
+                    action(key, value)
+                }
+            }
+        }
+    }
+
     fun remove(key: K, value: V) {
         if (!myBaseMap.containsKey(key)) return
         val values = myBaseMap[key] as MutableCollection<V>?
