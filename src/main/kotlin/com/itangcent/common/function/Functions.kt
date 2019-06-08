@@ -20,7 +20,7 @@ object Functions {
     </T> */
     fun <T> nullAs(defaultVal: T): Function<T, T> {
         Objects.requireNonNull(defaultVal)
-        return Function { value -> if (value == null) defaultVal else value }
+        return Function { value -> value ?: defaultVal }
     }
 
     /**
