@@ -144,7 +144,7 @@ class ActionContext {
                 ActionContext.setContext(this, 0)
                 runnable.run()
             } finally {
-                ActionContext.clearContext()
+                ActionContext.releaseContext()
                 countLatch.up()
             }
         }
@@ -157,7 +157,7 @@ class ActionContext {
                 ActionContext.setContext(this, 0)
                 runnable()
             } finally {
-                ActionContext.clearContext()
+                ActionContext.releaseContext()
                 countLatch.up()
             }
         }
@@ -171,27 +171,33 @@ class ActionContext {
                 ActionContext.setContext(actionContext, 0)
                 return@Callable callable()
             } finally {
-                ActionContext.clearContext()
+                ActionContext.releaseContext()
                 countLatch.up()
             }
         })
     }
 
     fun runInSwingUI(runnable: () -> Unit) {
-        if (getFlag() == swingThreadFlag) {
-            runnable()
-        } else if (EventQueue.isDispatchThread()) {
-            ActionContext.setContext(this, swingThreadFlag)
-            runnable()
-        } else {
-            countLatch.down()
-            EventQueue.invokeLater {
+        when {
+            getFlag() == swingThreadFlag -> runnable()
+            EventQueue.isDispatchThread() -> {
+                ActionContext.setContext(this, swingThreadFlag)
                 try {
-                    ActionContext.setContext(this, swingThreadFlag)
                     runnable()
                 } finally {
-                    ActionContext.clearContext()
-                    countLatch.up()
+                    ActionContext.releaseContext()
+                }
+            }
+            else -> {
+                countLatch.down()
+                EventQueue.invokeLater {
+                    try {
+                        ActionContext.setContext(this, swingThreadFlag)
+                        runnable()
+                    } finally {
+                        ActionContext.releaseContext()
+                        countLatch.up()
+                    }
                 }
             }
         }
@@ -212,7 +218,7 @@ class ActionContext {
                         ActionContext.setContext(this, swingThreadFlag)
                         valueHolder.compute { callable() }
                     } finally {
-                        ActionContext.clearContext()
+                        ActionContext.releaseContext()
                         countLatch.up()
                     }
                 }
@@ -232,7 +238,7 @@ class ActionContext {
                     ActionContext.setContext(this, writeThreadFlag)
                     runnable()
                 } finally {
-                    ActionContext.clearContext()
+                    ActionContext.releaseContext()
                     countLatch.up()
                 }
             })
@@ -251,7 +257,7 @@ class ActionContext {
                     ActionContext.setContext(this, writeThreadFlag)
                     valueHolder.compute { callable() }
                 } finally {
-                    ActionContext.clearContext()
+                    ActionContext.releaseContext()
                     countLatch.up()
                 }
             })
@@ -270,7 +276,7 @@ class ActionContext {
                     ActionContext.setContext(this, readThreadFlag)
                     runnable()
                 } finally {
-                    ActionContext.clearContext()
+                    ActionContext.releaseContext()
                     countLatch.up()
                 }
             }
@@ -288,7 +294,7 @@ class ActionContext {
                     ActionContext.setContext(this, readThreadFlag)
                     valueHolder.compute { callable() }
                 } finally {
-                    ActionContext.clearContext()
+                    ActionContext.releaseContext()
                     countLatch.up()
                 }
             }
@@ -302,7 +308,7 @@ class ActionContext {
      * @see ActionContext.waitCompleteAsync
      */
     fun waitComplete() {
-        ActionContext.clearContext()
+        ActionContext.releaseContext()
         this.countLatch.waitFor()
         this.call(EventKey.ONCOMPLETED)
         lock.writeLock().withLock {
@@ -317,7 +323,7 @@ class ActionContext {
      * @see ActionContext.waitComplete
      */
     fun waitCompleteAsync() {
-        ActionContext.clearContext()
+        ActionContext.releaseContext()
         executorService.submit {
             this.countLatch.waitFor()
             this.call(EventKey.ONCOMPLETED)
@@ -380,7 +386,7 @@ class ActionContext {
         private var localContext: ThreadLocal<ThreadLocalContext> = ThreadLocal()
 
         /**
-         * 获得当前线程上下文
+         * Get actionContext in the current thread
          */
         public fun getContext(): ActionContext? {
             return localContext.get()?.actionContext
@@ -407,7 +413,7 @@ class ActionContext {
             }
         }
 
-        private fun clearContext() {
+        private fun releaseContext() {
 
             val existContext = localContext.get()
             if (existContext != null) {
@@ -418,7 +424,9 @@ class ActionContext {
         }
 
         /**
-         * 声明一个本地代理对象，它将在使用时从使用它的线程中获取上下文中的此类型的相应对象
+         * Declares a local proxy object that
+         * retrieves the corresponding object of this type in context in the thread
+         * when used
          */
         public inline fun <reified T : Any> local() = ThreadLocalContextBeanProxies.instance(T::class)
 
@@ -522,17 +530,17 @@ class ActionContext {
             for (moduleAction in moduleActions) {
                 when (moduleAction[0]) {
                     ActionContextBuilder.BIND_WITH_ANNOTATION_TYPE -> {
-                        (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit)).invoke(
+                        (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit))(
                             bind(moduleAction[1] as KClass<*>, moduleAction[2] as Class<Annotation>)
                         )
                     }
                     ActionContextBuilder.BIND_WITH_ANNOTATION -> {
-                        (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit)).invoke(
+                        (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit))(
                             bind(moduleAction[1] as KClass<*>, moduleAction[2] as Annotation)
                         )
                     }
                     ActionContextBuilder.BIND_WITH_NAME -> {
-                        (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit)).invoke(
+                        (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit))(
                             bind(moduleAction[1] as KClass<*>, moduleAction[2] as String)
                         )
                     }
@@ -546,7 +554,7 @@ class ActionContext {
                         bindInstance(moduleAction[1] as KClass<Any>, moduleAction[2])
                     }
                     ActionContextBuilder.BIND -> {
-                        (moduleAction[2] as ((LinkedBindingBuilder<*>) -> Unit)).invoke(
+                        (moduleAction[2] as ((LinkedBindingBuilder<*>) -> Unit))(
                             bind(moduleAction[1] as KClass<*>)
                         )
                     }

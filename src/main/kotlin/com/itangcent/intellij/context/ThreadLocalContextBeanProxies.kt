@@ -8,9 +8,7 @@ import java.lang.reflect.Proxy
 import kotlin.reflect.KClass
 import kotlin.reflect.full.cast
 
-/**
- * 上下文代理类
- */
+
 object ThreadLocalContextBeanProxies {
 
     /**
