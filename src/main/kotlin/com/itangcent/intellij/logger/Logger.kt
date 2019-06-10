@@ -2,29 +2,36 @@ package com.itangcent.intellij.logger
 
 interface Logger {
     fun log(msg: String) {
-        log(Level.ALL, msg)
+        log(BasicLevel.ALL, msg)
     }
 
     fun log(level: Level, msg: String)
 
     fun trace(msg: String) {
-        log(Level.TRACE, msg)
+        log(BasicLevel.TRACE, msg)
     }
 
     fun debug(msg: String) {
-        log(Level.DEBUG, msg)
+        log(BasicLevel.DEBUG, msg)
     }
 
     fun info(msg: String) {
-        log(Level.INFO, msg)
+        log(BasicLevel.INFO, msg)
     }
 
     fun warn(msg: String) {
-        log(Level.WARN, msg)
+        log(BasicLevel.WARN, msg)
     }
 
     fun error(msg: String) {
-        log(Level.ERROR, msg)
+        log(BasicLevel.ERROR, msg)
+    }
+
+    interface Level {
+
+        fun getLevelStr(): String
+
+        fun getLevel(): Int
     }
 
     /**
@@ -32,59 +39,68 @@ interface Logger {
      * But only a partial available log level is provided,
      * And no OFF level,It means that plugin log cannot be turned OFF
      */
-    enum class Level {
+    enum class BasicLevel : Level {
         ALL("", -1),
-        TRACE("TRACE", 1),
-        DEBUG("DEBUG", 2),
-        INFO("INFO", 3),
-        WARN("WARN", 4),
-        ERROR("ERROR", 5)
+        TRACE("TRACE", 100),
+        DEBUG("DEBUG", 200),
+        INFO("INFO", 300),
+        WARN("WARN", 400),
+        ERROR("ERROR", 500)
         ;
 
-        val levelStr: String
-        val level: Int
+        private val levelStr: String
+        private val level: Int
 
         constructor(levelStr: String, level: Int) {
             this.levelStr = levelStr
             this.level = level
         }
 
+        override fun getLevelStr(): String {
+            return levelStr
+        }
+
+        override fun getLevel(): Int {
+            return level
+        }
+
         override fun toString(): String {
             return "[$levelStr $level]"
         }
 
-        fun toLevel(levelStr: String): Level {
-            return toLevel(levelStr, DEBUG)
-        }
+        companion object {
 
-        fun toLevel(level: Int): Level {
-            return toLevel(level, DEBUG)
-        }
-
-        fun toLevel(level: Int, defaultLevel: Level): Level {
-            return when (level) {
-                ALL.level -> ALL
-                TRACE.level -> TRACE
-                DEBUG.level -> DEBUG
-                INFO.level -> INFO
-                WARN.level -> WARN
-                ERROR.level -> ERROR
-                else -> defaultLevel
+            fun toLevel(levelStr: String): Level {
+                return toLevel(levelStr, ALL)
             }
-        }
 
-        fun toLevel(levelStr: String?, defaultLevel: Level): Level {
-            val s = levelStr?.toUpperCase()
-            return when (s) {
-                null -> defaultLevel
-                "ALL" -> ALL
-                "DEBUG" -> DEBUG
-                "INFO" -> INFO
-                "WARN" -> WARN
-                "ERROR" -> ERROR
-                "TRACE" -> TRACE
-                "İNFO" -> INFO
-                else -> defaultLevel
+            fun toLevel(level: Int): Level {
+                return toLevel(level, ALL)
+            }
+
+            fun toLevel(level: Int, defaultLevel: Level): Level {
+                return when (level) {
+                    ALL.level -> ALL
+                    TRACE.level -> TRACE
+                    DEBUG.level -> DEBUG
+                    INFO.level -> INFO
+                    WARN.level -> WARN
+                    ERROR.level -> ERROR
+                    else -> defaultLevel
+                }
+            }
+
+            fun toLevel(levelStr: String?, defaultLevel: Level): Level {
+                return when (levelStr?.toUpperCase()) {
+                    null -> defaultLevel
+                    "ALL" -> ALL
+                    "DEBUG" -> DEBUG
+                    "INFO" -> INFO
+                    "WARN" -> WARN
+                    "ERROR" -> ERROR
+                    "TRACE" -> TRACE
+                    else -> defaultLevel
+                }
             }
         }
     }
