@@ -8,12 +8,11 @@ abstract class AbstractLogger : Logger {
     protected abstract fun processLog(logData: String?)
 
     override fun log(level: Logger.Level, msg: String) {
-        if (level.getLevel() > currentLogLevel().getLevel()) {
+        if (level.getLevel() < currentLogLevel().getLevel()) {
             return
         }
         try {
-            val formatMsg: String? =
-                if (StringUtils.isEmpty(level.getLevelStr())) {
+            val formatMsg: String? = if (StringUtils.isEmpty(level.getLevelStr())) {
                     msg + Utils.newLine()
                 } else {
                     "[" + level.getLevelStr() + "]\t" + msg + Utils.newLine()
