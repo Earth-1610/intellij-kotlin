@@ -2,7 +2,6 @@ package com.itangcent.intellij.io
 
 import com.itangcent.common.function.ResultHolder
 import com.itangcent.common.utils.ExecuteUtils
-import org.apache.commons.lang3.ObjectUtils
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -68,7 +67,7 @@ class PipedProcess : Process() {
 
     @Throws(InterruptedException::class)
     override fun waitFor(): Int {
-        return ObjectUtils.defaultIfNull<Int>(exitValueHolder.getResultVal(), 0)
+        return exitValueHolder.getResultVal() ?: 0
     }
 
     override fun exitValue(): Int {
