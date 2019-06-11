@@ -144,7 +144,7 @@ class ActionContext {
                 ActionContext.setContext(this, 0)
                 runnable.run()
             } finally {
-                ActionContext.clearContext()
+                ActionContext.releaseContext()
                 countLatch.up()
             }
         }
@@ -157,7 +157,7 @@ class ActionContext {
                 ActionContext.setContext(this, 0)
                 runnable()
             } finally {
-                ActionContext.clearContext()
+                ActionContext.releaseContext()
                 countLatch.up()
             }
         }
@@ -171,27 +171,33 @@ class ActionContext {
                 ActionContext.setContext(actionContext, 0)
                 return@Callable callable()
             } finally {
-                ActionContext.clearContext()
+                ActionContext.releaseContext()
                 countLatch.up()
             }
         })
     }
 
     fun runInSwingUI(runnable: () -> Unit) {
-        if (getFlag() == swingThreadFlag) {
-            runnable()
-        } else if (EventQueue.isDispatchThread()) {
-            ActionContext.setContext(this, swingThreadFlag)
-            runnable()
-        } else {
-            countLatch.down()
-            EventQueue.invokeLater {
+        when {
+            getFlag() == swingThreadFlag -> runnable()
+            EventQueue.isDispatchThread() -> {
+                ActionContext.setContext(this, swingThreadFlag)
                 try {
-                    ActionContext.setContext(this, swingThreadFlag)
                     runnable()
                 } finally {
-                    ActionContext.clearContext()
-                    countLatch.up()
+                    ActionContext.releaseContext()
+                }
+            }
+            else -> {
+                countLatch.down()
+                EventQueue.invokeLater {
+                    try {
+                        ActionContext.setContext(this, swingThreadFlag)
+                        runnable()
+                    } finally {
+                        ActionContext.releaseContext()
+                        countLatch.up()
+                    }
                 }
             }
         }
@@ -212,7 +218,7 @@ class ActionContext {
                         ActionContext.setContext(this, swingThreadFlag)
                         valueHolder.compute { callable() }
                     } finally {
-                        ActionContext.clearContext()
+                        ActionContext.releaseContext()
                         countLatch.up()
                     }
                 }
@@ -227,15 +233,15 @@ class ActionContext {
         } else {
             val project = this.instance(Project::class)
             countLatch.down()
-            WriteCommandAction.runWriteCommandAction(project) {
+            WriteCommandAction.runWriteCommandAction(project, "callInWriteUI", "easy-api", Runnable {
                 try {
                     ActionContext.setContext(this, writeThreadFlag)
                     runnable()
                 } finally {
-                    ActionContext.clearContext()
+                    ActionContext.releaseContext()
                     countLatch.up()
                 }
-            }
+            })
         }
     }
 
@@ -246,15 +252,15 @@ class ActionContext {
             val project = this.instance(Project::class)
             countLatch.down()
             val valueHolder: ValueHolder<T> = ValueHolder()
-            WriteCommandAction.runWriteCommandAction(project) {
+            WriteCommandAction.runWriteCommandAction(project, "callInWriteUI", "easy-api", Runnable {
                 try {
                     ActionContext.setContext(this, writeThreadFlag)
                     valueHolder.compute { callable() }
                 } finally {
-                    ActionContext.clearContext()
+                    ActionContext.releaseContext()
                     countLatch.up()
                 }
-            }
+            })
             return valueHolder.getData()
         }
     }
@@ -270,7 +276,7 @@ class ActionContext {
                     ActionContext.setContext(this, readThreadFlag)
                     runnable()
                 } finally {
-                    ActionContext.clearContext()
+                    ActionContext.releaseContext()
                     countLatch.up()
                 }
             }
@@ -288,7 +294,7 @@ class ActionContext {
                     ActionContext.setContext(this, readThreadFlag)
                     valueHolder.compute { callable() }
                 } finally {
-                    ActionContext.clearContext()
+                    ActionContext.releaseContext()
                     countLatch.up()
                 }
             }
@@ -302,7 +308,7 @@ class ActionContext {
      * @see ActionContext.waitCompleteAsync
      */
     fun waitComplete() {
-        ActionContext.clearContext()
+        ActionContext.releaseContext()
         this.countLatch.waitFor()
         this.call(EventKey.ONCOMPLETED)
         lock.writeLock().withLock {
@@ -317,7 +323,7 @@ class ActionContext {
      * @see ActionContext.waitComplete
      */
     fun waitCompleteAsync() {
-        ActionContext.clearContext()
+        ActionContext.releaseContext()
         executorService.submit {
             this.countLatch.waitFor()
             this.call(EventKey.ONCOMPLETED)
@@ -380,7 +386,7 @@ class ActionContext {
         private var localContext: ThreadLocal<ThreadLocalContext> = ThreadLocal()
 
         /**
-         * 获得当前线程上下文
+         * Get actionContext in the current thread
          */
         public fun getContext(): ActionContext? {
             return localContext.get()?.actionContext
@@ -407,7 +413,7 @@ class ActionContext {
             }
         }
 
-        private fun clearContext() {
+        private fun releaseContext() {
 
             val existContext = localContext.get()
             if (existContext != null) {
@@ -418,7 +424,9 @@ class ActionContext {
         }
 
         /**
-         * 声明一个本地代理对象，它将在使用时从使用它的线程中获取上下文中的此类型的相应对象
+         * Declares a local proxy object that
+         * retrieves the corresponding object of this type in context in the thread
+         * when used
          */
         public inline fun <reified T : Any> local() = ThreadLocalContextBeanProxies.instance(T::class)
 
@@ -437,8 +445,14 @@ class ActionContext {
         }
     }
 
+    /**
+     * Allows overridden existing bindings,instead of throwing exceptions
+     */
     class ActionContextBuilder : ModuleActions {
         override fun <T : Any> bind(type: KClass<T>, callBack: (LinkedBindingBuilder<T>) -> Unit) {
+            moduleActions.removeIf {
+                it.size == 3 && it[0] == BIND && it[1] == type
+            }
             moduleActions.add(arrayOf(BIND, type, callBack))
         }
 
@@ -447,6 +461,9 @@ class ActionContext {
             annotationType: Class<out Annotation>,
             callBack: (LinkedBindingBuilder<T>) -> Unit
         ) {
+            moduleActions.removeIf {
+                it.size == 4 && it[0] == BIND_WITH_ANNOTATION_TYPE && it[1] == type && it[2] == annotationType
+            }
             moduleActions.add(arrayOf(BIND_WITH_ANNOTATION_TYPE, type, annotationType, callBack))
         }
 
@@ -455,23 +472,35 @@ class ActionContext {
             annotation: Annotation,
             callBack: (LinkedBindingBuilder<T>) -> Unit
         ) {
+            moduleActions.removeIf {
+                it.size == 4 && it[0] == BIND_WITH_ANNOTATION && it[1] == type && it[2] == annotation
+            }
             moduleActions.add(arrayOf(BIND_WITH_ANNOTATION, type, annotation, callBack))
         }
 
         override fun <T : Any> bind(type: KClass<T>, namedText: String, callBack: (LinkedBindingBuilder<T>) -> Unit) {
+            moduleActions.removeIf {
+                it.size == 4 && it[0] == BIND_WITH_NAME && it[1] == type && it[2] == namedText
+            }
             moduleActions.add(arrayOf(BIND_WITH_NAME, type, namedText, callBack))
         }
 
         override fun <T : Any> bindInstance(name: String, instance: T) {
+            moduleActions.removeIf {
+                it.size == 3 && it[0] == BIND_INSTANCE_WITH_NAME && it[1] == name
+            }
             moduleActions.add(arrayOf(BIND_INSTANCE_WITH_NAME, name, instance))
         }
 
-        override fun <T> bindInstance(instance: T) {
-            moduleActions.add(arrayOf<Any>(BIND_INSTANCE, instance!!))
+        override fun <T : Any> bindInstance(instance: T) {
+            bindInstance(instance::class as KClass<T>, instance)
         }
 
         override fun <T : Any> bindInstance(cls: KClass<T>, instance: T) {
-            moduleActions.add(arrayOf<Any>(BIND_INSTANCE_WITH_CLASS, cls, instance))
+            moduleActions.removeIf {
+                it.size == 3 && it[0] == BIND_INSTANCE_WITH_CLASS && it[1] == cls
+            }
+            moduleActions.add(arrayOf(BIND_INSTANCE_WITH_CLASS, cls, instance))
         }
 
         override fun bindInterceptor(
@@ -479,11 +508,11 @@ class ActionContext {
             methodMatcher: Matcher<in Method>,
             vararg interceptors: MethodInterceptor
         ) {
-            moduleActions.add(arrayOf<Any>(BIND_INTERCEPTOR, classMatcher, methodMatcher, interceptors))
+            moduleActions.add(arrayOf(BIND_INTERCEPTOR, classMatcher, methodMatcher, interceptors))
         }
 
         override fun bindConstant(callBack: (AnnotatedConstantBindingBuilder) -> Unit) {
-            moduleActions.add(arrayOf<Any>(BIND_CONSTANT, callBack))
+            moduleActions.add(arrayOf(BIND_CONSTANT, callBack))
         }
 
         private val appendModules: MutableList<Module> = ArrayList()
@@ -506,6 +535,10 @@ class ActionContext {
             const val BIND_WITH_ANNOTATION = "bindWithAnnotation"
             const val BIND = "bind"
             const val BIND_WITH_NAME = "bindWithName"
+            @Deprecated(
+                message = "instead of bindInstanceWithClass",
+                replaceWith = ReplaceWith("BIND_INSTANCE_WITH_CLASS")
+            )
             const val BIND_INSTANCE = "bindInstance"
             const val BIND_INSTANCE_WITH_CLASS = "bindInstanceWithClass"
             const val BIND_INSTANCE_WITH_NAME = "bindInstanceWithName"
@@ -522,17 +555,17 @@ class ActionContext {
             for (moduleAction in moduleActions) {
                 when (moduleAction[0]) {
                     ActionContextBuilder.BIND_WITH_ANNOTATION_TYPE -> {
-                        (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit)).invoke(
+                        (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit))(
                             bind(moduleAction[1] as KClass<*>, moduleAction[2] as Class<Annotation>)
                         )
                     }
                     ActionContextBuilder.BIND_WITH_ANNOTATION -> {
-                        (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit)).invoke(
+                        (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit))(
                             bind(moduleAction[1] as KClass<*>, moduleAction[2] as Annotation)
                         )
                     }
                     ActionContextBuilder.BIND_WITH_NAME -> {
-                        (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit)).invoke(
+                        (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit))(
                             bind(moduleAction[1] as KClass<*>, moduleAction[2] as String)
                         )
                     }
@@ -546,7 +579,7 @@ class ActionContext {
                         bindInstance(moduleAction[1] as KClass<Any>, moduleAction[2])
                     }
                     ActionContextBuilder.BIND -> {
-                        (moduleAction[2] as ((LinkedBindingBuilder<*>) -> Unit)).invoke(
+                        (moduleAction[2] as ((LinkedBindingBuilder<*>) -> Unit))(
                             bind(moduleAction[1] as KClass<*>)
                         )
                     }
@@ -600,7 +633,7 @@ class ActionContext {
 
         fun <T : Any> bindInstance(name: String, instance: T)
 
-        fun <T> bindInstance(instance: T)
+        fun <T : Any> bindInstance(instance: T)
 
         fun <T : Any> bindInstance(cls: KClass<T>, instance: T)
 
@@ -612,5 +645,4 @@ class ActionContext {
 
         fun bindConstant(callBack: (AnnotatedConstantBindingBuilder) -> Unit)
     }
-
 }

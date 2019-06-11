@@ -1,3 +1,3 @@
 package com.itangcent.intellij.psi
 
-open class TmType
+open class DuckType

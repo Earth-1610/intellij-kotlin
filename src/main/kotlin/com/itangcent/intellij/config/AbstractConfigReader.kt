@@ -30,9 +30,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
             val name = resolveProperty(line.substringBefore("="))
             if (name.isBlank()) continue
             val value = resolveProperty(line.substringAfter("=", ""))
-            if (!configInfo.containsKey(name)) {
-                configInfo.put(name, value)
-            }
+            configInfo.put(name, value)
         }
     }
 
@@ -83,11 +81,11 @@ abstract class AbstractConfigReader : MutableConfigReader {
     }
 
     override fun foreach(keyFilter: (String) -> Boolean, action: (String, String) -> Unit) {
-        configInfo.flattenForEach { key, value ->
+        configInfo.flattenForEach(keyFilter, { key, value ->
             if (keyFilter(key)) {
                 action(key, value)
             }
-        }
+        })
     }
 
 }

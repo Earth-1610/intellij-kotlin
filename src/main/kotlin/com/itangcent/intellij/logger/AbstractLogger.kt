@@ -7,18 +7,23 @@ abstract class AbstractLogger : Logger {
 
     protected abstract fun processLog(logData: String?)
 
-    override fun log(level: String?, msg: String) {
+    override fun log(level: Logger.Level, msg: String) {
+        if (level.getLevel() < currentLogLevel().getLevel()) {
+            return
+        }
         try {
-            val formatMsg: String? =
-                if (StringUtils.isEmpty(level)) {
+            val formatMsg: String? = if (StringUtils.isEmpty(level.getLevelStr())) {
                     msg + Utils.newLine()
                 } else {
-                    "[" + level + "]\t" + msg + Utils.newLine()
+                    "[" + level.getLevelStr() + "]\t" + msg + Utils.newLine()
                 }
             processLog(formatMsg)
         } catch (e: InterruptedException) {
             e.printStackTrace()
         }
+    }
 
+    open fun currentLogLevel(): Logger.Level {
+        return Logger.BasicLevel.ALL
     }
 }

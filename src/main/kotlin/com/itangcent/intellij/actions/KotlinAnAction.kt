@@ -2,7 +2,6 @@ package com.itangcent.intellij.actions
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
@@ -24,8 +23,6 @@ abstract class KotlinAnAction : AnAction {
     private val log: Logger = Logger.getInstance(this.javaClass.name)
 
     open protected fun onBuildActionContext(builder: ActionContext.ActionContextBuilder) {
-//        builder.addModule(BasicPluginModule())
-
         builder.bind(com.itangcent.intellij.logger.Logger::class) { it.with(ConsoleRunnerLogger::class).singleton() }
     }
 
@@ -40,7 +37,7 @@ abstract class KotlinAnAction : AnAction {
         val actionContext = actionContextBuilder.build()
         actionContext.init(this)
 
-        log.info("start action")
+        log.info("start action:" + this::class.qualifiedName)
 
         if (actionContext.lock()) {
             actionContext.runAsync {

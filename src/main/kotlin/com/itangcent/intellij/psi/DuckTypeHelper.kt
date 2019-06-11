@@ -8,32 +8,32 @@ import com.siyeh.ig.psiutils.ClassUtils
 import org.apache.commons.lang3.StringUtils
 import java.util.*
 
-class TmTypeHelper {
+class DuckTypeHelper {
 
     @Inject
     private val logger: Logger? = null
 
     private val classCanonicalTextCache: HashMap<String, PsiClass?> = HashMap()
-    private val tmTypeCanonicalTextCache: HashMap<String, TmType?> = HashMap()
+    private val tmTypeCanonicalTextCache: HashMap<String, DuckType?> = HashMap()
 
-    fun ensureType(type: PsiType): TmType? {
+    fun ensureType(type: PsiType): DuckType? {
         if (type is PsiClassType) {
-            return type.resolve()?.let { SingleTmType(it) }
+            return type.resolve()?.let { SingleDuckType(it) }
         }
         if (type is PsiArrayType) {
-            return ensureType(type.componentType)?.let { ArrayTmType(it) }
+            return ensureType(type.componentType)?.let { ArrayDuckType(it) }
         }
         if (type is PsiDisjunctionType) {
             val lub = type.leastUpperBound
             if (lub is PsiClassType) {
-                return lub.resolve()?.let { SingleTmType(it) }
+                return lub.resolve()?.let { SingleDuckType(it) }
             }
         }
         return null
 
     }
 
-    fun ensureType(psiType: PsiType, typeParams: Map<String, TmType?>?): TmType? {
+    fun ensureType(psiType: PsiType, typeParams: Map<String, DuckType?>?): DuckType? {
         if (typeParams == null) {
             ensureType(psiType)
         }
@@ -43,7 +43,7 @@ class TmTypeHelper {
         }
 
         if (psiType is PsiArrayType) {
-            return ensureType(psiType.componentType, typeParams)?.let { ArrayTmType(it) }
+            return ensureType(psiType.componentType, typeParams)?.let { ArrayDuckType(it) }
         }
 
         if (psiType is PsiDisjunctionType) {
@@ -56,7 +56,7 @@ class TmTypeHelper {
         return null
     }
 
-    private fun ensureTypeToClass(psiType: PsiClass, typeParams: Map<String, TmType?>?): TmType? {
+    private fun ensureTypeToClass(psiType: PsiClass, typeParams: Map<String, DuckType?>?): DuckType? {
 
         if (psiType is PsiTypeParameter) {
             val realType = typeParams?.get(psiType.name)
@@ -64,13 +64,13 @@ class TmTypeHelper {
                 return realType
             }
         }
-        return SingleTmType(psiType)
+        return SingleDuckType(psiType)
     }
 
     /**
      * resolve canonical representation of the type to TmType
      */
-    fun resolve(psiType: PsiType, context: PsiElement): TmType? {
+    fun resolve(psiType: PsiType, context: PsiElement): DuckType? {
         val typeCanonicalText = psiType.canonicalText
         if (typeCanonicalText.contains('<') && typeCanonicalText.endsWith('>')) {
             val clsWithParam = resolve(typeCanonicalText, context)
@@ -81,25 +81,25 @@ class TmTypeHelper {
         val paramCls = PsiUtil.resolveClassInClassTypeOnly(psiType)
         return when (paramCls) {
             null -> null
-            else -> SingleTmType(paramCls)
+            else -> SingleDuckType(paramCls)
         }
     }
 
-    fun resolve(typeCanonicalText: String, context: PsiElement): TmType? {
+    fun resolve(typeCanonicalText: String, context: PsiElement): DuckType? {
         return tmTypeCanonicalTextCache.computeIfAbsent(typeCanonicalText, {
             doResolve(typeCanonicalText, context)
         })
     }
 
-    private fun doResolve(typeCanonicalText: String, context: PsiElement): TmType? {
+    private fun doResolve(typeCanonicalText: String, context: PsiElement): DuckType? {
 
         when {
             typeCanonicalText == "?" -> {
-                return SingleTmType(findClass(CommonClassNames.JAVA_LANG_OBJECT, context)!!)
+                return SingleDuckType(findClass(CommonClassNames.JAVA_LANG_OBJECT, context)!!)
             }
             typeCanonicalText.endsWith("[]") -> {
                 val componentTypeCanonicalText = typeCanonicalText.removeSuffix(ARRAY_SUFFIX)
-                return resolve(componentTypeCanonicalText, context)?.let { ArrayTmType(it) }
+                return resolve(componentTypeCanonicalText, context)?.let { ArrayDuckType(it) }
             }
             typeCanonicalText.startsWith("? extends") -> return resolve(
                 typeCanonicalText.removePrefix("? extends").trim(),
@@ -112,16 +112,16 @@ class TmTypeHelper {
                     val typeParams = extractTypeParams(typeCanonicalText)
 
                     if (typeParams != null) {
-                        val typeParameterMap: HashMap<String, TmType?> = HashMap()
+                        val typeParameterMap: HashMap<String, DuckType?> = HashMap()
                         for ((index, typeParameter) in paramCls.typeParameters.withIndex()) {
                             if (typeParams.size > index) {
                                 val typeParam = typeParams[index]
                                 typeParameterMap[typeParameter.name!!] = resolve(typeParam, context)
                             }
                         }
-                        return SingleTmType(paramCls, typeParameterMap)
+                        return SingleDuckType(paramCls, typeParameterMap)
                     }
-                    return SingleTmType(paramCls)
+                    return SingleDuckType(paramCls)
                 }
                 logger!!.error("error to find class:$typeCanonicalText")
                 return null
@@ -131,13 +131,13 @@ class TmTypeHelper {
                 return when (paramCls) {
                     null -> {
                         if (typeCanonicalText.length == 1) {//maybe generic
-                            return SingleTmType(findClass(CommonClassNames.JAVA_LANG_OBJECT, context)!!)
+                            return SingleDuckType(findClass(CommonClassNames.JAVA_LANG_OBJECT, context)!!)
                         }
                         logger!!.warn("error to resolve class:" + typeCanonicalText)
                         null
                     }
                     else -> {
-                        SingleTmType(paramCls)
+                        SingleDuckType(paramCls)
                     }
                 }
             }
@@ -236,8 +236,8 @@ class TmTypeHelper {
         }
     }
 
-    private fun isQualified(tmType: TmType): Boolean {
-        if (tmType is SingleTmType) {
+    private fun isQualified(tmType: DuckType): Boolean {
+        if (tmType is SingleDuckType) {
             if (tmType.psiCls.qualifiedName == CommonClassNames.JAVA_LANG_OBJECT) {
                 return false
             }
@@ -256,13 +256,12 @@ class TmTypeHelper {
             }
 
             return true
-        } else if (tmType is ArrayTmType) {
+        } else if (tmType is ArrayDuckType) {
             return isQualified(tmType.componentType)
         }
         return true
     }
     //endregion isQualified--------------------------------------------------------
-
 
     companion object {
         val ARRAY_SUFFIX = "[]"
