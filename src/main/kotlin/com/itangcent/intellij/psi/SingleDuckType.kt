@@ -5,24 +5,24 @@ import com.intellij.psi.PsiClass
 class SingleDuckType : DuckType {
     val psiCls: PsiClass
 
-    val typeParams: Map<String, DuckType?>?//泛型类型
+    val genericInfo: Map<String, DuckType?>?//generic type info
 
     constructor(psiCls: PsiClass) {
         this.psiCls = psiCls
-        this.typeParams = null
+        this.genericInfo = null
     }
 
-    constructor(psiCls: PsiClass, typeParams: Map<String, DuckType?>?) {
+    constructor(psiCls: PsiClass, genericInfo: Map<String, DuckType?>?) {
         this.psiCls = psiCls
-        this.typeParams = typeParams
+        this.genericInfo = genericInfo
     }
 
     override fun toString(): String {
-        if (typeParams == null) {
+        if (genericInfo == null) {
             return "$psiCls"
         } else {
             val sb = StringBuilder()
-            typeParams.forEach { t, u ->
+            genericInfo.forEach { t, u ->
                 if (sb.isNotEmpty()) sb.append(",")
                 sb.append(t).append("->").append(u)
             }
@@ -37,14 +37,14 @@ class SingleDuckType : DuckType {
         other as SingleDuckType
 
         if (psiCls != other.psiCls) return false
-        if (typeParams != other.typeParams) return false
+        if (genericInfo != other.genericInfo) return false
 
         return true
     }
 
     override fun hashCode(): Int {
         var result = psiCls.hashCode()
-        result = 31 * result + (typeParams?.hashCode() ?: 0)
+        result = 31 * result + (genericInfo?.hashCode() ?: 0)
         return result
     }
 

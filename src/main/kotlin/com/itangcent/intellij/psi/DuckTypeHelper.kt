@@ -243,12 +243,12 @@ class DuckTypeHelper {
             }
             val typeParameterCount = tmType.psiCls.typeParameters.size
             if (typeParameterCount == 0) return true
-            if (typeParameterCount < tmType.typeParams?.size ?: 0) {
+            if (typeParameterCount < tmType.genericInfo?.size ?: 0) {
                 return false
             }
-            if (tmType.typeParams == null) return false
+            if (tmType.genericInfo == null) return false
 
-            for (value in tmType.typeParams.values) {
+            for (value in tmType.genericInfo.values) {
                 if (value == null) return false
                 if (!isQualified(value)) {
                     return false
