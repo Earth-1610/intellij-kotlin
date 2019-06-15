@@ -43,21 +43,15 @@ class SourceHelper(private val myProject: Project) {
                 val vFile = original.containingFile.virtualFile
                 val idx = ProjectRootManager.getInstance(myProject).fileIndex
                 if (vFile != null && idx.isInLibraryClasses(vFile)) {
+                    val sourceRootForFile = idx.getSourceRootForFile(vFile)
+                    if (sourceRootForFile != null) {
+                        tryFindSourceClass(sourceRootForFile, original)?.let { return it }
+                    }
 
                     val orderEntriesForFile = idx.getOrderEntriesForFile(vFile)
                     for (orderEntry in orderEntriesForFile) {
                         for (file in orderEntry.getFiles(OrderRootType.SOURCES)) {
-                            val find = findPsiFileInRoot(file, original.qualifiedName!!) ?: file.findChild(
-                                original.qualifiedName!!
-                            )
-                            if (find != null && find is PsiJavaFile) {
-                                find.classes.forEach {
-                                    if (it.qualifiedName == original.qualifiedName) {
-                                        original.putUserData(SOURCE_ELEMENT, it)
-                                        return it
-                                    }
-                                }
-                            }
+                            tryFindSourceClass(file, original)?.let { return it }
                         }
                     }
                 }
@@ -67,6 +61,25 @@ class SourceHelper(private val myProject: Project) {
         }
 
         return original
+    }
+
+    private fun tryFindSourceClass(
+        sourceRootForFile: VirtualFile,
+        original: PsiClass
+    ): PsiClass? {
+        val find = findPsiFileInRoot(sourceRootForFile, original.qualifiedName!!)
+            ?: sourceRootForFile.findChild(
+                original.qualifiedName!!
+            )
+        if (find != null && find is PsiJavaFile) {
+            find.classes.forEach {
+                if (it.qualifiedName == original.qualifiedName) {
+                    original.putUserData(SOURCE_ELEMENT, it)
+                    return it
+                }
+            }
+        }
+        return null
     }
 
     private fun findPsiFileInRoot(dirFile: VirtualFile, className: String?): PsiJavaFile? {
@@ -87,7 +100,6 @@ class SourceHelper(private val myProject: Project) {
         while (true) {
             val children = dir.children
             for (child in children) {
-                dirs.push(child)
                 if (StdFileTypes.JAVA == child.fileType && child.isValid) {
                     val psiFile = PsiManager.getInstance(myProject).findFile(child)
                     if (psiFile is PsiJavaFile) {
@@ -101,6 +113,8 @@ class SourceHelper(private val myProject: Project) {
                             }
                         }
                     }
+                } else {
+                    dirs.push(child)
                 }
             }
             if (dirs.isEmpty()) {
