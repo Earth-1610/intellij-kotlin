@@ -26,6 +26,8 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiJavaFile
 import com.intellij.psi.PsiManager
+import com.intellij.psi.impl.compiled.ClsClassImpl
+import com.intellij.util.containers.stream
 import java.util.*
 
 class SourceHelper(private val myProject: Project) {
@@ -39,6 +41,13 @@ class SourceHelper(private val myProject: Project) {
                 return cls
             }
 
+            if (original is ClsClassImpl) {
+                val navigationElement = original.getNavigationElement()
+                if (navigationElement != original && navigationElement is PsiClass) {
+                    return navigationElement
+                }
+            }
+
             if (!DumbService.isDumb(myProject)) {
                 val vFile = original.containingFile.virtualFile
                 val idx = ProjectRootManager.getInstance(myProject).fileIndex
@@ -49,11 +58,12 @@ class SourceHelper(private val myProject: Project) {
                     }
 
                     val orderEntriesForFile = idx.getOrderEntriesForFile(vFile)
-                    for (orderEntry in orderEntriesForFile) {
-                        for (file in orderEntry.getFiles(OrderRootType.SOURCES)) {
-                            tryFindSourceClass(file, original)?.let { return it }
-                        }
-                    }
+                    orderEntriesForFile.stream()
+                        .flatMap { it.getFiles(OrderRootType.SOURCES).stream() }
+                        .distinct()
+                        .map { tryFindSourceClass(it, original) }
+                        .findFirst()
+                        .orElse(null)?.let { return it }
                 }
             }
         } catch (e: Exception) {
@@ -97,6 +107,7 @@ class SourceHelper(private val myProject: Project) {
 
         val dirs = Stack<VirtualFile>()
         var dir: VirtualFile = dirFile
+        val rootPath = dirFile.path
         while (true) {
             val children = dir.children
             for (child in children) {
@@ -114,7 +125,12 @@ class SourceHelper(private val myProject: Project) {
                         }
                     }
                 } else {
-                    dirs.push(child)
+                    val prefix = dir.path.removePrefix(rootPath)
+                        .replace('/', '.')
+                        .replace('\\', '.')
+                    if (javaName.startsWith(prefix)) {
+                        dirs.push(child)
+                    }
                 }
             }
             if (dirs.isEmpty()) {
