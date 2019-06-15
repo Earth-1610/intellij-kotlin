@@ -492,6 +492,7 @@ class ActionContext {
             moduleActions.add(arrayOf(BIND_INSTANCE_WITH_NAME, name, instance))
         }
 
+        @Suppress("UNCHECKED_CAST")
         override fun <T : Any> bindInstance(instance: T) {
             bindInstance(instance::class as KClass<T>, instance)
         }

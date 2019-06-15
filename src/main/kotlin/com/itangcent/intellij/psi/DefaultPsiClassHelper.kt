@@ -210,6 +210,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         return super.beforeParseFieldOrMethod(fieldType, fieldOrMethod, resourcePsiClass, duckType, option, kv)
     }
 
+    @Suppress("UNCHECKED_CAST")
     override fun afterParseFieldOrMethod(
         fieldName: String,
         fieldType: PsiType,
@@ -239,6 +240,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     override fun afterParseFieldOrMethod(
         fieldName: String,
         fieldType: PsiType,

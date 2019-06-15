@@ -17,7 +17,7 @@ abstract class AutoSearchConfigReader : PathSearchConfigReader() {
         configFileNames().forEach { configFileName ->
             val configFiles = searchConfigFiles(configFileName)
             if (configFiles.isNullOrEmpty()) {
-                logger?.info("No config [$configFileName] be found")
+                logger?.trace("No config [$configFileName] be found")
             } else {
                 return configFiles
             }
