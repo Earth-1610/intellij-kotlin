@@ -307,7 +307,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                             )
                         }
                         else -> getTypeObject(
-                            tmTypeHelper!!.ensureType(deepType, clsWithParam.typeParams),
+                            tmTypeHelper!!.ensureType(deepType, clsWithParam.genericInfo),
                             context,
                             option
                         )?.let { list.add(it) }
@@ -323,7 +323,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     cacheResolvedInfo(clsWithParam, option, list)
                     val iterableType = PsiUtil.extractIterableTypeParameter(type, false)
                     if (iterableType == null) {//maybe generic type
-                        val realIterableType = clsWithParam.typeParams?.get(ELEMENT_OF_COLLECTION)
+                        val realIterableType = clsWithParam.genericInfo?.get(ELEMENT_OF_COLLECTION)
                         if (realIterableType != null) {
                             getTypeObject(realIterableType, context, option)?.let { list.add(it) }
                             return copy(list)
@@ -341,7 +341,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                         iterableType != null -> getTypeObject(
                             tmTypeHelper!!.ensureType(
                                 iterableType,
-                                clsWithParam.typeParams
+                                clsWithParam.genericInfo
                             ), context, option
                         )?.let { list.add(it) }
                     }
@@ -358,14 +358,14 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     var defaultKey: Any? = null
 
                     if (keyType == null) {
-                        val realKeyType = clsWithParam.typeParams?.get(KEY_OF_MAP)
+                        val realKeyType = clsWithParam.genericInfo?.get(KEY_OF_MAP)
                         defaultKey = getTypeObject(realKeyType, context, option)
                     }
 
                     if (defaultKey == null) {
                         defaultKey = if (keyType != null) {
                             getTypeObject(
-                                tmTypeHelper!!.ensureType(keyType, clsWithParam.typeParams),
+                                tmTypeHelper!!.ensureType(keyType, clsWithParam.genericInfo),
                                 context,
                                 option
                             )
@@ -377,13 +377,13 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     var defaultValue: Any? = null
 
                     if (valueType == null) {
-                        val realValueType = clsWithParam.typeParams?.get(VALUE_OF_MAP)
+                        val realValueType = clsWithParam.genericInfo?.get(VALUE_OF_MAP)
                         defaultValue = getTypeObject(realValueType, context, option)
                     }
                     if (defaultValue == null) {
                         if (valueType != null) {
                             defaultValue = getTypeObject(
-                                tmTypeHelper!!.ensureType(valueType, clsWithParam.typeParams),
+                                tmTypeHelper!!.ensureType(valueType, clsWithParam.genericInfo),
                                 context,
                                 option
                             )
@@ -403,7 +403,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     val clsOfType = PsiUtil.resolveClassInType(type)
 
                     if (clsOfType is PsiTypeParameter) {
-                        val typeParams = clsWithParam.typeParams
+                        val typeParams = clsWithParam.genericInfo
                         if (typeParams != null) {
                             val realType = typeParams[clsOfType.name]
                             if (realType != null) {
@@ -1029,7 +1029,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         val clsOfType = PsiUtil.resolveClassInType(fieldType)
 
         if (clsOfType is PsiTypeParameter) {
-            val typeParams = duckType.typeParams
+            val typeParams = duckType.genericInfo
             if (typeParams != null) {
                 val realType = typeParams[clsOfType.name]
                 if (realType != null) {
@@ -1053,7 +1053,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                         )
                     }
                     else -> getTypeObject(
-                        tmTypeHelper!!.ensureType(deepType, duckType.typeParams),
+                        tmTypeHelper!!.ensureType(deepType, duckType.genericInfo),
                         resourcePsiClass,
                         option
                     )?.let { list.add(it) }
@@ -1078,7 +1078,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     iterableType != null -> getTypeObject(
                         tmTypeHelper!!.ensureType(
                             iterableType,
-                            duckType.typeParams
+                            duckType.genericInfo
                         ), resourcePsiClass, option
                     )?.let { list.add(it) }
                 }
@@ -1093,7 +1093,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                 var defaultKey: Any? = null
                 if (keyType != null) defaultKey = getTypeObject(
-                    tmTypeHelper!!.ensureType(keyType, duckType.typeParams),
+                    tmTypeHelper!!.ensureType(keyType, duckType.genericInfo),
                     resourcePsiClass,
                     option
                 )
@@ -1101,7 +1101,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                 var defaultValue: Any? = null
                 if (valueType != null) defaultValue = getTypeObject(
-                    tmTypeHelper!!.ensureType(valueType, duckType.typeParams),
+                    tmTypeHelper!!.ensureType(valueType, duckType.genericInfo),
                     resourcePsiClass,
                     option
                 )
