@@ -21,7 +21,7 @@ abstract class PathSearchConfigReader : AbstractConfigReader() {
 
             val configFile = File(path)
             if (configFile.exists() && configFile.isFile) {
-                logger?.info("find config file:$path")
+                logger?.trace("find config file:$path")
                 configFiles.add(path)
             }
             if (currentPath.isNullOrBlank() || !currentPath.contains("/")) {
