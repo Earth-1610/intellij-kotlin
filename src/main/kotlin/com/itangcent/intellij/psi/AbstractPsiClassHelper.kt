@@ -192,7 +192,8 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                         cacheResolvedInfo(castTo, option, result)
                         return result
                     } catch (e: Throwable) {
-                        logger!!.error("error to getTypeObject:$psiType" + ExceptionUtils.getStackTrace(e))
+                        logger!!.error("error to getTypeObject:$psiType")
+                        logger.trace(ExceptionUtils.getStackTrace(e))
                         return null
                     }
                 }

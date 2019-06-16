@@ -41,7 +41,8 @@ open abstract class AbstractLocalFileRepository : LocalFileRepository {
                     logger!!.error("error to create new file:${file.path}")
                 }
             } catch (e: Throwable) {
-                logger?.error("error to create new file:${file.path}\n${ExceptionUtils.getStackTrace(e)}")
+                logger?.error("error to create new file:${file.path}")
+                logger?.trace(ExceptionUtils.getStackTrace(e))
                 throw RuntimeException(e)
             }
         }

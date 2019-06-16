@@ -304,6 +304,7 @@ class AutoComputer {
         return ListenAble(this, wrapGetter)
     }
 
+    @Suppress("UNCHECKED_CAST")
     internal fun <T> singleListen(
         wrapGetter: AGetter<T?>,
         action: (T?) -> Unit
@@ -556,13 +557,22 @@ class AutoComputer {
         }
 
         fun throttle(cd: Long): C {
-            val throttleFilter = { computer().throttleHelper.acquire(core.property, cd) }
+            return throttle(core.property, cd)
+        }
+
+        fun throttle(specialKey: Any, cd: Long): C {
+            val throttleFilter = { computer().throttleHelper.acquire(specialKey, cd) }
+            return filter(throttleFilter)
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        fun filter(newFilter: Filter): C {
             val filter = this.core.filter
             if (filter == null) {
-                this.core.filter = throttleFilter
+                this.core.filter = newFilter
             } else {
                 this.core.filter = {
-                    filter() && throttleFilter()
+                    filter() && newFilter()
                 }
             }
             return this as C
@@ -866,8 +876,11 @@ class AutoComputer {
         }
 
         fun throttle(cd: Long): ListenAble<T> {
-            val id = IDUtils.shortUUID()
-            val throttleFilter = { computer.throttleHelper.acquire(wrapGetter to id, cd) }
+            return throttle(wrapGetter to IDUtils.shortUUID(), cd)
+        }
+
+        fun throttle(specialKey: Any, cd: Long): ListenAble<T> {
+            val throttleFilter = { computer.throttleHelper.acquire(specialKey, cd) }
             mergeFilter(this::filter, throttleFilter)
             return this
         }

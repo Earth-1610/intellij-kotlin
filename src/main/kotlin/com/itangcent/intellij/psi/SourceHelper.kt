@@ -26,6 +26,8 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiJavaFile
 import com.intellij.psi.PsiManager
+import com.intellij.psi.impl.compiled.ClsClassImpl
+import com.intellij.util.containers.stream
 import java.util.*
 
 class SourceHelper(private val myProject: Project) {
@@ -39,27 +41,29 @@ class SourceHelper(private val myProject: Project) {
                 return cls
             }
 
+            if (original is ClsClassImpl) {
+                val navigationElement = original.getNavigationElement()
+                if (navigationElement != original && navigationElement is PsiClass) {
+                    return navigationElement
+                }
+            }
+
             if (!DumbService.isDumb(myProject)) {
                 val vFile = original.containingFile.virtualFile
                 val idx = ProjectRootManager.getInstance(myProject).fileIndex
                 if (vFile != null && idx.isInLibraryClasses(vFile)) {
+                    val sourceRootForFile = idx.getSourceRootForFile(vFile)
+                    if (sourceRootForFile != null) {
+                        tryFindSourceClass(sourceRootForFile, original)?.let { return it }
+                    }
 
                     val orderEntriesForFile = idx.getOrderEntriesForFile(vFile)
-                    for (orderEntry in orderEntriesForFile) {
-                        for (file in orderEntry.getFiles(OrderRootType.SOURCES)) {
-                            val find = findPsiFileInRoot(file, original.qualifiedName!!) ?: file.findChild(
-                                original.qualifiedName!!
-                            )
-                            if (find != null && find is PsiJavaFile) {
-                                find.classes.forEach {
-                                    if (it.qualifiedName == original.qualifiedName) {
-                                        original.putUserData(SOURCE_ELEMENT, it)
-                                        return it
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    orderEntriesForFile.stream()
+                        .flatMap { it.getFiles(OrderRootType.SOURCES).stream() }
+                        .distinct()
+                        .map { tryFindSourceClass(it, original) }
+                        .findFirst()
+                        .orElse(null)?.let { return it }
                 }
             }
         } catch (e: Exception) {
@@ -67,6 +71,25 @@ class SourceHelper(private val myProject: Project) {
         }
 
         return original
+    }
+
+    private fun tryFindSourceClass(
+        sourceRootForFile: VirtualFile,
+        original: PsiClass
+    ): PsiClass? {
+        val find = findPsiFileInRoot(sourceRootForFile, original.qualifiedName!!)
+            ?: sourceRootForFile.findChild(
+                original.qualifiedName!!
+            )
+        if (find != null && find is PsiJavaFile) {
+            find.classes.forEach {
+                if (it.qualifiedName == original.qualifiedName) {
+                    original.putUserData(SOURCE_ELEMENT, it)
+                    return it
+                }
+            }
+        }
+        return null
     }
 
     private fun findPsiFileInRoot(dirFile: VirtualFile, className: String?): PsiJavaFile? {
@@ -84,10 +107,10 @@ class SourceHelper(private val myProject: Project) {
 
         val dirs = Stack<VirtualFile>()
         var dir: VirtualFile = dirFile
+        val rootPath = dirFile.path
         while (true) {
             val children = dir.children
             for (child in children) {
-                dirs.push(child)
                 if (StdFileTypes.JAVA == child.fileType && child.isValid) {
                     val psiFile = PsiManager.getInstance(myProject).findFile(child)
                     if (psiFile is PsiJavaFile) {
@@ -100,6 +123,13 @@ class SourceHelper(private val myProject: Project) {
                                 return psiFile
                             }
                         }
+                    }
+                } else {
+                    val prefix = dir.path.removePrefix(rootPath)
+                        .replace('/', '.')
+                        .replace('\\', '.')
+                    if (javaName.startsWith(prefix)) {
+                        dirs.push(child)
                     }
                 }
             }
