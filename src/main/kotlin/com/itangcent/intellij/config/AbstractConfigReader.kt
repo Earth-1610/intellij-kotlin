@@ -7,7 +7,7 @@ import java.util.regex.Pattern
 
 abstract class AbstractConfigReader : MutableConfigReader {
 
-    var configInfo: MultiValuesMap<String, String> = MultiValuesMap(true)
+    protected var configInfo: MultiValuesMap<String, String> = MultiValuesMap(true)
 
     fun loadConfigInfo() {
         if (configInfo.isNotEmpty()) return

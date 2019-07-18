@@ -1,5 +1,10 @@
 package com.itangcent.intellij.logger
 
+import com.google.inject.ImplementedBy
+import com.google.inject.Singleton
+
+
+@ImplementedBy(ConsoleRunnerLogger::class)
 interface Logger {
     fun log(msg: String) {
         log(BasicLevel.ALL, msg)

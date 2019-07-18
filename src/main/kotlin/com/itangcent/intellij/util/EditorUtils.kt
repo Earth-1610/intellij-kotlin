@@ -3,7 +3,7 @@ package com.itangcent.intellij.util
 import com.intellij.openapi.editor.Editor
 
 /**
- * @author tangming
+ * @author tangcent
  */
 object EditorUtils {
     fun caretMoveToOffset(editor: Editor, offset: Int) {

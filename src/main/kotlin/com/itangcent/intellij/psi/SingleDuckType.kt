@@ -3,7 +3,12 @@ package com.itangcent.intellij.psi
 import com.intellij.psi.PsiClass
 
 class SingleDuckType : DuckType {
-    val psiCls: PsiClass
+
+    fun psiClass(): PsiClass {
+        return psiCls
+    }
+
+    private val psiCls: PsiClass
 
     val genericInfo: Map<String, DuckType?>?//generic type info
 

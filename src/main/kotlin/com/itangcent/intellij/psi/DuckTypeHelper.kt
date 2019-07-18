@@ -1,6 +1,7 @@
 package com.itangcent.intellij.psi
 
 import com.google.inject.Inject
+import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiUtil
 import com.itangcent.intellij.logger.Logger
@@ -8,6 +9,7 @@ import com.siyeh.ig.psiutils.ClassUtils
 import org.apache.commons.lang3.StringUtils
 import java.util.*
 
+@Singleton
 class DuckTypeHelper {
 
     @Inject
@@ -86,9 +88,9 @@ class DuckTypeHelper {
     }
 
     fun resolve(typeCanonicalText: String, context: PsiElement): DuckType? {
-        return tmTypeCanonicalTextCache.computeIfAbsent(typeCanonicalText, {
+        return tmTypeCanonicalTextCache.computeIfAbsent(typeCanonicalText) {
             doResolve(typeCanonicalText, context)
-        })
+        }
     }
 
     private fun doResolve(typeCanonicalText: String, context: PsiElement): DuckType? {
@@ -180,7 +182,7 @@ class DuckTypeHelper {
         val classCanonicalText = StringUtils.substringBefore(typeCanonicalText, "<")
         return classCanonicalTextCache.computeIfAbsent(
             classCanonicalText
-        ) { _ -> findClass(classCanonicalText, context) }
+        ) { findClass(classCanonicalText, context) }
     }
 
     fun extractTypeParams(typeCanonicalText: String): Array<String>? {
@@ -238,10 +240,10 @@ class DuckTypeHelper {
 
     private fun isQualified(tmType: DuckType): Boolean {
         if (tmType is SingleDuckType) {
-            if (tmType.psiCls.qualifiedName == CommonClassNames.JAVA_LANG_OBJECT) {
+            if (tmType.psiClass().qualifiedName == CommonClassNames.JAVA_LANG_OBJECT) {
                 return false
             }
-            val typeParameterCount = tmType.psiCls.typeParameters.size
+            val typeParameterCount = tmType.psiClass().typeParameters.size
             if (typeParameterCount == 0) return true
             if (typeParameterCount < tmType.genericInfo?.size ?: 0) {
                 return false
@@ -257,7 +259,7 @@ class DuckTypeHelper {
 
             return true
         } else if (tmType is ArrayDuckType) {
-            return isQualified(tmType.componentType)
+            return isQualified(tmType.componentType())
         }
         return true
     }

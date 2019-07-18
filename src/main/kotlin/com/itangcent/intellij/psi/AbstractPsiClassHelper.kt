@@ -5,6 +5,7 @@ import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
+import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.logger.Logger
 import com.itangcent.intellij.psi.PsiClassHelper.Companion.ELEMENT_OF_COLLECTION
@@ -15,14 +16,9 @@ import com.itangcent.intellij.psi.PsiClassHelper.Companion.fieldModifiers
 import com.itangcent.intellij.psi.PsiClassHelper.Companion.hasAnyModify
 import com.itangcent.intellij.psi.PsiClassHelper.Companion.isCollection
 import com.itangcent.intellij.psi.PsiClassHelper.Companion.isMap
-import com.itangcent.intellij.psi.PsiClassHelper.Companion.multipartFileInstance
 import com.itangcent.intellij.psi.PsiClassHelper.Companion.normalTypes
 import com.itangcent.intellij.psi.PsiClassHelper.Companion.staticFinalFieldModifiers
-import com.itangcent.intellij.spring.SpringClassName
-import com.itangcent.intellij.util.DocCommentUtils
-import com.itangcent.intellij.util.KV
-import com.itangcent.intellij.util.invokeMethod
-import com.itangcent.intellij.util.reduceSafely
+import com.itangcent.intellij.util.*
 import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.exception.ExceptionUtils
 import java.util.*
@@ -40,8 +36,12 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     @Inject
     protected val tmTypeHelper: DuckTypeHelper? = null
+
     @Inject
     protected val actionContext: ActionContext? = null
+
+    @Inject
+    protected val ruleComputer: RuleComputer? = null
 
     @Suppress("UNCHECKED_CAST")
     open protected fun <T> getResolvedInfo(key: Any?, option: Int): T? {
@@ -96,7 +96,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     override fun getTypeObject(psiType: PsiType?, context: PsiElement, option: Int): Any? {
-
+        actionContext!!.checkStatus()
         if (psiType != null) {
             val resolvedInfo = getResolvedInfo<Any>(psiType, option)
             if (resolvedInfo != null) {
@@ -120,10 +120,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     else -> getTypeObject(deepType, context, option)?.let { list.add(it) }
                 }
                 return copy(list)
-            }
-            castTo.canonicalText == SpringClassName.MULTIPARTFILE -> {
-                cacheResolvedInfo(castTo, option, multipartFileInstance)//cache
-                return multipartFileInstance
             }
             isCollection(castTo) -> {   //list type
 
@@ -186,7 +182,11 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                         return null
                     }
                 } else {
-                    val paramCls = PsiUtil.resolveClassInClassTypeOnly(castTo)
+                    val paramCls = PsiUtil.resolveClassInClassTypeOnly(castTo) ?: return null
+                    if (ruleComputer!!.computer(ClassRuleKeys.TYPE_IS_FILE, paramCls) == true) {
+                        cacheResolvedInfo(castTo, option, Magics.FILE_STR)//cache
+                        return Magics.FILE_STR
+                    }
                     try {
                         val result = getFields(paramCls, option)
                         cacheResolvedInfo(castTo, option, result)
@@ -207,6 +207,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     @Suppress("UNCHECKED_CAST")
     override fun getFields(psiClass: PsiClass?, option: Int): KV<String, Any?> {
+        actionContext!!.checkStatus()
 
         val resourcePsiClass = if (JsonOption.needComment(option)) {
             psiClass?.let { getResourceClass(it) }
@@ -249,6 +250,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     protected open fun getTypeObject(duckType: DuckType?, context: PsiElement, option: Int): Any? {
+        actionContext!!.checkStatus()
 
         val resolvedInfo = getResolvedInfo<Any>(duckType, option)
         if (resolvedInfo != null) {
@@ -260,7 +262,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         if (duckType is ArrayDuckType) {
             val list = ArrayList<Any>()
             cacheResolvedInfo(duckType, option, list)
-            getTypeObject(duckType.componentType, context, option)?.let { list.add(it) }
+            getTypeObject(duckType.componentType(), context, option)?.let { list.add(it) }
             return copy(list)
         }
 
@@ -271,6 +273,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     protected open fun getTypeObject(clsWithParam: SingleDuckType?, context: PsiElement, option: Int): Any? {
+        actionContext!!.checkStatus()
 
         if (clsWithParam != null) {
             val resolvedInfo = getResolvedInfo<Any>(clsWithParam, option)
@@ -281,9 +284,9 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
         if (clsWithParam == null) return null
         val psiClass = if (JsonOption.needComment(option)) {
-            getResourceClass(clsWithParam.psiCls)
+            getResourceClass(clsWithParam.psiClass())
         } else {
-            clsWithParam.psiCls
+            clsWithParam.psiClass()
         }
         val typeOfCls = PsiTypesUtil.getClassType(psiClass)
 
@@ -313,9 +316,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                         )?.let { list.add(it) }
                     }
                     return copy(list)
-                }
-                type.canonicalText == SpringClassName.MULTIPARTFILE -> {
-                    return multipartFileInstance
                 }
                 isCollection(type) -> {   //list type
                     val list = ArrayList<Any>()
@@ -400,7 +400,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 }
                 else -> //class type
                 {
-                    val clsOfType = PsiUtil.resolveClassInType(type)
+                    val clsOfType = PsiUtil.resolveClassInType(type) ?: return null
 
                     if (clsOfType is PsiTypeParameter) {
                         val typeParams = clsWithParam.genericInfo
@@ -411,6 +411,9 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                             }
                         }
                     }
+                    if (ruleComputer!!.computer(ClassRuleKeys.TYPE_IS_FILE, clsOfType) == true) {
+                        return Magics.FILE_STR
+                    }
                     return getFields(clsWithParam, option)
                 }
             }
@@ -419,6 +422,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     @Suppress("UNCHECKED_CAST")
     protected open fun getFields(clsWithParam: SingleDuckType, option: Int): KV<String, Any?> {
+        actionContext!!.checkStatus()
 
         val resolvedInfo = getResolvedInfo<Any>(clsWithParam, option)
         if (resolvedInfo != null) {
@@ -426,9 +430,9 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         }
 
         val psiClass = if (JsonOption.needComment(option)) {
-            getResourceClass(clsWithParam.psiCls)
+            getResourceClass(clsWithParam.psiClass()!!)
         } else {
-            clsWithParam.psiCls
+            clsWithParam.psiClass()
         }
         val kv: KV<String, Any?> = KV.create()
         cacheResolvedInfo(clsWithParam, option, kv)
@@ -467,6 +471,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         option: Int,
         handle: (name: () -> String, type: PsiType, fieldOrMethod: PsiElement) -> Unit
     ) {
+        actionContext!!.checkStatus()
 
         val readGetter = JsonOption.readGetter(option)
         var fieldNames: HashSet<String>? = null
@@ -518,6 +523,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     override fun resolvePropertyOrMethodOfClass(psiClass: PsiClass, propertyOrMethod: String): PsiElement? {
+        actionContext!!.checkStatus()
         if (propertyOrMethod.endsWith(")")) {
             if (!propertyOrMethod.contains("(")) {
                 logger!!.warn("error to resolve:[$propertyOrMethod]")
@@ -566,6 +572,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         psiMember: PsiMember,
         defaultPropertyName: String
     ): ArrayList<HashMap<String, Any?>>? {
+        actionContext!!.checkStatus()
         val options: ArrayList<HashMap<String, Any?>> = ArrayList()
         var clsName: String? = null
         var property: String? = null
@@ -658,6 +665,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     protected open fun resolveClassFromImport(psiClass: PsiClass, clsName: String): PsiClass? {
+        actionContext!!.checkStatus()
 
         val imports = PsiTreeUtil.findChildrenOfType(psiClass.context, PsiImportStatement::class.java)
 
@@ -687,6 +695,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     protected open val staticResolvedInfo: HashMap<PsiClass, List<Map<String, Any?>>> = HashMap()
 
     override fun parseStaticFields(psiClass: PsiClass): List<Map<String, Any?>> {
+        actionContext!!.checkStatus()
         val resourceClass = getResourceClass(psiClass)
         if (staticResolvedInfo.containsKey(resourceClass)) {
             return staticResolvedInfo[resourceClass]!!
@@ -717,15 +726,16 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     override fun parseEnumConstant(psiClass: PsiClass): List<Map<String, Any?>> {
-        val psiClass = getResourceClass(psiClass)
-        if (!psiClass.isEnum) return ArrayList()
+        actionContext!!.checkStatus()
+        val sourcePsiClass = getResourceClass(psiClass)
+        if (!sourcePsiClass.isEnum) return ArrayList()
 
-        if (staticResolvedInfo.containsKey(psiClass)) {
-            return staticResolvedInfo[psiClass]!!
+        if (staticResolvedInfo.containsKey(sourcePsiClass)) {
+            return staticResolvedInfo[sourcePsiClass]!!
         }
 
         val res = ArrayList<Map<String, Any?>>()
-        for (field in psiClass.allFields) {
+        for (field in sourcePsiClass.allFields) {
 
             val value = field.computeConstantValue() ?: continue
 
@@ -766,7 +776,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             res.add(constant)
         }
 
-        staticResolvedInfo[psiClass] = res
+        staticResolvedInfo[sourcePsiClass] = res
         return res
     }
 
@@ -777,7 +787,12 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             val value = psiExpression.resolve()
             if (value is PsiField) {
                 val constantValue = value.computeConstantValue()
-                if (constantValue != null) return constantValue
+                if (constantValue != null) {
+                    if (constantValue is PsiExpression) {
+                        return resolveExpr(constantValue)
+                    }
+                    return constantValue
+                }
             }
         } else if (psiExpression is PsiField) {
             return psiExpression.name
@@ -914,9 +929,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     }
                     kv[fieldName] = list
                 }
-                fieldTypeName == SpringClassName.MULTIPARTFILE -> {
-                    kv[fieldName] = multipartFileInstance
-                }
                 isCollection(type) -> {   //list type
                     val iterableType = PsiUtil.extractIterableTypeParameter(type, false)
                     val iterableClass = PsiUtil.resolveClassInClassTypeOnly(iterableType)
@@ -963,8 +975,12 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 else -> //class type
                 {
                     val clsOfType = PsiUtil.resolveClassInType(type)
-                    if (clsOfType != resourcePsiClass) {
-                        kv[fieldName] = getFields(clsOfType, option)
+                    if (clsOfType != null && clsOfType != resourcePsiClass) {
+                        if (ruleComputer!!.computer(ClassRuleKeys.TYPE_IS_FILE, clsOfType) == true) {
+                            kv[fieldName] = Magics.FILE_STR
+                        } else {
+                            kv[fieldName] = getFields(clsOfType, option)
+                        }
                     }
                 }
 
@@ -1060,9 +1076,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 }
                 kv[fieldName] = list
             }
-            type.canonicalText == SpringClassName.MULTIPARTFILE -> {
-                kv[fieldName] = multipartFileInstance
-            }
             isCollection(type) -> {   //list type
                 val list = ArrayList<Any>()
                 val iterableType = PsiUtil.extractIterableTypeParameter(type, false)
@@ -1113,8 +1126,12 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             }
             else -> //class type
             {
-                if (clsOfType != resourcePsiClass) {
-                    kv[fieldName] = getFields(clsOfType, option)
+                if (clsOfType != null && clsOfType != resourcePsiClass) {
+                    if (ruleComputer!!.computer(ClassRuleKeys.TYPE_IS_FILE, clsOfType) == true) {
+                        kv[fieldName] = Magics.FILE_STR
+                    } else {
+                        kv[fieldName] = getFields(clsOfType, option)
+                    }
                 }
             }
         }

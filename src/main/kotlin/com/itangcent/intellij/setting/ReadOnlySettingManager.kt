@@ -56,7 +56,7 @@ class ReadOnlySettingManager : DefaultSettingManager() {
 
     private fun resolveProperty(property: String?, resolvedMap: HashMap<String, String>): String? {
         if (property.isNullOrBlank()) return property
-        if (!property!!.contains("$")) return property
+        if (!property.contains("$")) return property
 
         val pattern = Pattern.compile("\\$\\{(.*?)}")
         val match = pattern.matcher(property)
