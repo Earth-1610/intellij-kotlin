@@ -7,9 +7,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.itangcent.common.exception.ProcessCanceledException
 import com.itangcent.intellij.context.ActionContext
-import com.itangcent.intellij.extend.guice.singleton
-import com.itangcent.intellij.extend.guice.with
-import com.itangcent.intellij.logger.ConsoleRunnerLogger
 import org.apache.commons.lang3.exception.ExceptionUtils
 import javax.swing.Icon
 
@@ -23,7 +20,6 @@ abstract class KotlinAnAction : AnAction {
     private val log: Logger = Logger.getInstance(this.javaClass.name)
 
     open protected fun onBuildActionContext(builder: ActionContext.ActionContextBuilder) {
-        builder.bind(com.itangcent.intellij.logger.Logger::class) { it.with(ConsoleRunnerLogger::class).singleton() }
     }
 
     override fun actionPerformed(anActionEvent: AnActionEvent) {

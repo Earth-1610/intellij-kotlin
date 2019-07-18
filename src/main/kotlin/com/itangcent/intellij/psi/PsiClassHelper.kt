@@ -1,8 +1,8 @@
 package com.itangcent.intellij.psi
 
+import com.google.inject.ImplementedBy
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiUtil
-import com.itangcent.intellij.spring.MultipartFile
 import com.itangcent.intellij.util.KV
 import com.sun.jmx.remote.internal.ArrayQueue
 import java.util.*
@@ -10,6 +10,8 @@ import java.util.concurrent.ArrayBlockingQueue
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
+
+@ImplementedBy(DefaultPsiClassHelper::class)
 interface PsiClassHelper {
     fun getTypeObject(psiType: PsiType?, context: PsiElement): Any?
 
@@ -26,7 +28,7 @@ interface PsiClassHelper {
     fun unboxArrayOrList(psiType: PsiType): PsiType
 
     fun getDefaultValue(typeName: String): Any?
-    
+
     fun resolvePropertyOrMethodOfClass(psiClass: PsiClass, propertyOrMethod: String): PsiElement?
 
     fun getJsonFieldName(psiField: PsiField): String
@@ -62,9 +64,9 @@ interface PsiClassHelper {
             "finalize"
         )
 
-        val ELEMENT_OF_COLLECTION = "E"
-        val KEY_OF_MAP = "K"
-        val VALUE_OF_MAP = "V"
+        const val ELEMENT_OF_COLLECTION = "E"
+        const val KEY_OF_MAP = "K"
+        const val VALUE_OF_MAP = "V"
 
         fun isCollection(psiType: PsiType): Boolean {
             if (collectionClasses!!.contains(psiType.presentableText)) {
@@ -102,10 +104,6 @@ interface PsiClassHelper {
 
             return false
         }
-
-        //represent spring MultipartFile
-        val multipartFileInstance = MultipartFile()
-//        val multipartFileInstance = "file"
 
         var fieldModifiers: Set<String> = HashSet(Arrays.asList(PsiModifier.PRIVATE, PsiModifier.PROTECTED))
         var staticFinalFieldModifiers: Set<String> =

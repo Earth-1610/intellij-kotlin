@@ -1,17 +1,20 @@
 package com.itangcent.intellij.psi
 
 import com.google.inject.Inject
+import com.google.inject.Singleton
 import com.intellij.openapi.project.Project
 import com.intellij.psi.*
 import com.intellij.psi.impl.java.stubs.impl.PsiClassStubImpl
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.util.containers.isNullOrEmpty
 import com.intellij.util.containers.stream
+import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.psi.PsiClassHelper.Companion.normalTypes
 import com.itangcent.intellij.util.DocCommentUtils
 import com.itangcent.intellij.util.KV
 import org.apache.commons.lang3.StringUtils
 
+@Singleton
 open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
 
     @Inject(optional = true)
@@ -29,12 +32,10 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
             result = (result ?: "") + attrInDoc
         }
 
-        if (classRuleConfig != null) {
-            val docByRule = classRuleConfig.findDoc(field)
+        val docByRule = ruleComputer!!.computer(ClassRuleKeys.FIELD_DOC, field)
 
-            if (StringUtils.isNotBlank(docByRule)) {
-                result = (result ?: "") + docByRule
-            }
+        if (StringUtils.isNotBlank(docByRule)) {
+            result = (result ?: "") + docByRule
         }
 
         var fieldText = field.text
@@ -63,20 +64,6 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         }
 
         return result
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    protected open fun resolveDeprecatedDoc(field: PsiField, comment: HashMap<String, Any?>) {
-        val deprecatedInfo = DocCommentUtils.findDocsByTag(field.docComment, "deprecated")
-        if (deprecatedInfo != null) {
-            val fieldName = field.name
-            val oldComment = comment[fieldName]
-            if (oldComment == null) {
-                comment[fieldName] = "[字段已废弃]$deprecatedInfo"
-            } else {
-                comment[fieldName] = "$oldComment\n[字段已废弃]$deprecatedInfo"
-            }
-        }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -151,12 +138,11 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     }
 
     override fun getJsonFieldName(psiField: PsiField): String {
-        if (classRuleConfig != null) {
-            val nameByRule = classRuleConfig.getFieldName(psiField)
-            if (!nameByRule.isNullOrBlank()) {
-                return nameByRule
-            }
+        val nameByRule = ruleComputer!!.computer(ClassRuleKeys.FIELD_NAME, psiField)
+        if (!nameByRule.isNullOrBlank()) {
+            return nameByRule
         }
+
         return psiField.name
     }
 
@@ -185,7 +171,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         kv: KV<String, Any?>
     ): Boolean {
         if (fieldOrMethod is PsiField &&
-            classRuleConfig?.ignoreField(fieldOrMethod) == true
+            ruleComputer?.computer(ClassRuleKeys.FIELD_IGNORE, fieldOrMethod) == true
         ) {
             return false
         }
@@ -202,7 +188,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         kv: KV<String, Any?>
     ): Boolean {
         if (fieldOrMethod is PsiField &&
-            classRuleConfig?.ignoreField(fieldOrMethod) == true
+            ruleComputer?.computer(ClassRuleKeys.FIELD_IGNORE, fieldOrMethod) == true
         ) {
             return false
         }
@@ -229,7 +215,6 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
             if (fieldOrMethod is PsiField) {
                 val field: PsiField = fieldOrMethod
                 commentKV[fieldName] = getAttrOfField(field)
-                resolveDeprecatedDoc(field, commentKV)
                 resolveSeeDoc(field, commentKV)
             } else if (fieldOrMethod is PsiMethod) {
                 val attrInDoc = DocCommentUtils.getAttrOfDocComment(fieldOrMethod.docComment)
@@ -260,7 +245,6 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
             if (fieldOrMethod is PsiField) {
                 val field: PsiField = fieldOrMethod
                 commentKV[fieldName] = getAttrOfField(field)
-                resolveDeprecatedDoc(field, commentKV)
                 resolveSeeDoc(field, commentKV)
             } else if (fieldOrMethod is PsiMethod) {
                 val attrInDoc = DocCommentUtils.getAttrOfDocComment(fieldOrMethod.docComment)

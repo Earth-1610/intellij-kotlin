@@ -60,6 +60,41 @@ object DocCommentUtils {
         }
     }
 
+    fun findDocsByTagAndName(docComment: PsiDocComment?, tag: String, name: String): String? {
+        if (docComment == null) {
+            return null
+        }
+        return ActionContext.getContext()!!.callInReadUI {
+            for (paramDocTag in docComment.findTagsByName(tag)) {
+
+                var n: String? = null
+                var value: String? = null
+
+                val elements = paramDocTag.dataElements
+                    .asSequence()
+                    .map { it?.text }
+                    .filterNot { StringUtils.isBlank(it) }
+
+                loop@ for (element in elements) {
+                    when {
+                        n == null -> if (n == name) {
+                            n = element
+                        } else {
+                            continue@loop
+                        }
+                        value == null -> value = element
+                        else -> value += element
+                    }
+                }
+
+                if (n == name) {
+                    return@callInReadUI value
+                }
+            }
+            return@callInReadUI null
+        }
+    }
+
     fun getAttrOfDocComment(docComment: PsiDocComment?): String? {
         if (docComment == null) {
             return null

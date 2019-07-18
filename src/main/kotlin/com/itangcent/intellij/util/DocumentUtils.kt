@@ -6,7 +6,7 @@ import org.apache.commons.lang.StringUtils
 import java.util.*
 
 object DocumentUtils {
-    private val PMD_TAB_SIZE = 8
+    private const val PMD_TAB_SIZE = 8
 
     fun calculateRealOffset(document: Document, line: Int, pmdColumn: Int): Int {
         val maxLine = document.lineCount

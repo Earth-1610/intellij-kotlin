@@ -36,6 +36,7 @@ class SourceHelper(private val myProject: Project) {
         original: PsiClass
     ): PsiClass {
         try {
+            //todo:getUserData was not work
             val cls = original.getUserData(SOURCE_ELEMENT)
             if (cls != null && cls.isValid) {
                 return cls
