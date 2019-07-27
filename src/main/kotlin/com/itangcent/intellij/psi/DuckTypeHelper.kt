@@ -5,6 +5,7 @@ import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiUtil
 import com.itangcent.intellij.logger.Logger
+import com.itangcent.intellij.util.safeComputeIfAbsent
 import com.siyeh.ig.psiutils.ClassUtils
 import org.apache.commons.lang3.StringUtils
 import java.util.*
@@ -88,7 +89,7 @@ class DuckTypeHelper {
     }
 
     fun resolve(typeCanonicalText: String, context: PsiElement): DuckType? {
-        return tmTypeCanonicalTextCache.computeIfAbsent(typeCanonicalText) {
+        return tmTypeCanonicalTextCache.safeComputeIfAbsent(typeCanonicalText) {
             doResolve(typeCanonicalText, context)
         }
     }
@@ -180,7 +181,7 @@ class DuckTypeHelper {
 
     fun extractClassFromCanonicalText(typeCanonicalText: String, context: PsiElement): PsiClass? {
         val classCanonicalText = StringUtils.substringBefore(typeCanonicalText, "<")
-        return classCanonicalTextCache.computeIfAbsent(
+        return classCanonicalTextCache.safeComputeIfAbsent(
             classCanonicalText
         ) { findClass(classCanonicalText, context) }
     }
@@ -232,10 +233,10 @@ class DuckTypeHelper {
     private val qualifiedInfoCache: HashMap<PsiType, Boolean> = HashMap()
 
     fun isQualified(psiType: PsiType, context: PsiElement): Boolean {
-        return qualifiedInfoCache.computeIfAbsent(psiType) {
-            val tmType = resolve(psiType, context) ?: return@computeIfAbsent true
-            return@computeIfAbsent isQualified(tmType)
-        }
+        return qualifiedInfoCache.safeComputeIfAbsent(psiType) {
+            val tmType = resolve(psiType, context) ?: return@safeComputeIfAbsent true
+            return@safeComputeIfAbsent isQualified(tmType)
+        } ?: false
     }
 
     private fun isQualified(tmType: DuckType): Boolean {
