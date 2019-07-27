@@ -1,7 +1,10 @@
 package com.itangcent.intellij.psi
 
-import com.intellij.psi.PsiField
+import com.google.inject.ImplementedBy
+import com.google.inject.Singleton
 
+
+@ImplementedBy(DefaultClassRuleConfig::class)
 interface ClassRuleConfig {
 
     /**
@@ -9,13 +12,4 @@ interface ClassRuleConfig {
      * @param cls class qualified name
      */
     fun tryConvert(cls: String): String?
-
-    /**
-     * gets the comment of the field
-     */
-    fun findDoc(field: PsiField): String?
-
-    fun getFieldName(field: PsiField): String?
-
-    fun ignoreField(field: PsiField): Boolean?
 }

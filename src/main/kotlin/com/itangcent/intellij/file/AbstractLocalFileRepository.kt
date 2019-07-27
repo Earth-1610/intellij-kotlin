@@ -7,7 +7,7 @@ import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.exception.ExceptionUtils
 import java.io.File
 
-open abstract class AbstractLocalFileRepository : LocalFileRepository {
+abstract class AbstractLocalFileRepository : LocalFileRepository {
     @Inject
     protected val logger: Logger? = null
 

@@ -1,12 +1,12 @@
-package com.itangcent.intellij.config.context
+package com.itangcent.intellij.config.rule
 
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiDocCommentOwner
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiModifierListOwner
 
-class PsiClassContext : PsiElementContext {
-
-    private var psiClass: PsiClass
+open class PsiClassContext : PsiElementContext {
+    protected var psiClass: PsiClass
 
     constructor(psiClass: PsiClass) {
         this.psiClass = psiClass
@@ -23,4 +23,9 @@ class PsiClassContext : PsiElementContext {
     override fun asPsiDocCommentOwner(): PsiDocCommentOwner {
         return psiClass
     }
+
+    override fun asPsiModifierListOwner(): PsiModifierListOwner {
+        return psiClass
+    }
+
 }
