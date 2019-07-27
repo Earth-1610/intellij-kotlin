@@ -1,10 +1,7 @@
-package com.itangcent.intellij.config
+package com.itangcent.intellij.config.rule
 
 import com.google.inject.Singleton
-import com.intellij.psi.PsiClass
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiMember
-import com.itangcent.intellij.config.context.PsiElementContext
+import com.intellij.psi.*
 import com.itangcent.intellij.psi.PsiAnnotationUtils
 import com.itangcent.intellij.util.DocCommentUtils
 import java.util.regex.Pattern
@@ -12,118 +9,116 @@ import java.util.regex.Pattern
 @Singleton
 class SimpleRuleParser : RuleParser {
 
-    private val simpleStringRuleParseCache: HashMap<String, SimpleStringRule> = HashMap()
+    private val stringRuleParseCache: HashMap<String, StringRule> = HashMap()
 
-    override fun parseStringRule(rule: String): List<SimpleStringRule> {
+    override fun parseStringRule(rule: String): List<StringRule> {
         return parseStringRule(rule, "|")
     }
 
-    override fun parseStringRule(rule: String, delimiters: String): List<SimpleStringRule> {
+    override fun parseStringRule(rule: String, delimiters: String): List<StringRule> {
         return rule.split(delimiters)
             .mapNotNull { sr -> parseSingleStringRule(sr) }
             .toList()
     }
 
-    fun parseSingleStringRule(rule: String): SimpleStringRule? {
+    fun parseSingleStringRule(rule: String): StringRule? {
         if (rule.isBlank()) return null
 
-        if (simpleStringRuleParseCache.containsKey(rule)) {
-            return simpleStringRuleParseCache[rule]
+        if (stringRuleParseCache.containsKey(rule)) {
+            return stringRuleParseCache[rule]
         }
 
         val tinyRuleStr = rule.trim()
 
-        var srule: SimpleStringRule? = null
+        var srule: StringRule? = null
 
         if (tinyRuleStr.startsWith("@")) {
             val annStr = tinyRuleStr.substringAfter("@")
             val annName = annStr.substringBefore("#").trim()
             val annValue = annStr.substringAfter("#", "value").trim()
-            srule = { ann ->
-                PsiAnnotationUtils.findAttr(ann.asPsiDocCommentOwner(), annName, annValue)
+            srule = StringRule.of { context ->
+                context.asPsiModifierListOwner()?.let { PsiAnnotationUtils.findAttr(it, annName, annValue) }
             }
         } else if (tinyRuleStr.startsWith("#")) {
             val tag = tinyRuleStr.substringAfter("#").trim()
-            srule = { context ->
-                DocCommentUtils.findDocsByTag(context.asPsiDocCommentOwner().docComment, tag)
+            srule = StringRule.of { context ->
+                DocCommentUtils.findDocsByTag(context.asPsiDocCommentOwner()?.docComment, tag)
             }
         }
 
         if (srule != null) {
-            simpleStringRuleParseCache[rule] = srule
+            stringRuleParseCache[rule] = srule
         }
 
         return srule
     }
 
-    private val simpleBooleanRuleParseCache: HashMap<String, SimpleBooleanRule> = HashMap()
+    private val booleanRuleParseCache: HashMap<String, BooleanRule> = HashMap()
 
-    override fun parseBooleanRule(rule: String): List<SimpleBooleanRule> {
+    override fun parseBooleanRule(rule: String): List<BooleanRule> {
         return parseBooleanRule(rule, "|", false)
     }
 
-    override fun parseBooleanRule(rule: String, delimiters: String, defaultValue: Boolean): List<SimpleBooleanRule> {
+    override fun parseBooleanRule(rule: String, delimiters: String, defaultValue: Boolean): List<BooleanRule> {
         return rule.split(delimiters)
             .mapNotNull { sr -> parseSingleBooleanRule(sr, defaultValue) }
             .toList()
     }
 
-    fun parseSingleBooleanRule(rule: String): SimpleBooleanRule? {
+    fun parseSingleBooleanRule(rule: String): BooleanRule? {
         return parseSingleBooleanRule(rule, false)
     }
 
-    fun parseSingleBooleanRule(rule: String, defaultValue: Boolean): SimpleBooleanRule? {
+    fun parseSingleBooleanRule(rule: String, defaultValue: Boolean): BooleanRule? {
         if (rule.isBlank()) return null
 
-        if (simpleBooleanRuleParseCache.containsKey(rule)) {
-            return simpleBooleanRuleParseCache[rule]
+        if (booleanRuleParseCache.containsKey(rule)) {
+            return booleanRuleParseCache[rule]
         }
 
         val tinyRuleStr = rule.trim()
 
-        var srule: SimpleBooleanRule? = null
+        var srule: BooleanRule? = null
 
         if (tinyRuleStr.startsWith("!")) {
             val inverseRuleStr = tinyRuleStr.substring(1)
-            val inverseRule: SimpleBooleanRule = parseSingleBooleanRule(inverseRuleStr, !defaultValue) ?: return null
-            return { context ->
-                !inverseRule(context)
-            }
+            val inverseRule: BooleanRule = parseSingleBooleanRule(inverseRuleStr, !defaultValue) ?: return null
+            return inverseRule.inverse()
         } else if (tinyRuleStr.startsWith("@")) {
             val annStr = tinyRuleStr.substringAfter("@")
             val annName = annStr.substringBefore("#").trim()
             val annValue = annStr.substringAfter("#", "").trim()
             srule = if (annValue.isBlank()) {
-                { context ->
-                    PsiAnnotationUtils.findAnn(context.asPsiDocCommentOwner(), annName) != null
+                BooleanRule.of { context ->
+                    context.asPsiModifierListOwner()?.let { PsiAnnotationUtils.findAnn(it, annName) } != null
                 }
             } else {
-                { context ->
+                BooleanRule.of { context ->
                     str2Bool(
-                        PsiAnnotationUtils.findAttr(context.asPsiDocCommentOwner(), annName, annValue),
+                        context.asPsiModifierListOwner()?.let { PsiAnnotationUtils.findAttr(it, annName, annValue) },
                         defaultValue
                     )
                 }
             }
         } else if (tinyRuleStr.startsWith("#")) {
             val tag = tinyRuleStr.substringAfter("#").trim()
-            srule = { context ->
-                DocCommentUtils.hasTag(context.asPsiDocCommentOwner().docComment, tag)
+            srule = BooleanRule.of { context ->
+                DocCommentUtils.hasTag(context.asPsiDocCommentOwner()?.docComment, tag)
             }
         } else if (tinyRuleStr.startsWith("$")) {
             val prefix = tinyRuleStr.substringBefore(":").trim()
             val content = tinyRuleStr.substringAfter(":", "")
             if (prefix == "\$class") {
-                if (content.startsWith("? extend")) {
+                srule = if (content.startsWith("? extend")) {
                     val extendClass = content.removePrefix("? extend").trim()
                     val extendClassRegex = parseRegexOrConstant(extendClass)
-                    srule = { context ->
-                        checkExtend(findClass(context.getResource()), extendClassRegex)
+                    BooleanRule.of { context ->
+                        checkExtend(context.getResource()?.let { findClass(it) }, extendClassRegex)
                     }
 
                 } else {
                     val contentRegex = parseRegexOrConstant(content)
-                    srule = { context ->
+                    BooleanRule.of { context ->
                         findClass(context.getResource())?.let { contentRegex(it.qualifiedName) } ?: false
                     }
                 }
@@ -132,7 +127,7 @@ class SimpleRuleParser : RuleParser {
         }
 
         if (srule != null) {
-            simpleBooleanRuleParseCache[rule] = srule
+            booleanRuleParseCache[rule] = srule
         }
 
         return srule
@@ -151,8 +146,9 @@ class SimpleRuleParser : RuleParser {
 
     }
 
-    private fun findClass(named: PsiElement): PsiClass? {
+    private fun findClass(named: PsiElement?): PsiClass? {
         return when (named) {
+            null -> null
             is PsiClass -> named
             is PsiMember -> named.containingClass
             else -> null
@@ -173,7 +169,7 @@ class SimpleRuleParser : RuleParser {
     private val regexParseCache: HashMap<String, (String?) -> Boolean> = HashMap()
 
     fun parseRegexOrConstant(str: String): (String?) -> Boolean {
-        return regexParseCache.computeIfAbsent(str) {
+        return regexParseCache.computeIfAbsent(str) { _ ->
             if (str.isBlank()) {
                 return@computeIfAbsent { true }
             }
@@ -206,17 +202,17 @@ class SimpleRuleParser : RuleParser {
         }
     }
 
+    override fun contextOf(psiElement: PsiElement): PsiElementContext {
+        return when (psiElement) {
+            is PsiClass -> PsiClassContext(psiElement)
+            is PsiField -> PsiFieldContext(psiElement)
+            is PsiMethod -> PsiMethodContext(psiElement)
+            else -> PsiUnknownContext(psiElement)
+        }
+    }
+
     companion object {
         var STAR_DOT = "@S_T_A_R_D_O_T@"
         var STAR = "@O_N_L_Y_S_T_A_R@"
     }
 }
-
-@Deprecated(
-    "replace with SimpleRuleParser",
-    ReplaceWith("com.itangcent.intellij.config.SimpleRuleParser")
-)
-typealias SimpleRuleParse = SimpleRuleParser
-
-typealias SimpleStringRule = (PsiElementContext) -> String?
-typealias SimpleBooleanRule = (PsiElementContext) -> Boolean

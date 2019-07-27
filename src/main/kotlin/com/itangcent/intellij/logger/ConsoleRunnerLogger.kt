@@ -1,6 +1,7 @@
 package com.itangcent.intellij.logger
 
 import com.google.inject.Inject
+import com.google.inject.Singleton
 import com.google.inject.name.Named
 import com.intellij.execution.ExecutionException
 import com.intellij.openapi.project.Project
@@ -14,6 +15,7 @@ import java.io.IOException
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
+@Singleton
 class ConsoleRunnerLogger : AbstractLogger() {
 
     private var pipedProcess: PipedProcess? = null

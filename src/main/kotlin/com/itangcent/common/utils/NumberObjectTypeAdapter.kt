@@ -99,6 +99,7 @@ class NumberObjectTypeAdapter internal constructor(private val gson: Gson) : Typ
         typeAdapter.write(out, value)
     }
 
+    @Suppress("UNCHECKED_CAST")
     companion object {
         val FACTORY: TypeAdapterFactory = object : TypeAdapterFactory {
             override fun <T> create(gson: Gson, type: TypeToken<T>): TypeAdapter<T>? {

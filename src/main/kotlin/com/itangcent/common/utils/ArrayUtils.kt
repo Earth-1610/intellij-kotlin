@@ -59,22 +59,22 @@ object ArrayUtils {
      * [.INDEX_NOT_FOUND] (`-1`) if not found or `null` array input
      */
     fun indexOf(array: Array<*>?, objectToFind: Any?, startIndex: Int): Int {
-        var startIndex = startIndex
         if (array == null) {
             return INDEX_NOT_FOUND
         }
-        if (startIndex < 0) {
-            startIndex = 0
+        var s = startIndex
+        if (s < 0) {
+            s = 0
         }
         if (objectToFind == null) {
 
-            for (i in startIndex until array.size) {
+            for (i in s until array.size) {
                 if (array[i] == null) {
                     return i
                 }
             }
         } else if (array.javaClass.componentType.isInstance(objectToFind)) {
-            for (i in startIndex until array.size) {
+            for (i in s until array.size) {
                 if (objectToFind == array[i]) {
                     return i
                 }

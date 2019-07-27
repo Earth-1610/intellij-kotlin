@@ -1,10 +1,18 @@
 package com.itangcent.intellij.psi
 
+import com.intellij.psi.PsiClass
+import com.intellij.psi.util.PsiClassUtil
+
 class ArrayDuckType : DuckType {
-    val componentType: DuckType
+
+    private val componentType: DuckType
 
     constructor(componentClass: DuckType) {
         this.componentType = componentClass
+    }
+
+    fun componentType(): DuckType {
+        return componentType
     }
 
     override fun equals(other: Any?): Boolean {

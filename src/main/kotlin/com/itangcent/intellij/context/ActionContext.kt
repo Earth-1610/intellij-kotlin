@@ -12,6 +12,7 @@ import com.intellij.openapi.project.Project
 import com.itangcent.common.concurrent.AQSCountLatch
 import com.itangcent.common.concurrent.CountLatch
 import com.itangcent.common.concurrent.ValueHolder
+import com.itangcent.common.exception.ProcessCanceledException
 import com.itangcent.common.utils.IDUtils
 import com.itangcent.common.utils.ThreadPoolUtils
 import com.itangcent.intellij.constant.EventKey
@@ -36,11 +37,14 @@ import kotlin.reflect.KClass
  */
 class ActionContext {
 
+    private val id = IDUtils.shortUUID()
+
     private val cache = HashMap<String, Any?>()
 
     private val lock = ReentrantReadWriteLock()
 
-    private val id = IDUtils.shortUUID()
+    @Volatile
+    private var stopped = false
 
     @Volatile
     private var locked = false
@@ -67,16 +71,19 @@ class ActionContext {
 
     //region cache--------------------------------------------------------------
     fun cache(name: String, bean: Any?) {
+        checkStatus()
         lock.writeLock().withLock { cache.put(cachePrefix + name, bean) }
     }
 
     @Suppress("UNCHECKED_CAST")
     fun <T> getCache(name: String): T? {
+        checkStatus()
         return lock.readLock().withLock { cache[cachePrefix + name] as T? }
     }
 
     @Suppress("UNCHECKED_CAST")
     fun <T> cacheOrCompute(name: String, beanSupplier: () -> T?): T? {
+        checkStatus()
         lock.readLock().withLock {
             if (cache.containsKey(cachePrefix + name)) {
                 return cache[cachePrefix + name] as T?
@@ -91,6 +98,7 @@ class ActionContext {
     //region event--------------------------------------------------------------
     @Suppress("UNCHECKED_CAST")
     fun on(name: String, event: () -> Unit) {
+        checkStatus()
         lock.writeLock().withLock {
             val key = eventPrefix + name
             val oldEvent: Runnable? = cache[key] as Runnable?
@@ -130,6 +138,7 @@ class ActionContext {
     }
 
     fun hold() {
+        checkStatus()
         countLatch.down()
     }
 
@@ -138,6 +147,7 @@ class ActionContext {
     }
 
     fun runAsync(runnable: Runnable): Future<*>? {
+        checkStatus()
         countLatch.down()
         return executorService.submit {
             try {
@@ -151,6 +161,7 @@ class ActionContext {
     }
 
     fun runAsync(runnable: () -> Unit): Future<*>? {
+        checkStatus()
         countLatch.down()
         return executorService.submit {
             try {
@@ -164,6 +175,7 @@ class ActionContext {
     }
 
     fun <T> callAsync(callable: () -> T): Future<T>? {
+        checkStatus()
         countLatch.down()
         val actionContext = this
         return executorService.submit(Callable<T> {
@@ -178,6 +190,7 @@ class ActionContext {
     }
 
     fun runInSwingUI(runnable: () -> Unit) {
+        checkStatus()
         when {
             getFlag() == swingThreadFlag -> runnable()
             EventQueue.isDispatchThread() -> {
@@ -204,6 +217,7 @@ class ActionContext {
     }
 
     fun <T> callInSwingUI(callable: () -> T?): T? {
+        checkStatus()
         when {
             getFlag() == swingThreadFlag -> return callable()
             EventQueue.isDispatchThread() -> {
@@ -228,6 +242,7 @@ class ActionContext {
     }
 
     fun runInWriteUI(runnable: () -> Unit) {
+        checkStatus()
         if (getFlag() == writeThreadFlag) {
             runnable()
         } else {
@@ -246,6 +261,7 @@ class ActionContext {
     }
 
     fun <T> callInWriteUI(callable: () -> T?): T? {
+        checkStatus()
         if (getFlag() == writeThreadFlag) {
             return callable()
         } else {
@@ -266,7 +282,7 @@ class ActionContext {
     }
 
     fun runInReadUI(runnable: () -> Unit) {
-
+        checkStatus()
         if (getFlag() == readThreadFlag) {
             runnable()
         } else {
@@ -284,6 +300,7 @@ class ActionContext {
     }
 
     fun <T> callInReadUI(callable: () -> T?): T? {
+        checkStatus()
         if (getFlag() == readThreadFlag) {
             return callable()
         } else {
@@ -308,6 +325,7 @@ class ActionContext {
      * @see ActionContext.waitCompleteAsync
      */
     fun waitComplete() {
+        checkStatus()
         ActionContext.releaseContext()
         this.countLatch.waitFor()
         this.call(EventKey.ONCOMPLETED)
@@ -323,6 +341,7 @@ class ActionContext {
      * @see ActionContext.waitComplete
      */
     fun waitCompleteAsync() {
+        checkStatus()
         ActionContext.releaseContext()
         executorService.submit {
             this.countLatch.waitFor()
@@ -333,6 +352,7 @@ class ActionContext {
             }
         }
     }
+
     //endregion lock and run----------------------------------------------------------------
 
     //region content object-----------------------------------------------------
@@ -374,6 +394,30 @@ class ActionContext {
     }
     //endregion equals|hashCode|toString-------------------------------------------
 
+    /**
+     * stop current action
+     * force shutdown all thread if param shutdown is true
+     * todo:call completed event?
+     */
+    fun stop(shutdown: Boolean = true) {
+        Thread {
+            stopped = true
+            if (shutdown) {
+                executorService.shutdown()
+            }
+        }.start()
+    }
+
+    fun isStopped(): Boolean {
+        return stopped
+    }
+
+    fun checkStatus() {
+        if (stopped) {
+            throw ProcessCanceledException("Action was stopped")
+        }
+    }
+
     companion object {
 
         private const val readThreadFlag = 0b0001
@@ -388,15 +432,15 @@ class ActionContext {
         /**
          * Get actionContext in the current thread
          */
-        public fun getContext(): ActionContext? {
+        fun getContext(): ActionContext? {
             return localContext.get()?.actionContext
         }
 
-        public fun getFlag(): Int {
+        fun getFlag(): Int {
             return localContext.get()?.flag ?: 0
         }
 
-        public fun builder(): ActionContextBuilder {
+        fun builder(): ActionContextBuilder {
             return ActionContextBuilder()
         }
 
@@ -428,9 +472,9 @@ class ActionContext {
          * retrieves the corresponding object of this type in context in the thread
          * when used
          */
-        public inline fun <reified T : Any> local() = ThreadLocalContextBeanProxies.instance(T::class)
+        inline fun <reified T : Any> local() = ThreadLocalContextBeanProxies.instance(T::class)
 
-        public fun <T : Any> instance(clazz: KClass<T>): T {
+        fun <T : Any> instance(clazz: KClass<T>): T {
             return ThreadLocalContextBeanProxies.instance(clazz)
         }
 
@@ -517,6 +561,7 @@ class ActionContext {
         }
 
         private val appendModules: MutableList<Module> = ArrayList()
+
         private val moduleActions: MutableList<Array<Any>> = ArrayList()
 
         fun addModule(vararg modules: Module) {
