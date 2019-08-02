@@ -1,7 +1,7 @@
 package com.itangcent.common.files
 
 /**
- * Created by TomNg on 2017/2/12.
+ * Created by tangcent on 2017/2/12.
  */
 interface FileFilter {
     fun accept(file: FileWrap): Boolean

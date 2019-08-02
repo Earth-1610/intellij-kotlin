@@ -4,6 +4,7 @@ import com.intellij.ide.projectView.impl.nodes.ClassTreeNode
 import com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiDirectory
@@ -14,20 +15,20 @@ import com.itangcent.intellij.context.ActionContext
 import org.apache.commons.lang.StringUtils
 
 /**
- * Created by TomNg on 2017/2/16.
+ * Created by tangcent on 2017/2/16.
  */
 object ActionUtils {
 
     fun findCurrentPath(): String? {
         val actionContext = ActionContext.getContext()!!
         val psiFile = actionContext.cacheOrCompute(CommonDataKeys.PSI_FILE.name) {
-            actionContext.callInReadUI { actionContext.instance(AnActionEvent::class).getData(CommonDataKeys.PSI_FILE) }
+            actionContext.callInReadUI { actionContext.instance(DataContext::class).getData(CommonDataKeys.PSI_FILE) }
         }
         if (psiFile != null) return findCurrentPath(psiFile)
 
         val navigatable = actionContext.cacheOrCompute(CommonDataKeys.NAVIGATABLE.name) {
             actionContext.callInReadUI {
-                actionContext.instance(AnActionEvent::class).getData(CommonDataKeys.NAVIGATABLE)
+                actionContext.instance(DataContext::class).getData(CommonDataKeys.NAVIGATABLE)
             }
         }
         if (navigatable != null && navigatable is PsiDirectory) {//select dir
@@ -35,7 +36,7 @@ object ActionUtils {
         }
         val navigatables = actionContext.cacheOrCompute(CommonDataKeys.NAVIGATABLE_ARRAY.name) {
             actionContext.callInReadUI {
-                actionContext.instance(AnActionEvent::class).getData(CommonDataKeys.NAVIGATABLE_ARRAY)
+                actionContext.instance(DataContext::class).getData(CommonDataKeys.NAVIGATABLE_ARRAY)
             }
         }
         if (navigatables != null) {//select mult dir
@@ -74,10 +75,10 @@ object ActionUtils {
     fun findCurrentClass(): PsiClass? {
         val actionContext = ActionContext.getContext()!!
         val editor = actionContext.cacheOrCompute(CommonDataKeys.EDITOR.name) {
-            actionContext.callInReadUI { actionContext.instance(AnActionEvent::class).getData(CommonDataKeys.EDITOR) }
+            actionContext.callInReadUI { actionContext.instance(DataContext::class).getData(CommonDataKeys.EDITOR) }
         } ?: return null
         val psiFile = actionContext.cacheOrCompute(CommonDataKeys.PSI_FILE.name) {
-            actionContext.callInReadUI { actionContext.instance(AnActionEvent::class).getData(CommonDataKeys.PSI_FILE) }
+            actionContext.callInReadUI { actionContext.instance(DataContext::class).getData(CommonDataKeys.PSI_FILE) }
         } ?: return null
         var referenceAt = psiFile.findElementAt(editor.caretModel.offset)
         var cls: PsiClass? = null

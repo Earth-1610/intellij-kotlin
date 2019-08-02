@@ -87,19 +87,19 @@ jar {
 
 //task makeJar(dependsOn: ['compileKotlin', 'javadoc'], type: Jar) {
 task makeJar(dependsOn: ['compileKotlin'], type: Jar) {
-    delete 'build/libs/intellij-kotlin.jar' //生成的jar存放路径
+    delete 'build/libs/intellij-kotlin.jar' //the path of generated jar
     appendix = "tm"
     baseName = "intellij-kotlin"
     version = "1.0.0"
     classifier = "release"
-    //后缀名
+    //suffix
     extension = "jar"
-    //最终的 Jar 包名，如果没设置，默认为 [baseName]-[appendix]-[version]-[classifier].[extension]
+    //the final Jar name, if not set, defaults to [baseName]-[appendix]-[version]-[classifier].[extension]
     archiveName = "intellij-kotlin.jar"
-    //需打包的资源所在的路径集
-    def srcClassesDir = [project.buildDir.absolutePath + "/classes/kotlin/main"] //Kotlin 生成的classes文件路径
-    //初始化资源路径集
+    //paths where the resource to be packaged
+    def srcClassesDir = [project.buildDir.absolutePath + "/classes/kotlin/main"] //The path of kotlin classes
+    //original resource
     from srcClassesDir
-    //只导入资源路径集下的部分资源
+    //include class only
     include "**/*.class"
 }
