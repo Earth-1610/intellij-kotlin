@@ -4,7 +4,7 @@ import java.io.File
 import java.util.*
 
 /**
- * Created by TomNg on 2017/2/12.
+ * Created by tangcent on 2017/2/12.
  */
 class DefaultFileTraveler(private val root: String) : FileTraveler {
 
