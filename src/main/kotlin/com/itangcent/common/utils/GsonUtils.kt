@@ -8,7 +8,7 @@ import kotlin.reflect.KClass
 
 /**
  *
- * @author TomNg
+ * @author tangcent
  */
 object GsonUtils {
     private val gson = GsonBuilder()

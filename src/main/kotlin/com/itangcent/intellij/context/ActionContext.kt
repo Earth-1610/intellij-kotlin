@@ -495,7 +495,8 @@ class ActionContext {
     class ActionContextBuilder : ModuleActions {
         override fun <T : Any> bind(type: KClass<T>, callBack: (LinkedBindingBuilder<T>) -> Unit) {
             moduleActions.removeIf {
-                it.size == 3 && it[0] == BIND && it[1] == type
+                (it.size == 3 && it[0] == BIND_INSTANCE_WITH_CLASS && it[1] == type) ||
+                        (it.size == 3 && it[0] == BIND && it[1] == type)
             }
             moduleActions.add(arrayOf(BIND, type, callBack))
         }
@@ -543,7 +544,8 @@ class ActionContext {
 
         override fun <T : Any> bindInstance(cls: KClass<T>, instance: T) {
             moduleActions.removeIf {
-                it.size == 3 && it[0] == BIND_INSTANCE_WITH_CLASS && it[1] == cls
+                (it.size == 3 && it[0] == BIND_INSTANCE_WITH_CLASS && it[1] == cls) ||
+                        (it.size == 3 && it[0] == BIND && it[1] == cls)
             }
             moduleActions.add(arrayOf(BIND_INSTANCE_WITH_CLASS, cls, instance))
         }

@@ -1,7 +1,7 @@
 package com.itangcent.common.utils
 
 /**
- * @author TomNg
+ * @author tangcent
  */
 object StringUtils {
 

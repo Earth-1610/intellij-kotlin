@@ -2,8 +2,8 @@ package com.itangcent.intellij.psi
 
 import com.intellij.ide.projectView.impl.nodes.ClassTreeNode
 import com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode
-import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.pom.Navigatable
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiClassOwner
@@ -15,7 +15,6 @@ import com.itangcent.intellij.logger.Logger
 import com.itangcent.intellij.util.DirFilter
 import com.itangcent.intellij.util.FileFilter
 import com.itangcent.intellij.util.FileUtils
-import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 
 object SelectedHelper {
@@ -73,7 +72,7 @@ object SelectedHelper {
             actionContext.runInReadUI {
                 try {
                     val psiFile = actionContext.cacheOrCompute(CommonDataKeys.PSI_FILE.name) {
-                        actionContext.instance(AnActionEvent::class).getData(CommonDataKeys.PSI_FILE)
+                        actionContext.instance(DataContext::class).getData(CommonDataKeys.PSI_FILE)
                     }
                     if (psiFile != null) {
                         onFile(psiFile)
@@ -85,7 +84,7 @@ object SelectedHelper {
 
                 try {
                     val navigatable = actionContext.cacheOrCompute(CommonDataKeys.NAVIGATABLE.name) {
-                        actionContext.instance(AnActionEvent::class).getData(CommonDataKeys.NAVIGATABLE)
+                        actionContext.instance(DataContext::class).getData(CommonDataKeys.NAVIGATABLE)
                     }
                     if (navigatable != null) {
                         onNavigatable(navigatable)
@@ -97,7 +96,7 @@ object SelectedHelper {
 
                 try {
                     val navigatables = actionContext.cacheOrCompute(CommonDataKeys.NAVIGATABLE_ARRAY.name) {
-                        actionContext.instance(AnActionEvent::class).getData(CommonDataKeys.NAVIGATABLE_ARRAY)
+                        actionContext.instance(DataContext::class).getData(CommonDataKeys.NAVIGATABLE_ARRAY)
                     }
                     if (navigatables != null && navigatables.isNotEmpty()) {
                         try {
