@@ -493,7 +493,7 @@ class ActionContext {
      * Allows overridden existing bindings,instead of throwing exceptions
      */
     class ActionContextBuilder : ModuleActions {
-        override fun <T : Any> bind(type: KClass<T>, callBack: (LinkedBindingBuilder<T>) -> Unit) {
+        override fun <T : Any> bind(type: Class<T>, callBack: (LinkedBindingBuilder<T>) -> Unit) {
             moduleActions.removeIf {
                 (it.size == 3 && it[0] == BIND_INSTANCE_WITH_CLASS && it[1] == type) ||
                         (it.size == 3 && it[0] == BIND && it[1] == type)
@@ -502,7 +502,7 @@ class ActionContext {
         }
 
         override fun <T : Any> bind(
-            type: KClass<T>,
+            type: Class<T>,
             annotationType: Class<out Annotation>,
             callBack: (LinkedBindingBuilder<T>) -> Unit
         ) {
@@ -513,7 +513,7 @@ class ActionContext {
         }
 
         override fun <T : Any> bind(
-            type: KClass<T>,
+            type: Class<T>,
             annotation: Annotation,
             callBack: (LinkedBindingBuilder<T>) -> Unit
         ) {
@@ -523,7 +523,7 @@ class ActionContext {
             moduleActions.add(arrayOf(BIND_WITH_ANNOTATION, type, annotation, callBack))
         }
 
-        override fun <T : Any> bind(type: KClass<T>, namedText: String, callBack: (LinkedBindingBuilder<T>) -> Unit) {
+        override fun <T : Any> bind(type: Class<T>, namedText: String, callBack: (LinkedBindingBuilder<T>) -> Unit) {
             moduleActions.removeIf {
                 it.size == 4 && it[0] == BIND_WITH_NAME && it[1] == type && it[2] == namedText
             }
@@ -542,7 +542,7 @@ class ActionContext {
             bindInstance(instance::class as KClass<T>, instance)
         }
 
-        override fun <T : Any> bindInstance(cls: KClass<T>, instance: T) {
+        override fun <T : Any> bindInstance(cls: Class<T>, instance: T) {
             moduleActions.removeIf {
                 (it.size == 3 && it[0] == BIND_INSTANCE_WITH_CLASS && it[1] == cls) ||
                         (it.size == 3 && it[0] == BIND && it[1] == cls)
@@ -562,12 +562,18 @@ class ActionContext {
             moduleActions.add(arrayOf(BIND_CONSTANT, callBack))
         }
 
-        private val appendModules: MutableList<Module> = ArrayList()
+        private val appendModules: MutableList<Module> = LinkedList()
 
-        private val moduleActions: MutableList<Array<Any>> = ArrayList()
+        private val moduleActions: MutableList<Array<Any>> = LinkedList()
+
+        private val contextActions: MutableList<(ActionContext) -> Unit> = LinkedList()
 
         fun addModule(vararg modules: Module) {
             this.appendModules.addAll(modules)
+        }
+
+        override fun cache(name: String, bean: Any?) {
+            contextActions.add { it.cache(name, bean) }
         }
 
         fun build(): ActionContext {
@@ -575,7 +581,9 @@ class ActionContext {
                 appendModules.add(ConfiguredModule(ArrayList(moduleActions)))
                 moduleActions.clear()
             }
-            return ActionContext(*appendModules.toTypedArray())
+            val actionContext = ActionContext(*appendModules.toTypedArray())
+            contextActions.forEach { it(actionContext) }
+            return actionContext
         }
 
         companion object {
@@ -604,17 +612,17 @@ class ActionContext {
                 when (moduleAction[0]) {
                     ActionContextBuilder.BIND_WITH_ANNOTATION_TYPE -> {
                         (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit))(
-                            bind(moduleAction[1] as KClass<*>, moduleAction[2] as Class<Annotation>)
+                            bind(moduleAction[1] as Class<*>, moduleAction[2] as Class<Annotation>)
                         )
                     }
                     ActionContextBuilder.BIND_WITH_ANNOTATION -> {
                         (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit))(
-                            bind(moduleAction[1] as KClass<*>, moduleAction[2] as Annotation)
+                            bind(moduleAction[1] as Class<*>, moduleAction[2] as Annotation)
                         )
                     }
                     ActionContextBuilder.BIND_WITH_NAME -> {
                         (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit))(
-                            bind(moduleAction[1] as KClass<*>, moduleAction[2] as String)
+                            bind(moduleAction[1] as Class<*>, moduleAction[2] as String)
                         )
                     }
                     ActionContextBuilder.BIND_INSTANCE_WITH_NAME -> {
@@ -624,11 +632,11 @@ class ActionContext {
                         bindInstance(moduleAction[1])
                     }
                     ActionContextBuilder.BIND_INSTANCE_WITH_CLASS -> {
-                        bindInstance(moduleAction[1] as KClass<Any>, moduleAction[2])
+                        bindInstance(moduleAction[1] as Class<Any>, moduleAction[2])
                     }
                     ActionContextBuilder.BIND -> {
                         (moduleAction[2] as ((LinkedBindingBuilder<*>) -> Unit))(
-                            bind(moduleAction[1] as KClass<*>)
+                            bind(moduleAction[1] as Class<*>)
                         )
                     }
                     ActionContextBuilder.BIND_INTERCEPTOR -> {
@@ -653,7 +661,15 @@ class ActionContext {
             bind(type) { it.singleton() }
         }
 
-        fun <T : Any> bind(type: KClass<T>, callBack: (LinkedBindingBuilder<T>) -> Unit)
+        fun <T : Any> bind(type: Class<T>) {
+            bind(type) { it.singleton() }
+        }
+
+        fun <T : Any> bind(type: KClass<T>, callBack: (LinkedBindingBuilder<T>) -> Unit) {
+            bind(type.java, callBack)
+        }
+
+        fun <T : Any> bind(type: Class<T>, callBack: (LinkedBindingBuilder<T>) -> Unit)
 
         fun <T : Any> bind(
             type: KClass<T>, annotationType: Class<out Annotation>
@@ -662,7 +678,21 @@ class ActionContext {
         }
 
         fun <T : Any> bind(
+            type: Class<T>, annotationType: Class<out Annotation>
+        ) {
+            bind(type, annotationType) { it.singleton() }
+        }
+
+        fun <T : Any> bind(
             type: KClass<T>,
+            annotationType: Class<out Annotation>,
+            callBack: ((LinkedBindingBuilder<T>) -> Unit)
+        ) {
+            bind(type.java, annotationType, callBack)
+        }
+
+        fun <T : Any> bind(
+            type: Class<T>,
             annotationType: Class<out Annotation>,
             callBack: ((LinkedBindingBuilder<T>) -> Unit)
         )
@@ -671,19 +701,41 @@ class ActionContext {
             bind(type, annotation) { it.singleton() }
         }
 
-        fun <T : Any> bind(type: KClass<T>, annotation: Annotation, callBack: ((LinkedBindingBuilder<T>) -> Unit))
+        fun <T : Any> bind(type: Class<T>, annotation: Annotation) {
+            bind(type, annotation) { it.singleton() }
+        }
+
+        fun <T : Any> bind(type: KClass<T>, annotation: Annotation, callBack: ((LinkedBindingBuilder<T>) -> Unit)) {
+            bind(type.java, annotation, callBack)
+        }
+
+        fun <T : Any> bind(type: Class<T>, annotation: Annotation, callBack: ((LinkedBindingBuilder<T>) -> Unit))
 
         fun <T : Any> bind(type: KClass<T>, namedText: String) {
             bind(type, namedText) { it.singleton() }
         }
 
-        fun <T : Any> bind(type: KClass<T>, namedText: String, callBack: ((LinkedBindingBuilder<T>) -> Unit))
+        fun <T : Any> bind(type: Class<T>, namedText: String) {
+            bind(type, namedText) { it.singleton() }
+        }
+
+        fun <T : Any> bind(type: KClass<T>, namedText: String, callBack: ((LinkedBindingBuilder<T>) -> Unit)) {
+            bind(type.java, namedText, callBack)
+        }
+
+        fun <T : Any> bind(type: Class<T>, namedText: String, callBack: ((LinkedBindingBuilder<T>) -> Unit))
 
         fun <T : Any> bindInstance(name: String, instance: T)
 
         fun <T : Any> bindInstance(instance: T)
 
-        fun <T : Any> bindInstance(cls: KClass<T>, instance: T)
+        fun <T : Any> bindInstance(cls: KClass<T>, instance: T) {
+            bindInstance(cls.java, instance)
+        }
+
+        fun <T : Any> bindInstance(cls: Class<T>, instance: T)
+
+        fun cache(name: String, bean: Any?)
 
         fun bindInterceptor(
             classMatcher: Matcher<in Class<*>>,

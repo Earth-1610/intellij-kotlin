@@ -69,7 +69,7 @@ open class KotlinModule : AbstractModule() {
      * A helper method to bind the given type with the binding annotation.
      *
      * This allows you to replace this code ` bind(Key.get(MyType.class, SomeAnnotation.class))
-    ` *
+    `*
      *
      * with this ` bind(KMyType.class, SomeAnnotation.class) `
      */
@@ -78,6 +78,33 @@ open class KotlinModule : AbstractModule() {
         annotationType: Class<out Annotation>
     ): LinkedBindingBuilder<T> {
         return bind(Key.get(type.java, annotationType))
+    }
+
+    /**
+     * A helper method to bind the given type with the binding annotation.
+     *
+     * This allows you to replace this code ` bind(Key.get(MyType.class, SomeAnnotation.class))
+    `*
+     *
+     * with this ` bind(KMyType.class, SomeAnnotation.class) `
+     */
+    protected fun <T : Any> bind(
+        type: Class<T>,
+        annotationType: Class<out Annotation>
+    ): LinkedBindingBuilder<T> {
+        return bind(Key.get(type, annotationType))
+    }
+
+    /**
+     * A helper method to bind the given type with the binding annotation.
+     *
+     * This allows you to replace this code ` bind(Key.get(MyType.class, someAnnotation))
+    ` *
+     *
+     * with this ` bind(KMyType.class, someAnnotation) `
+     */
+    protected fun <T : Any> bind(type: Class<T>, annotation: Annotation): LinkedBindingBuilder<T> {
+        return bind(Key.get(type, annotation))
     }
 
     /**
@@ -102,6 +129,19 @@ open class KotlinModule : AbstractModule() {
      * with this ` bind(KMyType.class, "myName") `
      */
     protected fun <T : Any> bind(type: KClass<T>, namedText: String): LinkedBindingBuilder<T> {
+        return bind(type, Names.named(namedText))
+    }
+
+    /**
+     * A helper method to bind the given type with the [com.google.inject.name.Named] annotation
+     * of the given text value.
+     *
+     * This allows you to replace this code ` bind(Key.get(MyType.class, Names.named("myName")))
+    ` *
+     *
+     * with this ` bind(KMyType.class, "myName") `
+     */
+    protected fun <T : Any> bind(type: Class<T>, namedText: String): LinkedBindingBuilder<T> {
         return bind(type, Names.named(namedText))
     }
 
@@ -133,6 +173,11 @@ open class KotlinModule : AbstractModule() {
 
     @Suppress("UNCHECKED_CAST")
     protected fun <T : Any> bindInstance(cls: KClass<T>, instance: T) {
+        bind(cls).toInstance(instance)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    protected fun <T : Any> bindInstance(cls: Class<T>, instance: T) {
         bind(cls).toInstance(instance)
     }
 
