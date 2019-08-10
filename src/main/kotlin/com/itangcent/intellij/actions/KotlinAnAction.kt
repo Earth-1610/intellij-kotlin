@@ -22,7 +22,10 @@ abstract class KotlinAnAction : AnAction {
 
     private val log: Logger = Logger.getInstance(this.javaClass.name)
 
-    open protected fun onBuildActionContext(builder: ActionContext.ActionContextBuilder) {
+    open protected fun onBuildActionContext(
+        event: AnActionEvent,
+        builder: ActionContext.ActionContextBuilder
+    ) {
     }
 
     override fun actionPerformed(anActionEvent: AnActionEvent) {
@@ -33,7 +36,7 @@ abstract class KotlinAnAction : AnAction {
         actionContextBuilder.bindInstance(Project::class, project)
         actionContextBuilder.bindInstance(AnActionEvent::class, anActionEvent)
         actionContextBuilder.bind(DataContext::class) { it.with(ActionEventDataContextAdaptor::class).singleton() }
-        onBuildActionContext(actionContextBuilder)
+        onBuildActionContext(anActionEvent, actionContextBuilder)
         val actionContext = actionContextBuilder.build()
         actionContext.init(this)
 
