@@ -18,7 +18,7 @@ abstract class AbstractLocalFileRepository : LocalFileRepository {
     protected val pluginName: String = "shadow"
 
     private fun fileOf(path: String): File {
-        val repositoryFile = "${basePath()}/.$pluginName/$path"
+        val repositoryFile = "${basePath()}${File.separator}.$pluginName${File.separator}$path"
         return File(repositoryFile)
     }
 

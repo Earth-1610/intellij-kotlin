@@ -13,6 +13,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.util.PsiTreeUtil
 import com.itangcent.intellij.context.ActionContext
 import org.apache.commons.lang.StringUtils
+import java.io.File
 
 /**
  * Created by tangcent on 2017/2/16.
@@ -61,7 +62,7 @@ object ActionUtils {
 
     fun findCurrentPath(psiFile: PsiFile): String? {
         val dir = ActionContext.getContext()!!.callInReadUI { psiFile.parent }
-        return dir?.let { findCurrentPath(it) } + "/" + psiFile.name
+        return dir?.let { findCurrentPath(it) } + File.separator + psiFile.name
     }
 
     fun findCurrentPath(psiDirectory: PsiDirectory): String? {
