@@ -28,6 +28,7 @@ import com.intellij.psi.PsiJavaFile
 import com.intellij.psi.PsiManager
 import com.intellij.psi.impl.compiled.ClsClassImpl
 import com.intellij.util.containers.stream
+import java.io.File
 import java.util.*
 
 class SourceHelper(private val myProject: Project) {
@@ -127,8 +128,7 @@ class SourceHelper(private val myProject: Project) {
                     }
                 } else {
                     val prefix = dir.path.removePrefix(rootPath)
-                        .replace('/', '.')
-                        .replace('\\', '.')
+                        .replace(File.separatorChar, '.')
                     if (javaName.startsWith(prefix)) {
                         dirs.push(child)
                     }

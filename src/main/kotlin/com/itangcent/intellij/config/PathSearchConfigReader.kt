@@ -17,17 +17,17 @@ abstract class PathSearchConfigReader : AbstractConfigReader() {
         var currentPath = ActionUtils.findCurrentPath()
 
         while (!currentPath.isNullOrBlank()) {
-            val path = "$currentPath/$configFileName"
+            val path = "$currentPath${File.separator}$configFileName"
 
             val configFile = File(path)
             if (configFile.exists() && configFile.isFile) {
                 logger?.trace("find config file:$path")
                 configFiles.add(path)
             }
-            if (currentPath.isNullOrBlank() || !currentPath.contains("/")) {
+            if (currentPath.isNullOrBlank() || !currentPath.contains(File.separator)) {
                 break
             }
-            currentPath = currentPath.substringBeforeLast("/")
+            currentPath = currentPath.substringBeforeLast(File.separator)
         }
 
         return configFiles

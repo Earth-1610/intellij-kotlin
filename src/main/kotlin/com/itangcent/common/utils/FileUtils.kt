@@ -16,15 +16,15 @@ object FileUtils {
     fun search(localPath: String, filePattern: String): List<File> {
         var localPath = localPath
         var filePattern = filePattern
-        if (StringUtils.endsWith(localPath, "/")) {
+        if (StringUtils.endsWith(localPath, File.separator)) {
             localPath = localPath.substring(0, localPath.length - 1)
         }
         val fileTraveler: FileTraveler = DefaultFileTraveler(localPath)
 
         if (StringUtils.isNotEmpty(filePattern)) {
-            if (StringUtils.startsWith(filePattern, "./")) {
+            if (StringUtils.startsWith(filePattern, ".${File.separator}")) {
                 filePattern = "$localPath${filePattern.substring(1)}"
-            } else if (StringUtils.startsWith(filePattern, "~/")) {
+            } else if (StringUtils.startsWith(filePattern, "~${File.separator}")) {
                 val userHome = System.getProperty("user.home")
                 filePattern = "$userHome${filePattern.substring(1)}"
             }
@@ -87,11 +87,11 @@ object FileUtils {
     fun renameFile(path: String, oldName: String, newName: String) {
         if (oldName != newName) {
             //Renaming is necessary if the new file name is different from the previous file name
-            val oldFile = File("$path/$oldName")
+            val oldFile = File("$path${File.separator}$oldName")
             if (!oldFile.exists()) {
                 return //The rename file does not exist
             }
-            val newFile = File("$path/$newName")
+            val newFile = File("$path${File.separator}$newName")
 
             if (newFile.exists()) {
                 if (!newFile.delete()) {
@@ -106,7 +106,7 @@ object FileUtils {
     fun renameFile(file: File, newName: String): File {
         if (file.name != newName) {
             //Renaming is necessary if the new file name is different from the previous file name
-            val newPath = file.parent + "/" + newName
+            val newPath = file.parent + File.separator + newName
             doRenameFile(file, newPath)
             return File(newPath)
         }
@@ -116,7 +116,7 @@ object FileUtils {
     fun move(file: File, newPath: String) {
         var newPath = newPath
         if (file.parent != newPath) {
-            newPath = newPath + "/" + file.name
+            newPath = newPath + File.separator + file.name
             doRenameFile(file, newPath)
         }
     }
