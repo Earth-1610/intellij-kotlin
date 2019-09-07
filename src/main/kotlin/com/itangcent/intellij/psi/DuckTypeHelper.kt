@@ -136,7 +136,7 @@ class DuckTypeHelper {
                         if (typeCanonicalText.length == 1) {//maybe generic
                             return SingleDuckType(findClass(CommonClassNames.JAVA_LANG_OBJECT, context)!!)
                         }
-                        logger!!.warn("error to resolve class:" + typeCanonicalText)
+                        logger!!.warn("error to resolve class:$typeCanonicalText")
                         null
                     }
                     else -> {
@@ -267,6 +267,6 @@ class DuckTypeHelper {
     //endregion isQualified--------------------------------------------------------
 
     companion object {
-        val ARRAY_SUFFIX = "[]"
+        const val ARRAY_SUFFIX = "[]"
     }
 }

@@ -1,15 +1,16 @@
 package com.itangcent.intellij.actions
 
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.Messages
 import com.itangcent.common.exception.ProcessCanceledException
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.singleton
 import com.itangcent.intellij.extend.guice.with
+import com.itangcent.intellij.logger.NotificationHelper
 import org.apache.commons.lang3.exception.ExceptionUtils
 import javax.swing.Icon
 
@@ -22,7 +23,10 @@ abstract class KotlinAnAction : AnAction {
 
     private val log: Logger = Logger.getInstance(this.javaClass.name)
 
-    open protected fun onBuildActionContext(builder: ActionContext.ActionContextBuilder) {
+    open protected fun onBuildActionContext(
+        event: AnActionEvent,
+        builder: ActionContext.ActionContextBuilder
+    ) {
     }
 
     override fun actionPerformed(anActionEvent: AnActionEvent) {
@@ -33,7 +37,7 @@ abstract class KotlinAnAction : AnAction {
         actionContextBuilder.bindInstance(Project::class, project)
         actionContextBuilder.bindInstance(AnActionEvent::class, anActionEvent)
         actionContextBuilder.bind(DataContext::class) { it.with(ActionEventDataContextAdaptor::class).singleton() }
-        onBuildActionContext(actionContextBuilder)
+        onBuildActionContext(anActionEvent, actionContextBuilder)
         val actionContext = actionContextBuilder.build()
         actionContext.init(this)
 
@@ -45,12 +49,13 @@ abstract class KotlinAnAction : AnAction {
                     actionPerformed(actionContext, project, anActionEvent)
                 } catch (ex: Exception) {
                     log.info("Error:${ex.message}trace:${ExceptionUtils.getStackTrace(ex)}")
-                    actionContext.runInWriteUI {
-                        Messages.showMessageDialog(
-                            project, when (ex) {
-                                is ProcessCanceledException -> ex.stopMsg
+                    NotificationHelper.instance().notify {
+                        it.createNotification(
+                            when (ex) {
+                                is ProcessCanceledException -> ex.stopMsg ?: "Unknown"
                                 else -> "Error at:${ex.message}trace:${ExceptionUtils.getStackTrace(ex)}"
-                            }, "Error", Messages.getInformationIcon()
+                            },
+                            NotificationType.ERROR
                         )
                     }
                 }
@@ -58,10 +63,12 @@ abstract class KotlinAnAction : AnAction {
         } else {
             log.info("Found unfinished task!")
             actionContext.runInWriteUI {
-                Messages.showMessageDialog(
-                    project, "Found unfinished task! ",
-                    "Error", Messages.getInformationIcon()
-                )
+                NotificationHelper.instance().notify {
+                    it.createNotification(
+                        "Found unfinished task!",
+                        NotificationType.ERROR
+                    )
+                }
             }
         }
         actionContext.waitCompleteAsync()

@@ -7,8 +7,14 @@ import com.intellij.openapi.actionSystem.DataKey
 
 class ActionEventDataContextAdaptor : DataContext {
 
-    @Inject
-    private val actionEvent: AnActionEvent? = null
+    @Inject(optional = true)
+    private var actionEvent: AnActionEvent? = null
+
+    constructor()
+
+    constructor(actionEvent: AnActionEvent?) {
+        this.actionEvent = actionEvent
+    }
 
     override fun <T : Any?> getData(key: DataKey<T>): T? {
         return actionEvent!!.getData(key)

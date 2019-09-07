@@ -9,6 +9,7 @@ class SimpleRuleKey<T> : RuleKey<T> {
     private val mode: RuleMode
     private val defaultVal: T?
 
+    @Suppress("UNCHECKED_CAST")
     constructor(name: String, ruleType: KClass<*>, mode: RuleMode) {
         this.name = name
         this.ruleType = ruleType as KClass<Rule<T>>
@@ -16,6 +17,7 @@ class SimpleRuleKey<T> : RuleKey<T> {
         this.defaultVal = null
     }
 
+    @Suppress("UNCHECKED_CAST")
     constructor(name: String, ruleType: KClass<*>, mode: RuleMode, defaultVal: T?) {
         this.name = name
         this.ruleType = ruleType as KClass<Rule<T>>
