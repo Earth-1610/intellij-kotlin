@@ -1,2 +1,5 @@
 rootProject.name = 'intellij-kotlin'
+include 'guice-action'
+include 'commons'
+include 'intellij-idea'
 

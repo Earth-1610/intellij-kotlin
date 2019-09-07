@@ -24,8 +24,20 @@ hs_err_pid*
 
 \.gradle/
 
-\build/
+/build/
 
 \.idea/
 
 \.DS_Store
+
+commons/build/
+
+guice-action/idea-sandbox/
+guice-action/build/
+
+intellij-idea/idea-sandbox/
+intellij-idea/build/
+
+/idea-sandbox/
+
+/gradle/
