@@ -1,13 +1,20 @@
 package com.itangcent.intellij.config.rule
 
+import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
-import com.itangcent.intellij.psi.PsiAnnotationUtils
-import com.itangcent.intellij.util.DocCommentUtils
+import com.itangcent.intellij.jvm.AnnotationHelper
+import com.itangcent.intellij.jvm.DocHelper
 import java.util.regex.Pattern
 
 @Singleton
 class SimpleRuleParser : RuleParser {
+
+    @Inject
+    private val annotationHelper: AnnotationHelper? = null
+
+    @Inject
+    private val docHelper: DocHelper? = null
 
     private val stringRuleParseCache: HashMap<String, StringRule> = HashMap()
 
@@ -37,12 +44,12 @@ class SimpleRuleParser : RuleParser {
             val annName = annStr.substringBefore("#").trim()
             val annValue = annStr.substringAfter("#", "value").trim()
             srule = StringRule.of { context ->
-                context.asPsiModifierListOwner()?.let { PsiAnnotationUtils.findAttr(it, annName, annValue) }
+                context.asPsiMember()?.let { annotationHelper!!.findAttr(it, annName, annValue) }
             }
         } else if (tinyRuleStr.startsWith("#")) {
             val tag = tinyRuleStr.substringAfter("#").trim()
             srule = StringRule.of { context ->
-                DocCommentUtils.findDocsByTag(context.asPsiDocCommentOwner()?.docComment, tag)
+                docHelper!!.findDocsByTag(context.asPsiMember(), tag)
             }
         }
 
@@ -90,12 +97,12 @@ class SimpleRuleParser : RuleParser {
             val annValue = annStr.substringAfter("#", "").trim()
             srule = if (annValue.isBlank()) {
                 BooleanRule.of { context ->
-                    context.asPsiModifierListOwner()?.let { PsiAnnotationUtils.findAnn(it, annName) } != null
+                    context.asPsiMember()?.let { annotationHelper!!.hasAnn(it, annName) }
                 }
             } else {
                 BooleanRule.of { context ->
                     str2Bool(
-                        context.asPsiModifierListOwner()?.let { PsiAnnotationUtils.findAttr(it, annName, annValue) },
+                        context.asPsiMember()?.let { annotationHelper!!.findAttr(it, annName, annValue) },
                         defaultValue
                     )
                 }
@@ -103,7 +110,7 @@ class SimpleRuleParser : RuleParser {
         } else if (tinyRuleStr.startsWith("#")) {
             val tag = tinyRuleStr.substringAfter("#").trim()
             srule = BooleanRule.of { context ->
-                DocCommentUtils.hasTag(context.asPsiDocCommentOwner()?.docComment, tag)
+                docHelper!!.hasTag(context.asPsiMember(), tag)
             }
         } else if (tinyRuleStr.startsWith("$")) {
             val prefix = tinyRuleStr.substringBefore(":").trim()

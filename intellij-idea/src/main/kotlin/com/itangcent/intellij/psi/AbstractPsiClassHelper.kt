@@ -6,6 +6,7 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
 import com.itangcent.common.utils.invokeMethod
+import com.itangcent.common.utils.reduceSafely
 import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.logger.Logger
@@ -575,9 +576,9 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     ): ArrayList<HashMap<String, Any?>>? {
         actionContext!!.checkStatus()
         val options: ArrayList<HashMap<String, Any?>> = ArrayList()
-        var clsName: String? = null
+        val clsName: String?
         var property: String? = null
-        var cls: PsiClass? = null
+        val cls: PsiClass?
 
         if (classNameWithProperty.contains("#")) {
             clsName = classNameWithProperty.substringBefore("#")

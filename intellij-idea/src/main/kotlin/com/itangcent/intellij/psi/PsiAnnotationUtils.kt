@@ -2,9 +2,12 @@ package com.itangcent.intellij.psi
 
 import com.intellij.psi.PsiAnnotation
 import com.intellij.psi.PsiModifierListOwner
-import com.itangcent.intellij.context.ActionContext
-import com.itangcent.intellij.logger.Logger
 
+
+@Deprecated(
+    "use com.itangcent.intellij.jvm.AnnotationHelper instead",
+    replaceWith = ReplaceWith("com.itangcent.intellij.jvm.AnnotationHelper")
+)
 object PsiAnnotationUtils {
 
     fun findAnn(ele: PsiModifierListOwner, annName: String): PsiAnnotation? {

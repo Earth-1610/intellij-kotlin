@@ -2,7 +2,7 @@ package com.itangcent.intellij.config.rule
 
 import com.intellij.psi.PsiElement
 import com.itangcent.intellij.context.ActionContext
-import com.itangcent.intellij.util.reduceSafely
+import com.itangcent.common.utils.reduceSafely
 
 fun List<StringRule>?.compute(element: PsiElement, mode: StringRuleMode = StringRuleMode.MERGE): String? {
     if (this.isNullOrEmpty()) {

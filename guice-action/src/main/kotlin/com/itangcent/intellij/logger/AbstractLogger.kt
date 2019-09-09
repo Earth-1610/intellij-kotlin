@@ -1,6 +1,6 @@
 package com.itangcent.intellij.logger
 
-import com.itangcent.common.utils.SysUtils
+import com.itangcent.common.utils.SystemUtils
 import org.apache.commons.lang3.StringUtils
 
 abstract class AbstractLogger : Logger {
@@ -10,9 +10,9 @@ abstract class AbstractLogger : Logger {
     open protected fun processLog(level: Logger.Level, msg: String) {
         try {
             val formatMsg: String? = if (StringUtils.isEmpty(level.getLevelStr())) {
-                msg + SysUtils.newLine()
+                msg + SystemUtils.newLine()
             } else {
-                "[" + level.getLevelStr() + "]\t" + msg + SysUtils.newLine()
+                "[" + level.getLevelStr() + "]\t" + msg + SystemUtils.newLine()
             }
             processLog(formatMsg)
         } catch (e: InterruptedException) {

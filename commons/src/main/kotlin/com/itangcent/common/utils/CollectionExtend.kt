@@ -1,4 +1,4 @@
-package com.itangcent.intellij.util
+package com.itangcent.common.utils
 
 /**
  * Accumulates value starting with the first element and applying [operation] from left to right to current accumulator value and each element.
