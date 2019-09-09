@@ -8,9 +8,7 @@ import com.intellij.psi.impl.java.stubs.impl.PsiClassStubImpl
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.util.containers.isNullOrEmpty
 import com.intellij.util.containers.stream
-import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.psi.PsiClassHelper.Companion.normalTypes
-import com.itangcent.intellij.util.DocCommentUtils
 import com.itangcent.intellij.util.KV
 import org.apache.commons.lang3.StringUtils
 

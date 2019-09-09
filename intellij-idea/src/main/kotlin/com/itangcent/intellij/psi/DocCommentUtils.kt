@@ -1,11 +1,16 @@
-package com.itangcent.intellij.util
+package com.itangcent.intellij.psi
 
 import com.intellij.psi.javadoc.PsiDocComment
 import com.intellij.util.containers.stream
+import com.itangcent.common.utils.reduceSafely
 import com.itangcent.intellij.context.ActionContext
 import org.apache.commons.lang3.StringUtils
 import java.util.*
 
+@Deprecated(
+    "use com.itangcent.intellij.jvm.DocHelper instead",
+    replaceWith = ReplaceWith("com.itangcent.intellij.jvm.DocHelper")
+)
 object DocCommentUtils {
 
     fun hasTag(docComment: PsiDocComment?, tag: String?): Boolean {

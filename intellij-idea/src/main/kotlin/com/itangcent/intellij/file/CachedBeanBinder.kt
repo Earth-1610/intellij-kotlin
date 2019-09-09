@@ -20,7 +20,7 @@ class CachedBeanBinder<T : Any> : BeanBinder<T> {
         if (cache == null) {
             cache = delegate.tryRead()
         }
-        return cache as T?
+        return cache
     }
 
     override fun read(): T {

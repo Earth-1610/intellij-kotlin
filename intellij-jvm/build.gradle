@@ -49,8 +49,6 @@ dependencies {
 
     compile project(":guice-action")
 
-    compile project(":intellij-jvm")
-
 }
 
 compileKotlin {

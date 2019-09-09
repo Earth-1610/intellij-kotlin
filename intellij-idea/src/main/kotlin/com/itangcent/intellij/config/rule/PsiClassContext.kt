@@ -3,7 +3,7 @@ package com.itangcent.intellij.config.rule
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiDocCommentOwner
 import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiModifierListOwner
+import com.intellij.psi.PsiMember
 
 open class PsiClassContext : PsiElementContext {
     protected var psiClass: PsiClass
@@ -24,7 +24,7 @@ open class PsiClassContext : PsiElementContext {
         return psiClass
     }
 
-    override fun asPsiModifierListOwner(): PsiModifierListOwner {
+    override fun asPsiMember(): PsiMember? {
         return psiClass
     }
 

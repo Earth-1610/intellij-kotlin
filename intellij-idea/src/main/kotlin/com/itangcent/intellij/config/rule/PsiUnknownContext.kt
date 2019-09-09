@@ -2,6 +2,7 @@ package com.itangcent.intellij.config.rule
 
 import com.intellij.psi.PsiDocCommentOwner
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiMember
 import com.intellij.psi.PsiModifierListOwner
 import com.itangcent.common.utils.getPropertyValue
 
@@ -34,4 +35,12 @@ open class PsiUnknownContext : PsiElementContext {
         }
         return null
     }
+
+    override fun asPsiMember(): PsiMember? {
+        if (psiElement is PsiMember) {
+            return psiElement as PsiMember
+        }
+        return null
+    }
+
 }

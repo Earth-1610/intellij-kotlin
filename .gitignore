@@ -38,6 +38,9 @@ guice-action/build/
 intellij-idea/idea-sandbox/
 intellij-idea/build/
 
+intellij-jvm/idea-sandbox/
+intellij-jvm/build/
+
 /idea-sandbox/
 
 /gradle/

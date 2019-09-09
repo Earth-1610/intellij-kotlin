@@ -1,6 +1,7 @@
 package com.itangcent.common.utils
 
 import kotlin.jvm.internal.CallableReference
+import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KProperty
 
@@ -96,4 +97,18 @@ fun <R> KProperty<R>.packageLevelInvokeMethodByName(methodName: String, vararg a
  */
 fun <R> KFunction<R>.packageLevelInvokeMethodByName(methodName: String, vararg args: Any?): Any? {
     return invokeTopMethodByMethodName(this as CallableReference, methodName, *args)
+}
+
+
+@Suppress("UNCHECKED_CAST")
+fun <Input, Out : Any> Input?.cast(out: KClass<Out>): Out? {
+    if (this == null) {
+        return null
+    }
+
+    if (out.isInstance(this)) {
+        return this as Out
+    }
+
+    return null
 }
