@@ -44,12 +44,12 @@ class SimpleRuleParser : RuleParser {
             val annName = annStr.substringBefore("#").trim()
             val annValue = annStr.substringAfter("#", "value").trim()
             srule = StringRule.of { context ->
-                context.asPsiMember()?.let { annotationHelper!!.findAttr(it, annName, annValue) }
+                context.getResource()?.let { annotationHelper!!.findAttrAsString(it, annName, annValue) }
             }
         } else if (tinyRuleStr.startsWith("#")) {
             val tag = tinyRuleStr.substringAfter("#").trim()
             srule = StringRule.of { context ->
-                docHelper!!.findDocsByTag(context.asPsiMember(), tag)
+                docHelper!!.findDocsByTag(context.getResource(), tag)
             }
         }
 
@@ -97,12 +97,12 @@ class SimpleRuleParser : RuleParser {
             val annValue = annStr.substringAfter("#", "").trim()
             srule = if (annValue.isBlank()) {
                 BooleanRule.of { context ->
-                    context.asPsiMember()?.let { annotationHelper!!.hasAnn(it, annName) }
+                    context.getResource()?.let { annotationHelper!!.hasAnn(it, annName) }
                 }
             } else {
                 BooleanRule.of { context ->
                     str2Bool(
-                        context.asPsiMember()?.let { annotationHelper!!.findAttr(it, annName, annValue) },
+                        context.getResource()?.let { annotationHelper!!.findAttrAsString(it, annName, annValue) },
                         defaultValue
                     )
                 }
@@ -110,7 +110,7 @@ class SimpleRuleParser : RuleParser {
         } else if (tinyRuleStr.startsWith("#")) {
             val tag = tinyRuleStr.substringAfter("#").trim()
             srule = BooleanRule.of { context ->
-                docHelper!!.hasTag(context.asPsiMember(), tag)
+                docHelper!!.hasTag(context.getResource(), tag)
             }
         } else if (tinyRuleStr.startsWith("$")) {
             val prefix = tinyRuleStr.substringBefore(":").trim()

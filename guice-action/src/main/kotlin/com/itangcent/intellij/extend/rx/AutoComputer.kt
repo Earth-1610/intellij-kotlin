@@ -280,7 +280,7 @@ class AutoComputer {
         return ListenAble(this, wrapGetter)
     }
 
-    fun listenIndex(component: JComboBox<*>, action: (Int?) -> Unit): ListenAble<Int> {
+    fun listenIndex(component: JComboBox<*>): ListenAble<Int> {
         val wrapGetter = wrapJComboBoxIndexComponent(component)
         return ListenAble(this, wrapGetter)
     }

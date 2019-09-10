@@ -1,21 +1,21 @@
 package com.itangcent.intellij.jvm
 
 import com.google.inject.ImplementedBy
-import com.intellij.psi.PsiMember
+import com.intellij.psi.PsiElement
 import com.itangcent.intellij.jvm.standard.StandardDocHelper
 
 @ImplementedBy(StandardDocHelper::class)
 interface DocHelper {
 
-    fun getTagMapOfDocComment(psiMember: PsiMember?): Map<String, String?>
+    fun getTagMapOfDocComment(psiElement: PsiElement?): Map<String, String?>
 
-    fun getAttrOfDocComment(psiMember: PsiMember?): String?
+    fun getAttrOfDocComment(psiElement: PsiElement?): String?
 
-    fun findDocsByTagAndName(psiMember: PsiMember?, tag: String, name: String): String?
+    fun findDocsByTagAndName(psiElement: PsiElement?, tag: String, name: String): String?
 
-    fun findDocsByTag(psiMember: PsiMember?, tag: String?): String?
+    fun findDocsByTag(psiElement: PsiElement?, tag: String?): String?
 
-    fun findDocByTag(psiMember: PsiMember?, tag: String?): String?
+    fun findDocByTag(psiElement: PsiElement?, tag: String?): String?
 
-    fun hasTag(psiMember: PsiMember?, tag: String?): Boolean
+    fun hasTag(psiElement: PsiElement?, tag: String?): Boolean
 }

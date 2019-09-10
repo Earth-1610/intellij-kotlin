@@ -112,3 +112,22 @@ fun <Input, Out : Any> Input?.cast(out: KClass<Out>): Out? {
 
     return null
 }
+
+fun Any?.isNullOrEmpty(): Boolean {
+    return when {
+        this == null -> true
+        this is String && this.isEmpty() -> true
+        this is Array<*> && this.isEmpty() -> true
+        this is Collection<*> && this.isEmpty() -> true
+        this is Map<*, *> && this.isEmpty() -> true
+        else -> false
+    }
+}
+
+fun Any?.isNullOrBlank(): Boolean {
+    return when {
+        this == null -> true
+        this is String && this.isBlank() -> true
+        else -> false
+    }
+}

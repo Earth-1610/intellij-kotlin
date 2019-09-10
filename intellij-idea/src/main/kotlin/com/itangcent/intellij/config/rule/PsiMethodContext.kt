@@ -1,6 +1,9 @@
 package com.itangcent.intellij.config.rule
 
-import com.intellij.psi.*
+import com.intellij.psi.PsiDocCommentOwner
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiMethod
+import com.intellij.psi.PsiModifierListOwner
 
 open class PsiMethodContext : PsiElementContext {
 
@@ -22,7 +25,7 @@ open class PsiMethodContext : PsiElementContext {
         return psiMethod
     }
 
-    override fun asPsiMember(): PsiMember? {
+    override fun asPsiModifierListOwner(): PsiModifierListOwner? {
         return psiMethod
     }
 
