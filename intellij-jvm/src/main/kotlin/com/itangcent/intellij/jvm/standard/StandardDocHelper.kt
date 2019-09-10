@@ -2,7 +2,7 @@ package com.itangcent.intellij.jvm.standard
 
 import com.google.inject.Singleton
 import com.intellij.psi.PsiDocCommentOwner
-import com.intellij.psi.PsiMember
+import com.intellij.psi.PsiElement
 import com.intellij.util.containers.stream
 import com.itangcent.common.utils.cast
 import com.itangcent.common.utils.reduceSafely
@@ -14,16 +14,16 @@ import java.util.*
 @Singleton
 class StandardDocHelper : DocHelper {
 
-    override fun hasTag(psiMember: PsiMember?, tag: String?): Boolean {
-        return psiMember.cast(PsiDocCommentOwner::class)?.docComment
+    override fun hasTag(psiElement: PsiElement?, tag: String?): Boolean {
+        return psiElement.cast(PsiDocCommentOwner::class)?.docComment
             ?.let { docComment ->
                 val tags = ActionContext.getContext()!!.callInReadUI { docComment.findTagByName(tag) }
                 return@let tags != null
             } ?: false
     }
 
-    override fun findDocByTag(psiMember: PsiMember?, tag: String?): String? {
-        return psiMember.cast(PsiDocCommentOwner::class)?.docComment
+    override fun findDocByTag(psiElement: PsiElement?, tag: String?): String? {
+        return psiElement.cast(PsiDocCommentOwner::class)?.docComment
             ?.let { docComment ->
                 return@let ActionContext.getContext()!!.callInReadUI {
                     val tags = docComment.findTagsByName(tag)
@@ -46,8 +46,8 @@ class StandardDocHelper : DocHelper {
             }
     }
 
-    override fun findDocsByTag(psiMember: PsiMember?, tag: String?): String? {
-        return psiMember.cast(PsiDocCommentOwner::class)?.docComment
+    override fun findDocsByTag(psiElement: PsiElement?, tag: String?): String? {
+        return psiElement.cast(PsiDocCommentOwner::class)?.docComment
             ?.let { docComment ->
                 return@let ActionContext.getContext()!!.callInReadUI {
                     val tags = docComment.findTagsByName(tag)
@@ -66,8 +66,8 @@ class StandardDocHelper : DocHelper {
             }
     }
 
-    override fun findDocsByTagAndName(psiMember: PsiMember?, tag: String, name: String): String? {
-        return psiMember.cast(PsiDocCommentOwner::class)?.docComment
+    override fun findDocsByTagAndName(psiElement: PsiElement?, tag: String, name: String): String? {
+        return psiElement.cast(PsiDocCommentOwner::class)?.docComment
             ?.let { docComment ->
                 return@let ActionContext.getContext()!!.callInReadUI {
                     for (paramDocTag in docComment.findTagsByName(tag)) {
@@ -101,8 +101,8 @@ class StandardDocHelper : DocHelper {
             }
     }
 
-    override fun getAttrOfDocComment(psiMember: PsiMember?): String? {
-        return psiMember.cast(PsiDocCommentOwner::class)?.docComment
+    override fun getAttrOfDocComment(psiElement: PsiElement?): String? {
+        return psiElement.cast(PsiDocCommentOwner::class)?.docComment
             ?.let { docComment ->
                 return@let ActionContext.getContext()!!.callInReadUI {
                     val descriptions = docComment.descriptionElements
@@ -115,8 +115,8 @@ class StandardDocHelper : DocHelper {
             }
     }
 
-    override fun getTagMapOfDocComment(psiMember: PsiMember?): Map<String, String?> {
-        return psiMember.cast(PsiDocCommentOwner::class)?.docComment
+    override fun getTagMapOfDocComment(psiElement: PsiElement?): Map<String, String?> {
+        return psiElement.cast(PsiDocCommentOwner::class)?.docComment
             ?.let { docComment ->
                 return@let ActionContext.getContext()!!.callInReadUI {
                     val tagMap: HashMap<String, String?> = HashMap()
