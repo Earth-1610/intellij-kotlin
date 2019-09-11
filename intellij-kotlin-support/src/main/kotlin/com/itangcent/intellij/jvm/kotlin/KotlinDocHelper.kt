@@ -5,6 +5,7 @@ import com.google.inject.Singleton
 import com.intellij.psi.PsiElement
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.standard.StandardDocHelper
+import org.apache.commons.lang3.StringUtils
 import org.jetbrains.kotlin.asJava.elements.KtLightElement
 import org.jetbrains.kotlin.kdoc.parser.KDocKnownTag
 import org.jetbrains.kotlin.kdoc.psi.api.KDoc
@@ -72,7 +73,7 @@ class KotlinDocHelper : StandardDocHelper() {
                     .filter { it is KDocSection }
                     .map { it as KDocSection }
                     .flatMap { it.findTagsByName(tag) }
-                    .map { it.getContent() }
+                    .map { it.contentOrLink() }
                     .firstOrNull()
             }
         }
@@ -93,7 +94,7 @@ class KotlinDocHelper : StandardDocHelper() {
                     .filter { it is KDocSection }
                     .map { it as KDocSection }
                     .flatMap { it.findTagsByName(tag) }
-                    .map { it.getContent() }
+                    .mapNotNull { it.contentOrLink() }
                     .toList()
             }
         }
@@ -127,7 +128,7 @@ class KotlinDocHelper : StandardDocHelper() {
                     .map { it as KDocSection }
                     .flatMap { it.findTagsByName(tag) }
                     .filter { it.getSubjectName() == name }
-                    .map { it.getContent() }
+                    .map { it.contentOrLink() }
                     .firstOrNull()
             }
         }
@@ -165,7 +166,7 @@ class KotlinDocHelper : StandardDocHelper() {
                     .filter { it is KDocSection }
                     .map { it as KDocSection }
                     .flatMap { it.findTagsByName(tag) }
-                    .forEach { tagMap[it.getSubjectName() ?: ""] = it.getContent() }
+                    .forEach { tagMap[it.getSubjectName() ?: ""] = it.contentOrLink() }
                 return@callInReadUI tagMap
             } ?: Collections.emptyMap()
         }
@@ -191,7 +192,7 @@ class KotlinDocHelper : StandardDocHelper() {
                     .filter { it is KDocTag }
                     .map { it as KDocTag }
                     .forEach {
-                        tagMap[it.name ?: ""] = it.getContent()
+                        tagMap[it.name ?: ""] = it.contentOrLink()
                     }
                 return@callInReadUI tagMap
             } ?: Collections.emptyMap()
@@ -215,6 +216,24 @@ class KotlinDocHelper : StandardDocHelper() {
 
         if (psiElement is KtDeclaration) {
             return actionContext!!.callInReadUI { psiElement.docComment }
+        }
+
+        return null
+    }
+
+    private fun KDocTag?.contentOrLink(): String? {
+        if (this == null) {
+            return null
+        }
+        val content = this.getContent()
+        if (StringUtils.isNotBlank(content)) {
+            return content
+        }
+
+        var link = this.getSubjectLink()?.text
+
+        if (StringUtils.isNotBlank(link)) {
+            return link
         }
 
         return null

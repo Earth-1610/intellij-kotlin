@@ -7,8 +7,6 @@ import com.intellij.psi.*
 import com.intellij.psi.impl.java.stubs.impl.PsiClassStubImpl
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.util.containers.isNullOrEmpty
-import com.intellij.util.containers.stream
-import com.itangcent.intellij.psi.PsiClassHelper.Companion.normalTypes
 import com.itangcent.intellij.util.KV
 import org.apache.commons.lang3.StringUtils
 
@@ -25,7 +23,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
 
         var result: String? = null
 
-        val attrInDoc = DocCommentUtils.getAttrOfDocComment(field.docComment)
+        val attrInDoc = docHelper!!.getAttrOfDocComment(field)
         if (StringUtils.isNotBlank(attrInDoc)) {
             result = (result ?: "") + attrInDoc
         }
@@ -81,19 +79,10 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     }
 
     protected open fun getSees(field: PsiJavaDocumentedElement): List<String>? {
-        val docComment = field.docComment ?: return null
-
-        val sees: ArrayList<String> = ArrayList()
-        docComment.findTagsByName("see")
-            .map { psiDocTag ->
-                psiDocTag.dataElements.stream()
-                    .map { it.text }
-                    .filter { it != null }
-                    .reduce { s1, s2 -> s1 + s2 }
-                    .orElse(null)
-            }
-            .forEach { it?.let { sees.add(it) } }
-        if (sees.isEmpty()) return null
+        val sees: List<String>? = docHelper!!.findDocsByTag(field, "see")
+        if (sees.isNullOrEmpty()) {
+            return null
+        }
         return sees
     }
 
@@ -128,11 +117,11 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     }
 
     override fun isNormalType(typeName: String): Boolean {
-        return normalTypes.containsKey(classRuleConfig?.tryConvert(typeName) ?: typeName)
+        return jvmClassHelper!!.isNormalType(classRuleConfig?.tryConvert(typeName) ?: typeName)
     }
 
     override fun getDefaultValue(typeName: String): Any? {
-        return normalTypes[classRuleConfig?.tryConvert(typeName) ?: typeName]
+        return jvmClassHelper!!.getDefaultValue(classRuleConfig?.tryConvert(typeName) ?: typeName)
     }
 
     override fun getJsonFieldName(psiField: PsiField): String {
@@ -215,7 +204,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                 commentKV[fieldName] = getAttrOfField(field)
                 resolveSeeDoc(field, commentKV)
             } else if (fieldOrMethod is PsiMethod) {
-                val attrInDoc = DocCommentUtils.getAttrOfDocComment(fieldOrMethod.docComment)
+                val attrInDoc = docHelper!!.getAttrOfDocComment(fieldOrMethod)
                 if (StringUtils.isNotBlank(attrInDoc)) {
                     commentKV[fieldName] = attrInDoc
                 }
@@ -245,7 +234,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                 commentKV[fieldName] = getAttrOfField(field)
                 resolveSeeDoc(field, commentKV)
             } else if (fieldOrMethod is PsiMethod) {
-                val attrInDoc = DocCommentUtils.getAttrOfDocComment(fieldOrMethod.docComment)
+                val attrInDoc = docHelper!!.getAttrOfDocComment(fieldOrMethod)
                 if (StringUtils.isNotBlank(attrInDoc)) {
                     commentKV[fieldName] = attrInDoc
                 }
