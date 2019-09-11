@@ -465,7 +465,15 @@ class ActionContext {
         }
 
         fun builder(): ActionContextBuilder {
-            return ActionContextBuilder()
+            val actionContextBuilder = ActionContextBuilder()
+            defaultInjects.forEach { it(actionContextBuilder) }
+            return actionContextBuilder
+        }
+
+        private var defaultInjects: LinkedList<(ActionContextBuilder) -> Unit> = LinkedList()
+
+        fun addDefaultInject(inject: (ActionContextBuilder) -> Unit) {
+            defaultInjects.add(inject)
         }
 
         private fun setContext(actionContext: ActionContext) {

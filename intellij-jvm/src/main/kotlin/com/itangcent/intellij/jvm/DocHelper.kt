@@ -9,11 +9,13 @@ interface DocHelper {
 
     fun getTagMapOfDocComment(psiElement: PsiElement?): Map<String, String?>
 
+    fun getSubTagMapOfDocComment(psiElement: PsiElement?, tag: String): Map<String, String?>
+
     fun getAttrOfDocComment(psiElement: PsiElement?): String?
 
     fun findDocsByTagAndName(psiElement: PsiElement?, tag: String, name: String): String?
 
-    fun findDocsByTag(psiElement: PsiElement?, tag: String?): String?
+    fun findDocsByTag(psiElement: PsiElement?, tag: String?): List<String>?
 
     fun findDocByTag(psiElement: PsiElement?, tag: String?): String?
 

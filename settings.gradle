@@ -3,4 +3,5 @@ include 'guice-action'
 include 'commons'
 include 'intellij-idea'
 include 'intellij-jvm'
+include 'intellij-kotlin-support'
 

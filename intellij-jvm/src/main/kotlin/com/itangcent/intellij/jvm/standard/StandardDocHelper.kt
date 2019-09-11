@@ -12,7 +12,7 @@ import org.apache.commons.lang3.StringUtils
 import java.util.*
 
 @Singleton
-class StandardDocHelper : DocHelper {
+open class StandardDocHelper : DocHelper {
 
     override fun hasTag(psiElement: PsiElement?, tag: String?): Boolean {
         return psiElement.cast(PsiDocCommentOwner::class)?.docComment
@@ -46,22 +46,26 @@ class StandardDocHelper : DocHelper {
             }
     }
 
-    override fun findDocsByTag(psiElement: PsiElement?, tag: String?): String? {
+    override fun findDocsByTag(psiElement: PsiElement?, tag: String?): List<String>? {
         return psiElement.cast(PsiDocCommentOwner::class)?.docComment
             ?.let { docComment ->
                 return@let ActionContext.getContext()!!.callInReadUI {
+
                     val tags = docComment.findTagsByName(tag)
                     if (tags.isEmpty()) return@callInReadUI null
-                    val res = StringBuilder()
+                    val res: LinkedList<String> = LinkedList()
                     for (paramDocTag in tags) {
-                        paramDocTag.dataElements
+                        val data = paramDocTag.dataElements
                             .map { it?.text }
                             .filterNot { StringUtils.isBlank(it) }
                             .filterNotNull()
                             .map { it.trim() }
-                            .forEach { res.append(it) }
+                            .reduceSafely { s1, s2 -> "$s1 $s2" }
+                        if (!data.isNullOrEmpty()) {
+                            res.add(data)
+                        }
                     }
-                    return@callInReadUI res.toString()
+                    return@callInReadUI res
                 }
             }
     }
@@ -113,6 +117,38 @@ class StandardDocHelper : DocHelper {
                         ?.orElse(null)
                 }
             }
+    }
+
+    override fun getSubTagMapOfDocComment(psiElement: PsiElement?, tag: String): Map<String, String?> {
+        return psiElement.cast(PsiDocCommentOwner::class)?.docComment
+            ?.let { docComment ->
+                return@let ActionContext.getContext()!!.callInReadUI {
+                    val subTagMap: HashMap<String, String?> = HashMap()
+                    for (paramDocTag in docComment.findTagsByName(tag)) {
+
+                        var name: String? = null
+                        var value: String? = null
+
+                        val elements = paramDocTag.dataElements
+                            .asSequence()
+                            .map { it?.text }
+                            .filterNot { StringUtils.isBlank(it) }
+
+                        for (element in elements) {
+                            when {
+                                name == null -> name = element
+                                value == null -> value = element
+                                else -> value += element
+                            }
+                        }
+
+                        if (name != null) {
+                            subTagMap[name] = value
+                        }
+                    }
+                    return@callInReadUI subTagMap
+                }
+            } ?: Collections.emptyMap()
     }
 
     override fun getTagMapOfDocComment(psiElement: PsiElement?): Map<String, String?> {
