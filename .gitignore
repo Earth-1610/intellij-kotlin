@@ -41,6 +41,9 @@ intellij-idea/build/
 intellij-jvm/idea-sandbox/
 intellij-jvm/build/
 
+intellij-kotlin-support/idea-sandbox/
+intellij-kotlin-support/build/
+
 /idea-sandbox/
 
 /gradle/

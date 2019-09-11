@@ -7,7 +7,7 @@ import com.itangcent.common.utils.cast
 import com.itangcent.intellij.jvm.AnnotationHelper
 
 @Singleton
-class StandardAnnotationHelper : AnnotationHelper {
+open class StandardAnnotationHelper : AnnotationHelper {
     override fun hasAnn(psiElement: PsiElement?, annName: String): Boolean {
         return findAnn(psiElement, annName) != null
     }
@@ -17,11 +17,11 @@ class StandardAnnotationHelper : AnnotationHelper {
         return annToMap(psiAnn)
     }
 
-    private fun annToMap(psiAnn: PsiAnnotation): LinkedHashMap<String, Any?> {
+    protected fun annToMap(psiAnn: PsiAnnotation): LinkedHashMap<String, Any?> {
         val map: LinkedHashMap<String, Any?> = LinkedHashMap()
         psiAnn.parameterList.attributes.stream()
             .forEach { attr ->
-                attr.name?.let { map[it] = resolveValue(attr.value) }
+                map[attr.name ?: "value"] = resolveValue(attr.value)
             }
 
         return map
@@ -62,7 +62,7 @@ class StandardAnnotationHelper : AnnotationHelper {
             ?: psiElement.cast(PsiModifierListOwner::class)?.annotations
     }
 
-    private fun resolveValue(psiExpression: PsiElement?): Any? {
+    protected open fun resolveValue(psiExpression: PsiElement?): Any? {
         when (psiExpression) {
             null -> return null
             is PsiLiteralExpression -> return psiExpression.value?.toString()

@@ -49,7 +49,7 @@ class SimpleRuleParser : RuleParser {
         } else if (tinyRuleStr.startsWith("#")) {
             val tag = tinyRuleStr.substringAfter("#").trim()
             srule = StringRule.of { context ->
-                docHelper!!.findDocsByTag(context.getResource(), tag)
+                docHelper!!.findDocByTag(context.getResource(), tag)
             }
         }
 
