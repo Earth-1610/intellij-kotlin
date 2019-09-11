@@ -9,18 +9,13 @@ import com.itangcent.common.utils.invokeMethod
 import com.itangcent.common.utils.reduceSafely
 import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.jvm.DocHelper
+import com.itangcent.intellij.jvm.JvmClassHelper
+import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
+import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.ELEMENT_OF_COLLECTION
 import com.itangcent.intellij.logger.Logger
-import com.itangcent.intellij.psi.PsiClassHelper.Companion.ELEMENT_OF_COLLECTION
-import com.itangcent.intellij.psi.PsiClassHelper.Companion.JAVA_OBJECT_METHODS
-import com.itangcent.intellij.psi.PsiClassHelper.Companion.KEY_OF_MAP
-import com.itangcent.intellij.psi.PsiClassHelper.Companion.VALUE_OF_MAP
-import com.itangcent.intellij.psi.PsiClassHelper.Companion.fieldModifiers
-import com.itangcent.intellij.psi.PsiClassHelper.Companion.hasAnyModify
-import com.itangcent.intellij.psi.PsiClassHelper.Companion.isCollection
-import com.itangcent.intellij.psi.PsiClassHelper.Companion.isMap
-import com.itangcent.intellij.psi.PsiClassHelper.Companion.normalTypes
-import com.itangcent.intellij.psi.PsiClassHelper.Companion.staticFinalFieldModifiers
-import com.itangcent.intellij.util.*
+import com.itangcent.intellij.util.KV
+import com.itangcent.intellij.util.Magics
 import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.exception.ExceptionUtils
 import java.util.*
@@ -44,6 +39,12 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     @Inject
     protected val ruleComputer: RuleComputer? = null
+
+    @Inject
+    protected val docHelper: DocHelper? = null
+
+    @Inject
+    protected val jvmClassHelper: JvmClassHelper? = null
 
     @Suppress("UNCHECKED_CAST")
     open protected fun <T> getResolvedInfo(key: Any?, option: Int): T? {
@@ -123,7 +124,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 }
                 return copy(list)
             }
-            isCollection(castTo) -> {   //list type
+            jvmClassHelper!!.isCollection(castTo) -> {   //list type
 
                 val list = java.util.ArrayList<Any>()
                 cacheResolvedInfo(castTo, option, list)//cache
@@ -140,7 +141,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 }
                 return copy(list)
             }
-            isMap(castTo) -> {   //list type
+            jvmClassHelper.isMap(castTo) -> {   //list type
                 val map: HashMap<Any, Any?> = HashMap()
                 cacheResolvedInfo(castTo, option, map)//cache
                 val keyType = PsiUtil.substituteTypeParameter(castTo, CommonClassNames.JAVA_UTIL_MAP, 0, false)
@@ -319,7 +320,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     }
                     return copy(list)
                 }
-                isCollection(type) -> {   //list type
+                jvmClassHelper!!.isCollection(type) -> {   //list type
                     val list = ArrayList<Any>()
 
                     cacheResolvedInfo(clsWithParam, option, list)
@@ -350,7 +351,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                     return copy(list)
                 }
-                isMap(type) -> {
+                jvmClassHelper.isMap(type) -> {
                     //list type
                     val map: HashMap<Any, Any?> = HashMap()
                     cacheResolvedInfo(clsWithParam, option, map)
@@ -360,7 +361,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     var defaultKey: Any? = null
 
                     if (keyType == null) {
-                        val realKeyType = clsWithParam.genericInfo?.get(KEY_OF_MAP)
+                        val realKeyType = clsWithParam.genericInfo?.get(StandardJvmClassHelper.KEY_OF_MAP)
                         defaultKey = getTypeObject(realKeyType, context, option)
                     }
 
@@ -379,7 +380,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     var defaultValue: Any? = null
 
                     if (valueType == null) {
-                        val realValueType = clsWithParam.genericInfo?.get(VALUE_OF_MAP)
+                        val realValueType = clsWithParam.genericInfo?.get(StandardJvmClassHelper.VALUE_OF_MAP)
                         defaultValue = getTypeObject(realValueType, context, option)
                     }
                     if (defaultValue == null) {
@@ -482,11 +483,11 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         }
 
         for (field in psiClass.allFields) {
-            if (hasAnyModify(field, staticFinalFieldModifiers)) {
+            if (jvmClassHelper!!.isStaticFinal(field)) {
                 continue
             }
 
-            if (!hasAnyModify(field, fieldModifiers)) {
+            if (!jvmClassHelper.isAccessibleField(field)) {
                 continue
             }
 
@@ -498,7 +499,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         if (JsonOption.readGetter(option)) {
             for (method in psiClass.allMethods) {
                 val methodName = method.name
-                if (JAVA_OBJECT_METHODS.contains(methodName)) continue
+                if (jvmClassHelper!!.isBasicMethod(methodName)) continue
                 val propertyName = propertyNameOfGetter(methodName) ?: continue
                 if (readGetter && !fieldNames!!.add(propertyName)) continue
                 if (method.isConstructor) continue
@@ -703,25 +704,25 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             return staticResolvedInfo[resourceClass]!!
         }
         val res = ArrayList<Map<String, Any?>>()
-        val checkModifier: Set<String> =
-            if (resourceClass.isInterface) {
-                staticFinalFieldModifiers
-            } else {
-                PsiClassHelper.publicStaticFinalFieldModifiers
-            }
+        val filter: (PsiField) -> Boolean = if (resourceClass.isInterface) {
+            { field -> jvmClassHelper!!.isStaticFinal(field) }
+        } else {
+            { field -> jvmClassHelper!!.isPublicStaticFinal(field) }
+        }
         for (field in resourceClass.allFields) {
 
-            if (!hasAnyModify(field, checkModifier)) {
+            if (!filter(field)) {
                 continue
             }
 
             val value = field.computeConstantValue() ?: continue
 
-            val constant = HashMap<String, Any?>()
-            constant.put("name", field.name)
-            constant.put("value", value.toString())
-            constant.put("desc", getAttrOfField(field))
-            res.add(constant)
+            res.add(
+                KV.create<String, Any?>()
+                    .set("name", field.name)
+                    .set("value", value.toString())
+                    .set("desc", getAttrOfField(field))
+            )
         }
         staticResolvedInfo[resourceClass] = res
         return res
@@ -806,7 +807,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
         var result: String? = null
 
-        val attrInDoc = DocCommentUtils.getAttrOfDocComment(field.docComment)
+        val attrInDoc = docHelper!!.getAttrOfDocComment(field)
         if (StringUtils.isNotBlank(attrInDoc)) {
             result = (result ?: "") + attrInDoc
         }
@@ -840,11 +841,11 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     override fun isNormalType(typeName: String): Boolean {
-        return normalTypes.containsKey(typeName)
+        return jvmClassHelper!!.isNormalType(typeName)
     }
 
     override fun getDefaultValue(typeName: String): Any? {
-        return normalTypes[typeName]
+        return jvmClassHelper!!.getDefaultValue(typeName)
     }
 
     override fun unboxArrayOrList(psiType: PsiType): PsiType {
@@ -854,7 +855,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             psiType is PsiArrayType -> {   //array type
                 return psiType.getDeepComponentType()
             }
-            isCollection(psiType) -> {   //list type
+            jvmClassHelper!!.isCollection(psiType) -> {   //list type
                 val iterableType = PsiUtil.extractIterableTypeParameter(psiType, false)
                 return when {
                     iterableType != null -> iterableType
@@ -931,7 +932,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     }
                     kv[fieldName] = list
                 }
-                isCollection(type) -> {   //list type
+                jvmClassHelper!!.isCollection(type) -> {   //list type
                     val iterableType = PsiUtil.extractIterableTypeParameter(type, false)
                     val iterableClass = PsiUtil.resolveClassInClassTypeOnly(iterableType)
                     val list = ArrayList<Any>()
@@ -945,7 +946,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     }
                     kv[fieldName] = list
                 }
-                isMap(type) -> {   //map type
+                jvmClassHelper.isMap(type) -> {   //map type
                     val map: HashMap<Any, Any?> = HashMap()
                     val keyType =
                         PsiUtil.substituteTypeParameter(type, CommonClassNames.JAVA_UTIL_MAP, 0, false)
@@ -1078,7 +1079,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 }
                 kv[fieldName] = list
             }
-            isCollection(type) -> {   //list type
+            jvmClassHelper!!.isCollection(type) -> {   //list type
                 val list = ArrayList<Any>()
                 val iterableType = PsiUtil.extractIterableTypeParameter(type, false)
                 val iterableClass = PsiUtil.resolveClassInClassTypeOnly(iterableType)
@@ -1099,7 +1100,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 }
                 kv[fieldName] = list
             }
-            isMap(type) -> {   //list type
+            jvmClassHelper.isMap(type) -> {   //list type
                 val map: HashMap<Any, Any?> = HashMap()
                 val keyType =
                     PsiUtil.substituteTypeParameter(type, CommonClassNames.JAVA_UTIL_MAP, 0, false)
@@ -1151,7 +1152,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     ) {
 
     }
-
 }
 
 object JsonOption {
