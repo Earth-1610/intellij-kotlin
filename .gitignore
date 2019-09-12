@@ -24,8 +24,26 @@ hs_err_pid*
 
 \.gradle/
 
-\build/
+/build/
 
 \.idea/
 
 \.DS_Store
+
+commons/build/
+
+guice-action/idea-sandbox/
+guice-action/build/
+
+intellij-idea/idea-sandbox/
+intellij-idea/build/
+
+intellij-jvm/idea-sandbox/
+intellij-jvm/build/
+
+intellij-kotlin-support/idea-sandbox/
+intellij-kotlin-support/build/
+
+/idea-sandbox/
+
+/gradle/
