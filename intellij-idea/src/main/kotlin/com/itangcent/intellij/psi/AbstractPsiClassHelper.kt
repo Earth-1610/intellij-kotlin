@@ -11,10 +11,11 @@ import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.DocHelper
 import com.itangcent.intellij.jvm.JvmClassHelper
+import com.itangcent.intellij.jvm.PsiClassHelper
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.ELEMENT_OF_COLLECTION
 import com.itangcent.intellij.logger.Logger
-import com.itangcent.intellij.util.KV
+import com.itangcent.common.utils.KV
 import com.itangcent.intellij.util.Magics
 import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.exception.ExceptionUtils
