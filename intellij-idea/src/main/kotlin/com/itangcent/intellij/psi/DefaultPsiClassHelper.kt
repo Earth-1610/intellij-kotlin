@@ -7,7 +7,7 @@ import com.intellij.psi.*
 import com.intellij.psi.impl.java.stubs.impl.PsiClassStubImpl
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.util.containers.isNullOrEmpty
-import com.itangcent.intellij.util.KV
+import com.itangcent.common.utils.KV
 import org.apache.commons.lang3.StringUtils
 
 @Singleton

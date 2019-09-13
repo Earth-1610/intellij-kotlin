@@ -1,12 +1,10 @@
-package com.itangcent.intellij.psi
+package com.itangcent.intellij.jvm
 
-import com.google.inject.ImplementedBy
 import com.intellij.psi.*
-import com.itangcent.intellij.util.KV
+import com.itangcent.common.utils.KV
 
-
-@ImplementedBy(DefaultPsiClassHelper::class)
 interface PsiClassHelper {
+
     fun getTypeObject(psiType: PsiType?, context: PsiElement): Any?
 
     fun getTypeObject(psiType: PsiType?, context: PsiElement, option: Int): Any?
