@@ -7,7 +7,8 @@ import com.intellij.psi.*
 import com.intellij.psi.impl.java.stubs.impl.PsiClassStubImpl
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.util.containers.isNullOrEmpty
-import com.itangcent.intellij.util.KV
+import com.itangcent.common.utils.KV
+import com.itangcent.intellij.jvm.SingleDuckType
 import org.apache.commons.lang3.StringUtils
 
 @Singleton
@@ -103,7 +104,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                 null -> psiType
                 "null" -> PsiType.NULL
                 else -> {
-                    val cls = tmTypeHelper!!.findClass(convertTo, context)
+                    val cls = duckTypeHelper!!.findClass(convertTo, context)
                     if (cls != null) {
                         PsiTypesUtil.getClassType(cls)
                     } else {

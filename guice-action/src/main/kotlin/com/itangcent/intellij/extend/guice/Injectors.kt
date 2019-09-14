@@ -43,6 +43,12 @@ fun <T : Any> LinkedBindingBuilder<T>.with(implementation: KClass<out T>): Scope
     return this.to(implementation.java)
 }
 
+/** See the EDSL examples at [com.google.inject.Binder].  */
+@Suppress("UNCHECKED_CAST")
+fun <T : Any> LinkedBindingBuilder<T>.withUnsafe(implementation: KClass<*>): ScopedBindingBuilder {
+    return this.to(implementation.java as Class<T>)
+}
+
 /**
  * #todo:provider暂时无法完成PostConstruct
  */

@@ -20,6 +20,6 @@ interface JvmClassHelper {
     fun isNormalType(typeName: String): Boolean
 
     fun getDefaultValue(typeName: String): Any?
-    
+
     fun isBasicMethod(methodName: String): Boolean
 }

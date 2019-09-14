@@ -1,4 +1,4 @@
-package com.itangcent.intellij.util
+package com.itangcent.common.utils
 
 
 import java.util.*
