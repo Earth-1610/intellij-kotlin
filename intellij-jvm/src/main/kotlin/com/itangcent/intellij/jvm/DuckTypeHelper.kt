@@ -1,11 +1,11 @@
-package com.itangcent.intellij.psi
+package com.itangcent.intellij.jvm
 
 import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiUtil
+import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.logger.Logger
-import com.itangcent.intellij.util.safeComputeIfAbsent
 import com.siyeh.ig.psiutils.ClassUtils
 import org.apache.commons.lang3.StringUtils
 import java.util.*
@@ -98,7 +98,12 @@ class DuckTypeHelper {
 
         when {
             typeCanonicalText == "?" -> {
-                return SingleDuckType(findClass(CommonClassNames.JAVA_LANG_OBJECT, context)!!)
+                return SingleDuckType(
+                    findClass(
+                        CommonClassNames.JAVA_LANG_OBJECT,
+                        context
+                    )!!
+                )
             }
             typeCanonicalText.endsWith("[]") -> {
                 val componentTypeCanonicalText = typeCanonicalText.removeSuffix(ARRAY_SUFFIX)
@@ -134,7 +139,12 @@ class DuckTypeHelper {
                 return when (paramCls) {
                     null -> {
                         if (typeCanonicalText.length == 1) {//maybe generic
-                            return SingleDuckType(findClass(CommonClassNames.JAVA_LANG_OBJECT, context)!!)
+                            return SingleDuckType(
+                                findClass(
+                                    CommonClassNames.JAVA_LANG_OBJECT,
+                                    context
+                                )!!
+                            )
                         }
                         logger!!.warn("error to resolve class:$typeCanonicalText")
                         null
@@ -162,7 +172,7 @@ class DuckTypeHelper {
         }
 
         if (cls == null) {
-            if (fqClassName.contains(".")) return null
+            if (fqClassName.contains("")) return null
 
             try {
                 cls = ClassUtils.findClass("java.lang." + fqClassName.capitalize(), context)

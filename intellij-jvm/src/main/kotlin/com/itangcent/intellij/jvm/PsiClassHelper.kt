@@ -21,8 +21,6 @@ interface PsiClassHelper {
 
     fun getDefaultValue(typeName: String): Any?
 
-    fun resolvePropertyOrMethodOfClass(psiClass: PsiClass, propertyOrMethod: String): PsiElement?
-
     fun getJsonFieldName(psiField: PsiField): String
 
     fun parseStaticFields(psiClass: PsiClass): List<Map<String, Any?>>
@@ -37,8 +35,5 @@ interface PsiClassHelper {
         defaultPropertyName: String
     ): ArrayList<HashMap<String, Any?>>?
 
-    fun resolveClass(className: String, psiMember: PsiMember): PsiClass?
-
-    fun getContainingClass(psiMember: PsiMember): PsiClass?
 
 }
