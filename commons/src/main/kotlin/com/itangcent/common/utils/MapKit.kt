@@ -1,4 +1,4 @@
-package com.itangcent.intellij.util
+package com.itangcent.common.utils
 
 fun <K, V> MutableMap<K, V>.safeComputeIfAbsent(key: K, mappingFunction: (K) -> V): V? {
     var mappingValue: V? = null

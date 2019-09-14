@@ -4,16 +4,20 @@ import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.itangcent.intellij.jvm.PsiClassHelper
+import com.itangcent.intellij.jvm.PsiResolver
 import com.itangcent.intellij.jvm.standard.StandardAnnotationHelper
 import org.jetbrains.kotlin.asJava.classes.KtLightClass
 import org.jetbrains.kotlin.asJava.elements.KtLightMember
 import org.jetbrains.kotlin.asJava.elements.KtLightPsiLiteral
 import org.jetbrains.kotlin.idea.util.findAnnotation
-import org.jetbrains.kotlin.psi.KtAnnotationEntry
-import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.ValueArgument
+import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.psiUtil.plainContent
 import org.jetbrains.uast.getContainingClass
 
+
+/**
+ * see https://kotlinlang.org/docs/reference/annotations.html
+ */
 @Singleton
 class KotlinAnnotationHelper : StandardAnnotationHelper() {
 
@@ -22,6 +26,9 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
 
     @Inject(optional = true)
     private val psiClassHelper: PsiClassHelper? = null
+
+    @Inject(optional = true)
+    private val psiResolver: PsiResolver? = null
 
     override fun hasAnn(psiElement: PsiElement?, annName: String): Boolean {
 
@@ -115,10 +122,6 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
         return name
     }
 
-    private fun getArgName(psiElement: PsiElement?, annName: String, it: Map.Entry<ValueArgument, Int>): String? {
-        return getArgName(psiElement, annName, it.key, it.value)
-    }
-
     private fun findDefaultParamName(psiElement: PsiElement?, annName: String, index: Int): String? {
 
         if (psiClassHelper == null) {
@@ -130,7 +133,7 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
             else -> psiElement.getContainingClass()
         } ?: return null
 
-        val resolveClass = psiClassHelper.resolveClass(annName, psiMember) ?: return null
+        val resolveClass = psiResolver!!.resolveClass(annName, psiMember) ?: return null
         if (resolveClass is KtLightClass) {
             val parameters = resolveClass.kotlinOrigin?.getPrimaryConstructorParameterList()?.parameters ?: return null
             if (parameters.size > index) {
@@ -142,6 +145,12 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
             return "value"
         }
 
+        //only named arguments are available for java annotations
+//        return Stream.of(*resolveClass.methods)
+//            .map { it.name }
+//            .skip(index - 1)
+//            .findFirst()
+//            .orElse(null)
         return null
     }
 
@@ -174,6 +183,9 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
                 return psiExpression.text
             }
             is PsiLiteralExpression -> return psiExpression.value?.toString()
+            is KtCollectionLiteralExpression -> {
+                return psiExpression.getInnerExpressions().map { resolveValue(it) }.toTypedArray()
+            }
             is PsiReferenceExpression -> {
                 val value = psiExpression.resolve()
                 if (value is PsiExpression) {
@@ -194,6 +206,9 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
             }
             is PsiArrayInitializerMemberValue -> {
                 return psiExpression.initializers.map { resolveValue(it) }.toTypedArray()
+            }
+            is KtStringTemplateExpression -> {
+                return psiExpression.plainContent
             }
             else -> {
                 return psiExpression.text
