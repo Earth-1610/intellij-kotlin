@@ -2,19 +2,17 @@ package com.itangcent.intellij.psi
 
 import com.google.inject.Inject
 import com.intellij.psi.*
-import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
+import com.itangcent.common.utils.KV
 import com.itangcent.common.utils.invokeMethod
 import com.itangcent.common.utils.reduceSafely
 import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.context.ActionContext
-import com.itangcent.intellij.jvm.DocHelper
-import com.itangcent.intellij.jvm.JvmClassHelper
+import com.itangcent.intellij.jvm.*
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.ELEMENT_OF_COLLECTION
 import com.itangcent.intellij.logger.Logger
-import com.itangcent.intellij.util.KV
 import com.itangcent.intellij.util.Magics
 import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.exception.ExceptionUtils
@@ -32,7 +30,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     protected val logger: Logger? = null
 
     @Inject
-    protected val tmTypeHelper: DuckTypeHelper? = null
+    protected val duckTypeHelper: DuckTypeHelper? = null
 
     @Inject
     protected val actionContext: ActionContext? = null
@@ -45,6 +43,9 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     @Inject
     protected val jvmClassHelper: JvmClassHelper? = null
+
+    @Inject
+    protected val psiResolver: PsiResolver? = null
 
     @Suppress("UNCHECKED_CAST")
     open protected fun <T> getResolvedInfo(key: Any?, option: Int): T? {
@@ -175,7 +176,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 val typeCanonicalText = castTo.canonicalText
                 if (typeCanonicalText.contains('<') && typeCanonicalText.endsWith('>')) {
 
-                    val tmType = tmTypeHelper!!.resolve(castTo, context)
+                    val tmType = duckTypeHelper!!.resolve(castTo, context)
 
                     if (tmType != null) {
                         val result = getTypeObject(tmType, context, option)
@@ -313,7 +314,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                             )
                         }
                         else -> getTypeObject(
-                            tmTypeHelper!!.ensureType(deepType, clsWithParam.genericInfo),
+                            duckTypeHelper!!.ensureType(deepType, clsWithParam.genericInfo),
                             context,
                             option
                         )?.let { list.add(it) }
@@ -342,7 +343,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                             )
                         }
                         iterableType != null -> getTypeObject(
-                            tmTypeHelper!!.ensureType(
+                            duckTypeHelper!!.ensureType(
                                 iterableType,
                                 clsWithParam.genericInfo
                             ), context, option
@@ -368,7 +369,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     if (defaultKey == null) {
                         defaultKey = if (keyType != null) {
                             getTypeObject(
-                                tmTypeHelper!!.ensureType(keyType, clsWithParam.genericInfo),
+                                duckTypeHelper!!.ensureType(keyType, clsWithParam.genericInfo),
                                 context,
                                 option
                             )
@@ -386,7 +387,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     if (defaultValue == null) {
                         if (valueType != null) {
                             defaultValue = getTypeObject(
-                                tmTypeHelper!!.ensureType(valueType, clsWithParam.genericInfo),
+                                duckTypeHelper!!.ensureType(valueType, clsWithParam.genericInfo),
                                 context,
                                 option
                             )
@@ -433,7 +434,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         }
 
         val psiClass = if (JsonOption.needComment(option)) {
-            getResourceClass(clsWithParam.psiClass()!!)
+            getResourceClass(clsWithParam.psiClass())
         } else {
             clsWithParam.psiClass()
         }
@@ -525,50 +526,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         return psiType
     }
 
-    override fun resolvePropertyOrMethodOfClass(psiClass: PsiClass, propertyOrMethod: String): PsiElement? {
-        actionContext!!.checkStatus()
-        if (propertyOrMethod.endsWith(")")) {
-            if (!propertyOrMethod.contains("(")) {
-                logger!!.warn("error to resolve:[$propertyOrMethod]")
-                return null
-            }
-
-            val methodName = propertyOrMethod.substringBefore("(")
-            var candidates = psiClass.allMethods.filter { it.name == methodName }.toList()
-            when {
-                candidates.isEmpty() -> return null
-                candidates.size == 1 -> return candidates[0]
-            }
-
-            val params = propertyOrMethod.substringAfter("(")
-                .removeSuffix(")")
-                .split(",")
-            candidates = candidates.filter { it.parameters.size == params.size }
-
-            when {
-                candidates.isEmpty() -> return null
-                candidates.size == 1 -> return candidates[0]
-            }
-
-
-            candidates = candidates.filter { method ->
-                return@filter method.parameterList.parameters
-                    .filterIndexed { index, parameter -> !parameter.type.canonicalText.contains(params[index]) }
-                    .none()
-            }
-
-            when {
-                candidates.isEmpty() -> return null
-                candidates.size == 1 -> return candidates[0]
-            }
-
-            return null
-        } else {
-            return psiClass.allFields.firstOrNull { it.name == propertyOrMethod }
-                ?: psiClass.allMethods.firstOrNull { it.name == propertyOrMethod }
-        }
-    }
-
     @Suppress("UNCHECKED_CAST")
     override fun resolveEnumOrStatic(
         classNameWithProperty: String,
@@ -587,7 +544,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         } else {
             clsName = classNameWithProperty
         }
-        cls = resolveClass(clsName, psiMember)
+        cls = psiResolver!!.resolveClass(clsName, psiMember)
         if (cls == null) return null
 
         if (cls.isEnum) {
@@ -653,47 +610,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         return options
     }
 
-    override fun resolveClass(className: String, psiMember: PsiMember): PsiClass? {
-        return when {
-            className.contains(".") -> tmTypeHelper!!.findClass(className, psiMember)
-            else -> getContainingClass(psiMember)?.let { resolveClassFromImport(it, className) }
-                ?: tmTypeHelper!!.findClass(className, psiMember)
-        }
-    }
-
-    override fun getContainingClass(psiMember: PsiMember): PsiClass? {
-        psiMember.containingClass?.let { return it }
-        if (psiMember is PsiClass) return psiMember
-        return null
-    }
-
-    protected open fun resolveClassFromImport(psiClass: PsiClass, clsName: String): PsiClass? {
-        actionContext!!.checkStatus()
-
-        val imports = PsiTreeUtil.findChildrenOfType(psiClass.context, PsiImportStatement::class.java)
-
-        var cls = imports
-            .mapNotNull { it.qualifiedName }
-            .firstOrNull { it.endsWith(".$clsName") }
-            ?.let { tmTypeHelper!!.findClass(it, psiClass) }
-        if (cls != null) {
-            return cls
-        }
-
-        val defaultPackage = psiClass.qualifiedName!!.substringBeforeLast(".")
-        cls = tmTypeHelper!!.findClass("$defaultPackage.$clsName", psiClass)
-        if (cls != null) {
-            return cls
-        }
-        cls = imports
-            .mapNotNull { it.qualifiedName }
-            .filter { it.endsWith(".*") }
-            .map { it -> it.removeSuffix("*") + clsName }
-            .map { tmTypeHelper.findClass(it, psiClass) }
-            .firstOrNull()
-
-        return cls
-    }
 
     protected open val staticResolvedInfo: HashMap<PsiClass, List<Map<String, Any?>>> = HashMap()
 
@@ -1072,7 +988,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                         )
                     }
                     else -> getTypeObject(
-                        tmTypeHelper!!.ensureType(deepType, duckType.genericInfo),
+                        duckTypeHelper!!.ensureType(deepType, duckType.genericInfo),
                         resourcePsiClass,
                         option
                     )?.let { list.add(it) }
@@ -1092,7 +1008,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     )
                     iterableClass == resourcePsiClass -> list.add(Collections.emptyMap<Any, Any>())
                     iterableType != null -> getTypeObject(
-                        tmTypeHelper!!.ensureType(
+                        duckTypeHelper!!.ensureType(
                             iterableType,
                             duckType.genericInfo
                         ), resourcePsiClass, option
@@ -1109,7 +1025,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                 var defaultKey: Any? = null
                 if (keyType != null) defaultKey = getTypeObject(
-                    tmTypeHelper!!.ensureType(keyType, duckType.genericInfo),
+                    duckTypeHelper!!.ensureType(keyType, duckType.genericInfo),
                     resourcePsiClass,
                     option
                 )
@@ -1117,7 +1033,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                 var defaultValue: Any? = null
                 if (valueType != null) defaultValue = getTypeObject(
-                    tmTypeHelper!!.ensureType(valueType, duckType.genericInfo),
+                    duckTypeHelper!!.ensureType(valueType, duckType.genericInfo),
                     resourcePsiClass,
                     option
                 )

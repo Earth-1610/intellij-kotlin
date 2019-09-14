@@ -1,12 +1,10 @@
-package com.itangcent.intellij.psi
+package com.itangcent.intellij.jvm
 
-import com.google.inject.ImplementedBy
 import com.intellij.psi.*
-import com.itangcent.intellij.util.KV
+import com.itangcent.common.utils.KV
 
-
-@ImplementedBy(DefaultPsiClassHelper::class)
 interface PsiClassHelper {
+
     fun getTypeObject(psiType: PsiType?, context: PsiElement): Any?
 
     fun getTypeObject(psiType: PsiType?, context: PsiElement, option: Int): Any?
@@ -23,8 +21,6 @@ interface PsiClassHelper {
 
     fun getDefaultValue(typeName: String): Any?
 
-    fun resolvePropertyOrMethodOfClass(psiClass: PsiClass, propertyOrMethod: String): PsiElement?
-
     fun getJsonFieldName(psiField: PsiField): String
 
     fun parseStaticFields(psiClass: PsiClass): List<Map<String, Any?>>
@@ -39,8 +35,5 @@ interface PsiClassHelper {
         defaultPropertyName: String
     ): ArrayList<HashMap<String, Any?>>?
 
-    fun resolveClass(className: String, psiMember: PsiMember): PsiClass?
-
-    fun getContainingClass(psiMember: PsiMember): PsiClass?
 
 }

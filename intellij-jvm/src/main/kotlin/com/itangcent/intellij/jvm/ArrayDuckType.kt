@@ -1,4 +1,4 @@
-package com.itangcent.intellij.psi
+package com.itangcent.intellij.jvm
 
 import com.intellij.psi.PsiClass
 import com.intellij.psi.util.PsiClassUtil
