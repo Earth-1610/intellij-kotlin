@@ -3,10 +3,12 @@ package com.itangcent.intellij.jvm.kotlin
 import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
+import com.itangcent.common.utils.longest
 import com.itangcent.intellij.jvm.PsiClassHelper
 import com.itangcent.intellij.jvm.PsiResolver
 import com.itangcent.intellij.jvm.standard.StandardAnnotationHelper
 import org.jetbrains.kotlin.asJava.classes.KtLightClass
+import org.jetbrains.kotlin.asJava.classes.KtLightClassForSourceDeclaration
 import org.jetbrains.kotlin.asJava.elements.KtLightMember
 import org.jetbrains.kotlin.asJava.elements.KtLightPsiLiteral
 import org.jetbrains.kotlin.idea.util.findAnnotation
@@ -93,7 +95,7 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
             return ktAnnotation.valueArguments
                 .map { resolveValue(it.getArgumentExpression()) }
                 .map { tinyAnnStr(it.toString()) }
-                .firstOrNull { !it.isNullOrBlank() }
+                .longest()
         }
 
         return super.findAttrAsString(psiElement, annName)
@@ -108,7 +110,7 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
                 }
                 .map { resolveValue(it.getArgumentExpression()) }
                 .map { tinyAnnStr(it.toString()) }
-                .firstOrNull { !it.isNullOrBlank() }
+                .longest()
         }
 
         return super.findAttrAsString(psiElement, annName, *attrs)
@@ -161,6 +163,11 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
             if (kotlinOrigin != null) {
                 return kotlinOrigin.findAnnotation(fqNameHelper!!.of(annName))
             }
+        }
+
+        if (psiElement is KtLightClassForSourceDeclaration) {
+            val kotlinOrigin = psiElement.kotlinOrigin
+            return kotlinOrigin.findAnnotation(fqNameHelper!!.of(annName))
         }
 
         if (psiElement is KtDeclaration) {

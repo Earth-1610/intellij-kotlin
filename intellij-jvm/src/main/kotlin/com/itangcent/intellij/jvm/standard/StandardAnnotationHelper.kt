@@ -4,6 +4,7 @@ import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.util.containers.stream
 import com.itangcent.common.utils.cast
+import com.itangcent.common.utils.longest
 import com.itangcent.intellij.jvm.AnnotationHelper
 
 @Singleton
@@ -49,7 +50,7 @@ open class StandardAnnotationHelper : AnnotationHelper {
             .mapNotNull { ann.findAttributeValue(it) }
             .mapNotNull { resolveValue(it) }
             .map { tinyAnnStr(it.toString()) }
-            .firstOrNull { !it.isNullOrBlank() }
+            .longest()
     }
 
     private fun findAnn(psiElement: PsiElement?, annName: String): PsiAnnotation? {
