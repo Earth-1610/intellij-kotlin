@@ -17,3 +17,11 @@ inline fun <reified T> Stream<T>.skip(i: Int?): Stream<T> {
     }
     return this.skip(i.toLong())
 }
+
+
+public inline fun Iterable<String?>.longest(): String? {
+    return this
+        .filter { it != null }
+        .sortedByDescending { it!!.length }
+        .firstOrNull()
+}

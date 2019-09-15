@@ -25,13 +25,17 @@ abstract class AbstractConfigReader : MutableConfigReader {
     }
 
     override fun loadConfigInfoContent(configInfoContent: String) {
-        for (line in configInfoContent.lines()) {
-            if (line.isBlank() || line.startsWith("#")) continue
-            val name = resolveProperty(line.substringBefore("="))
-            if (name.isBlank()) continue
-            val value = resolveProperty(line.substringAfter("=", ""))
-            configInfo.put(name, value)
-        }
+        configInfoContent.lines()
+            .filter { !it.isBlank() }
+            .map { it.trim() }
+            .filter { !it.isBlank() && !it.startsWith("#") }
+            .forEach { line ->
+                val name = resolveProperty(line.substringBefore("="))
+                if (!name.isBlank()) {
+                    val value = resolveProperty(line.substringAfter("=", ""))
+                    configInfo.put(name.trim(), value.trim())
+                }
+            }
     }
 
     protected abstract fun findConfigFiles(): List<String>?
