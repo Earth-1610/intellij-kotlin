@@ -79,7 +79,7 @@ open class StandardPsiResolver : PsiResolver {
         //{@link #property}
         if (classNameWithProperty.startsWith("#")) {
             val linkClass = getContainingClass(psiMember) ?: return null
-            resolvePropertyOrMethodOfClass(linkClass, classNameWithProperty.removeSuffix("#"))?.let {
+            resolvePropertyOrMethodOfClass(linkClass, classNameWithProperty.removePrefix("#"))?.let {
                 return linkClass to it
             }
             return null
