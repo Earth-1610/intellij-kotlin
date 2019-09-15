@@ -3,6 +3,7 @@ package com.itangcent.intellij.jvm.kotlin
 import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
+import com.itangcent.common.utils.invokeMethod
 import com.itangcent.common.utils.longest
 import com.itangcent.intellij.jvm.PsiClassHelper
 import com.itangcent.intellij.jvm.PsiResolver
@@ -10,7 +11,6 @@ import com.itangcent.intellij.jvm.standard.StandardAnnotationHelper
 import org.jetbrains.kotlin.asJava.classes.KtLightClass
 import org.jetbrains.kotlin.asJava.classes.KtLightClassForSourceDeclaration
 import org.jetbrains.kotlin.asJava.elements.KtLightMember
-import org.jetbrains.kotlin.asJava.elements.KtLightPsiLiteral
 import org.jetbrains.kotlin.idea.util.findAnnotation
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.plainContent
@@ -175,10 +175,10 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
     }
 
     override fun resolveValue(psiExpression: PsiElement?): Any? {
-        when (psiExpression) {
-            null -> return null
-            is KtLightPsiLiteral -> {
-                val value = psiExpression.value
+        when {
+            psiExpression == null -> return null
+            CompatibleKtClass.isKtLightPsiLiteral(psiExpression) -> {
+                val value = psiExpression.invokeMethod("getValue")
                 if (value != null) {
                     if (value is String || value::class.java.isPrimitive) {
                         return value
@@ -186,17 +186,17 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
                 }
                 return psiExpression.text
             }
-            is PsiLiteralExpression -> return psiExpression.value?.toString()
-            is KtCollectionLiteralExpression -> {
+            psiExpression is PsiLiteralExpression -> return psiExpression.value?.toString()
+            psiExpression is KtCollectionLiteralExpression -> {
                 return psiExpression.getInnerExpressions().map { resolveValue(it) }.toTypedArray()
             }
-            is PsiReferenceExpression -> {
+            psiExpression is PsiReferenceExpression -> {
                 val value = psiExpression.resolve()
                 if (value is PsiExpression) {
                     return resolveValue(value)
                 }
             }
-            is PsiField -> {
+            psiExpression is PsiField -> {
                 val constantValue = psiExpression.computeConstantValue()
                 if (constantValue != null) {
                     if (constantValue is PsiExpression) {
@@ -205,13 +205,13 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
                     return constantValue
                 }
             }
-            is PsiAnnotation -> {
+            psiExpression is PsiAnnotation -> {
                 return annToMap(psiExpression)
             }
-            is PsiArrayInitializerMemberValue -> {
+            psiExpression is PsiArrayInitializerMemberValue -> {
                 return psiExpression.initializers.map { resolveValue(it) }.toTypedArray()
             }
-            is KtStringTemplateExpression -> {
+            psiExpression is KtStringTemplateExpression -> {
                 return psiExpression.plainContent
             }
             else -> {
