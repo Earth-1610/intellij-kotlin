@@ -3,6 +3,7 @@ package com.itangcent.intellij.jvm.kotlin
 import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
+import com.itangcent.common.utils.longest
 import com.itangcent.intellij.jvm.PsiClassHelper
 import com.itangcent.intellij.jvm.PsiResolver
 import com.itangcent.intellij.jvm.standard.StandardAnnotationHelper
@@ -94,7 +95,7 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
             return ktAnnotation.valueArguments
                 .map { resolveValue(it.getArgumentExpression()) }
                 .map { tinyAnnStr(it.toString()) }
-                .firstOrNull { !it.isNullOrBlank() }
+                .longest()
         }
 
         return super.findAttrAsString(psiElement, annName)
@@ -109,7 +110,7 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
                 }
                 .map { resolveValue(it.getArgumentExpression()) }
                 .map { tinyAnnStr(it.toString()) }
-                .firstOrNull { !it.isNullOrBlank() }
+                .longest()
         }
 
         return super.findAttrAsString(psiElement, annName, *attrs)
