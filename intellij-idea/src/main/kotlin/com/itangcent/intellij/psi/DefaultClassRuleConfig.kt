@@ -61,6 +61,7 @@ open class DefaultClassRuleConfig : AbstractClassRuleConfig() {
 
     private fun parseRule(key: String, value: String): ((String) -> String?)? {
         if (key.startsWith("\$regex:")) {
+            val keyRegexStr = key.removePrefix("\$regex:")
             val matcherValue = Pattern.compile("\\$\\{(\\d+)}").matcher(value)
             val valueGroups: LinkedList<Int> = LinkedList()
             while (matcherValue.find()) {
@@ -68,27 +69,23 @@ open class DefaultClassRuleConfig : AbstractClassRuleConfig() {
             }
             if (valueGroups.isEmpty()) {
                 return { cls ->
-                    synchronized(key) {
-                        val matcher = Pattern.compile(key).matcher(cls)
-                        when {
-                            matcher.matches() -> value
-                            else -> null
-                        }
+                    val matcher = Pattern.compile(keyRegexStr).matcher(cls)
+                    when {
+                        matcher.matches() -> value
+                        else -> null
                     }
                 }
             } else {
                 return { cls ->
-                    synchronized(key) {
-                        val matcher = Pattern.compile(key).matcher(cls)
-                        if (matcher.matches()) {
-                            var ret = value
-                            for (valueGroup in valueGroups) {
-                                ret = ret.replace("\${$valueGroup}", matcher.group(valueGroup))
-                            }
-                            ret
-                        } else {
-                            null
+                    val matcher = Pattern.compile(keyRegexStr).matcher(cls)
+                    if (matcher.matches()) {
+                        var ret = value
+                        for (valueGroup in valueGroups) {
+                            ret = ret.replace("\${$valueGroup}", matcher.group(valueGroup))
                         }
+                        ret
+                    } else {
+                        null
                     }
                 }
             }
