@@ -60,9 +60,9 @@ open class DefaultClassRuleConfig : AbstractClassRuleConfig() {
     }
 
     private fun parseRule(key: String, value: String): ((String) -> String?)? {
-        if (key.startsWith("\$regex:")) {
-            val keyRegexStr = key.removePrefix("\$regex:")
-            val matcherValue = Pattern.compile("\\$\\{(\\d+)}").matcher(value)
+        if (key.startsWith("#regex:")) {
+            val keyRegexStr = key.removePrefix("#regex:")
+            val matcherValue = Pattern.compile("#\\{(\\d+)}").matcher(value)
             val valueGroups: LinkedList<Int> = LinkedList()
             while (matcherValue.find()) {
                 valueGroups.add(matcherValue.group(1).toInt())
@@ -81,7 +81,7 @@ open class DefaultClassRuleConfig : AbstractClassRuleConfig() {
                     if (matcher.matches()) {
                         var ret = value
                         for (valueGroup in valueGroups) {
-                            ret = ret.replace("\${$valueGroup}", matcher.group(valueGroup))
+                            ret = ret.replace("#{$valueGroup}", matcher.group(valueGroup))
                         }
                         ret
                     } else {
