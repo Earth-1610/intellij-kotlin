@@ -3,6 +3,7 @@ package com.itangcent.intellij.jvm
 import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
+import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.logger.Logger
@@ -120,7 +121,7 @@ class DuckTypeHelper {
                     val typeParams = extractTypeParams(typeCanonicalText)
 
                     if (typeParams != null) {
-                        val typeParameterMap: HashMap<String, DuckType?> = HashMap()
+                        val typeParameterMap: HashMap<String, DuckType?> = LinkedHashMap()
                         for ((index, typeParameter) in paramCls.typeParameters.withIndex()) {
                             if (typeParams.size > index) {
                                 val typeParam = typeParams[index]
@@ -239,6 +240,51 @@ class DuckTypeHelper {
         return params.toTypedArray()
     }
 
+    fun buildPsiType(type: String, context: PsiElement): PsiType? {
+
+        val cls = findClass(type, context)
+        if (cls != null) {
+            PsiTypesUtil.getClassType(cls)
+        }
+
+        val duckType: DuckType = resolve(type, context) ?: return null
+
+        return buildPsiType(duckType, context)
+    }
+
+    fun buildPsiType(duckType: DuckType, context: PsiElement): PsiType? {
+        when (duckType) {
+            is ArrayDuckType -> {
+                return buildPsiType(duckType.componentType(), context)?.let { PsiArrayType(it) }
+            }
+            is SingleDuckType -> {
+                return when {
+                    duckType.genericInfo.isNullOrEmpty() -> PsiTypesUtil.getClassType(duckType.psiClass())
+                    else -> {
+                        try {
+                            val params = duckType.genericInfo.values.map { dt ->
+                                buildPsiType(dt!!, context)!!
+                            }.toTypedArray()
+                            createType(duckType.psiClass(), context, *params)
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+                }
+            }
+            else -> {
+                return null
+            }
+
+        }
+    }
+
+    fun createType(clazz: PsiClass, context: PsiElement?, vararg parameters: PsiType): PsiClassType {
+        return JavaPsiFacade.getInstance(
+            (context ?: clazz).project
+        ).elementFactory.createType(clazz, *parameters)
+    }
+
     //region isQualified--------------------------------------------------------
     private val qualifiedInfoCache: HashMap<PsiType, Boolean> = HashMap()
 
@@ -252,6 +298,9 @@ class DuckTypeHelper {
     private fun isQualified(tmType: DuckType): Boolean {
         if (tmType is SingleDuckType) {
             if (tmType.psiClass().qualifiedName == CommonClassNames.JAVA_LANG_OBJECT) {
+                return false
+            }
+            if (tmType.psiClass().isInterface) {
                 return false
             }
             val typeParameterCount = tmType.psiClass().typeParameters.size
