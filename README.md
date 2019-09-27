@@ -21,3 +21,7 @@
 ### intellij-jvm
 
 - the inconsistency between java and kotlin in psi
+
+### intellij-kotlin-support
+
+- support kotlin feature
