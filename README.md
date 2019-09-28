@@ -1,5 +1,7 @@
 # intellij-kotlin
 
+[![Build Status](https://travis-ci.com/Earth-1610/intellij-kotlin.svg?branch=master)](https://travis-ci.com/Earth-1610/intellij-kotlin)
+
 ## sub modules
 
 ### commons
