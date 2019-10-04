@@ -172,18 +172,22 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                 return copy(map)
             }
+            jvmClassHelper.isEnum(psiType) -> {
+                return ""//by default use enum name `String`
+            }
             else -> {
                 val typeCanonicalText = castTo.canonicalText
                 if (typeCanonicalText.contains('<') && typeCanonicalText.endsWith('>')) {
 
                     val tmType = duckTypeHelper!!.resolve(castTo, context)
 
-                    if (tmType != null) {
-                        val result = getTypeObject(tmType, context, option)
-                        cacheResolvedInfo(castTo, option, result)
-                        return copy(result)
-                    } else {
-                        return null
+                    return when {
+                        tmType != null -> {
+                            val result = getTypeObject(tmType, context, option)
+                            cacheResolvedInfo(castTo, option, result)
+                            copy(result)
+                        }
+                        else -> null
                     }
                 } else {
                     val paramCls = PsiUtil.resolveClassInClassTypeOnly(castTo) ?: return null
@@ -191,14 +195,14 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                         cacheResolvedInfo(castTo, option, Magics.FILE_STR)//cache
                         return Magics.FILE_STR
                     }
-                    try {
+                    return try {
                         val result = getFields(paramCls, option)
                         cacheResolvedInfo(castTo, option, result)
-                        return result
+                        result
                     } catch (e: Throwable) {
                         logger!!.error("error to getTypeObject:$psiType")
                         logger.trace(ExceptionUtils.getStackTrace(e))
-                        return null
+                        null
                     }
                 }
             }
@@ -402,9 +406,12 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                     return copy(map)
                 }
+                jvmClassHelper.isEnum(type) -> {
+                    return ""//by default use enum name `String`
+                }
                 else -> //class type
                 {
-                    val clsOfType = PsiUtil.resolveClassInType(type) ?: return null
+                    val clsOfType = jvmClassHelper.resolveClassInType(type) ?: return null
 
                     if (clsOfType is PsiTypeParameter) {
                         val typeParams = clsWithParam.genericInfo
@@ -415,6 +422,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                             }
                         }
                     }
+
                     if (ruleComputer!!.computer(ClassRuleKeys.TYPE_IS_FILE, clsOfType) == true) {
                         return Magics.FILE_STR
                     }
@@ -891,9 +899,12 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                     kv[fieldName] = map
                 }
+                jvmClassHelper.isEnum(type) -> {
+                    kv[fieldName] = ""//by default use enum name `String`
+                }
                 else -> //class type
                 {
-                    val clsOfType = PsiUtil.resolveClassInType(type)
+                    val clsOfType = jvmClassHelper.resolveClassInType(type)
                     if (clsOfType != null && clsOfType != resourcePsiClass) {
                         if (ruleComputer!!.computer(ClassRuleKeys.TYPE_IS_FILE, clsOfType) == true) {
                             kv[fieldName] = Magics.FILE_STR
@@ -961,7 +972,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             kv[fieldName] = getDefaultValue(fieldTypeName)
             return
         }
-        val clsOfType = PsiUtil.resolveClassInType(fieldType)
+        val clsOfType = jvmClassHelper!!.resolveClassInType(fieldType)
 
         if (clsOfType is PsiTypeParameter) {
             val typeParams = duckType.genericInfo
@@ -1043,6 +1054,9 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                 kv[fieldName] = map
             }
+            jvmClassHelper.isEnum(type) -> {
+                kv[fieldName] = ""//by default use enum name `String`
+            }
             else -> //class type
             {
                 if (clsOfType != null && clsOfType != resourcePsiClass) {
@@ -1066,6 +1080,9 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         option: Int,
         kv: KV<String, Any?>
     ) {
+        if (jvmClassHelper!!.isEnum(fieldType)) {
+
+        }
 
     }
 }
