@@ -1,25 +1,36 @@
 package com.itangcent.intellij.jvm.standard
 
 import com.google.inject.Singleton
-import com.intellij.psi.PsiField
-import com.intellij.psi.PsiModifier
-import com.intellij.psi.PsiModifierListOwner
-import com.intellij.psi.PsiType
+import com.intellij.psi.*
 import com.intellij.psi.util.PsiUtil
+import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.jvm.JvmClassHelper
 import com.sun.jmx.remote.internal.ArrayQueue
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
+import kotlin.collections.HashMap
+import kotlin.collections.LinkedHashMap
 
 @Singleton
 open class StandardJvmClassHelper : JvmClassHelper {
+
+    private val typeCache: HashMap<PsiType, PsiClass?> = LinkedHashMap()
+
+    override fun resolveClassInType(psiType: PsiType): PsiClass? {
+        if (psiType is PsiArrayType) {
+            return null
+        }
+        return typeCache.safeComputeIfAbsent(psiType) {
+            PsiUtil.resolveClassInType(psiType)
+        }
+    }
 
     override fun isCollection(psiType: PsiType): Boolean {
         if (collectionClasses!!.contains(psiType.presentableText)) {
             return true
         }
 
-        val cls = PsiUtil.resolveClassInType(psiType)
+        val cls = resolveClassInType(psiType)
         if (cls != null) {
             for (superCls in cls.supers) {
                 if (collectionClasses!!.contains(superCls.qualifiedName)) {
@@ -36,7 +47,7 @@ open class StandardJvmClassHelper : JvmClassHelper {
             return true
         }
 
-        val cls = PsiUtil.resolveClassInType(psiType)
+        val cls = resolveClassInType(psiType)
         if (cls != null) {
             if (mapClasses!!.contains(cls.qualifiedName)) {
                 return true
@@ -49,6 +60,13 @@ open class StandardJvmClassHelper : JvmClassHelper {
         }
 
         return false
+    }
+
+    override fun isEnum(psiType: PsiType): Boolean {
+
+        val cls = resolveClassInType(psiType)
+
+        return cls?.isEnum ?: false
     }
 
     override fun isStaticFinal(field: PsiField): Boolean {
