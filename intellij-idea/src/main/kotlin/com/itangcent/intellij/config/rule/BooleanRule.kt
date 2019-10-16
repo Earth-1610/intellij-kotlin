@@ -36,8 +36,12 @@ fun Collection<BooleanRule>.any(context: RuleContext): Boolean {
     return this.any { it.compute(context) == true }
 }
 
-fun Collection<BooleanRule>.union(): BooleanRule {
-    return of { context ->
-        this.any(context)
+fun Collection<BooleanRule>?.union(): BooleanRule {
+    return when {
+        this.isNullOrEmpty() -> of {
+            false
+        }
+        this.size == 1 -> this.first()
+        else -> of { this.any(it) }
     }
 }

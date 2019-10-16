@@ -56,6 +56,10 @@ class SimpleRuleParser : RuleParser {
                     docHelper!!.findDocByTag(context.getResource(), tag)
                 }
             }
+            tinyRuleStr.startsWith("~") -> {
+                val suffix = tinyRuleStr.removePrefix("~")
+                StringRule.of { it.getName() + suffix }
+            }
             else -> StringRule.of { tinyRuleStr }
         }
 
