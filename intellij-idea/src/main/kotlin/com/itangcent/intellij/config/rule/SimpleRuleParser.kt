@@ -5,6 +5,7 @@ import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.itangcent.intellij.jvm.AnnotationHelper
 import com.itangcent.intellij.jvm.DocHelper
+import com.itangcent.intellij.jvm.JvmClassHelper
 import java.util.regex.Pattern
 
 @Singleton
@@ -15,6 +16,9 @@ class SimpleRuleParser : RuleParser {
 
     @Inject
     private val docHelper: DocHelper? = null
+
+    @Inject
+    private val jvmClassHelper: JvmClassHelper? = null
 
     private val stringRuleParseCache: HashMap<String, StringRule> = HashMap()
 
@@ -37,25 +41,25 @@ class SimpleRuleParser : RuleParser {
 
         val tinyRuleStr = rule.trim()
 
-        var srule: StringRule? = null
-
-        if (tinyRuleStr.startsWith("@")) {
-            val annStr = tinyRuleStr.substringAfter("@")
-            val annName = annStr.substringBefore("#").trim()
-            val annValue = annStr.substringAfter("#", "value").trim()
-            srule = StringRule.of { context ->
-                context.getResource()?.let { annotationHelper!!.findAttrAsString(it, annName, annValue) }
+        val srule: StringRule = when {
+            tinyRuleStr.startsWith("@") -> {
+                val annStr = tinyRuleStr.substringAfter("@")
+                val annName = annStr.substringBefore("#").trim()
+                val annValue = annStr.substringAfter("#", "value").trim()
+                StringRule.of { context ->
+                    context.getResource()?.let { annotationHelper!!.findAttrAsString(it, annName, annValue) }
+                }
             }
-        } else if (tinyRuleStr.startsWith("#")) {
-            val tag = tinyRuleStr.substringAfter("#").trim()
-            srule = StringRule.of { context ->
-                docHelper!!.findDocByTag(context.getResource(), tag)
+            tinyRuleStr.startsWith("#") -> {
+                val tag = tinyRuleStr.substringAfter("#").trim()
+                StringRule.of { context ->
+                    docHelper!!.findDocByTag(context.getResource(), tag)
+                }
             }
+            else -> StringRule.of { tinyRuleStr }
         }
 
-        if (srule != null) {
-            stringRuleParseCache[rule] = srule
-        }
+        stringRuleParseCache[rule] = srule
 
         return srule
     }
@@ -131,6 +135,11 @@ class SimpleRuleParser : RuleParser {
                 }
 
             }
+        } else {
+            //default =
+            srule = BooleanRule.of { context ->
+                context.getName() == rule
+            }
         }
 
         if (srule != null) {
@@ -162,11 +171,16 @@ class SimpleRuleParser : RuleParser {
         }
     }
 
+
+    /**
+     * Returns `true` if the contents of this string is equal to the word "true" or "1",
+     * ignoring case, and `false` otherwise.
+     */
     private fun str2Bool(str: String?, defaultValue: Boolean): Boolean {
         if (str.isNullOrBlank()) return defaultValue
 
         return try {
-            str.toBoolean()
+            str.toBoolean() || str == "1"
         } catch (e: Exception) {
             defaultValue
         }
@@ -176,7 +190,7 @@ class SimpleRuleParser : RuleParser {
     private val regexParseCache: HashMap<String, (String?) -> Boolean> = HashMap()
 
     fun parseRegexOrConstant(str: String): (String?) -> Boolean {
-        return regexParseCache.computeIfAbsent(str) { _ ->
+        return regexParseCache.computeIfAbsent(str) {
             if (str.isBlank()) {
                 return@computeIfAbsent { true }
             }
@@ -209,12 +223,21 @@ class SimpleRuleParser : RuleParser {
         }
     }
 
-    override fun contextOf(psiElement: PsiElement): PsiElementContext {
-        return when (psiElement) {
-            is PsiClass -> PsiClassContext(psiElement)
-            is PsiField -> PsiFieldContext(psiElement)
-            is PsiMethod -> PsiMethodContext(psiElement)
-            else -> PsiUnknownContext(psiElement)
+    override fun contextOf(target: Any, context: PsiElement?): RuleContext {
+        return when (target) {
+            is PsiClass -> PsiClassContext(target)
+            is PsiField -> PsiFieldContext(target)
+            is PsiMethod -> PsiMethodContext(target)
+            is PsiElement -> UnknownPsiElementContext(target)
+            is PsiType -> PsiTypeContext(
+                target,
+                jvmClassHelper!!.resolveClassInType(target)!!
+            )
+            is String -> StringRuleContext(
+                target,
+                context!!
+            )
+            else -> throw IllegalArgumentException("unable to build context of:$target")
         }
     }
 

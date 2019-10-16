@@ -1,16 +1,20 @@
 package com.itangcent.intellij.config.rule
 
-import com.intellij.psi.PsiClass
-import com.intellij.psi.PsiDocCommentOwner
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiModifierListOwner
+import com.intellij.psi.*
 
-open class PsiClassContext : RuleContext {
+open class PsiTypeContext : RuleContext {
+
+    protected var psiType: PsiType
 
     protected var psiClass: PsiClass
 
-    constructor(psiClass: PsiClass) {
+    constructor(psiType: PsiType, psiClass: PsiClass) {
+        this.psiType = psiType
         this.psiClass = psiClass
+    }
+
+    override fun getCore(): Any? {
+        return psiType
     }
 
     override fun getResource(): PsiElement {
@@ -18,11 +22,11 @@ open class PsiClassContext : RuleContext {
     }
 
     override fun getName(): String? {
-        return psiClass.qualifiedName
+        return psiType.canonicalText
     }
 
     override fun getSimpleName(): String? {
-        return psiClass.name
+        return psiType.presentableText
     }
 
     override fun asPsiDocCommentOwner(): PsiDocCommentOwner {

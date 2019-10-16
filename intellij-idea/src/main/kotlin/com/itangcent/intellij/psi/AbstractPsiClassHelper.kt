@@ -560,6 +560,20 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
             if (property == null) {
                 property = defaultPropertyName
+            } else if (property.startsWith("get")) {
+                if (!cls.allFields
+                        .filter { it.name == property }
+                        .any()
+                ) {
+                    val candidateProperty = property.removePrefix("get")
+                        .substringBefore("(").decapitalize()
+                    if (cls.allFields
+                            .filter { it.name == candidateProperty }
+                            .any()
+                    ) {
+                        property = candidateProperty
+                    }
+                }
             }
 
             for (enumConstant in enumConstants) {

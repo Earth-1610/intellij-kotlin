@@ -5,7 +5,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiField
 import com.intellij.psi.PsiModifierListOwner
 
-open class PsiFieldContext : PsiElementContext {
+open class PsiFieldContext : RuleContext {
 
     protected var psiField: PsiField
 

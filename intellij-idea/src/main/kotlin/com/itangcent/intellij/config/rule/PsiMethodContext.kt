@@ -4,8 +4,9 @@ import com.intellij.psi.PsiDocCommentOwner
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.PsiModifierListOwner
+import com.itangcent.intellij.psi.PsiClassUtils
 
-open class PsiMethodContext : PsiElementContext {
+open class PsiMethodContext : RuleContext {
 
     protected var psiMethod: PsiMethod
 
@@ -18,6 +19,10 @@ open class PsiMethodContext : PsiElementContext {
     }
 
     override fun getName(): String? {
+        return PsiClassUtils.fullNameOfMethod(psiMethod)
+    }
+
+    override fun getSimpleName(): String? {
         return psiMethod.name
     }
 

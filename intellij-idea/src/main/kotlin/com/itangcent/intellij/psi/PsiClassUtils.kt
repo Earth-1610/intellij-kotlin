@@ -37,8 +37,12 @@ object PsiClassUtils {
     }
 
     fun fullNameOfMethod(psiMethod: PsiMethod): String {
+        return fullNameOfMethod(psiMethod.containingClass, psiMethod)
+    }
+
+    fun fullNameOfMethod(psiClass: PsiClass?, psiMethod: PsiMethod): String {
         val sb = StringBuilder()
-        psiMethod.containingClass?.let { sb.append(it.qualifiedName).append("#") }
+        psiClass?.let { sb.append(it.qualifiedName).append("#") }
         sb.append(psiMethod.name)
         sb.append("(")
         var first = true
@@ -54,8 +58,12 @@ object PsiClassUtils {
     }
 
     fun fullNameOfField(psiField: PsiField): String {
+        return fullNameOfField(psiField.containingClass, psiField)
+    }
+
+    fun fullNameOfField(psiClass: PsiClass?, psiField: PsiField): String {
         val sb = StringBuilder()
-        psiField.containingClass?.let { sb.append(it.qualifiedName).append("#") }
+        psiClass?.let { sb.append(it.qualifiedName).append("#") }
         sb.append(psiField.name)
         return sb.toString()
     }
@@ -92,5 +100,15 @@ object PsiClassUtils {
 
         val fieldName = fullName.substringAfter("#")
         return cls.findFieldByName(fieldName, true)
+    }
+
+    fun fullNameOfMemmber(psiClass: PsiClass?, psiMember: PsiElement): String {
+        if (psiMember is PsiMethod) {
+            return fullNameOfMethod(psiClass, psiMember)
+        }
+        if (psiMember is PsiField) {
+            return fullNameOfField(psiClass, psiMember)
+        }
+        return ""
     }
 }
