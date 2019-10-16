@@ -2,9 +2,11 @@ package com.itangcent.intellij.jvm.standard
 
 import com.google.inject.Singleton
 import com.intellij.psi.*
+import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.jvm.JvmClassHelper
+import com.siyeh.ig.psiutils.ClassUtils
 import com.sun.jmx.remote.internal.ArrayQueue
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
@@ -15,6 +17,23 @@ import kotlin.collections.LinkedHashMap
 open class StandardJvmClassHelper : JvmClassHelper {
 
     private val typeCache: HashMap<PsiType, PsiClass?> = LinkedHashMap()
+    private val classCache: HashMap<PsiClass?, PsiType> = LinkedHashMap()
+    private val nameToClassCache: HashMap<String, PsiClass?> = LinkedHashMap()
+    private val nameToTypeCache: HashMap<String, PsiType?> = LinkedHashMap()
+
+    override fun findClass(className: String, context: PsiElement): PsiClass? {
+        return nameToClassCache.safeComputeIfAbsent(className) {
+            return@safeComputeIfAbsent ClassUtils.findClass(className, context)
+        }
+    }
+
+    override fun findType(className: String, context: PsiElement): PsiType? {
+        return nameToTypeCache.safeComputeIfAbsent(className) {
+            return@safeComputeIfAbsent ClassUtils.findClass(className, context)?.let { psiClass ->
+                resolveClassToType(psiClass)
+            }
+        }
+    }
 
     override fun resolveClassInType(psiType: PsiType): PsiClass? {
         if (psiType is PsiArrayType) {
@@ -22,6 +41,12 @@ open class StandardJvmClassHelper : JvmClassHelper {
         }
         return typeCache.safeComputeIfAbsent(psiType) {
             PsiUtil.resolveClassInType(psiType)
+        }
+    }
+
+    override fun resolveClassToType(psiClass: PsiClass): PsiType? {
+        return classCache.safeComputeIfAbsent(psiClass) {
+            PsiTypesUtil.getClassType(psiClass)
         }
     }
 

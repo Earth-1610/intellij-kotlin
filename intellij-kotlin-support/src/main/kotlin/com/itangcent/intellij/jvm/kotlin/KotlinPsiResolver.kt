@@ -2,7 +2,6 @@ package com.itangcent.intellij.jvm.kotlin
 
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiMember
 import com.itangcent.intellij.jvm.standard.StandardPsiResolver
 
 
@@ -24,17 +23,16 @@ import com.itangcent.intellij.jvm.standard.StandardPsiResolver
  * Note that KDoc does not have any syntax for resolving overloaded members in links. Since the Kotlin documentation generation tool puts the documentation for all overloads of a function on the same page, identifying a specific overloaded function is not required for the link to work.
  */
 open class KotlinPsiResolver : StandardPsiResolver() {
-
     override fun resolveClassWithPropertyOrMethod(
         classNameWithProperty: String,
-        psiMember: PsiMember
+        psiElement: PsiElement
     ): Pair<PsiClass?, PsiElement?>? {
-        if (!KtPsiUtils.isKtPsiInst(psiMember)) {
-            return super.resolveClassWithPropertyOrMethod(classNameWithProperty, psiMember)
+        if (!KtPsiUtils.isKtPsiInst(psiElement)) {
+            return super.resolveClassWithPropertyOrMethod(classNameWithProperty, psiElement)
         }
 
         //[kotlin.reflect.KClass]
-        var linkClass = resolveClass(classNameWithProperty, psiMember)
+        var linkClass = resolveClass(classNameWithProperty, psiElement)
         if (linkClass != null) {
             return linkClass to null
         }
@@ -43,12 +41,12 @@ open class KotlinPsiResolver : StandardPsiResolver() {
         if (classNameWithProperty.contains('.')) {
             val linkClassName = classNameWithProperty.substringBeforeLast(".")
             val linkMethodOrProperty = classNameWithProperty.substringAfterLast(".", "").trim()
-            linkClass = resolveClass(linkClassName, psiMember) ?: return null
+            linkClass = resolveClass(linkClassName, psiElement) ?: return null
             return linkClass to resolvePropertyOrMethodOfClass(linkClass, linkMethodOrProperty)
         }
 
         //[properties]
-        linkClass = getContainingClass(psiMember) ?: return null
+        linkClass = getContainingClass(psiElement) ?: return null
         resolvePropertyOrMethodOfClass(linkClass, classNameWithProperty)?.let {
             return linkClass to it
         }

@@ -35,11 +35,11 @@ open class StandardPsiResolver : PsiResolver {
     @Inject
     private val duckTypeHelper: DuckTypeHelper? = null
 
-    override fun resolveClass(className: String, psiMember: PsiMember): PsiClass? {
+    override fun resolveClass(className: String, psiElement: PsiElement): PsiClass? {
         return when {
-            className.contains(".") -> duckTypeHelper!!.findClass(className, psiMember)
-            else -> getContainingClass(psiMember)?.let { resolveClassFromImport(it, className) }
-                ?: duckTypeHelper!!.findClass(className, psiMember)
+            className.contains(".") -> duckTypeHelper!!.findClass(className, psiElement)
+            else -> getContainingClass(psiElement)?.let { resolveClassFromImport(it, className) }
+                ?: duckTypeHelper!!.findClass(className, psiElement)
         }
     }
 
@@ -72,13 +72,13 @@ open class StandardPsiResolver : PsiResolver {
 
     override fun resolveClassWithPropertyOrMethod(
         classNameWithProperty: String,
-        psiMember: PsiMember
+        psiElement: PsiElement
     ): Pair<PsiClass?, PsiElement?>? {
 
         //{@link #method(args...)}
         //{@link #property}
         if (classNameWithProperty.startsWith("#")) {
-            val linkClass = getContainingClass(psiMember) ?: return null
+            val linkClass = getContainingClass(psiElement) ?: return null
             resolvePropertyOrMethodOfClass(linkClass, classNameWithProperty.removePrefix("#"))?.let {
                 return linkClass to it
             }
@@ -89,7 +89,7 @@ open class StandardPsiResolver : PsiResolver {
         //{@link java.class#property}
         val linkClassName = classNameWithProperty.substringBefore("#")
         val linkMethodOrProperty = classNameWithProperty.substringAfter("#", "").trim()
-        val linkClass = resolveClass(linkClassName, psiMember) ?: return null
+        val linkClass = resolveClass(linkClassName, psiElement) ?: return null
         return if (linkMethodOrProperty.isBlank()) {
             linkClass to null
         } else {
@@ -140,9 +140,11 @@ open class StandardPsiResolver : PsiResolver {
         }
     }
 
-    override fun getContainingClass(psiMember: PsiMember): PsiClass? {
-        if (psiMember is PsiClass) return psiMember
-        psiMember.containingClass?.let { return it }
+    override fun getContainingClass(psiElement: PsiElement): PsiClass? {
+        if (psiElement is PsiClass) return psiElement
+        if (psiElement is PsiMember) {
+            psiElement.containingClass?.let { return it }
+        }
         return null
     }
 
