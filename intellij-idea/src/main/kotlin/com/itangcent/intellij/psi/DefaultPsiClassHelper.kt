@@ -114,14 +114,14 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
 
             val convertToType: PsiType
             convertToType = when (convertTo) {
-                null -> psiType
+                null, canonicalText -> psiType
                 "null" -> PsiType.NULL
                 else -> {
                     val cls = duckTypeHelper!!.findClass(convertTo, context)
                     if (cls != null) {
                         PsiTypesUtil.getClassType(cls)
                     } else {
-                        psiType
+                        duckTypeHelper.buildPsiType(convertTo, context) ?: psiType
                     }
                 }
             }
