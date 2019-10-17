@@ -33,17 +33,34 @@ open class DefaultRuleLookUp : RuleLookUp {
     @Suppress("UNCHECKED_CAST")
     private fun <T : Rule<*>> doLookUp(lookUpKey: String, ruleType: KClass<T>): List<T> {
         val rules: ArrayList<T> = ArrayList()
+        val filteredKey = "$lookUpKey["
         configReader!!.foreach({ key ->
             key == lookUpKey
+                    || key.startsWith(filteredKey)
         }) { key, value ->
             try {
-                if (ruleType == StringRule::class) {
-                    ruleParser!!.parseStringRule(value).forEach {
-                        rules.add(it as T)
+                if (key == lookUpKey) {
+                    if (ruleType == StringRule::class) {
+                        ruleParser!!.parseStringRule(value).forEach {
+                            rules.add(it as T)
+                        }
+                    } else if (ruleType == BooleanRule::class) {
+                        ruleParser!!.parseBooleanRule(value).forEach {
+                            rules.add(it as T)
+                        }
                     }
-                } else if (ruleType == BooleanRule::class) {
-                    ruleParser!!.parseBooleanRule(value).forEach {
-                        rules.add(it as T)
+                } else if (key.startsWith(filteredKey)) {
+                    val filterTxt = key.removePrefix(lookUpKey)
+                        .removeSurrounding("[", "]")
+                    val filter = ruleParser!!.parseBooleanRule(filterTxt)
+                    if (ruleType == StringRule::class) {
+                        ruleParser.parseStringRule(value).forEach {
+                            rules.add(StringRule.filterWith(filter.union(), it) as T)
+                        }
+                    } else if (ruleType == BooleanRule::class) {
+                        ruleParser.parseBooleanRule(value).forEach {
+                            rules.add(BooleanRule.filterWith(filter.union(), it) as T)
+                        }
                     }
                 }
             } catch (e: Exception) {

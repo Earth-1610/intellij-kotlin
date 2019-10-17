@@ -19,7 +19,7 @@ inline fun <reified T> Stream<T>.skip(i: Int?): Stream<T> {
 }
 
 
-public inline fun Iterable<String?>.longest(): String? {
+fun Iterable<String?>.longest(): String? {
     return this
         .filter { it != null }
         .sortedByDescending { it!!.length }

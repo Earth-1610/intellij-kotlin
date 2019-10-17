@@ -5,12 +5,12 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiModifierListOwner
 import com.itangcent.common.utils.getPropertyValue
 
-open class PsiUnknownContext : PsiElementContext {
+open class UnknownPsiElementContext : RuleContext {
 
     private var psiElement: PsiElement
 
-    constructor(psiClass: PsiElement) {
-        this.psiElement = psiClass
+    constructor(psiElement: PsiElement) {
+        this.psiElement = psiElement
     }
 
     override fun getResource(): PsiElement {
