@@ -1,6 +1,8 @@
 package com.itangcent.intellij.jvm
 
 import com.google.inject.ImplementedBy
+import com.intellij.psi.PsiClass
+import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiField
 import com.intellij.psi.PsiType
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
@@ -22,4 +24,11 @@ interface JvmClassHelper {
     fun getDefaultValue(typeName: String): Any?
 
     fun isBasicMethod(methodName: String): Boolean
+
+    fun resolveClassInType(psiType: PsiType): PsiClass?
+
+    fun isEnum(psiType: PsiType): Boolean
+    fun findClass(className: String, context: PsiElement): PsiClass?
+    fun findType(className: String, context: PsiElement): PsiType?
+    fun resolveClassToType(psiClass: PsiClass): PsiType?
 }
