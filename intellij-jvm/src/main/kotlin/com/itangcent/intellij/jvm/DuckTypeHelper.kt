@@ -18,7 +18,11 @@ class DuckTypeHelper {
     private val logger: Logger? = null
 
     private val classCanonicalTextCache: HashMap<String, PsiClass?> = HashMap()
-    private val tmTypeCanonicalTextCache: HashMap<String, DuckType?> = HashMap()
+
+    private val duckTypeCanonicalTextCache: HashMap<String, DuckType?> = HashMap()
+
+    private val nameToClassCache: HashMap<String, PsiClass?> = LinkedHashMap()
+    private val nameToTypeCache: HashMap<String, PsiType?> = LinkedHashMap()
 
     fun ensureType(type: PsiType): DuckType? {
         if (type is PsiClassType) {
@@ -90,7 +94,7 @@ class DuckTypeHelper {
     }
 
     fun resolve(typeCanonicalText: String, context: PsiElement): DuckType? {
-        return tmTypeCanonicalTextCache.safeComputeIfAbsent(typeCanonicalText) {
+        return duckTypeCanonicalTextCache.safeComputeIfAbsent(typeCanonicalText) {
             doResolve(typeCanonicalText, context)
         }
     }
@@ -158,14 +162,17 @@ class DuckTypeHelper {
         }
     }
 
-    private val classCache: HashMap<String, PsiClass?> = HashMap()
-
     fun findClass(fqClassName: String, context: PsiElement): PsiClass? {
         if (fqClassName.isEmpty()) return null
 
-        if (classCache.contains(fqClassName)) {
-            return classCache[fqClassName]
+        if (nameToClassCache.contains(fqClassName)) {
+            return nameToClassCache[fqClassName]
         }
+
+        if (fqClassName.contains("<")) {
+            return findClass(fqClassName.substringBefore('<'), context)
+        }
+
         var cls: PsiClass? = null
         try {
             cls = ClassUtils.findClass(fqClassName, context)
@@ -186,7 +193,7 @@ class DuckTypeHelper {
                 }
             }
         }
-        classCache[fqClassName] = cls
+        nameToClassCache[fqClassName] = cls
         return cls
     }
 
@@ -242,9 +249,11 @@ class DuckTypeHelper {
 
     fun buildPsiType(type: String, context: PsiElement): PsiType? {
 
-        val cls = findClass(type, context)
-        if (cls != null) {
-            PsiTypesUtil.getClassType(cls)
+        if (!type.contains('<')) {
+            val cls = findClass(type, context)
+            if (cls != null) {
+                return PsiTypesUtil.getClassType(cls)
+            }
         }
 
         val duckType: DuckType = resolve(type, context) ?: return null
@@ -283,6 +292,12 @@ class DuckTypeHelper {
         return JavaPsiFacade.getInstance(
             (context ?: clazz).project
         ).elementFactory.createType(clazz, *parameters)
+    }
+
+    fun findType(canonicalText: String, context: PsiElement): PsiType? {
+        return nameToTypeCache.safeComputeIfAbsent(canonicalText) {
+            return@safeComputeIfAbsent buildPsiType(canonicalText, context)
+        }
     }
 
     //region isQualified--------------------------------------------------------

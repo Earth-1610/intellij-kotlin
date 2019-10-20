@@ -113,14 +113,14 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         when {
             castTo == PsiType.NULL -> return null
             castTo is PsiPrimitiveType -> return PsiTypesUtil.getDefaultValue(castTo)
-            isNormalType(castTo.canonicalText) -> return getDefaultValue(castTo.canonicalText)
+            isNormalType(castTo) -> return getDefaultValue(castTo)
             castTo is PsiArrayType -> {   //array type
                 val deepType = castTo.getDeepComponentType()
                 val list = java.util.ArrayList<Any>()
                 cacheResolvedInfo(castTo, option, list)//cache
                 when {
                     deepType is PsiPrimitiveType -> list.add(PsiTypesUtil.getDefaultValue(deepType))
-                    isNormalType(deepType.canonicalText) -> list.add(getDefaultValue(deepType.canonicalText)!!)
+                    isNormalType(deepType) -> list.add(getDefaultValue(deepType) ?: "")
                     else -> getTypeObject(deepType, context, option)?.let { list.add(it) }
                 }
                 return copy(list)
@@ -133,7 +133,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 val iterableClass = PsiUtil.resolveClassInClassTypeOnly(iterableType)
                 val classTypeName: String? = iterableClass?.qualifiedName
                 when {
-                    classTypeName != null && isNormalType(classTypeName) -> getDefaultValue(classTypeName)?.let {
+                    classTypeName != null && isNormalType(iterableClass) -> getDefaultValue(iterableClass)?.let {
                         list.add(
                             it
                         )
@@ -302,17 +302,16 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         if (type is PsiPrimitiveType) {       //primitive Type
             return PsiTypesUtil.getDefaultValueOfType(type)
         } else {    //reference Type
-            val typeName = type.canonicalText
             when {
-                isNormalType(typeName) -> //normal Type
-                    return getDefaultValue(typeName)
+                isNormalType(type) -> //normal Type
+                    return getDefaultValue(type)
                 type is PsiArrayType -> {   //array type
                     val deepType = type.getDeepComponentType()
                     val list = ArrayList<Any>()
                     cacheResolvedInfo(clsWithParam, option, list)
                     when {
                         deepType is PsiPrimitiveType -> list.add(PsiTypesUtil.getDefaultValue(deepType))
-                        isNormalType(deepType.canonicalText) -> getDefaultValue(deepType.canonicalText)?.let {
+                        isNormalType(deepType) -> getDefaultValue(deepType)?.let {
                             list.add(
                                 it
                             )
@@ -337,21 +336,21 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                             return copy(list)
                         }
                     }
-                    val iterableClass = PsiUtil.resolveClassInClassTypeOnly(iterableType)
-                    val classTypeName: String? = iterableClass?.qualifiedName
 
-                    when {
-                        classTypeName != null && isNormalType(classTypeName) -> getDefaultValue(classTypeName)?.let {
-                            list.add(
-                                it
-                            )
+                    if (iterableType != null) {
+                        when {
+                            isNormalType(iterableType) -> getDefaultValue(iterableType)?.let {
+                                list.add(
+                                    it
+                                )
+                            }
+                            else -> getTypeObject(
+                                duckTypeHelper!!.ensureType(
+                                    iterableType,
+                                    clsWithParam.genericInfo
+                                ), context, option
+                            )?.let { list.add(it) }
                         }
-                        iterableType != null -> getTypeObject(
-                            duckTypeHelper!!.ensureType(
-                                iterableType,
-                                clsWithParam.genericInfo
-                            ), context, option
-                        )?.let { list.add(it) }
                     }
 
                     return copy(list)
@@ -389,14 +388,14 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                         defaultValue = getTypeObject(realValueType, context, option)
                     }
                     if (defaultValue == null) {
-                        if (valueType != null) {
-                            defaultValue = getTypeObject(
+                        defaultValue = if (valueType == null) {
+                            null
+                        } else {
+                            getTypeObject(
                                 duckTypeHelper!!.ensureType(valueType, clsWithParam.genericInfo),
                                 context,
                                 option
                             )
-                        } else {
-                            defaultValue = null
                         }
                     }
 
@@ -778,18 +777,26 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         return result
     }
 
-    override fun isNormalType(typeName: String): Boolean {
-        return jvmClassHelper!!.isNormalType(typeName)
+    override fun isNormalType(psiType: PsiType): Boolean {
+        return jvmClassHelper!!.isNormalType(psiType.canonicalText)
     }
 
-    override fun getDefaultValue(typeName: String): Any? {
-        return jvmClassHelper!!.getDefaultValue(typeName)
+    override fun isNormalType(psiClass: PsiClass): Boolean {
+        return jvmClassHelper!!.isNormalType(psiClass.qualifiedName ?: return false)
+    }
+
+    override fun getDefaultValue(psiType: PsiType): Any? {
+        return jvmClassHelper!!.getDefaultValue(psiType.canonicalText)
+    }
+
+    override fun getDefaultValue(psiClass: PsiClass): Any? {
+        return jvmClassHelper!!.getDefaultValue(psiClass.qualifiedName ?: return null)
     }
 
     override fun unboxArrayOrList(psiType: PsiType): PsiType {
         when {
             psiType is PsiPrimitiveType -> return psiType
-            isNormalType(psiType.canonicalText) -> return psiType
+            isNormalType(psiType) -> return psiType
             psiType is PsiArrayType -> {   //array type
                 return psiType.getDeepComponentType()
             }
@@ -851,17 +858,16 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             }
 
             val type = tryCastTo(fieldType, resourcePsiClass)
-            val fieldTypeName = type.canonicalText
             when {
-                isNormalType(fieldTypeName) -> //normal Type
-                    kv[fieldName] = getDefaultValue(fieldTypeName)
+                isNormalType(type) -> //normal Type
+                    kv[fieldName] = getDefaultValue(type)
                 type is PsiArrayType -> {   //array type
                     val deepType = type.getDeepComponentType()
 
                     val list = ArrayList<Any>()
                     when {
                         deepType is PsiPrimitiveType -> list.add(PsiTypesUtil.getDefaultValue(deepType))
-                        isNormalType(deepType.canonicalText) -> getDefaultValue(deepType.canonicalText)?.let {
+                        isNormalType(deepType) -> getDefaultValue(deepType)?.let {
                             list.add(
                                 it
                             )
@@ -874,10 +880,9 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     val iterableType = PsiUtil.extractIterableTypeParameter(type, false)
                     val iterableClass = PsiUtil.resolveClassInClassTypeOnly(iterableType)
                     val list = ArrayList<Any>()
-                    val classTypeName: String? = iterableClass?.qualifiedName
                     when {
-                        classTypeName != null && isNormalType(classTypeName) -> getDefaultValue(
-                            classTypeName
+                        iterableType != null && isNormalType(iterableType) -> getDefaultValue(
+                            iterableType
                         )?.let { list.add(it) }
                         iterableClass == resourcePsiClass -> list.add(Collections.emptyMap<Any, Any>())
                         else -> getTypeObject(iterableType, fieldOrMethod, option)?.let { list.add(it) }
@@ -980,10 +985,8 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         }
 
         //reference Type
-        val fieldTypeName = fieldType.canonicalText
-
-        if (isNormalType(fieldTypeName)) {//normal Type
-            kv[fieldName] = getDefaultValue(fieldTypeName)
+        if (isNormalType(fieldType)) {//normal Type
+            kv[fieldName] = getDefaultValue(fieldType)
             return
         }
         val clsOfType = jvmClassHelper!!.resolveClassInType(fieldType)
@@ -1007,7 +1010,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                 when {
                     deepType is PsiPrimitiveType -> list.add(PsiTypesUtil.getDefaultValue(deepType))
-                    isNormalType(deepType.canonicalText) -> getDefaultValue(deepType.canonicalText)?.let {
+                    isNormalType(deepType) -> getDefaultValue(deepType)?.let {
                         list.add(
                             it
                         )
@@ -1020,24 +1023,25 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 }
                 kv[fieldName] = list
             }
-            jvmClassHelper!!.isCollection(type) -> {   //list type
+            jvmClassHelper.isCollection(type) -> {   //list type
                 val list = ArrayList<Any>()
                 val iterableType = PsiUtil.extractIterableTypeParameter(type, false)
-                val iterableClass = PsiUtil.resolveClassInClassTypeOnly(iterableType)
-                val classTypeName: String? = iterableClass?.qualifiedName
-                when {
-                    classTypeName != null && isNormalType(classTypeName) -> list.add(
-                        getDefaultValue(
-                            classTypeName
-                        )!!
-                    )
-                    iterableClass == resourcePsiClass -> list.add(Collections.emptyMap<Any, Any>())
-                    iterableType != null -> getTypeObject(
-                        duckTypeHelper!!.ensureType(
-                            iterableType,
-                            duckType.genericInfo
-                        ), resourcePsiClass, option
-                    )?.let { list.add(it) }
+
+                if (iterableType != null) {
+                    when {
+                        isNormalType(iterableType) -> list.add(
+                            getDefaultValue(
+                                iterableType
+                            )!!
+                        )
+                        iterableType.canonicalText == resourcePsiClass.qualifiedName -> list.add(Collections.emptyMap<Any, Any>())
+                        else -> getTypeObject(
+                            duckTypeHelper!!.ensureType(
+                                iterableType,
+                                duckType.genericInfo
+                            ), resourcePsiClass, option
+                        )?.let { list.add(it) }
+                    }
                 }
                 kv[fieldName] = list
             }

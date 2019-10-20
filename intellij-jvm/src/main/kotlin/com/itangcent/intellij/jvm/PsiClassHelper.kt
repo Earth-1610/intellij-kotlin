@@ -13,13 +13,17 @@ interface PsiClassHelper {
 
     fun getFields(psiClass: PsiClass?, option: Int): KV<String, Any?>
 
-    fun isNormalType(typeName: String): Boolean
+    fun isNormalType(psiType: PsiType): Boolean
+
+    fun isNormalType(psiClass: PsiClass): Boolean
 
     fun copy(obj: Any?): Any?
 
     fun unboxArrayOrList(psiType: PsiType): PsiType
 
-    fun getDefaultValue(typeName: String): Any?
+    fun getDefaultValue(psiType: PsiType): Any?
+
+    fun getDefaultValue(psiClass: PsiClass): Any?
 
     fun getJsonFieldName(psiField: PsiField): String
 

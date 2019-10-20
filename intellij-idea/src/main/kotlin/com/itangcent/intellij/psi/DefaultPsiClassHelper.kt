@@ -5,7 +5,6 @@ import com.google.inject.Singleton
 import com.intellij.openapi.project.Project
 import com.intellij.psi.*
 import com.intellij.psi.impl.java.stubs.impl.PsiClassStubImpl
-import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.util.containers.isNullOrEmpty
 import com.itangcent.common.utils.KV
 import com.itangcent.common.utils.safeComputeIfAbsent
@@ -100,42 +99,24 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         return sees
     }
 
-    protected val castCache: HashMap<String, PsiType?> = HashMap()
-
     override fun tryCastTo(psiType: PsiType, context: PsiElement): PsiType {
-        if (classRuleConfig == null) return psiType
-
-        val canonicalText = psiType.canonicalText
-
-        if (castCache.contains(canonicalText)) {
-            return castCache[canonicalText] ?: psiType
-        } else {
-            val convertTo = classRuleConfig.tryConvert(canonicalText)
-
-            val convertToType: PsiType
-            convertToType = when (convertTo) {
-                null, canonicalText -> psiType
-                "null" -> PsiType.NULL
-                else -> {
-                    val cls = duckTypeHelper!!.findClass(convertTo, context)
-                    if (cls != null) {
-                        PsiTypesUtil.getClassType(cls)
-                    } else {
-                        duckTypeHelper.buildPsiType(convertTo, context) ?: psiType
-                    }
-                }
-            }
-            castCache[canonicalText] = convertToType
-            return convertToType
-        }
+        return classRuleConfig?.tryConvert(psiType, context) ?: psiType
     }
 
-    override fun isNormalType(typeName: String): Boolean {
-        return jvmClassHelper!!.isNormalType(classRuleConfig?.tryConvert(typeName) ?: typeName)
+    override fun isNormalType(psiType: PsiType): Boolean {
+        return jvmClassHelper!!.isNormalType(classRuleConfig!!.tryConvert(psiType).canonicalText)
     }
 
-    override fun getDefaultValue(typeName: String): Any? {
-        return jvmClassHelper!!.getDefaultValue(classRuleConfig?.tryConvert(typeName) ?: typeName)
+    override fun isNormalType(psiClass: PsiClass): Boolean {
+        return jvmClassHelper!!.isNormalType(classRuleConfig!!.tryConvert(psiClass).qualifiedName ?: return false)
+    }
+
+    override fun getDefaultValue(psiType: PsiType): Any? {
+        return jvmClassHelper!!.getDefaultValue(classRuleConfig!!.tryConvert(psiType).canonicalText)
+    }
+
+    override fun getDefaultValue(psiClass: PsiClass): Any? {
+        return jvmClassHelper!!.getDefaultValue(classRuleConfig!!.tryConvert(psiClass).qualifiedName ?: return null)
     }
 
     override fun getJsonFieldName(psiField: PsiField): String {
@@ -253,7 +234,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                         return
                     }
                 } else {
-                    val resolveClass = jvmClassHelper.findClass(convertTo, fieldOrMethod)
+                    val resolveClass = duckTypeHelper!!.findClass(convertTo, fieldOrMethod)
                     if (resolveClass == null) {
                         logger!!.error("failed to resolve class:$convertTo")
                     } else {
@@ -275,7 +256,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
 
             super.parseFieldOrMethod(
                 fieldName,
-                jvmClassHelper.findType("java.lang.String", fieldOrMethod)!!,
+                duckTypeHelper!!.findType("java.lang.String", fieldOrMethod)!!,
                 fieldOrMethod,
                 resourcePsiClass,
                 option,
@@ -306,6 +287,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         super.parseFieldOrMethod(fieldName, fieldType, fieldOrMethod, resourcePsiClass, option, kv)
     }
 
+    @Suppress("UNCHECKED_CAST")
     override fun parseFieldOrMethod(
         fieldName: String,
         fieldType: PsiType,
@@ -364,7 +346,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                         return
                     }
                 } else {
-                    val resolveClass = jvmClassHelper.findClass(convertTo, fieldOrMethod)
+                    val resolveClass = duckTypeHelper!!.findClass(convertTo, fieldOrMethod)
                     if (resolveClass == null) {
                         logger!!.error("failed to resolve class:$convertTo")
                     } else {
@@ -387,7 +369,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
 
             super.parseFieldOrMethod(
                 fieldName,
-                jvmClassHelper.findType("java.lang.String", fieldOrMethod)!!,
+                duckTypeHelper!!.findType("java.lang.String", fieldOrMethod)!!,
                 fieldOrMethod,
                 resourcePsiClass,
                 duckType,
