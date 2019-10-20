@@ -1,6 +1,9 @@
 package com.itangcent.intellij.config
 
+import com.google.inject.Inject
 import com.itangcent.common.utils.FileUtils
+import com.itangcent.common.utils.toBool
+import com.itangcent.intellij.logger.Logger
 import com.itangcent.intellij.util.MultiValuesMap
 import java.io.File
 import java.util.regex.Pattern
@@ -8,6 +11,12 @@ import java.util.regex.Pattern
 abstract class AbstractConfigReader : MutableConfigReader {
 
     protected var configInfo: MultiValuesMap<String, String> = MultiValuesMap(true)
+
+    @Inject(optional = true)
+    protected val logger: Logger? = null
+
+    private var resolveProperty: Boolean = true
+
 
     fun loadConfigInfo() {
         if (configInfo.isNotEmpty()) return
@@ -25,22 +34,57 @@ abstract class AbstractConfigReader : MutableConfigReader {
     }
 
     override fun loadConfigInfoContent(configInfoContent: String) {
-        configInfoContent.lines()
-            .filter { !it.isBlank() }
-            .map { it.trim() }
-            .filter { !it.isBlank() && !it.startsWith("#") }
-            .forEach { line ->
-                val name = resolveProperty(line.substringBefore("="))
-                if (!name.isBlank()) {
-                    val value = resolveProperty(line.substringAfter("=", ""))
-                    configInfo.put(name.trim(), value.trim())
-                }
+        for (line in configInfoContent.lines()) {
+            val trimLine = line.trim()
+
+            //ignore blank line
+            if (trimLine.isBlank()) {
+                continue
             }
+
+            //resolve comment setting
+            if (trimLine.startsWith("###")) {
+                resolveSetting(trimLine.removePrefix("###").trim())
+            }
+
+            //ignore comment
+            if (trimLine.startsWith("#")) {
+                continue
+            }
+
+            //resolve name&value
+            val name = resolveProperty(trimLine.substringBefore("="))
+            if (!name.isBlank()) {
+                val value = resolveProperty(trimLine.substringAfter("=", ""))
+                configInfo.put(name.trim(), value.trim())
+            }
+        }
+    }
+
+
+    /**
+     * todo:support more property
+     */
+    private fun resolveSetting(setting: String) {
+        if (setting.startsWith("set")) {
+            val propertyAndValue = setting.removePrefix("set").trim()
+            val property = propertyAndValue.substringBefore('=').trim()
+            val value = propertyAndValue.substringAfter('=', "").trim()
+            if (property == "resolveProperty") {
+                this.resolveProperty = value.toBool()
+            }
+        }
+        logger?.warn("unknown comment setting:$setting")
+
     }
 
     protected abstract fun findConfigFiles(): List<String>?
 
     private fun resolveProperty(property: String): String {
+        if (!resolveProperty) {
+            return property
+        }
+
         if (property.isBlank()) return property
         if (!property.contains("$")) return property
 
@@ -49,12 +93,18 @@ abstract class AbstractConfigReader : MutableConfigReader {
         val sb = StringBuffer()
         while (match.find()) {
             val key = match.group(1)
-            val value = try {
-                configInfo.getOne(key)
-            } catch (e: IllegalArgumentException) {
-                throw IllegalArgumentException("unable to resolve $key")
+            if (key.startsWith('\'') && key.endsWith('\'')) {
+                match.appendReplacement(sb, key.removeSurrounding("'"))
+            } else if (key.startsWith('\"') && key.endsWith('\"')) {
+                match.appendReplacement(sb, key.removeSurrounding("\""))
+            } else {
+                try {
+                    val value = configInfo.getOne(key)
+                    match.appendReplacement(sb, value)
+                } catch (e: Exception) {
+                    logger!!.error("unable to resolve $key")
+                }
             }
-            match.appendReplacement(sb, value)
         }
         match.appendTail(sb)
         return sb.toString()
