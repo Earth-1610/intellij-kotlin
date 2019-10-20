@@ -10,6 +10,7 @@ class DefaultRuleComputer : RuleComputer {
     @Inject
     protected val ruleLookUp: RuleLookUp? = null
 
+    @Suppress("UNCHECKED_CAST")
     override fun <T> computer(ruleKey: RuleKey<T>, target: Any, context: PsiElement?): T? {
         val rules = ruleLookUp!!.lookUp(ruleKey.name(), ruleKey.ruleType())
 

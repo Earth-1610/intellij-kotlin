@@ -52,3 +52,18 @@ object StringUtils {
 
     val UNDERLINE = '_'
 }
+
+
+/**
+ * Returns `true` if the contents of this string is equal to the word "true" or "1",
+ * ignoring case, and `false` otherwise.
+ */
+fun String.toBool(defaultValue: Boolean = false): Boolean {
+    if (this.isNullOrBlank()) return defaultValue
+
+    return try {
+        this.toBoolean() || this == "1"
+    } catch (e: Exception) {
+        defaultValue
+    }
+}

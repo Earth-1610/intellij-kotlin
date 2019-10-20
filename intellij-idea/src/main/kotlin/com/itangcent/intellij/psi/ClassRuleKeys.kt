@@ -14,9 +14,8 @@ object ClassRuleKeys {
     val TYPE_IS_FILE: RuleKey<Boolean> =
         SimpleRuleKey("type.is_file", BooleanRule::class, BooleanRuleMode.ANY)
 
-    //todo:resolve class convert by ruleKey instead of DefaultClassRuleConfig
-//    val CLASS_CONVERT: RuleKey<Boolean> =
-//        SimpleRuleKey("json.rule.convert", StringRule::class, StringRuleMode.SINGLE)
+    val CLASS_CONVERT: RuleKey<String> =
+        SimpleRuleKey("json.rule.convert", StringRule::class, StringRuleMode.SINGLE)
 
     val ENUM_CONVERT: RuleKey<String> =
         SimpleRuleKey("json.rule.enum.convert", StringRule::class, StringRuleMode.SINGLE)

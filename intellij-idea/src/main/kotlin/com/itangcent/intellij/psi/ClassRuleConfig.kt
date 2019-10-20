@@ -1,7 +1,9 @@
 package com.itangcent.intellij.psi
 
 import com.google.inject.ImplementedBy
-import com.google.inject.Singleton
+import com.intellij.psi.PsiClass
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiType
 
 
 @ImplementedBy(DefaultClassRuleConfig::class)
@@ -9,7 +11,11 @@ interface ClassRuleConfig {
 
     /**
      * try convert one class to another for parse
-     * @param cls class qualified name
      */
-    fun tryConvert(cls: String): String?
+    fun tryConvert(psiType: PsiType, context: PsiElement? = null): PsiType
+
+    /**
+     * try convert one class to another for parse
+     */
+    fun tryConvert(psiClass: PsiClass): PsiClass
 }
