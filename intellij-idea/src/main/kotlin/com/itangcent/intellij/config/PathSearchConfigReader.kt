@@ -7,9 +7,6 @@ import java.io.File
 
 abstract class PathSearchConfigReader : AbstractConfigReader() {
 
-    @Inject(optional = true)
-    private val logger: Logger? = null
-
     protected fun searchConfigFiles(configFileName: String): List<String>? {
 
         val configFiles: ArrayList<String> = ArrayList()

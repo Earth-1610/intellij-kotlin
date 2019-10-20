@@ -3,6 +3,7 @@ package com.itangcent.intellij.config.rule
 import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
+import com.itangcent.common.utils.toBool
 import com.itangcent.intellij.jvm.AnnotationHelper
 import com.itangcent.intellij.jvm.DocHelper
 import com.itangcent.intellij.jvm.JvmClassHelper
@@ -22,17 +23,7 @@ class SimpleRuleParser : RuleParser {
 
     private val stringRuleParseCache: HashMap<String, StringRule> = HashMap()
 
-    override fun parseStringRule(rule: String): List<StringRule> {
-        return parseStringRule(rule, "|")
-    }
-
-    override fun parseStringRule(rule: String, delimiters: String): List<StringRule> {
-        return rule.split(delimiters)
-            .mapNotNull { sr -> parseSingleStringRule(sr) }
-            .toList()
-    }
-
-    fun parseSingleStringRule(rule: String): StringRule? {
+    override fun parseStringRule(rule: String): StringRule? {
         if (rule.isBlank()) return null
 
         if (stringRuleParseCache.containsKey(rule)) {
@@ -70,25 +61,15 @@ class SimpleRuleParser : RuleParser {
 
     private val booleanRuleParseCache: HashMap<String, BooleanRule> = HashMap()
 
-    override fun parseBooleanRule(rule: String): List<BooleanRule> {
-        return parseBooleanRule(rule, "|", false)
+    override fun parseBooleanRule(rule: String): BooleanRule? {
+        return parseBooleanRule(rule, false)
     }
 
-    override fun parseBooleanRule(rule: String, delimiters: String, defaultValue: Boolean): List<BooleanRule> {
-        return rule.split(delimiters)
-            .mapNotNull { sr -> parseSingleBooleanRule(sr, defaultValue) }
-            .toList()
-    }
-
-    fun parseSingleBooleanRule(rule: String): BooleanRule? {
-        return parseSingleBooleanRule(rule, false)
-    }
-
-    fun parseSingleBooleanRule(rule: String, defaultValue: Boolean): BooleanRule? {
+    fun parseBooleanRule(rule: String, defaultValue: Boolean): BooleanRule? {
         if (rule.isBlank()) return null
 
-        if (booleanRuleParseCache.containsKey(rule)) {
-            return booleanRuleParseCache[rule]
+        if (booleanRuleParseCache.containsKey(rule + defaultValue)) {
+            return booleanRuleParseCache[rule + defaultValue]
         }
 
         val tinyRuleStr = rule.trim()
@@ -97,7 +78,7 @@ class SimpleRuleParser : RuleParser {
 
         if (tinyRuleStr.startsWith("!")) {
             val inverseRuleStr = tinyRuleStr.substring(1)
-            val inverseRule: BooleanRule = parseSingleBooleanRule(inverseRuleStr, !defaultValue) ?: return null
+            val inverseRule: BooleanRule = parseBooleanRule(inverseRuleStr, !defaultValue) ?: return null
             return inverseRule.inverse()
         } else if (tinyRuleStr.startsWith("@")) {
             val annStr = tinyRuleStr.substringAfter("@")
@@ -109,10 +90,8 @@ class SimpleRuleParser : RuleParser {
                 }
             } else {
                 BooleanRule.of { context ->
-                    str2Bool(
-                        context.getResource()?.let { annotationHelper!!.findAttrAsString(it, annName, annValue) },
-                        defaultValue
-                    )
+                    context.getResource()?.let { annotationHelper!!.findAttrAsString(it, annName, annValue) }
+                        ?.toBool(defaultValue)
                 }
             }
         } else if (tinyRuleStr.startsWith("#")) {
@@ -120,25 +99,26 @@ class SimpleRuleParser : RuleParser {
             srule = BooleanRule.of { context ->
                 docHelper!!.hasTag(context.getResource(), tag)
             }
-        } else if (tinyRuleStr.startsWith("$")) {
-            val prefix = tinyRuleStr.substringBefore(":").trim()
-            val content = tinyRuleStr.substringAfter(":", "")
-            if (prefix == "\$class") {
-                srule = if (content.startsWith("? extend")) {
-                    val extendClass = content.removePrefix("? extend").trim()
-                    val extendClassRegex = parseRegexOrConstant(extendClass)
-                    BooleanRule.of { context ->
-                        checkExtend(context.getResource()?.let { findClass(it) }, extendClassRegex)
-                    }
+        } else if (tinyRuleStr.startsWith("\$class:")) {
+            val content = tinyRuleStr.removePrefix("\$class:")
+            if (content.isEmpty()) {
+                return null
+            }
 
-                } else {
-                    val contentRegex = parseRegexOrConstant(content)
-                    BooleanRule.of { context ->
-                        findClass(context.getResource())?.let { contentRegex(it.qualifiedName) } ?: false
-                    }
+            srule = if (content.startsWith("? extend")) {
+                val extendClass = content.removePrefix("? extend").trim()
+                val extendClassRegex = parseRegexOrConstant(extendClass)
+                BooleanRule.of { context ->
+                    checkExtend(context.getResource()?.let { findClass(it) }, extendClassRegex)
                 }
 
+            } else {
+                val contentRegex = parseRegexOrConstant(content)
+                BooleanRule.of { context ->
+                    findClass(context.getResource())?.let { contentRegex(it.qualifiedName) } ?: false
+                }
             }
+
         } else {
             //default =
             srule = BooleanRule.of { context ->
@@ -146,9 +126,7 @@ class SimpleRuleParser : RuleParser {
             }
         }
 
-        if (srule != null) {
-            booleanRuleParseCache[rule] = srule
-        }
+        booleanRuleParseCache[rule] = srule
 
         return srule
     }
@@ -173,22 +151,6 @@ class SimpleRuleParser : RuleParser {
             is PsiMember -> named.containingClass
             else -> null
         }
-    }
-
-
-    /**
-     * Returns `true` if the contents of this string is equal to the word "true" or "1",
-     * ignoring case, and `false` otherwise.
-     */
-    private fun str2Bool(str: String?, defaultValue: Boolean): Boolean {
-        if (str.isNullOrBlank()) return defaultValue
-
-        return try {
-            str.toBoolean() || str == "1"
-        } catch (e: Exception) {
-            defaultValue
-        }
-
     }
 
     private val regexParseCache: HashMap<String, (String?) -> Boolean> = HashMap()

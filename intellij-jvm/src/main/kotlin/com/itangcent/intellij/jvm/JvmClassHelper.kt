@@ -25,10 +25,9 @@ interface JvmClassHelper {
 
     fun isBasicMethod(methodName: String): Boolean
 
+    fun isEnum(psiType: PsiType): Boolean
+
     fun resolveClassInType(psiType: PsiType): PsiClass?
 
-    fun isEnum(psiType: PsiType): Boolean
-    fun findClass(className: String, context: PsiElement): PsiClass?
-    fun findType(className: String, context: PsiElement): PsiType?
     fun resolveClassToType(psiClass: PsiClass): PsiType?
 }

@@ -39,30 +39,52 @@ open class DefaultRuleLookUp : RuleLookUp {
                     || key.startsWith(filteredKey)
         }) { key, value ->
             try {
-                if (key == lookUpKey) {
-                    if (ruleType == StringRule::class) {
-                        ruleParser!!.parseStringRule(value).forEach {
-                            rules.add(it as T)
-                        }
-                    } else if (ruleType == BooleanRule::class) {
-                        ruleParser!!.parseBooleanRule(value).forEach {
-                            rules.add(it as T)
-                        }
-                    }
-                } else if (key.startsWith(filteredKey)) {
+                if (key.startsWith(filteredKey)) {
                     val filterTxt = key.removePrefix(lookUpKey)
                         .removeSurrounding("[", "]")
+
+                    if (filterTxt.startsWith("#regex:")) {
+                        val regexBooleanRule = RegexBooleanRule.compile(filterTxt, value)
+
+                        if (ruleType == StringRule::class) {
+                            ruleParser!!.parseStringRule(value)?.let {
+                                rules.add(regexBooleanRule.filterWith(it) as T)
+                            }
+                        } else if (ruleType == BooleanRule::class) {
+                            ruleParser!!.parseBooleanRule(value)?.let {
+                                rules.add(regexBooleanRule.filterWith(it) as T)
+                            }
+                        }
+                        return@foreach
+                    }
+
                     val filter = ruleParser!!.parseBooleanRule(filterTxt)
-                    if (ruleType == StringRule::class) {
-                        ruleParser.parseStringRule(value).forEach {
-                            rules.add(StringRule.filterWith(filter.union(), it) as T)
+                    if (filter != null) {
+                        if (ruleType == StringRule::class) {
+                            ruleParser.parseStringRule(value)?.let {
+                                rules.add(StringRule.filterWith(filter, it) as T)
+                            }
+                        } else if (ruleType == BooleanRule::class) {
+                            ruleParser.parseBooleanRule(value)?.let {
+                                rules.add(BooleanRule.filterWith(filter, it) as T)
+                            }
                         }
-                    } else if (ruleType == BooleanRule::class) {
-                        ruleParser.parseBooleanRule(value).forEach {
-                            rules.add(BooleanRule.filterWith(filter.union(), it) as T)
-                        }
+                        return@foreach
+                    }
+                    logger!!.warn("error to parse $filterTxt")
+                }
+
+
+                if (ruleType == StringRule::class) {
+                    ruleParser!!.parseStringRule(value)?.let {
+                        rules.add(it as T)
+                    }
+                } else if (ruleType == BooleanRule::class) {
+                    ruleParser!!.parseBooleanRule(value)?.let {
+                        rules.add(it as T)
                     }
                 }
+
             } catch (e: Exception) {
                 logger!!.error("error to parse module rule:$key=$value")
                 logger.traceError(e)

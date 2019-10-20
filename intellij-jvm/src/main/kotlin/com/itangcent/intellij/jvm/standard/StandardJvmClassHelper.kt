@@ -6,7 +6,6 @@ import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.jvm.JvmClassHelper
-import com.siyeh.ig.psiutils.ClassUtils
 import com.sun.jmx.remote.internal.ArrayQueue
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
@@ -16,39 +15,9 @@ import kotlin.collections.LinkedHashMap
 @Singleton
 open class StandardJvmClassHelper : JvmClassHelper {
 
-    private val typeCache: HashMap<PsiType, PsiClass?> = LinkedHashMap()
-    private val classCache: HashMap<PsiClass?, PsiType> = LinkedHashMap()
-    private val nameToClassCache: HashMap<String, PsiClass?> = LinkedHashMap()
-    private val nameToTypeCache: HashMap<String, PsiType?> = LinkedHashMap()
+    private val typeCache: java.util.HashMap<PsiType, PsiClass?> = java.util.LinkedHashMap()
 
-    override fun findClass(className: String, context: PsiElement): PsiClass? {
-        return nameToClassCache.safeComputeIfAbsent(className) {
-            return@safeComputeIfAbsent ClassUtils.findClass(className, context)
-        }
-    }
-
-    override fun findType(className: String, context: PsiElement): PsiType? {
-        return nameToTypeCache.safeComputeIfAbsent(className) {
-            return@safeComputeIfAbsent ClassUtils.findClass(className, context)?.let { psiClass ->
-                resolveClassToType(psiClass)
-            }
-        }
-    }
-
-    override fun resolveClassInType(psiType: PsiType): PsiClass? {
-        if (psiType is PsiArrayType) {
-            return null
-        }
-        return typeCache.safeComputeIfAbsent(psiType) {
-            PsiUtil.resolveClassInType(psiType)
-        }
-    }
-
-    override fun resolveClassToType(psiClass: PsiClass): PsiType? {
-        return classCache.safeComputeIfAbsent(psiClass) {
-            PsiTypesUtil.getClassType(psiClass)
-        }
-    }
+    private val classCache: java.util.HashMap<PsiClass?, PsiType> = java.util.LinkedHashMap()
 
     override fun isCollection(psiType: PsiType): Boolean {
         if (collectionClasses!!.contains(psiType.presentableText)) {
@@ -212,6 +181,21 @@ open class StandardJvmClassHelper : JvmClassHelper {
         fun addClass(cls: Class<*>, classSet: HashSet<String>) {
             classSet.add(cls.name!!)
             classSet.add(cls.simpleName!!)
+        }
+    }
+
+    override fun resolveClassInType(psiType: PsiType): PsiClass? {
+        if (psiType is PsiArrayType) {
+            return null
+        }
+        return typeCache.safeComputeIfAbsent(psiType) {
+            PsiUtil.resolveClassInType(psiType)
+        }
+    }
+
+    override fun resolveClassToType(psiClass: PsiClass): PsiType? {
+        return classCache.safeComputeIfAbsent(psiClass) {
+            PsiTypesUtil.getClassType(psiClass)
         }
     }
 }

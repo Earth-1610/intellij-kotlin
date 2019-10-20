@@ -2,101 +2,44 @@ package com.itangcent.intellij.psi
 
 import com.google.inject.Inject
 import com.google.inject.Singleton
-import com.itangcent.intellij.config.ConfigReader
-import com.itangcent.intellij.logger.Logger
+import com.intellij.psi.PsiClass
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiType
+import com.itangcent.common.utils.safeComputeIfAbsent
+import com.itangcent.intellij.config.rule.RuleComputer
+import com.itangcent.intellij.jvm.DuckTypeHelper
+import com.itangcent.intellij.jvm.JvmClassHelper
 import java.util.*
-import java.util.regex.Pattern
 
 @Singleton
-open class DefaultClassRuleConfig : AbstractClassRuleConfig() {
-
+open class DefaultClassRuleConfig : ClassRuleConfig {
     @Inject
-    protected val logger: Logger? = null
-
+    protected val ruleComputer: RuleComputer? = null
     @Inject
-    protected val configReader: ConfigReader? = null
+    protected val jvmClassHelper: JvmClassHelper? = null
+    @Inject
+    protected val duckTypeHelper: DuckTypeHelper? = null
 
-    private var convertRule: List<(String) -> String?>? = null
+    private var convertRule: HashMap<Any, Any> = LinkedHashMap()
 
-    override fun convertByRule(cls: String): String {
-
-        if (convertRule == null) {
-            synchronized(this) {
-                if (convertRule == null) {
-                    convertRule = findConvertRule()
-                }
-            }
-        }
-
-        for (rule in this.convertRule!!) {
-            val convert = rule(cls)
-            if (convert.isNullOrBlank()) {
-                continue
-            }
-            return convert
-        }
-
-        return cls
+    override fun tryConvert(psiType: PsiType, context: PsiElement?): PsiType {
+        return convertRule.safeComputeIfAbsent(psiType) {
+            val realContext =
+                context ?: jvmClassHelper!!.resolveClassInType(psiType) ?: return@safeComputeIfAbsent psiType
+            val convert = ruleComputer!!.computer(
+                ClassRuleKeys.CLASS_CONVERT, psiType, realContext
+            ) ?: return@safeComputeIfAbsent psiType
+            return@safeComputeIfAbsent duckTypeHelper!!.findType(convert, realContext) ?: psiType
+        } as PsiType? ?: psiType
     }
 
-    private fun findConvertRule(): List<(String) -> String?>? {
-        if (configReader == null) return Collections.emptyList()
-
-        val convertRule: LinkedList<(String) -> String?> = LinkedList()
-        configReader.foreach({ key ->
-            key.startsWith("json.rule.convert")
-        }, { key, value ->
-            val from = key.removePrefix("json.rule.convert")
-                .removeSurrounding("[", "]")
-            if (!from.isNullOrBlank()) {
-                try {
-                    parseRule(from, value)?.let { convertRule.add(it) }
-                } catch (e: Throwable) {
-                    logger!!.error("error to parse rule:$key=$value")
-                }
-            }
-        })
-        return convertRule
-    }
-
-    private fun parseRule(key: String, value: String): ((String) -> String?)? {
-        if (key.startsWith("#regex:")) {
-            val keyRegexStr = key.removePrefix("#regex:")
-            val matcherValue = Pattern.compile("#\\{(\\d+)}").matcher(value)
-            val valueGroups: LinkedList<Int> = LinkedList()
-            while (matcherValue.find()) {
-                valueGroups.add(matcherValue.group(1).toInt())
-            }
-            if (valueGroups.isEmpty()) {
-                return { cls ->
-                    val matcher = Pattern.compile(keyRegexStr).matcher(cls)
-                    when {
-                        matcher.matches() -> value
-                        else -> null
-                    }
-                }
-            } else {
-                return { cls ->
-                    val matcher = Pattern.compile(keyRegexStr).matcher(cls)
-                    if (matcher.matches()) {
-                        var ret = value
-                        for (valueGroup in valueGroups) {
-                            ret = ret.replace("#{$valueGroup}", matcher.group(valueGroup))
-                        }
-                        ret
-                    } else {
-                        null
-                    }
-                }
-            }
-        } else {
-            return { cls ->
-                when (cls) {
-                    key -> value
-                    else -> null
-                }
-            }
-        }
+    override fun tryConvert(psiClass: PsiClass): PsiClass {
+        return convertRule.safeComputeIfAbsent(psiClass) {
+            val convert = ruleComputer!!.computer(
+                ClassRuleKeys.CLASS_CONVERT, psiClass, psiClass
+            ) ?: return@safeComputeIfAbsent psiClass
+            return@safeComputeIfAbsent duckTypeHelper!!.findClass(convert, psiClass) ?: psiClass
+        } as PsiClass? ?: psiClass
     }
 
 }
