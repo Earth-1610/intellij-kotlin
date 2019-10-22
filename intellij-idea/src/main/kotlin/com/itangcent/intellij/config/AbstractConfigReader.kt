@@ -72,6 +72,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
             val value = propertyAndValue.substringAfter('=', "").trim()
             if (property == "resolveProperty") {
                 this.resolveProperty = value.toBool()
+                return
             }
         }
         logger?.warn("unknown comment setting:$setting")
