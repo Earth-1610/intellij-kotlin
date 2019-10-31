@@ -35,9 +35,10 @@ interface PsiClassHelper {
 
     fun resolveEnumOrStatic(
         classNameWithProperty: String,
-        psiMember: PsiMember,
+        context: PsiElement,
         defaultPropertyName: String
     ): ArrayList<HashMap<String, Any?>>?
 
 
+    fun resolveEnumOrStatic(cls: PsiClass?, property: String?): ArrayList<HashMap<String, Any?>>?
 }
