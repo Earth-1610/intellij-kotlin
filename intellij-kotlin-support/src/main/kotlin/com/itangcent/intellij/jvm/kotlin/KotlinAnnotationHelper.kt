@@ -14,8 +14,6 @@ import org.jetbrains.kotlin.asJava.elements.KtLightPsiLiteral
 import org.jetbrains.kotlin.idea.util.findAnnotation
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.plainContent
-import org.jetbrains.uast.getContainingClass
-
 
 /**
  * see https://kotlinlang.org/docs/reference/annotations.html
@@ -130,12 +128,11 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
             return null
         }
 
-        val psiMember = when (psiElement) {
-            is PsiMember -> psiElement
-            else -> psiElement.getContainingClass()
-        } ?: return null
+        if (psiElement == null) {
+            return null
+        }
 
-        val resolveClass = psiResolver!!.resolveClass(annName, psiMember) ?: return null
+        val resolveClass = psiResolver!!.resolveClass(annName, psiElement) ?: return null
         if (resolveClass is KtLightClass) {
             val parameters = resolveClass.kotlinOrigin?.getPrimaryConstructorParameterList()?.parameters ?: return null
             if (parameters.size > index) {
