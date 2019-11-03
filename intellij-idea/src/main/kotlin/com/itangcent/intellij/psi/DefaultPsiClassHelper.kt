@@ -196,7 +196,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                     val classWithFieldOrMethod =
                         psiResolver!!.resolveClassWithPropertyOrMethod(convertTo, enumClass)
                     if (classWithFieldOrMethod == null) {
-
+                        logger!!.error("failed to resolve:$convertTo")
                     } else {
                         val convertFieldOrMethod = classWithFieldOrMethod.second!!
                         if (convertFieldOrMethod is PsiField) {
@@ -238,9 +238,6 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                     if (resolveClass == null) {
                         logger!!.error("failed to resolve class:$convertTo")
                     } else {
-                        kv.safeComputeIfAbsent("@see") { KV.create<String, Any?>() }
-                        val see: KV<String, Any?> = kv["@see"] as KV<String, Any?>
-                        see[fieldName] = resolveClass.qualifiedName
                         super.parseFieldOrMethod(
                             fieldName,
                             jvmClassHelper.resolveClassToType(resolveClass)!!,
@@ -306,7 +303,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                     val classWithFieldOrMethod =
                         psiResolver!!.resolveClassWithPropertyOrMethod(convertTo, enumClass)
                     if (classWithFieldOrMethod == null) {
-
+                        logger!!.error("failed to resolve:$convertTo")
                     } else {
                         val convertFieldOrMethod = classWithFieldOrMethod.second!!
                         if (convertFieldOrMethod is PsiField) {
@@ -350,9 +347,6 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                     if (resolveClass == null) {
                         logger!!.error("failed to resolve class:$convertTo")
                     } else {
-                        kv.safeComputeIfAbsent("@see") { KV.create<String, Any?>() }
-                        val see: KV<String, Any?> = kv["@see"] as KV<String, Any?>
-                        see[fieldName] = resolveClass.qualifiedName
                         super.parseFieldOrMethod(
                             fieldName,
                             jvmClassHelper.resolveClassToType(resolveClass)!!,

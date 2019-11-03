@@ -37,6 +37,10 @@ class DuckTypeHelper {
                 return lub.resolve()?.let { SingleDuckType(it) }
             }
         }
+
+        if (type is PsiPrimitiveType) {
+            return SinglePrimitiveDuckType(type)
+        }
         return null
 
     }
@@ -61,6 +65,10 @@ class DuckTypeHelper {
             }
         }
 
+
+        if (psiType is PsiPrimitiveType) {
+            return SinglePrimitiveDuckType(psiType)
+        }
         return null
     }
 

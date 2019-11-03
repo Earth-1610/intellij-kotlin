@@ -536,11 +536,10 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     @Suppress("UNCHECKED_CAST")
     override fun resolveEnumOrStatic(
         classNameWithProperty: String,
-        psiMember: PsiMember,
+        context: PsiElement,
         defaultPropertyName: String
     ): ArrayList<HashMap<String, Any?>>? {
         actionContext!!.checkStatus()
-        val options: ArrayList<HashMap<String, Any?>> = ArrayList()
         val clsName: String?
         var property: String? = null
         val cls: PsiClass?
@@ -551,22 +550,30 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         } else {
             clsName = classNameWithProperty
         }
-        cls = psiResolver!!.resolveClass(clsName, psiMember)
+        cls = psiResolver!!.resolveClass(clsName, context)
+        return resolveEnumOrStatic(cls, property ?: defaultPropertyName)
+    }
+
+
+    @Suppress("UNCHECKED_CAST")
+    override fun resolveEnumOrStatic(
+        cls: PsiClass?,
+        property: String?
+    ): ArrayList<HashMap<String, Any?>>? {
         if (cls == null) return null
 
+        val options: ArrayList<HashMap<String, Any?>> = ArrayList()
+
+        var property = property
         if (cls.isEnum) {
             val enumConstants = parseEnumConstant(cls)
 
-            if (property == null) {
-                property = defaultPropertyName
-            } else if (property.startsWith("get")) {
-                if (!cls.allFields
-                        .filter { it.name == property }
-                        .any()
-                ) {
-                    val candidateProperty = property.removePrefix("get")
-                        .substringBefore("(").decapitalize()
-                    if (cls.allFields
+            if (property != null) {
+                val candidateProperty = propertyNameOfGetter(property)
+                if (property != candidateProperty) {
+                    if (!cls.allFields
+                            .filter { it.name == property }
+                            .any() && cls.allFields
                             .filter { it.name == candidateProperty }
                             .any()
                     ) {
@@ -630,7 +637,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         }
         return options
     }
-
 
     protected open val staticResolvedInfo: HashMap<PsiClass, List<Map<String, Any?>>> = HashMap()
 
