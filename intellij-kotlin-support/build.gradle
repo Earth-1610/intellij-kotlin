@@ -14,11 +14,16 @@ plugins {
 }
 
 group 'com.itangcent'
-version '0.0.1-SNAPSHOT'
+version '0.0.1'
 
 apply plugin: 'kotlin'
 apply plugin: 'org.jetbrains.intellij'
 apply plugin: 'idea'
+
+//for publish
+apply from: rootDir.canonicalPath + '/.gradle/publish.gradle'
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
 
 intellij {
 //    version idea_version
@@ -34,7 +39,6 @@ intellij {
 
     plugins 'org.jetbrains.kotlin:1.3.11-release-IJ2017.3-1'
 }
-
 
 sourceCompatibility = 1.8
 
@@ -127,6 +131,6 @@ publishing {
     }
 }
 
-//signing {
-//    sign publishing.publications.mavenJava
-//}
+signing {
+    sign publishing.publications.mavenJava
+}
