@@ -27,7 +27,7 @@ apply plugin: 'org.jetbrains.intellij'
 apply plugin: 'idea'
 
 //for publish
-apply from: rootDir.canonicalPath + '/.gradle/publish.gradle'
+apply from: rootDir.canonicalPath + '/script/publish.gradle'
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
