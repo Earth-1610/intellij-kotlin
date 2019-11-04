@@ -9,11 +9,20 @@ buildscript {
     }
 }
 
+plugins {
+    id 'maven-publish'
+}
+
 group 'com.itangcent'
-version '1.0-SNAPSHOT'
+version '0.0.1'
 
 apply plugin: 'java'
 apply plugin: 'kotlin'
+
+//for publish
+apply from: rootDir.canonicalPath + '/script/publish.gradle'
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
 
 sourceCompatibility = 1.8
 
@@ -47,4 +56,69 @@ compileKotlin {
 }
 compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+def mvnDescription = '''
+Help for developing plugins for JetBrains products.
+Common utils
+'''
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+            pom {
+                name = 'Intellij Kotlin(commons)'
+                description = mvnDescription
+                url = 'https://github.com/Earth-1610/intellij-kotlin'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'tangcent'
+                        name = 'Tangcent'
+                        email = 'pentatengcent@gmail.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/Earth-1610/intellij-kotlin'
+                    developerConnection = 'scm:git:https://github.com/Earth-1610/intellij-kotlin'
+                    url = 'https://github.com/Earth-1610/intellij-kotlin'
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+            def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+
+            credentials {
+                username sonatypeUsername
+                password sonatypePassword
+            }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
 }
