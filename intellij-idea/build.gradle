@@ -93,7 +93,7 @@ publishing {
             artifact sourcesJar
             artifact javadocJar
             pom {
-                name = 'Intellij Kotlin(intellij-jvm)'
+                name = 'Intellij Kotlin(intellij-idea)'
                 description = mvnDescription
                 url = 'https://github.com/Earth-1610/intellij-kotlin'
                 licenses {
