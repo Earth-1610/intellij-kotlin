@@ -3,7 +3,10 @@ package com.itangcent.intellij.config.rule
 import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.itangcent.intellij.config.ConfigReader
+import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.extend.guice.PostConstruct
 import com.itangcent.intellij.logger.Logger
+import com.itangcent.intellij.psi.ContextSwitchListener
 import com.itangcent.intellij.util.traceError
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
@@ -22,6 +25,15 @@ open class DefaultRuleLookUp : RuleLookUp {
 
     protected var ruleCaches: ConcurrentHashMap<String, List<Rule<*>>> =
         ConcurrentHashMap(10)
+
+    @PostConstruct
+    fun init() {
+        val contextSwitchListener: ContextSwitchListener? = ActionContext.getContext()
+            ?.instance(ContextSwitchListener::class)
+        contextSwitchListener!!.onModuleChange {
+            ruleCaches.clear()
+        }
+    }
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : Rule<*>> lookUp(key: String, ruleType: KClass<T>): List<T> {
