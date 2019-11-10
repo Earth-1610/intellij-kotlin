@@ -9,6 +9,7 @@ import com.itangcent.common.utils.invokeMethod
 import com.itangcent.common.utils.reduceSafely
 import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.extend.guice.PostConstruct
 import com.itangcent.intellij.jvm.*
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.ELEMENT_OF_COLLECTION
@@ -46,6 +47,15 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     @Inject
     protected val psiResolver: PsiResolver? = null
+
+    @PostConstruct
+    fun init() {
+        val contextSwitchListener: ContextSwitchListener? = ActionContext.getContext()
+            ?.instance(ContextSwitchListener::class)
+        contextSwitchListener!!.onModuleChange {
+            resolvedInfo.clear()
+        }
+    }
 
     @Suppress("UNCHECKED_CAST")
     open protected fun <T> getResolvedInfo(key: Any?, option: Int): T? {
