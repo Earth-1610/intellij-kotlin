@@ -22,6 +22,7 @@ class DuckTypeHelper {
     private val duckTypeCanonicalTextCache: HashMap<String, DuckType?> = HashMap()
 
     private val nameToClassCache: HashMap<String, PsiClass?> = LinkedHashMap()
+
     private val nameToTypeCache: HashMap<String, PsiType?> = LinkedHashMap()
 
     fun ensureType(type: PsiType): DuckType? {
