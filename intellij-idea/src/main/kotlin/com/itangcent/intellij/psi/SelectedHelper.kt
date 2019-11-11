@@ -28,6 +28,9 @@ object SelectedHelper {
         private var timeOut: Long? = null
         private var fileFilter: FileFilter = { true }
 
+        private var contextSwitchListener: ContextSwitchListener? = ActionContext.getContext()
+            ?.instance(ContextSwitchListener::class)
+
         fun fileHandle(fileHandle: (PsiFile) -> Unit): Builder {
             this.fileHandle = fileHandle
             return this
@@ -56,6 +59,7 @@ object SelectedHelper {
         private val aqsCount = AQSCountLatch()
 
         private val actionContext = ActionContext.getContext()!!
+
         private val logger = actionContext.instance(Logger::class)
 
         public fun traversal() {
@@ -69,6 +73,7 @@ object SelectedHelper {
                 }
                 onCompleted?.invoke()
             }
+
             actionContext.runInReadUI {
                 try {
                     val psiFile = actionContext.cacheOrCompute(CommonDataKeys.PSI_FILE.name) {
@@ -137,6 +142,7 @@ object SelectedHelper {
 
         private fun onFile(psiFile: PsiFile) {
             try {
+                contextSwitchListener?.switchTo(psiFile)
                 if (fileHandle != null) fileHandle!!(psiFile)
                 if (classHandle != null && psiFile is PsiClassOwner) {
                     actionContext.runInReadUI {
@@ -163,6 +169,7 @@ object SelectedHelper {
             if (dirFilter == null) {
                 try {
                     actionContext.runInReadUI {
+                        contextSwitchListener?.switchTo(psiDirectory)
                         FileUtils.traversal(psiDirectory, fileFilter, {
                             aqsCount.down()
                             onFile(it)
@@ -176,6 +183,7 @@ object SelectedHelper {
                     if (it) {
                         actionContext.runInReadUI {
                             try {
+                                contextSwitchListener?.switchTo(psiDirectory)
                                 FileUtils.traversal(psiDirectory, fileFilter, { file ->
                                     aqsCount.down()
                                     onFile(file)

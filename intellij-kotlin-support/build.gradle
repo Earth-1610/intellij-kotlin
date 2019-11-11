@@ -14,7 +14,7 @@ plugins {
 }
 
 group 'com.itangcent'
-version '0.0.1'
+version '0.1.2-beta1'
 
 apply plugin: 'kotlin'
 apply plugin: 'org.jetbrains.intellij'
@@ -92,7 +92,7 @@ publishing {
             artifact sourcesJar
             artifact javadocJar
             pom {
-                name = 'Intellij Kotlin(intellij-jvm)'
+                name = 'Intellij Kotlin(intellij-idea)'
                 description = mvnDescription
                 url = 'https://github.com/Earth-1610/intellij-kotlin'
                 licenses {

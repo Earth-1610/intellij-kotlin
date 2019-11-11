@@ -1,22 +1,21 @@
 package com.itangcent.intellij.config
 
 import com.google.inject.Inject
-import com.itangcent.common.utils.FileUtils
-import com.itangcent.common.utils.toBool
+import com.itangcent.common.utils.*
 import com.itangcent.intellij.logger.Logger
-import com.itangcent.intellij.util.MultiValuesMap
+import org.yaml.snakeyaml.Yaml
 import java.io.File
 import java.util.regex.Pattern
 
 abstract class AbstractConfigReader : MutableConfigReader {
 
-    protected var configInfo: MultiValuesMap<String, String> = MultiValuesMap(true)
+    protected var configInfo: MultiValuesMap<String, String> =
+        MultiValuesMap(true)
 
     @Inject(optional = true)
     protected val logger: Logger? = null
 
     private var resolveProperty: Boolean = true
-
 
     fun loadConfigInfo() {
         if (configInfo.isNotEmpty()) return
@@ -24,16 +23,31 @@ abstract class AbstractConfigReader : MutableConfigReader {
         val configFiles = findConfigFiles() ?: return
         if (configInfo.isEmpty()) {
             configFiles.forEach { path ->
-                val configFile = File(path)
-                if (configFile.exists() && configFile.isFile) {
-                    val configInfoContent = FileUtils.read(configFile)
-                    loadConfigInfoContent(configInfoContent)
-                }
+                loadConfigFile(path)
             }
         }
     }
 
-    override fun loadConfigInfoContent(configInfoContent: String) {
+    override fun reset() {
+        configInfo.clear()
+    }
+
+    override fun loadConfigInfoContent(configInfoContent: String, type: String) {
+        if (type == "yml") {
+            loadYamlConfig(configInfoContent)
+            return
+        }
+
+        if (type == "properties" || type == "config") {
+            loadPropertiesConfig(configInfoContent)
+            return
+        }
+
+        //default
+        loadPropertiesConfig(configInfoContent)
+    }
+
+    private fun loadPropertiesConfig(configInfoContent: String) {
         for (line in configInfoContent.lines()) {
             val trimLine = line.trim()
 
@@ -45,6 +59,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
             //resolve comment setting
             if (trimLine.startsWith("###")) {
                 resolveSetting(trimLine.removePrefix("###").trim())
+                continue
             }
 
             //ignore comment
@@ -55,12 +70,53 @@ abstract class AbstractConfigReader : MutableConfigReader {
             //resolve name&value
             val name = resolveProperty(trimLine.substringBefore("="))
             if (!name.isBlank()) {
+
                 val value = resolveProperty(trimLine.substringAfter("=", ""))
+                if (name == "properties.additional") {
+                    loadConfigFile(value)
+                    continue
+                }
                 configInfo.put(name.trim(), value.trim())
             }
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
+    private fun loadYamlConfig(configInfoContent: String) {
+        val yaml = Yaml()
+        val yamlProperties = yaml.load(configInfoContent)
+
+        if (yamlProperties is Map<*, *>) {
+            (yamlProperties as Map<Any?, Any?>).flat { k, v ->
+                val name = resolveProperty(k)
+                val value = resolveProperty(v)
+                if (name == "properties.additional") {
+                    loadConfigFile(value)
+                } else {
+                    configInfo.put(name.trim(), value.trim())
+                }
+            }
+        }
+    }
+
+    private fun loadConfigFile(path: String) {
+        val configFile = File(resolvePath(path))
+        if (configFile.exists() && configFile.isFile) {
+            put("curr_path", path)
+            val configInfoContent = FileUtils.read(configFile)
+            loadConfigInfoContent(configInfoContent, path.substringAfterLast("."))
+        }
+    }
+
+    private fun resolvePath(path: String): String {
+        if (path.startsWith("~")) {
+            val currPath = getPropertyValue("curr_path")
+            if (currPath.isNullOrBlank()) return path
+            return currPath!!.substringBeforeLast(File.separator) + File.separator + path.removePrefix("~")
+        } else {
+            return path
+        }
+    }
 
     /**
      * todo:support more property
@@ -100,7 +156,12 @@ abstract class AbstractConfigReader : MutableConfigReader {
                 match.appendReplacement(sb, key.removeSurrounding("\""))
             } else {
                 try {
-                    val value = configInfo.getOne(key)
+                    val value = getPropertyValue(key)
+                    if (value == null) {
+                        logger!!.error("unable to resolve $key")
+                        match.appendReplacement(sb, "")
+                        continue
+                    }
                     match.appendReplacement(sb, value)
                 } catch (e: Exception) {
                     logger!!.error("unable to resolve $key")
@@ -109,6 +170,22 @@ abstract class AbstractConfigReader : MutableConfigReader {
         }
         match.appendTail(sb)
         return sb.toString()
+    }
+
+    open fun getPropertyValue(key: String): String? {
+
+        val value = configInfo.getOne(key)
+        if (!value.isNullOrBlank()) {
+            return value
+        }
+
+        try {
+            val property = System.getProperty(key)
+            return property
+        } catch (e: Exception) {
+        }
+
+        return null
     }
 
     override fun put(key: String, vararg value: String) {
