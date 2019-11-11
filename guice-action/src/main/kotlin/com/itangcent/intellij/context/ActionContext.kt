@@ -19,6 +19,8 @@ import com.itangcent.intellij.constant.EventKey
 import com.itangcent.intellij.extend.guice.KotlinModule
 import com.itangcent.intellij.extend.guice.instance
 import com.itangcent.intellij.extend.guice.singleton
+import com.itangcent.intellij.logger.Logger
+import com.itangcent.intellij.logger.traceError
 import org.aopalliance.intercept.MethodInterceptor
 import java.awt.EventQueue
 import java.lang.reflect.Method
@@ -153,6 +155,8 @@ class ActionContext {
             try {
                 setContext(this, 0)
                 runnable.run()
+            } catch (e: Exception) {
+                this.instance(Logger::class).traceError("error in Async", e)
             } finally {
                 releaseContext()
                 countLatch.up()
@@ -167,6 +171,8 @@ class ActionContext {
             try {
                 setContext(this, 0)
                 runnable()
+            } catch (e: Exception) {
+                this.instance(Logger::class).traceError("error in Async", e)
             } finally {
                 releaseContext()
                 countLatch.up()
@@ -213,6 +219,8 @@ class ActionContext {
                             swingThreadFlag
                         )
                         runnable()
+                    } catch (e: Exception) {
+                        this.instance(Logger::class).traceError("error in SwingUI", e)
                     } finally {
                         releaseContext()
                         countLatch.up()
@@ -267,6 +275,8 @@ class ActionContext {
                         writeThreadFlag
                     )
                     runnable()
+                } catch (e: Exception) {
+                    this.instance(Logger::class).traceError("error in WriteUI", e)
                 } finally {
                     releaseContext()
                     countLatch.up()
@@ -312,6 +322,8 @@ class ActionContext {
                         readThreadFlag
                     )
                     runnable()
+                } catch (e: Exception) {
+                    this.instance(Logger::class).traceError("error in ReadUI", e)
                 } finally {
                     releaseContext()
                     countLatch.up()
