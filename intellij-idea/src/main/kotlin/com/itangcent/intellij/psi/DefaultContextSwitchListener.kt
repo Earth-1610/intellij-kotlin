@@ -22,8 +22,8 @@ open class DefaultContextSwitchListener : ContextSwitchListener {
 
         context = psiElement
 
-        val containingFile = psiElement.containingFile
-        val path = containingFile.virtualFile.path
+        val containingFile = psiElement.containingFile ?: return
+        val path = containingFile.virtualFile?.path ?: return
 
         val currModule = moduleCache.safeComputeIfAbsent(path) {
             ModuleUtil.findModuleForPsiElement(psiElement)
