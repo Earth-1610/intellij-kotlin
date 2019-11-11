@@ -4,6 +4,7 @@ import com.google.inject.Singleton
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiFile
 import com.itangcent.common.utils.safeComputeIfAbsent
 
 @Singleton
@@ -22,7 +23,10 @@ open class DefaultContextSwitchListener : ContextSwitchListener {
 
         context = psiElement
 
-        val containingFile = psiElement.containingFile ?: return
+        val containingFile = when (psiElement) {
+            is PsiFile -> psiElement
+            else -> psiElement.containingFile
+        } ?: return
         val path = containingFile.virtualFile?.path ?: return
 
         val currModule = moduleCache.safeComputeIfAbsent(path) {

@@ -14,7 +14,7 @@ plugins {
 }
 
 group 'com.itangcent'
-version '0.1.2-beta1'
+version '0.1.2'
 
 apply plugin: 'java'
 apply plugin: 'kotlin'
