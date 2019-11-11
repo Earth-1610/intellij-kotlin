@@ -33,11 +33,13 @@ abstract class AbstractConfigReader : MutableConfigReader {
     }
 
     override fun loadConfigInfoContent(configInfoContent: String, type: String) {
-        if (type == "yml") {
+        //wow,resolve .yaml&.yml as yamlConfig
+        if (type == "yml" || type == "yaml") {
             loadYamlConfig(configInfoContent)
             return
         }
 
+        //wow,resolve .properties&.config as propertiesConfig
         if (type == "properties" || type == "config") {
             loadPropertiesConfig(configInfoContent)
             return
