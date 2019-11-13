@@ -17,6 +17,8 @@ abstract class AbstractConfigReader : MutableConfigReader {
 
     private var resolveProperty: Boolean = true
 
+    private var ignoreUnresolved: Boolean = false
+
     fun loadConfigInfo() {
         if (configInfo.isNotEmpty()) return
 
@@ -29,7 +31,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
     }
 
     override fun reset() {
-        configInfo.clear()
+        configInfo = MultiValuesMap(true)
     }
 
     override fun loadConfigInfoContent(configInfoContent: String, type: String) {
@@ -111,12 +113,16 @@ abstract class AbstractConfigReader : MutableConfigReader {
     }
 
     private fun resolvePath(path: String): String {
-        if (path.startsWith("~")) {
+        if (path.startsWith(".")) {
             val currPath = getPropertyValue("curr_path")
             if (currPath.isNullOrBlank()) return path
-            return currPath!!.substringBeforeLast(File.separator) + File.separator + path.removePrefix("~")
-        } else {
+            return currPath!!.substringBeforeLast(File.separator) + File.separator + path.removePrefix(".")
+        } else if (path.startsWith("/") || path.startsWith("~")) {
             return path
+        } else {
+            val currPath = getPropertyValue("curr_path")
+            if (currPath.isNullOrBlank()) return path
+            return currPath + File.separator + path
         }
     }
 
@@ -131,7 +137,12 @@ abstract class AbstractConfigReader : MutableConfigReader {
             if (property == "resolveProperty") {
                 this.resolveProperty = value.toBool()
                 return
+            } else if (property == "ignoreUnresolved") {
+                this.ignoreUnresolved = value.toBool()
+                return
             }
+        } else if (setting.startsWith("if")) {
+            //todo:resolve  condition
         }
         logger?.warn("unknown comment setting:$setting")
 
@@ -160,6 +171,8 @@ abstract class AbstractConfigReader : MutableConfigReader {
                 try {
                     val value = getPropertyValue(key)
                     if (value == null) {
+                        if (ignoreUnresolved)
+                            continue
                         logger!!.error("unable to resolve $key")
                         match.appendReplacement(sb, "")
                         continue
