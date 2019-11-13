@@ -29,13 +29,17 @@ open class DefaultContextSwitchListener : ContextSwitchListener {
         } ?: return
         val path = containingFile.virtualFile?.path ?: return
 
-        val currModule = moduleCache.safeComputeIfAbsent(path) {
+        val nextModule = moduleCache.safeComputeIfAbsent(path) {
             ModuleUtil.findModuleForPsiElement(psiElement)
         }
 
-        if (currModule != null && module != currModule) {
-            module = currModule
-            moduleChangeEvent?.invoke(currModule)
+        if (nextModule != null && module != nextModule) {
+            synchronized(this) {
+                if (module != nextModule) {
+                    moduleChangeEvent?.invoke(nextModule)
+                    module = nextModule
+                }
+            }
         }
     }
 
