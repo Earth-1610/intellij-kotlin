@@ -17,27 +17,29 @@ abstract class AbstractConfigReader : MutableConfigReader {
 
     private var resolveProperty: Boolean = true
 
+    private var ignoreUnresolved: Boolean = false
+
     fun loadConfigInfo() {
-        if (configInfo.isNotEmpty()) return
+//        if (configInfo.isNotEmpty()) return
 
         val configFiles = findConfigFiles() ?: return
-        if (configInfo.isEmpty()) {
-            configFiles.forEach { path ->
-                loadConfigFile(path)
-            }
+        configFiles.forEach { path ->
+            loadConfigFile(path)
         }
     }
 
     override fun reset() {
-        configInfo.clear()
+        configInfo = MultiValuesMap(true)
     }
 
     override fun loadConfigInfoContent(configInfoContent: String, type: String) {
-        if (type == "yml") {
+        //wow,resolve .yaml&.yml as yamlConfig
+        if (type == "yml" || type == "yaml") {
             loadYamlConfig(configInfoContent)
             return
         }
 
+        //wow,resolve .properties&.config as propertiesConfig
         if (type == "properties" || type == "config") {
             loadPropertiesConfig(configInfoContent)
             return
@@ -109,12 +111,16 @@ abstract class AbstractConfigReader : MutableConfigReader {
     }
 
     private fun resolvePath(path: String): String {
-        if (path.startsWith("~")) {
+        if (path.startsWith(".")) {
             val currPath = getPropertyValue("curr_path")
             if (currPath.isNullOrBlank()) return path
-            return currPath!!.substringBeforeLast(File.separator) + File.separator + path.removePrefix("~")
-        } else {
+            return currPath!!.substringBeforeLast(File.separator) + File.separator + path.removePrefix(".")
+        } else if (path.startsWith("/") || path.startsWith("~")) {
             return path
+        } else {
+            val currPath = getPropertyValue("curr_path")
+            if (currPath.isNullOrBlank()) return path
+            return currPath + File.separator + path
         }
     }
 
@@ -129,7 +135,12 @@ abstract class AbstractConfigReader : MutableConfigReader {
             if (property == "resolveProperty") {
                 this.resolveProperty = value.toBool()
                 return
+            } else if (property == "ignoreUnresolved") {
+                this.ignoreUnresolved = value.toBool()
+                return
             }
+        } else if (setting.startsWith("if")) {
+            //todo:resolve  condition
         }
         logger?.warn("unknown comment setting:$setting")
 
@@ -158,7 +169,9 @@ abstract class AbstractConfigReader : MutableConfigReader {
                 try {
                     val value = getPropertyValue(key)
                     if (value == null) {
-                        logger!!.error("unable to resolve $key")
+                        if (!ignoreUnresolved) {
+                            logger!!.error("unable to resolve $key")
+                        }
                         match.appendReplacement(sb, "")
                         continue
                     }

@@ -92,7 +92,7 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
         if (ktAnnotation != null) {
             return ktAnnotation.valueArguments
                 .map { resolveValue(it.getArgumentExpression()) }
-                .map { tinyAnnStr(it.toString()) }
+                .map { tinyAnnStr(it) }
                 .longest()
         }
 
@@ -107,7 +107,7 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
                     getArgName(psiElement, annName, valueArgument, index)?.let { name -> attrs.contains(name) } == true
                 }
                 .map { resolveValue(it.getArgumentExpression()) }
-                .map { tinyAnnStr(it.toString()) }
+                .map { tinyAnnStr(it) }
                 .longest()
         }
 
