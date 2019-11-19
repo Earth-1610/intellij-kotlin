@@ -20,13 +20,11 @@ abstract class AbstractConfigReader : MutableConfigReader {
     private var ignoreUnresolved: Boolean = false
 
     fun loadConfigInfo() {
-        if (configInfo.isNotEmpty()) return
+//        if (configInfo.isNotEmpty()) return
 
         val configFiles = findConfigFiles() ?: return
-        if (configInfo.isEmpty()) {
-            configFiles.forEach { path ->
-                loadConfigFile(path)
-            }
+        configFiles.forEach { path ->
+            loadConfigFile(path)
         }
     }
 
@@ -171,9 +169,9 @@ abstract class AbstractConfigReader : MutableConfigReader {
                 try {
                     val value = getPropertyValue(key)
                     if (value == null) {
-                        if (ignoreUnresolved)
-                            continue
-                        logger!!.error("unable to resolve $key")
+                        if (!ignoreUnresolved) {
+                            logger!!.error("unable to resolve $key")
+                        }
                         match.appendReplacement(sb, "")
                         continue
                     }

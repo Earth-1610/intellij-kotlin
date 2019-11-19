@@ -3,6 +3,7 @@ package com.itangcent.intellij.jvm.standard
 import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.util.containers.stream
+import com.itangcent.common.utils.GsonUtils
 import com.itangcent.common.utils.cast
 import com.itangcent.common.utils.longest
 import com.itangcent.intellij.jvm.AnnotationHelper
@@ -49,7 +50,7 @@ open class StandardAnnotationHelper : AnnotationHelper {
         return attrs
             .mapNotNull { ann.findAttributeValue(it) }
             .mapNotNull { resolveValue(it) }
-            .map { tinyAnnStr(it.toString()) }
+            .map { tinyAnnStr(it) }
             .longest()
     }
 
@@ -94,6 +95,16 @@ open class StandardAnnotationHelper : AnnotationHelper {
         }
 
         return psiExpression.text
+    }
+
+    fun tinyAnnStr(annStr: Any?): String? {
+        return when (annStr) {
+            null -> null
+            is Array<*> -> annStr.joinToString(separator = "\n")
+            is Collection<*> -> annStr.joinToString(separator = "\n")
+            is String -> annStr
+            else -> GsonUtils.toJson(annStr)
+        }
     }
 
     /**
