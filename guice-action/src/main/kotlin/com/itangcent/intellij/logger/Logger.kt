@@ -1,7 +1,8 @@
 package com.itangcent.intellij.logger
 
 import com.google.inject.ImplementedBy
-import com.google.inject.Singleton
+import com.itangcent.common.exception.ProcessCanceledException
+import org.apache.commons.lang3.exception.ExceptionUtils
 
 
 @ImplementedBy(ConsoleRunnerLogger::class)
@@ -108,5 +109,16 @@ interface Logger {
                 }
             }
         }
+    }
+}
+
+fun Logger.traceError(msg: String, e: Throwable) {
+    this.error(msg)
+    this.traceError(e)
+}
+
+fun Logger.traceError(e: Throwable) {
+    if (e !is ProcessCanceledException) {
+        this.trace(ExceptionUtils.getStackTrace(e))
     }
 }

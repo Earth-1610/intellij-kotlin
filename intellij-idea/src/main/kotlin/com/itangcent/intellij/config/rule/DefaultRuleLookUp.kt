@@ -6,8 +6,8 @@ import com.itangcent.intellij.config.ConfigReader
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.PostConstruct
 import com.itangcent.intellij.logger.Logger
+import com.itangcent.intellij.logger.traceError
 import com.itangcent.intellij.psi.ContextSwitchListener
-import com.itangcent.intellij.util.traceError
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
@@ -98,8 +98,7 @@ open class DefaultRuleLookUp : RuleLookUp {
                 }
 
             } catch (e: Exception) {
-                logger!!.error("error to parse module rule:$key=$value")
-                logger.traceError(e)
+                logger!!.traceError("error to parse module rule:$key=$value", e)
             }
         }
         return when {
