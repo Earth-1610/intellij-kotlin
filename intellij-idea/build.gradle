@@ -14,7 +14,7 @@ plugins {
 }
 
 group 'com.itangcent'
-version '0.1.3-SNAPSHOT'
+version '0.1.3'
 
 apply plugin: 'kotlin'
 apply plugin: 'org.jetbrains.intellij'
@@ -29,7 +29,6 @@ intellij {
 //    version idea_version
 //    version '2018.2.1'
     version '2017.3.5'
-//    plugins 'git4idea'
     pluginName plugin_name
     updateSinceUntilBuild false
     downloadSources true
