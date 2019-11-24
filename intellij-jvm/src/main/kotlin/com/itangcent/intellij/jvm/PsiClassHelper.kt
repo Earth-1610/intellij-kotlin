@@ -1,6 +1,9 @@
 package com.itangcent.intellij.jvm
 
-import com.intellij.psi.*
+import com.intellij.psi.PsiClass
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiField
+import com.intellij.psi.PsiType
 import com.itangcent.common.utils.KV
 
 interface PsiClassHelper {
@@ -39,6 +42,16 @@ interface PsiClassHelper {
         defaultPropertyName: String
     ): ArrayList<HashMap<String, Any?>>?
 
+    @Deprecated(
+        "use [com.itangcent.intellij.jvm.PsiClassHelper.resolveEnumOrStatic(com.intellij.psi.PsiClass, java.lang.String, java.lang.String)]",
+        ReplaceWith("resolveEnumOrStatic(cls, property, property ?: \"\")")
+    )
+    fun resolveEnumOrStatic(cls: PsiClass?, property: String?): ArrayList<HashMap<String, Any?>>? {
+        return resolveEnumOrStatic(cls, property, property ?: "")
+    }
 
-    fun resolveEnumOrStatic(cls: PsiClass?, property: String?): ArrayList<HashMap<String, Any?>>?
+    fun resolveEnumOrStatic(
+        cls: PsiClass?, property: String?,
+        defaultPropertyName: String
+    ): ArrayList<HashMap<String, Any?>>?
 }
