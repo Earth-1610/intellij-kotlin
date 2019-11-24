@@ -36,6 +36,34 @@ open class StandardJvmClassHelper : JvmClassHelper {
         return false
     }
 
+    override fun isCollection(psiClass: PsiClass): Boolean {
+        if (collectionClasses!!.contains(psiClass.qualifiedName)) {
+            return true
+        }
+
+        for (superCls in psiClass.supers) {
+            if (collectionClasses!!.contains(superCls.qualifiedName)) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    override fun isMap(psiClass: PsiClass): Boolean {
+        if (mapClasses!!.contains(psiClass.qualifiedName)) {
+            return true
+        }
+
+        for (superCls in psiClass.supers) {
+            if (mapClasses!!.contains(superCls.qualifiedName)) {
+                return true
+            }
+        }
+
+        return false
+    }
+
     override fun isMap(psiType: PsiType): Boolean {
         if (mapClasses!!.contains(psiType.presentableText)) {
             return true
