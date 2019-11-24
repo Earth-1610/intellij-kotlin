@@ -1,6 +1,7 @@
 package com.itangcent.intellij.psi
 
 import com.google.inject.Inject
+import com.intellij.lang.jvm.JvmNamedElement
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
@@ -742,24 +743,41 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         return res
     }
 
+    protected fun resolveExpr(expOrEle: Any): Any? {
+        if (expOrEle is PsiExpression) {
+            return resolveExpr(expOrEle)
+        } else if (expOrEle is PsiElement) {
+            return resolveExpr(expOrEle)
+        }
+        return expOrEle.toString()
+    }
+
     protected open fun resolveExpr(psiExpression: PsiExpression): Any? {
-        if (psiExpression is PsiLiteralExpression) {
-            return psiExpression.value
-        } else if (psiExpression is PsiReferenceExpression) {
-            val value = psiExpression.resolve()
-            if (value is PsiField) {
-                val constantValue = value.computeConstantValue()
-                if (constantValue != null) {
-                    if (constantValue is PsiExpression) {
-                        return resolveExpr(constantValue)
-                    }
-                    return constantValue
+        when (psiExpression) {
+            is PsiLiteralExpression -> return psiExpression.value
+            is PsiReferenceExpression -> {
+                val value = psiExpression.resolve()
+                if (value != null) {
+                    return resolveExpr(value)
                 }
             }
-        } else if (psiExpression is PsiField) {
-            return psiExpression.name
+            is JvmNamedElement -> return psiExpression.name
         }
         return psiExpression.text
+    }
+
+    protected open fun resolveExpr(psiElement: PsiElement): Any? {
+        when (psiElement) {
+            is PsiVariable -> {
+                val constantValue = psiElement.computeConstantValue()
+                if (constantValue != null && constantValue != psiElement) {
+                    return resolveExpr(constantValue)
+                }
+                return psiElement.name
+            }
+            is JvmNamedElement -> return psiElement.name
+        }
+        return psiElement.text
     }
 
     override fun getAttrOfField(field: PsiField): String? {
