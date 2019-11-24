@@ -13,7 +13,11 @@ interface JvmClassHelper {
 
     fun isStaticFinal(field: PsiField): Boolean
 
+    fun isMap(psiClass: PsiClass): Boolean
+
     fun isMap(psiType: PsiType): Boolean
+
+    fun isCollection(psiClass: PsiClass): Boolean
 
     fun isCollection(psiType: PsiType): Boolean
 
@@ -30,4 +34,5 @@ interface JvmClassHelper {
     fun resolveClassInType(psiType: PsiType): PsiClass?
 
     fun resolveClassToType(psiClass: PsiClass): PsiType?
+
 }
