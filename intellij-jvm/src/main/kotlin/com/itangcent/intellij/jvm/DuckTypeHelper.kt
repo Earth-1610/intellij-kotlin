@@ -17,6 +17,9 @@ class DuckTypeHelper {
     @Inject
     private val logger: Logger? = null
 
+    @Inject
+    private val jvmClassHelper: JvmClassHelper? = null
+
     private val classCanonicalTextCache: HashMap<String, PsiClass?> = HashMap()
 
     private val duckTypeCanonicalTextCache: HashMap<String, DuckType?> = HashMap()
@@ -325,8 +328,11 @@ class DuckTypeHelper {
                 return false
             }
             if (tmType.psiClass().isInterface) {
-                return false
+                if (!jvmClassHelper!!.isCollection(tmType.psiClass()) && !jvmClassHelper.isMap(tmType.psiClass())) {
+                    return false
+                }
             }
+
             val typeParameterCount = tmType.psiClass().typeParameters.size
             if (typeParameterCount == 0) return true
             if (typeParameterCount < tmType.genericInfo?.size ?: 0) {
