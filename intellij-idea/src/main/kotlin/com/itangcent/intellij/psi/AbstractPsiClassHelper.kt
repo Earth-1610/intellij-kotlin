@@ -537,7 +537,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             methodName.startsWith("get") -> methodName.removePrefix("get")
             methodName.startsWith("is") -> methodName.removePrefix("is")
             else -> null
-        }?.decapitalize()
+        }?.decapitalize()?.removeSuffix("()")
     }
 
     protected open fun tryCastTo(psiType: PsiType, context: PsiElement): PsiType {
@@ -557,11 +557,13 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
         if (classNameWithProperty.contains("#")) {
             clsName = classNameWithProperty.substringBefore("#")
-            property = classNameWithProperty.substringAfter("#").trim()
+            property = classNameWithProperty.substringAfter("#")
+                .trim()
+                .removeSuffix("()")
         } else {
-            clsName = classNameWithProperty
+            clsName = classNameWithProperty.trim().removeSuffix("()")
         }
-        cls = psiResolver!!.resolveClass(clsName, context)
+        cls = psiResolver!!.resolveClass(clsName, context)?.let { getResourceClass(it) }
         return resolveEnumOrStatic(cls, property, defaultPropertyName)
     }
 
