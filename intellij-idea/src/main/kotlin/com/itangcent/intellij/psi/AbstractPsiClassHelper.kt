@@ -677,6 +677,10 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 continue
             }
 
+            if (ruleComputer!!.computer(ClassRuleKeys.CONSTANT_FIELD_IGNORE, field) == true) {
+                continue
+            }
+
             val value = field.computeConstantValue() ?: continue
 
             res.add(
