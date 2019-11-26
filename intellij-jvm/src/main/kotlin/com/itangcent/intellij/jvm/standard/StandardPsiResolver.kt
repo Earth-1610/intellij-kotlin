@@ -6,6 +6,7 @@ import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
 import com.itangcent.intellij.jvm.DuckTypeHelper
 import com.itangcent.intellij.jvm.PsiResolver
+import com.itangcent.intellij.jvm.SourceHelper
 
 
 /**
@@ -35,12 +36,15 @@ open class StandardPsiResolver : PsiResolver {
     @Inject
     private val duckTypeHelper: DuckTypeHelper? = null
 
+    @Inject
+    private val sourceHelper: SourceHelper? = null
+
     override fun resolveClass(className: String, psiElement: PsiElement): PsiClass? {
         return when {
             className.contains(".") -> duckTypeHelper!!.findClass(className, psiElement)
             else -> getContainingClass(psiElement)?.let { resolveClassFromImport(it, className) }
                 ?: duckTypeHelper!!.findClass(className, psiElement)
-        }
+        }?.let { sourceHelper?.getSourceClass(it) }
     }
 
     protected open fun resolveClassFromImport(psiClass: PsiClass, clsName: String): PsiClass? {
