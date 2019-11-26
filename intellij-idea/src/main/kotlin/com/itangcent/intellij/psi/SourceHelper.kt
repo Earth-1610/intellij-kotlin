@@ -15,6 +15,7 @@
  */
 package com.itangcent.intellij.psi
 
+import com.google.inject.Inject
 import com.intellij.openapi.fileTypes.StdFileTypes
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
@@ -31,12 +32,25 @@ import com.intellij.util.containers.stream
 import java.io.File
 import java.util.*
 
-class SourceHelper(private val myProject: Project) {
+class SourceHelper : com.itangcent.intellij.jvm.SourceHelper {
 
-    fun getSourceClass(
+    @Inject(optional = true)
+    private var myProject: Project? = null
+
+    constructor()
+
+    constructor(myProject: Project) {
+        this.myProject = myProject
+    }
+
+    override fun getSourceClass(
         original: PsiClass
     ): PsiClass {
         try {
+            if (myProject == null) {
+                return original
+            }
+
             //todo:getUserData was not work
             val cls = original.getUserData(SOURCE_ELEMENT)
             if (cls != null && cls.isValid) {
@@ -50,9 +64,9 @@ class SourceHelper(private val myProject: Project) {
                 }
             }
 
-            if (!DumbService.isDumb(myProject)) {
+            if (!DumbService.isDumb(myProject!!)) {
                 val vFile = original.containingFile.virtualFile
-                val idx = ProjectRootManager.getInstance(myProject).fileIndex
+                val idx = ProjectRootManager.getInstance(myProject!!).fileIndex
                 if (vFile != null && idx.isInLibraryClasses(vFile)) {
                     val sourceRootForFile = idx.getSourceRootForFile(vFile)
                     if (sourceRootForFile != null) {
@@ -100,7 +114,7 @@ class SourceHelper(private val myProject: Project) {
             val classFile =
                 dirFile.findChild(javaName)
             if (classFile != null) {
-                val psiFile = PsiManager.getInstance(myProject).findFile(classFile)
+                val psiFile = PsiManager.getInstance(myProject!!).findFile(classFile)
                 if (psiFile is PsiJavaFile) {
                     return psiFile
                 }
@@ -114,7 +128,7 @@ class SourceHelper(private val myProject: Project) {
             val children = dir.children
             for (child in children) {
                 if (StdFileTypes.JAVA == child.fileType && child.isValid) {
-                    val psiFile = PsiManager.getInstance(myProject).findFile(child)
+                    val psiFile = PsiManager.getInstance(myProject!!).findFile(child)
                     if (psiFile is PsiJavaFile) {
                         if (child.name == javaName) {
                             return psiFile
