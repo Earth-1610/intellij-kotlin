@@ -19,4 +19,8 @@ object ClassRuleKeys {
 
     val ENUM_CONVERT: RuleKey<String> =
         SimpleRuleKey("json.rule.enum.convert", StringRule::class, StringRuleMode.SINGLE)
+
+    val CONSTANT_FIELD_IGNORE: RuleKey<Boolean> =
+        SimpleRuleKey("constant.field.ignore", BooleanRule::class, BooleanRuleMode.ANY)
+
 }
