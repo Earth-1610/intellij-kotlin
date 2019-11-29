@@ -209,7 +209,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     return try {
                         val result = getFields(paramCls, option)
                         cacheResolvedInfo(castTo, option, result)
-                        result
+                        copy(result)
                     } catch (e: Throwable) {
                         logger!!.error("error to getTypeObject:$psiType")
                         logger.trace(ExceptionUtils.getStackTrace(e))
