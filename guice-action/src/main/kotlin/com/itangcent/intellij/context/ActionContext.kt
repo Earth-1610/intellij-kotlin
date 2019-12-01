@@ -630,6 +630,10 @@ class ActionContext {
             contextActions.add { it.cache(name, bean) }
         }
 
+        override fun addAction(action: (ActionContext) -> Unit) {
+            contextActions.add(action)
+        }
+
         fun build(): ActionContext {
             if (moduleActions.isNotEmpty()) {
                 appendModules.add(ConfiguredModule(ArrayList(moduleActions)))
@@ -790,6 +794,8 @@ class ActionContext {
         fun <T : Any> bindInstance(cls: Class<T>, instance: T)
 
         fun cache(name: String, bean: Any?)
+
+        fun addAction(action: (ActionContext) -> Unit)
 
         fun bindInterceptor(
             classMatcher: Matcher<in Class<*>>,
