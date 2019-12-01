@@ -43,7 +43,6 @@ class KotlinAutoInject : SetupAble {
         }
     }
 
-
     private fun tryLoadAndBind(
         classLoader: ClassLoader,
         injectClass: KClass<*>,

@@ -3,6 +3,8 @@ package com.itangcent.intellij.config
 import com.google.inject.Inject
 import com.itangcent.common.utils.*
 import com.itangcent.intellij.logger.Logger
+import com.itangcent.intellij.tip.OnlyOnceInContextTip
+import com.itangcent.intellij.tip.TipsHelper
 import org.yaml.snakeyaml.Yaml
 import java.io.File
 import java.util.regex.Pattern
@@ -12,12 +14,17 @@ abstract class AbstractConfigReader : MutableConfigReader {
     protected var configInfo: MultiValuesMap<String, String> =
         MultiValuesMap(true)
 
-    @Inject(optional = true)
+    @Inject
     protected val logger: Logger? = null
+
+    @Inject
+    protected val tipsHelper: TipsHelper? = null
 
     private var resolveProperty: Boolean = true
 
     private var ignoreUnresolved: Boolean = false
+
+    private var resolveMulti: ResolveMultiType = ResolveMultiType.ERROR
 
     fun loadConfigInfo() {
 //        if (configInfo.isNotEmpty()) return
@@ -112,13 +119,13 @@ abstract class AbstractConfigReader : MutableConfigReader {
 
     private fun resolvePath(path: String): String {
         if (path.startsWith(".")) {
-            val currPath = getPropertyValue("curr_path")
+            val currPath = getPropertyStringValue("curr_path")
             if (currPath.isNullOrBlank()) return path
-            return currPath!!.substringBeforeLast(File.separator) + File.separator + path.removePrefix(".")
+            return currPath!!.toString().substringBeforeLast(File.separator) + File.separator + path.removePrefix(".")
         } else if (path.startsWith("/") || path.startsWith("~")) {
             return path
         } else {
-            val currPath = getPropertyValue("curr_path")
+            val currPath = getPropertyStringValue("curr_path")
             if (currPath.isNullOrBlank()) return path
             return currPath + File.separator + path
         }
@@ -137,6 +144,9 @@ abstract class AbstractConfigReader : MutableConfigReader {
                 return
             } else if (property == "ignoreUnresolved") {
                 this.ignoreUnresolved = value.toBool()
+                return
+            } else if (property == "resolveMulti") {
+                this.resolveMulti = ResolveMultiType.valueOf(value.toUpperCase())
                 return
             }
         } else if (setting.startsWith("if")) {
@@ -168,14 +178,15 @@ abstract class AbstractConfigReader : MutableConfigReader {
             } else {
                 try {
                     val value = getPropertyValue(key)
-                    if (value == null) {
-                        if (!ignoreUnresolved) {
-                            logger!!.error("unable to resolve $key")
+                    if (value == null || value == MULTI_UNRESOLVED) {
+                        if (!ignoreUnresolved && value != MULTI_UNRESOLVED) {
+                            logger!!.error("unable to resolve property:$key")
+                            tipsHelper!!.showTips(UNRESOLVED_TIP)
                         }
                         match.appendReplacement(sb, "")
                         continue
                     }
-                    match.appendReplacement(sb, value)
+                    match.appendReplacement(sb, value.toString())
                 } catch (e: Exception) {
                     logger!!.error("unable to resolve $key")
                 }
@@ -185,16 +196,57 @@ abstract class AbstractConfigReader : MutableConfigReader {
         return sb.toString()
     }
 
-    open fun getPropertyValue(key: String): String? {
+    open fun getPropertyStringValue(key: String): String? {
+        var propertyValue = getPropertyValue(key)
+        if (propertyValue != MULTI_UNRESOLVED) {
+            return propertyValue?.toString()
+        }
+        return null
+    }
 
-        val value = configInfo.getOne(key)
-        if (!value.isNullOrBlank()) {
-            return value
+    open fun getPropertyValue(key: String): Any? {
+
+        when (this.resolveMulti) {
+            ResolveMultiType.ERROR -> {
+                try {
+                    val value = configInfo.getOne(key)
+                    if (!value.isNullOrBlank()) {
+                        return value
+                    }
+                } catch (e: IllegalArgumentException) {
+                    logger!!.error("error resolve property [$key] because [$key] has more than one value!")
+                    tipsHelper!!.showTips(MULTI_UNRESOLVED_TIP)
+                    return MULTI_UNRESOLVED
+                }
+            }
+            ResolveMultiType.FIRST -> {
+                val value = configInfo.getFirst(key)
+                if (!value.isNullOrBlank()) {
+                    return value
+                }
+            }
+            ResolveMultiType.LAST -> {
+                val value = configInfo[key]?.last()
+                if (!value.isNullOrBlank()) {
+                    return value
+                }
+            }
+            ResolveMultiType.LONGEST -> {
+                val value = configInfo[key]?.longest()
+                if (!value.isNullOrBlank()) {
+                    return value
+                }
+            }
+            ResolveMultiType.SHORTEST -> {
+                val value = configInfo[key]?.shortest()
+                if (!value.isNullOrBlank()) {
+                    return value
+                }
+            }
         }
 
         try {
-            val property = System.getProperty(key)
-            return property
+            return System.getProperty(key)
         } catch (e: Exception) {
         }
 
@@ -232,5 +284,29 @@ abstract class AbstractConfigReader : MutableConfigReader {
             }
         })
     }
+
+    companion object {
+        val MULTI_UNRESOLVED = Object()
+
+        val UNRESOLVED_TIP = OnlyOnceInContextTip(
+            "To ignore this error,surround with:\n" +
+                    "###set ignoreUnresolved = true\n" +
+                    "###set ignoreUnresolved = false"
+        )
+        val MULTI_UNRESOLVED_TIP = OnlyOnceInContextTip(
+            "To resolve this error,please check configs\n" +
+                    "Or change the resolveMultiType from default `ERROR` to [`FIRST`,`LAST`,`LONGEST`,`SHORTEST`]\n" +
+                    "For Instance:###set resolveMulti = FIRST"
+        )
+    }
+}
+
+enum class ResolveMultiType {
+
+    ERROR,
+    FIRST,
+    LAST,
+    LONGEST,
+    SHORTEST
 
 }

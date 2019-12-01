@@ -25,3 +25,10 @@ fun Iterable<String?>.longest(): String? {
         .sortedByDescending { it!!.length }
         .firstOrNull()
 }
+
+fun Iterable<String?>.shortest(): String? {
+    return this
+        .filter { it != null }
+        .sortedBy { it!!.length }
+        .firstOrNull()
+}
