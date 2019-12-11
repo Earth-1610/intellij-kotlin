@@ -6,7 +6,7 @@ import kotlin.reflect.full.createInstance
 
 object Setup {
 
-    private val setups: LinkedList<String> = LinkedList()
+    private val setups: LinkedHashSet<String> = LinkedHashSet()
 
     fun setup(key: String, setup: Runnable) {
 
@@ -45,6 +45,28 @@ object Setup {
                 setups.add(key)
                 setupInstance.init()
             }
+        }
+    }
+
+    private var loadAble = true
+    fun load() {
+        synchronized(this) {
+            if (loadAble) {
+                loadAble = false
+                val setupAbles = ServiceLoader.load(
+                    SetupAble::class.java,
+                    SetupAble::class.java.classLoader
+                )
+                for (setupAble in setupAbles) {
+                    setup(setupAble)
+                }
+            }
+        }
+    }
+
+    private fun setup(setup: SetupAble) {
+        setup(setup::class.qualifiedName ?: setup.toString()) {
+            setup.init()
         }
     }
 }
