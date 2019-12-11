@@ -6,6 +6,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
+import com.itangcent.common.Setup
 import com.itangcent.common.exception.ProcessCanceledException
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.singleton
@@ -30,7 +31,6 @@ abstract class KotlinAnAction : AnAction {
     }
 
     override fun actionPerformed(anActionEvent: AnActionEvent) {
-
         val project = anActionEvent.project ?: return
 
         val actionContextBuilder = ActionContext.builder()
@@ -79,5 +79,11 @@ abstract class KotlinAnAction : AnAction {
         project: Project?,
         anActionEvent: AnActionEvent
     )
+
+    companion object {
+        init {
+            Setup.load()
+        }
+    }
 }
 
