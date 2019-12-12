@@ -99,20 +99,19 @@ class ActionContext {
 
     //region event--------------------------------------------------------------
     @Suppress("UNCHECKED_CAST")
-    fun on(name: String, event: () -> Unit) {
+    fun on(name: String, event: ((ActionContext) -> Unit)) {
         checkStatus()
         lock.writeLock().withLock {
             val key = eventPrefix + name
-            val oldEvent: Runnable? = cache[key] as Runnable?
+            val oldEvent: ((ActionContext) -> Unit)? = cache[key] as ((ActionContext) -> Unit)?
             if (oldEvent == null) {
-                cache[key] = Runnable {
-                    event()
-                }
+                cache[key] = event
             } else {
-                cache[key] = Runnable {
-                    oldEvent.run()
-                    event()
+                val merge: ((ActionContext) -> Unit) = { actionContext ->
+                    oldEvent(actionContext)
+                    event(actionContext)
                 }
+                cache[key] = merge
             }
         }
     }
@@ -120,10 +119,11 @@ class ActionContext {
     @Suppress("UNCHECKED_CAST")
     fun call(name: String) {
         lock.readLock().withLock {
-            val event = cache[eventPrefix + name] as Runnable?
-            event?.run()
+            val event = cache[eventPrefix + name] as ((ActionContext) -> Unit)?
+            event?.invoke(this)
         }
     }
+
     //endregion event--------------------------------------------------------------
 
     //region lock and run----------------------------------------------------------------
@@ -364,7 +364,7 @@ class ActionContext {
         checkStatus()
         releaseContext()
         this.countLatch.waitFor()
-        this.call(EventKey.ONCOMPLETED)
+        this.call(EventKey.ON_COMPLETED)
         lock.writeLock().withLock {
             this.cache.clear()
             locked = false
@@ -381,7 +381,7 @@ class ActionContext {
         releaseContext()
         executorService.submit {
             this.countLatch.waitFor()
-            this.call(EventKey.ONCOMPLETED)
+            this.call(EventKey.ON_COMPLETED)
             lock.writeLock().withLock {
                 this.cache.clear()
                 locked = false
@@ -452,6 +452,20 @@ class ActionContext {
         if (stopped) {
             throw ProcessCanceledException("Action was stopped")
         }
+    }
+
+    private fun onStart() {
+        this.call(EventKey.ON_START)
+    }
+
+    private var parentActionContext: ActionContext? = null
+
+    private fun setParentContext(actionContext: ActionContext) {
+        parentActionContext = actionContext
+    }
+
+    fun parentActionContext(): ActionContext? {
+        return this.parentActionContext
     }
 
     companion object {
@@ -547,6 +561,7 @@ class ActionContext {
      * Allows overridden existing bindings,instead of throwing exceptions
      */
     class ActionContextBuilder : ModuleActions {
+
         override fun <T : Any> bind(type: Class<T>, callBack: (LinkedBindingBuilder<T>) -> Unit) {
             moduleActions.removeIf {
                 (it.size == 3 && it[0] == BIND_INSTANCE_WITH_CLASS && it[1] == type) ||
@@ -622,6 +637,14 @@ class ActionContext {
 
         private val contextActions: MutableList<(ActionContext) -> Unit> = LinkedList()
 
+        fun setParentContext(actionContext: ActionContext) {
+            contextActions.add { it.setParentContext(actionContext) }
+        }
+
+        fun <T : Any> inheritFrom(parent: ActionContext, cls: KClass<T>) {
+            this.bindInstance(cls, parent.instance(cls))
+        }
+
         fun addModule(vararg modules: Module) {
             this.appendModules.addAll(modules)
         }
@@ -641,6 +664,9 @@ class ActionContext {
             }
             val actionContext = ActionContext(*appendModules.toTypedArray())
             contextActions.forEach { it(actionContext) }
+            actionContext.runAsync {
+                actionContext.onStart()
+            }
             return actionContext
         }
 
