@@ -37,7 +37,7 @@ class ConsoleRunnerLogger : AbstractLogger() {
                 if (pipedProcess == null) {
                     pipedProcess = PipedProcess()
                     actionContext!!.cache(CacheKey.LOGPROCESS, pipedProcess!!)
-                    actionContext.on(EventKey.ONCOMPLETED) {
+                    actionContext.on(EventKey.ON_COMPLETED) {
                         pipedProcess?.setExitValue(0)
                         clear()
                     }

@@ -41,7 +41,7 @@ object ThreadLocalContextBeanProxies {
                 cacheBean = actionContext!!.instance(clazz)
                 weakCacheBean = WeakReference(cacheBean)
                 localCache.set(weakCacheBean)
-                actionContext.on(EventKey.ONCOMPLETED) {
+                actionContext.on(EventKey.ON_COMPLETED) {
                     weakCacheBean.clear()
                 }
 
