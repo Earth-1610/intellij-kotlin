@@ -1,5 +1,6 @@
 package com.itangcent.intellij.jvm.kotlin
 
+import com.google.common.collect.Sets
 import com.google.inject.Singleton
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 import java.util.*
@@ -32,19 +33,20 @@ class KotlinJvmClassHelper : StandardJvmClassHelper() {
 
             normalTypes["kotlin.String"] = ""
 
-            val collectionClasses = StandardJvmClassHelper.collectionClasses as HashSet<String>
-
+            val collectionClasses = Sets.newHashSet(*StandardJvmClassHelper.collectionClasses!!)
             addClass(kotlin.collections.Collection::class, collectionClasses)
             addClass(MutableCollection::class, collectionClasses)
             addClass(kotlin.collections.Set::class, collectionClasses)
             addClass(MutableSet::class, collectionClasses)
             addClass(kotlin.collections.List::class, collectionClasses)
             addClass(MutableList::class, collectionClasses)
+            StandardJvmClassHelper.collectionClasses = collectionClasses.toTypedArray()
 
-            val mapClasses = StandardJvmClassHelper.mapClasses as HashSet<String>
-
+            val mapClasses = Sets.newHashSet(*StandardJvmClassHelper.mapClasses!!)
             addClass(kotlin.collections.Map::class, mapClasses)
             addClass(MutableMap::class, mapClasses)
+            StandardJvmClassHelper.mapClasses = mapClasses.toTypedArray()
+
         }
 
         private fun addClass(cls: KClass<*>, classSet: HashSet<String>) {
