@@ -11,7 +11,7 @@ import java.io.IOException
 class FileWrap(private val root: String, var file: File) {
 
     fun content(): String {
-        return FileUtils.read(file)
+        return FileUtils.read(file) ?: ""
     }
 
     fun path(): String {
