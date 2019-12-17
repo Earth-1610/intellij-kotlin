@@ -35,4 +35,7 @@ interface JvmClassHelper {
 
     fun resolveClassToType(psiClass: PsiClass): PsiType?
 
+    fun isInheritor(psiClass: PsiClass, vararg baseClass: String): Boolean
+
+    fun isInheritor(psiType: PsiType, vararg baseClass: String): Boolean
 }

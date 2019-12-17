@@ -19,69 +19,53 @@ open class StandardJvmClassHelper : JvmClassHelper {
 
     private val classCache: java.util.HashMap<PsiClass?, PsiType> = java.util.LinkedHashMap()
 
-    override fun isCollection(psiType: PsiType): Boolean {
-        if (collectionClasses!!.contains(psiType.presentableText)) {
+    override fun isInheritor(psiType: PsiType, vararg baseClass: String): Boolean {
+
+        if (baseClass.contains(psiType.presentableText)) {
             return true
         }
 
         val cls = resolveClassInType(psiType)
         if (cls != null) {
             for (superCls in cls.supers) {
-                if (collectionClasses!!.contains(superCls.qualifiedName)) {
+                if (baseClass.contains(superCls.qualifiedName)) {
                     return true
                 }
             }
         }
 
         return false
+    }
+
+    override fun isInheritor(psiClass: PsiClass, vararg baseClass: String): Boolean {
+
+        if (baseClass.contains(psiClass.qualifiedName)) {
+            return true
+        }
+
+        for (superCls in psiClass.supers) {
+            if (baseClass.contains(superCls.qualifiedName)) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    override fun isCollection(psiType: PsiType): Boolean {
+        return isInheritor(psiType, *collectionClasses!!)
     }
 
     override fun isCollection(psiClass: PsiClass): Boolean {
-        if (collectionClasses!!.contains(psiClass.qualifiedName)) {
-            return true
-        }
-
-        for (superCls in psiClass.supers) {
-            if (collectionClasses!!.contains(superCls.qualifiedName)) {
-                return true
-            }
-        }
-
-        return false
+        return isInheritor(psiClass, *collectionClasses!!)
     }
 
     override fun isMap(psiClass: PsiClass): Boolean {
-        if (mapClasses!!.contains(psiClass.qualifiedName)) {
-            return true
-        }
-
-        for (superCls in psiClass.supers) {
-            if (mapClasses!!.contains(superCls.qualifiedName)) {
-                return true
-            }
-        }
-
-        return false
+        return isInheritor(psiClass, *mapClasses!!)
     }
 
     override fun isMap(psiType: PsiType): Boolean {
-        if (mapClasses!!.contains(psiType.presentableText)) {
-            return true
-        }
-
-        val cls = resolveClassInType(psiType)
-        if (cls != null) {
-            if (mapClasses!!.contains(cls.qualifiedName)) {
-                return true
-            }
-            for (superCls in cls.supers) {
-                if (mapClasses!!.contains(superCls.qualifiedName)) {
-                    return true
-                }
-            }
-        }
-
-        return false
+        return isInheritor(psiType, *mapClasses!!)
     }
 
     override fun isEnum(psiType: PsiType): Boolean {
@@ -115,6 +99,21 @@ open class StandardJvmClassHelper : JvmClassHelper {
         return JAVA_OBJECT_METHODS.contains(methodName)
     }
 
+    override fun resolveClassInType(psiType: PsiType): PsiClass? {
+        if (psiType is PsiArrayType) {
+            return null
+        }
+        return typeCache.safeComputeIfAbsent(psiType) {
+            PsiUtil.resolveClassInType(psiType)
+        }
+    }
+
+    override fun resolveClassToType(psiClass: PsiClass): PsiType? {
+        return classCache.safeComputeIfAbsent(psiClass) {
+            PsiTypesUtil.getClassType(psiClass)
+        }
+    }
+
     companion object {
 
         val JAVA_OBJECT_METHODS: Array<String> = arrayOf(
@@ -143,8 +142,8 @@ open class StandardJvmClassHelper : JvmClassHelper {
 
         val normalTypes: HashMap<String, Any?> = HashMap()
 
-        var collectionClasses: Set<String>? = null
-        var mapClasses: Set<String>? = null
+        var collectionClasses: Array<String>? = null
+        var mapClasses: Array<String>? = null
 
         fun init() {
             if (normalTypes.isEmpty()) {
@@ -186,14 +185,14 @@ open class StandardJvmClassHelper : JvmClassHelper {
                 addClass(ArrayQueue::class.java, collectionClasses)
                 addClass(ArrayBlockingQueue::class.java, collectionClasses)
                 addClass(Stack::class.java, collectionClasses)
-                this.collectionClasses = collectionClasses
+                this.collectionClasses = collectionClasses.toTypedArray()
             }
             if (mapClasses == null) {
                 val mapClasses = HashSet<String>()
                 addClass(Map::class.java, mapClasses)
                 addClass(HashMap::class.java, mapClasses)
                 addClass(LinkedHashMap::class.java, mapClasses)
-                this.mapClasses = mapClasses
+                this.mapClasses = mapClasses.toTypedArray()
             }
         }
 
@@ -209,21 +208,6 @@ open class StandardJvmClassHelper : JvmClassHelper {
         fun addClass(cls: Class<*>, classSet: HashSet<String>) {
             classSet.add(cls.name!!)
             classSet.add(cls.simpleName!!)
-        }
-    }
-
-    override fun resolveClassInType(psiType: PsiType): PsiClass? {
-        if (psiType is PsiArrayType) {
-            return null
-        }
-        return typeCache.safeComputeIfAbsent(psiType) {
-            PsiUtil.resolveClassInType(psiType)
-        }
-    }
-
-    override fun resolveClassToType(psiClass: PsiClass): PsiType? {
-        return classCache.safeComputeIfAbsent(psiClass) {
-            PsiTypesUtil.getClassType(psiClass)
         }
     }
 }
