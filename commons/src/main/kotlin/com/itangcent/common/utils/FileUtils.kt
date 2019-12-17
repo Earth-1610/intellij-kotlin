@@ -5,7 +5,11 @@ import com.itangcent.common.files.FileHandle
 import com.itangcent.common.files.FileTraveler
 import com.itangcent.common.utils.FileUtils.cleanEmptyDir
 import org.apache.commons.lang3.StringUtils
-import java.io.*
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.IOException
+import java.nio.charset.Charset
 import java.util.*
 import java.util.function.Consumer
 import java.util.regex.Pattern
@@ -57,23 +61,18 @@ object FileUtils {
         return sb.toString()
     }
 
-    fun read(file: File): String {
-        val sb = StringBuilder()
+    fun read(file: File): String? {
+        return read(file, Charsets.UTF_8)
+    }
+
+    fun read(file: File, charSet: Charset): String? {
         try {
             FileInputStream(file).use { `in` ->
-                BufferedReader(InputStreamReader(`in`, "utf-8")).use { reader ->
-                    var line: String? = reader.readLine()
-                    while (line != null) {
-                        sb.append(line)
-                        sb.append("\r\n")
-                        line = reader.readLine()
-                    }
-                }
+                return org.apache.commons.io.IOUtils.toString(`in`, charSet)
             }
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            return null
         }
-
-        return sb.toString()
     }
 
     @Throws(IOException::class)
@@ -81,6 +80,14 @@ object FileUtils {
         val out = FileOutputStream(file)
         out.use {
             out.write(content.toByteArray())
+        }
+    }
+
+    @Throws(IOException::class)
+    fun write(file: File, content: ByteArray) {
+        val out = FileOutputStream(file)
+        out.use {
+            out.write(content)
         }
     }
 
@@ -138,11 +145,12 @@ object FileUtils {
     }
 
     fun isEmptyDir(file: File): Boolean {
-        if (file.isDirectory) {
+        return if (file.isDirectory) {
             val files = file.list()
-            return files == null || files.isEmpty()
-        } else
-            return false
+            files == null || files.isEmpty()
+        } else {
+            false
+        }
     }
 
     fun cleanEmptyDir(path: String) {
