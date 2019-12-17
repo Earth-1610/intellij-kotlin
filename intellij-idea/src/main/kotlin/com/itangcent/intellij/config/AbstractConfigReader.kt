@@ -24,6 +24,8 @@ abstract class AbstractConfigReader : MutableConfigReader {
 
     private var ignoreUnresolved: Boolean = false
 
+    private var ignoreNotFoundFile: Boolean = false
+
     private var resolveMulti: ResolveMultiType = ResolveMultiType.ERROR
 
     fun loadConfigInfo() {
@@ -113,8 +115,16 @@ abstract class AbstractConfigReader : MutableConfigReader {
         if (configFile.exists() && configFile.isFile) {
             put("curr_path", path)
             val configInfoContent = FileUtils.read(configFile)
-            loadConfigInfoContent(configInfoContent, path.substringAfterLast("."))
+            if (!configInfoContent.isNullOrEmpty()) {
+                loadConfigInfoContent(configInfoContent!!, path.substringAfterLast("."))
+                return
+            } else if (!ignoreNotFoundFile) {
+                logger!!.error("$path is an empty file")
+            }
+        } else if (!ignoreNotFoundFile) {
+            logger!!.error("$path not be found")
         }
+
     }
 
     private fun resolvePath(path: String): String {
@@ -144,6 +154,9 @@ abstract class AbstractConfigReader : MutableConfigReader {
                 return
             } else if (property == "ignoreUnresolved") {
                 this.ignoreUnresolved = value.toBool()
+                return
+            } else if (property == "ignoreNotFoundFile") {
+                this.ignoreNotFoundFile = value.toBool()
                 return
             } else if (property == "resolveMulti") {
                 this.resolveMulti = ResolveMultiType.valueOf(value.toUpperCase())

@@ -36,7 +36,7 @@ open class FileBeanBinder<T : Any> : BeanBinder<T> {
 
     override fun tryRead(): T? {
         val fileContent = FileUtils.read(file)
-        if (fileContent.isBlank()) return null
+        if (fileContent.isNullOrBlank()) return null
         return GsonUtils.fromJson(fileContent, beanType)
     }
 
