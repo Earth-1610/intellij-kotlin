@@ -9,4 +9,6 @@ interface ConfigReader {
     fun foreach(action: (String, String) -> Unit)
 
     fun foreach(keyFilter: (String) -> Boolean, action: (String, String) -> Unit)
+
+    fun resolveProperty(property: String): String
 }
