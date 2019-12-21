@@ -5,7 +5,7 @@ import com.google.inject.Singleton
 import com.itangcent.intellij.logger.Logger
 
 @Singleton
-class DefaultTipsHelper : TipsHelper {
+open class DefaultTipsHelper : TipsHelper {
 
     @Inject
     private val logger: Logger? = null
