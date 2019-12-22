@@ -171,7 +171,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
 
     protected abstract fun findConfigFiles(): List<String>?
 
-    private fun resolveProperty(property: String): String {
+    override fun resolveProperty(property: String): String {
         if (!resolveProperty) {
             return property
         }
