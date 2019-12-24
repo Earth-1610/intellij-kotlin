@@ -156,4 +156,8 @@ class ScalaTypeParameterType2PsiTypeParameterAdaptor(
     override fun getAnnotations(): Array<PsiAnnotation> {
         return super<PsiType>.getAnnotations()
     }
+
+    fun getTypeParameterType(): PsiTypeParameter? {
+        return scTypeParam.psiTypeParameter()
+    }
 }

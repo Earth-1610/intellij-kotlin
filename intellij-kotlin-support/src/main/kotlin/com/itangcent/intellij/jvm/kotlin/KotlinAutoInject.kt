@@ -11,10 +11,12 @@ class KotlinAutoInject : SetupAble {
             val classLoader = KotlinAutoInject::class.java.classLoader
             if (classLoader.loadClass("org.jetbrains.kotlin.psi.KtClass") != null) {
 
-                AutoInjectKit.tryLoadAndBind(
-                    classLoader, DocHelper::class,
+                AutoInjectKit.tryLoadAndWrap(
+                    classLoader,
+                    DocHelper::class,
                     "com.itangcent.intellij.jvm.kotlin.KotlinDocHelper"
                 )
+
                 AutoInjectKit.tryLoadAndBind(
                     classLoader,
                     AnnotationHelper::class,
