@@ -33,13 +33,17 @@ class ScalaPsiFieldAdaptor(private val scVariable: ScVariable) : PsiField, PsiMo
     override fun getName(): String {
         val name = scVariable.name
         if (!name.isNullOrBlank()) {
-            return name
+            return unescape(name)
         }
         try {
-            return scVariable.declaredNames().head()
+            return unescape(scVariable.declaredNames().head())
         } catch (e: Exception) {
         }
         return ""
+    }
+
+    private fun unescape(name: String): String {
+        return name.removeSurrounding("`")
     }
 
     override fun getInitializer(): PsiExpression? {

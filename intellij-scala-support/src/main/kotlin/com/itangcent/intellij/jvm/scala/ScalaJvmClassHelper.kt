@@ -2,11 +2,15 @@ package com.itangcent.intellij.jvm.scala
 
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiField
+import com.intellij.psi.PsiMethod
+import com.intellij.psi.PsiType
 import com.itangcent.intellij.jvm.JvmClassHelper
 import com.itangcent.intellij.jvm.scala.adaptor.ScalaPsiFieldAdaptor
+import com.itangcent.intellij.jvm.scala.adaptor.ScalaTypeParameterType2PsiTypeParameterAdaptor
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.normalTypes
 import org.jetbrains.plugins.scala.lang.psi.api.statements.ScVariable
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.ScClass
+import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.ScTemplateDefinition
 import java.util.*
 
 class ScalaJvmClassHelper(private val jvmClassHelper: JvmClassHelper) : JvmClassHelper by jvmClassHelper {
@@ -37,6 +41,25 @@ class ScalaJvmClassHelper(private val jvmClassHelper: JvmClassHelper) : JvmClass
         }
 
         return jvmClassHelper.getAllFields(psiClass)
+    }
+
+    override fun resolveClassInType(psiType: PsiType): PsiClass? {
+        if (psiType is ScalaTypeParameterType2PsiTypeParameterAdaptor) {
+            return psiType.getTypeParameterType()
+        }
+        return jvmClassHelper.resolveClassInType(psiType)
+    }
+
+    override fun getAllMethods(psiClass: PsiClass): Array<PsiMethod> {
+        if (psiClass is ScTemplateDefinition) {
+            val allMethods = psiClass.allMethods()
+            val methods: LinkedList<PsiMethod> = LinkedList()
+            for (method in allMethods) {
+                methods.add(method.method())
+            }
+            return methods.toTypedArray()
+        }
+        return jvmClassHelper.getAllMethods(psiClass)
     }
 
     companion object {

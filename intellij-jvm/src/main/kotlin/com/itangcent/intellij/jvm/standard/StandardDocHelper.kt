@@ -3,6 +3,7 @@ package com.itangcent.intellij.jvm.standard
 import com.google.inject.Singleton
 import com.intellij.psi.PsiDocCommentOwner
 import com.intellij.psi.PsiElement
+import com.intellij.psi.javadoc.PsiDocComment
 import com.intellij.util.containers.stream
 import com.itangcent.common.utils.cast
 import com.itangcent.common.utils.reduceSafely
@@ -109,14 +110,19 @@ open class StandardDocHelper : DocHelper {
         return psiElement.cast(PsiDocCommentOwner::class)?.docComment
             ?.let { docComment ->
                 return@let ActionContext.getContext()!!.callInReadUI {
-                    val descriptions = docComment.descriptionElements
-                    return@callInReadUI descriptions.stream()
-                        .map { desc -> desc.text }
-                        ?.reduce { s1, s2 -> s1 + s2 }
-                        ?.map { it.trim() }
-                        ?.orElse(null)
+                    return@callInReadUI getDocCommentContent(docComment)
                 }
             }
+    }
+
+
+    override fun getDocCommentContent(docComment: PsiDocComment): String? {
+        val descriptions = docComment.descriptionElements
+        return descriptions.stream()
+            .map { desc -> desc.text }
+            ?.reduce { s1, s2 -> s1 + s2 }
+            ?.map { it.trim() }
+            ?.orElse(null)
     }
 
     override fun getSubTagMapOfDocComment(psiElement: PsiElement?, tag: String): Map<String, String?> {

@@ -4,7 +4,7 @@ import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.PsiElement
 import com.itangcent.intellij.context.ActionContext
-import com.itangcent.intellij.jvm.standard.StandardDocHelper
+import com.itangcent.intellij.jvm.DocHelper
 import org.apache.commons.lang3.StringUtils
 import org.jetbrains.kotlin.asJava.elements.KtLightElement
 import org.jetbrains.kotlin.kdoc.parser.KDocKnownTag
@@ -15,7 +15,7 @@ import org.jetbrains.kotlin.psi.KtDeclaration
 import java.util.*
 
 @Singleton
-class KotlinDocHelper : StandardDocHelper() {
+class KotlinDocHelper(private val docHelper: DocHelper) : DocHelper by docHelper {
 
     @Inject
     private val actionContext: ActionContext? = null
@@ -27,7 +27,7 @@ class KotlinDocHelper : StandardDocHelper() {
         }
 
         if (!KtPsiUtils.isKtPsiInst(psiElement)) {
-            return super.hasTag(psiElement, tag)
+            return docHelper.hasTag(psiElement, tag)
         }
 
         val kDoc = findKDoc(psiElement)
@@ -51,7 +51,7 @@ class KotlinDocHelper : StandardDocHelper() {
             } ?: false
         }
 
-        return false
+        return docHelper.hasTag(psiElement, tag)
     }
 
     override fun findDocByTag(psiElement: PsiElement?, tag: String?): String? {
@@ -61,7 +61,7 @@ class KotlinDocHelper : StandardDocHelper() {
         }
 
         if (!KtPsiUtils.isKtPsiInst(psiElement)) {
-            return super.findDocByTag(psiElement, tag)
+            return docHelper.findDocByTag(psiElement, tag)
         }
 
         val kDoc = findKDoc(psiElement)
@@ -86,7 +86,7 @@ class KotlinDocHelper : StandardDocHelper() {
             }
         }
 
-        return null
+        return docHelper.findDocByTag(psiElement, tag)
     }
 
     override fun findDocsByTag(psiElement: PsiElement?, tag: String?): List<String>? {
@@ -96,7 +96,7 @@ class KotlinDocHelper : StandardDocHelper() {
         }
 
         if (!KtPsiUtils.isKtPsiInst(psiElement)) {
-            return super.findDocsByTag(psiElement, tag)
+            return docHelper.findDocsByTag(psiElement, tag)
         }
 
         val kDoc = findKDoc(psiElement)
@@ -111,7 +111,7 @@ class KotlinDocHelper : StandardDocHelper() {
             }
         }
 
-        return null
+        return docHelper.findDocsByTag(psiElement, tag)
     }
 
     override fun findDocsByTagAndName(psiElement: PsiElement?, tag: String, name: String): String? {
@@ -122,7 +122,7 @@ class KotlinDocHelper : StandardDocHelper() {
         }
 
         if (!KtPsiUtils.isKtPsiInst(psiElement)) {
-            return super.findDocsByTagAndName(psiElement, tag, name)
+            return docHelper.findDocsByTagAndName(psiElement, tag, name)
         }
 
         val kDoc = findKDoc(psiElement)
@@ -148,7 +148,7 @@ class KotlinDocHelper : StandardDocHelper() {
             }
         }
 
-        return null
+        return docHelper.findDocsByTagAndName(psiElement, tag, name)
     }
 
     override fun getAttrOfDocComment(psiElement: PsiElement?): String? {
@@ -158,7 +158,7 @@ class KotlinDocHelper : StandardDocHelper() {
         }
 
         if (!KtPsiUtils.isKtPsiInst(psiElement)) {
-            return super.getAttrOfDocComment(psiElement)
+            return docHelper.getAttrOfDocComment(psiElement)
         }
 
         val kDoc = findKDoc(psiElement)
@@ -168,7 +168,7 @@ class KotlinDocHelper : StandardDocHelper() {
             }
         }
 
-        return null
+        return docHelper.getAttrOfDocComment(psiElement)
     }
 
     override fun getSubTagMapOfDocComment(psiElement: PsiElement?, tag: String): Map<String, String?> {
@@ -178,10 +178,11 @@ class KotlinDocHelper : StandardDocHelper() {
         }
 
         if (!KtPsiUtils.isKtPsiInst(psiElement)) {
-            return super.getSubTagMapOfDocComment(psiElement, tag)
+            return docHelper.getSubTagMapOfDocComment(psiElement, tag)
         }
 
         val kDoc = findKDoc(psiElement)
+
         if (kDoc != null) {
             return actionContext!!.callInReadUI {
                 val tagMap: HashMap<String, String?> = HashMap()
@@ -194,7 +195,7 @@ class KotlinDocHelper : StandardDocHelper() {
             } ?: Collections.emptyMap()
         }
 
-        return Collections.emptyMap()
+        return docHelper.getSubTagMapOfDocComment(psiElement, tag)
 
     }
 
@@ -205,7 +206,7 @@ class KotlinDocHelper : StandardDocHelper() {
         }
 
         if (!KtPsiUtils.isKtPsiInst(psiElement)) {
-            return super.getTagMapOfDocComment(psiElement)
+            return docHelper.getTagMapOfDocComment(psiElement)
         }
 
         val kDoc = findKDoc(psiElement)
@@ -225,7 +226,7 @@ class KotlinDocHelper : StandardDocHelper() {
             } ?: Collections.emptyMap()
         }
 
-        return Collections.emptyMap()
+        return docHelper.getTagMapOfDocComment(psiElement)
     }
 
     private fun findKDoc(psiElement: PsiElement): KDoc? {
@@ -257,7 +258,7 @@ class KotlinDocHelper : StandardDocHelper() {
             return content
         }
 
-        var link = this.getSubjectLink()?.text
+        val link = this.getSubjectLink()?.text
 
         if (StringUtils.isNotBlank(link)) {
             return link
