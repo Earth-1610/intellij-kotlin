@@ -79,16 +79,30 @@ abstract class AbstractConfigReader : MutableConfigReader {
             }
 
             //resolve name&value
-            val name = resolveProperty(trimLine.substringBefore("="))
-            if (!name.isBlank()) {
+            parseEqualLine(trimLine)
+        }
+    }
 
-                val value = resolveProperty(trimLine.substringAfter("=", ""))
-                if (name == "properties.additional") {
-                    loadConfigFile(value)
-                    continue
-                }
-                configInfo.put(name.trim(), value.trim())
+    private fun parseEqualLine(line: String) {
+
+        val name = resolveProperty(line.substringBefore("=")).trim()
+        if (!name.isBlank()) {
+            val value = resolveProperty(line.substringAfter("=", ""))
+            if (name == "properties.additional") {
+                loadConfigFile(value)
+                return
             }
+            if (name.contains("[") && value.contains("]")) {
+                val matcher = KEY_FILTER_EQULA_VALUE.matcher(line)
+                if (matcher.matches()) {
+                    val pName = matcher.group(1)
+                    val pValue = matcher.group(2)
+                    configInfo.put(resolveProperty(pName.trim()), resolveProperty(pValue.trim()))
+                    return
+                }
+                logger!!.warn("parse config maybe incorrect: $line")
+            }
+            configInfo.put(name.trim(), value.trim())
         }
     }
 
@@ -210,7 +224,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
     }
 
     open fun getPropertyStringValue(key: String): String? {
-        var propertyValue = getPropertyValue(key)
+        val propertyValue = getPropertyValue(key)
         if (propertyValue != MULTI_UNRESOLVED) {
             return propertyValue?.toString()
         }
@@ -311,6 +325,8 @@ abstract class AbstractConfigReader : MutableConfigReader {
                     "Or change the resolveMultiType from default `ERROR` to [`FIRST`,`LAST`,`LONGEST`,`SHORTEST`]\n" +
                     "For Instance:###set resolveMulti = FIRST"
         )
+
+        val KEY_FILTER_EQULA_VALUE = Pattern.compile("(\\S*?\\[.*?])\\s*=\\s*(.*?)")
     }
 }
 
