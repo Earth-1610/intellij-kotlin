@@ -114,6 +114,10 @@ open class StandardJvmClassHelper : JvmClassHelper {
         }
     }
 
+    override fun getAllFields(psiClass: PsiClass): Array<PsiField> {
+        return psiClass.allFields
+    }
+
     companion object {
 
         val JAVA_OBJECT_METHODS: Array<String> = arrayOf(

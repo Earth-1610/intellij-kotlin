@@ -3,6 +3,7 @@ package com.itangcent.intellij.util
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiField
 
+@Deprecated(message = "will be removed soon")
 object FieldUtils {
 
     fun buildFiledName(fieldName: String): String {

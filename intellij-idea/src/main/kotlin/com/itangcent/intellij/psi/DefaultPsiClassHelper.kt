@@ -36,7 +36,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
             result = (result ?: "") + docByRule
         }
 
-        var fieldText = field.text
+        var fieldText = field.text ?: ""
         if (fieldText.contains("//")) {
             fieldText = fieldText.trim()
 

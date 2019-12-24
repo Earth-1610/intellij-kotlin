@@ -501,8 +501,8 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             fieldNames = HashSet()
         }
 
-        for (field in psiClass.allFields) {
-            if (jvmClassHelper!!.isStaticFinal(field)) {
+        for (field in jvmClassHelper!!.getAllFields(psiClass)) {
+            if (jvmClassHelper.isStaticFinal(field)) {
                 continue
             }
 
@@ -585,9 +585,9 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             if (!valProperty.isBlank()) {
                 val candidateProperty = propertyNameOfGetter(valProperty)
                 if (candidateProperty != null && valProperty != candidateProperty) {
-                    if (!cls.allFields
+                    if (!jvmClassHelper!!.getAllFields(cls)
                             .filter { it.name == valProperty }
-                            .any() && cls.allFields
+                            .any() && jvmClassHelper.getAllFields(cls)
                             .filter { it.name == candidateProperty }
                             .any()
                     ) {
@@ -671,7 +671,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         } else {
             { field -> jvmClassHelper!!.isPublicStaticFinal(field) }
         }
-        for (field in resourceClass.allFields) {
+        for (field in jvmClassHelper!!.getAllFields(resourceClass)) {
 
             if (!filter(field)) {
                 continue
@@ -704,7 +704,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         }
 
         val res = ArrayList<Map<String, Any?>>()
-        for (field in sourcePsiClass.allFields) {
+        for (field in jvmClassHelper!!.getAllFields(sourcePsiClass)) {
 
             val value = field.computeConstantValue() ?: continue
 

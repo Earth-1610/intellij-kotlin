@@ -2,7 +2,6 @@ package com.itangcent.intellij.jvm
 
 import com.google.inject.ImplementedBy
 import com.intellij.psi.PsiClass
-import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiField
 import com.intellij.psi.PsiType
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
@@ -38,4 +37,6 @@ interface JvmClassHelper {
     fun isInheritor(psiClass: PsiClass, vararg baseClass: String): Boolean
 
     fun isInheritor(psiType: PsiType, vararg baseClass: String): Boolean
+
+    fun getAllFields(psiClass: PsiClass): Array<PsiField>
 }
