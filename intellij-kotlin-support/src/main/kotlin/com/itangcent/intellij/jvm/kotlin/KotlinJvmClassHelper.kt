@@ -1,14 +1,13 @@
 package com.itangcent.intellij.jvm.kotlin
 
 import com.google.common.collect.Sets
-import com.google.inject.Singleton
+import com.itangcent.intellij.jvm.JvmClassHelper
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
+import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.normalTypes
 import java.util.*
 import kotlin.reflect.KClass
 
-@Singleton
-class KotlinJvmClassHelper : StandardJvmClassHelper() {
-
+class KotlinJvmClassHelper(private val jvmClassHelper: JvmClassHelper) : JvmClassHelper by jvmClassHelper {
     companion object {
 
         init {
