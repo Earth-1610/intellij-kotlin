@@ -1,6 +1,7 @@
 package com.itangcent.intellij.jvm.scala
 
 import com.itangcent.common.SetupAble
+import com.itangcent.intellij.jvm.AnnotationHelper
 import com.itangcent.intellij.jvm.AutoInjectKit
 import com.itangcent.intellij.jvm.DocHelper
 import com.itangcent.intellij.jvm.JvmClassHelper
@@ -21,6 +22,11 @@ class ScalaAutoInject : SetupAble {
                     classLoader,
                     DocHelper::class,
                     "com.itangcent.intellij.jvm.scala.ScalaDocHelper"
+                )
+                AutoInjectKit.tryLoadAndWrap(
+                    classLoader,
+                    AnnotationHelper::class,
+                    "com.itangcent.intellij.jvm.scala.adaptor.ScalaAnnotationHelper"
                 )
             }
         } catch (e: Exception) {

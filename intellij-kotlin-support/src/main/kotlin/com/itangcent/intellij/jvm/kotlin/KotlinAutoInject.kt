@@ -17,7 +17,7 @@ class KotlinAutoInject : SetupAble {
                     "com.itangcent.intellij.jvm.kotlin.KotlinDocHelper"
                 )
 
-                AutoInjectKit.tryLoadAndBind(
+                AutoInjectKit.tryLoadAndWrap(
                     classLoader,
                     AnnotationHelper::class,
                     "com.itangcent.intellij.jvm.kotlin.KotlinAnnotationHelper"
