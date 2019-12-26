@@ -21,7 +21,7 @@ import org.jetbrains.kotlin.psi.psiUtil.plainContent
  * see https://kotlinlang.org/docs/reference/annotations.html
  */
 @Singleton
-class KotlinAnnotationHelper(private val annotationHelper: AnnotationHelper) : AnnotationHelper by annotationHelper {
+class KotlinAnnotationHelper : AnnotationHelper {
 
     @Inject
     private val fqNameHelper: FqNameHelper? = null
@@ -38,7 +38,7 @@ class KotlinAnnotationHelper(private val annotationHelper: AnnotationHelper) : A
             return true
         }
 
-        return annotationHelper.hasAnn(psiElement, annName)
+        return false
     }
 
     override fun findAnnMap(psiElement: PsiElement?, annName: String): Map<String, Any?>? {
@@ -58,9 +58,8 @@ class KotlinAnnotationHelper(private val annotationHelper: AnnotationHelper) : A
             return ret
         }
 
-        return annotationHelper.findAnnMap(psiElement, annName)
+        return null
     }
-
 
     override fun findAttr(psiElement: PsiElement?, annName: String): Any? {
 //        val ktAnnotation = findKtAnnotation(psiElement, annName)
@@ -87,7 +86,7 @@ class KotlinAnnotationHelper(private val annotationHelper: AnnotationHelper) : A
         }
 
 
-        return annotationHelper.findAttr(psiElement, annName, *attrs)
+        return null
     }
 
     override fun findAttrAsString(psiElement: PsiElement?, annName: String): String? {
@@ -99,7 +98,7 @@ class KotlinAnnotationHelper(private val annotationHelper: AnnotationHelper) : A
                 .longest()
         }
 
-        return annotationHelper.findAttrAsString(psiElement, annName)
+        return null
     }
 
     override fun findAttrAsString(psiElement: PsiElement?, annName: String, vararg attrs: String): String? {
@@ -114,7 +113,7 @@ class KotlinAnnotationHelper(private val annotationHelper: AnnotationHelper) : A
                 .longest()
         }
 
-        return annotationHelper.findAttrAsString(psiElement, annName, *attrs)
+        return null
     }
 
     private fun getArgName(psiElement: PsiElement?, annName: String, valArg: ValueArgument?, index: Int): String? {

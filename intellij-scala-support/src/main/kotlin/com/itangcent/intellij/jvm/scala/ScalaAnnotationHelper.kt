@@ -1,4 +1,4 @@
-package com.itangcent.intellij.jvm.scala.adaptor
+package com.itangcent.intellij.jvm.scala
 
 import com.intellij.psi.PsiAnnotationOwner
 import com.intellij.psi.PsiElement
@@ -6,12 +6,15 @@ import com.intellij.psi.PsiModifierListOwner
 import com.itangcent.common.utils.GsonUtils
 import com.itangcent.common.utils.cast
 import com.itangcent.intellij.jvm.AnnotationHelper
-import com.itangcent.intellij.jvm.scala.ScPsiUtils
 import org.jetbrains.plugins.scala.lang.psi.api.base.ScLiteral
 import org.jetbrains.plugins.scala.lang.psi.api.expr.*
+import org.jetbrains.plugins.scala.lang.psi.api.statements.ScAnnotationsHolder
 import java.util.*
 
-class ScalaAnnotationHelper(private val annotationHelper: AnnotationHelper) : AnnotationHelper by annotationHelper {
+class ScalaAnnotationHelper : AnnotationHelper {
+    override fun hasAnn(psiElement: PsiElement?, annName: String): Boolean {
+        return findScAnnotation(psiElement, annName) != null
+    }
 
     override fun findAnnMap(psiElement: PsiElement?, annName: String): Map<String, Any?>? {
         if (psiElement == null) return null
@@ -42,7 +45,7 @@ class ScalaAnnotationHelper(private val annotationHelper: AnnotationHelper) : An
             }
         }
 
-        return annotationHelper.findAnnMap(psiElement, annName)
+        return null
     }
 
     override fun findAttr(psiElement: PsiElement?, annName: String): Any? {
@@ -82,7 +85,7 @@ class ScalaAnnotationHelper(private val annotationHelper: AnnotationHelper) : An
             }
         }
 
-        return annotationHelper.findAnnMap(psiElement, annName)
+        return null
     }
 
     override fun findAttrAsString(psiElement: PsiElement?, annName: String): String? {
@@ -121,11 +124,26 @@ class ScalaAnnotationHelper(private val annotationHelper: AnnotationHelper) : An
 
     private fun findScAnnotation(psiElement: PsiElement?, annName: String): ScAnnotationExpr? {
 
-        val annotation = (psiElement.cast(PsiAnnotationOwner::class)?.annotations
+        var annotation = (psiElement.cast(PsiAnnotationOwner::class)?.annotations
             ?: psiElement.cast(PsiModifierListOwner::class)?.annotations)
-            ?.firstOrNull { it.qualifiedName == annName } ?: return null
-        if (annotation is ScAnnotation) {
+            ?.firstOrNull { it.qualifiedName == annName }
+
+        if (annotation != null && annotation is ScAnnotation) {
             return annotation.annotationExpr()
+        }
+
+        if (psiElement is ScAnnotationsHolder) {
+            annotation = psiElement.findAnnotation(annName)
+
+            if (annotation != null && annotation is ScAnnotation) {
+                return annotation.annotationExpr()
+            }
+
+            for (ann in psiElement.annotations()) {
+                if (ann.qualifiedName == annName) {
+                    return ann.annotationExpr()
+                }
+            }
         }
 
         return null
