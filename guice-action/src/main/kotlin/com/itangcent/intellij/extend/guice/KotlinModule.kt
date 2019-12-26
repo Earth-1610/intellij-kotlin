@@ -11,9 +11,16 @@ import com.google.inject.name.Names
 import com.google.inject.spi.InjectionListener
 import com.google.inject.spi.TypeEncounter
 import com.google.inject.spi.TypeListener
+import com.itangcent.common.utils.privileged
+import com.itangcent.intellij.context.ActionContext
+import java.lang.reflect.Field
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
+import java.lang.reflect.Modifier
 import kotlin.reflect.KClass
+import kotlin.reflect.full.declaredMemberProperties
+import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.jvm.javaField
 
 open class KotlinModule : AbstractModule() {
 
@@ -44,6 +51,9 @@ open class KotlinModule : AbstractModule() {
                 val type = injectableType.rawType
                 val methods = type.declaredMethods
                 for (method in methods) {
+                    if (Modifier.isStatic(method.modifiers)) {
+                        continue
+                    }
                     val annotation = method.getAnnotation(annotationType)
                     if (annotation != null) {
                         val provider = encounterProvider.get(encounter)
@@ -59,6 +69,76 @@ open class KotlinModule : AbstractModule() {
                                 throw ProvisionException(e.message, e)
                             }
                         })
+                    }
+                }
+            }
+        })
+    }
+
+
+    /**
+     * Binds a post injection hook field annotated with the given annotation to the given field
+     * handler.
+     */
+    protected fun <A : Annotation> bindFieldHandler(
+        annotationType: Class<A>,
+        fieldHandler: FieldHandler<Any?, Annotation>
+    ) {
+        bindFieldHandler(annotationType, EncounterProvider.encounterProvider(fieldHandler))
+    }
+
+
+    private fun <A : Annotation> bindFieldHandler(
+        annotationType: Class<A>,
+        encounterProvider: EncounterProvider<FieldHandler<Any?, Annotation>>
+    ) {
+        bindListener(Matchers.any(), object : TypeListener {
+            override fun <I> hear(injectableType: TypeLiteral<I>, encounter: TypeEncounter<I>) {
+                // #todo:provider暂时无法完成PostConstruct
+                val type = injectableType.rawType
+                val fields = type.declaredFields
+                val names: HashSet<String> = HashSet()
+                for (field in fields) {
+                    val annotation = field.getAnnotation(annotationType)
+                    if (annotation != null) {
+                        names.add(field.name)
+                        val provider = encounterProvider.get(encounter)
+
+                        encounter.register(InjectionListener { injectee ->
+                            val fieldHandler = provider.get()
+                            try {
+                                fieldHandler.afterInjection(injectee, annotation, field)
+                            } catch (ie: InvocationTargetException) {
+                                val e = ie.targetException
+                                throw ProvisionException(e.message, e)
+                            } catch (e: IllegalAccessException) {
+                                throw ProvisionException(e.message, e)
+                            }
+                        })
+                    }
+                }
+                val kotlinCls = annotationType.kotlin
+                for (declaredMemberProperty in kotlinCls.declaredMemberProperties) {
+                    val annotation = declaredMemberProperty.findAnnotation<PostConstruct>()
+                    if (annotation != null && names.add(declaredMemberProperty.name)) {
+                        val provider = encounterProvider[encounter]
+                        declaredMemberProperty.javaField?.let {
+                            encounter.register(InjectionListener { injectee ->
+                                val fieldHandler = provider.get()
+
+                                try {
+                                    fieldHandler.afterInjection(
+                                        injectee, annotation,
+                                        it
+                                    )
+                                } catch (ie: InvocationTargetException) {
+                                    val e = ie.targetException
+                                    throw ProvisionException(e.message, e)
+                                } catch (e: IllegalAccessException) {
+                                    throw ProvisionException(e.message, e)
+                                }
+                            })
+                        }
                     }
                 }
             }
@@ -183,10 +263,28 @@ open class KotlinModule : AbstractModule() {
 
     override fun configure() {
 
+        bindFieldHandler(PostConstruct::class.java, object : FieldHandler<Any?, Annotation> {
+            @Throws(InvocationTargetException::class, IllegalAccessException::class)
+            override fun afterInjection(injectee: Any?, annotation: Annotation, field: Field) {
+                val context = ActionContext.getContext()
+                if (context != null) {
+                    field.privileged {
+                        var fieldValue: Any? = field.get(injectee)
+                        if (fieldValue == null) {
+                            fieldValue = context.instance(field.type.kotlin)
+                            field.set(injectee, fieldValue)
+                        } else {
+                            context.init(fieldValue)
+                        }
+                    }
+                }
+            }
+        })
+
         bindMethodHandler(PostConstruct::class.java, object : MethodHandler<Any?, Annotation> {
             @Throws(InvocationTargetException::class, IllegalAccessException::class)
             override fun afterInjection(injectee: Any?, annotation: Annotation, method: Method) {
-                method.invoke(injectee)
+                method.privileged { it.invoke(injectee) }
             }
         })
 

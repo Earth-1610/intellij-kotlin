@@ -1,22 +1,28 @@
 package com.itangcent.intellij.jvm.standard
 
+import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.util.containers.stream
 import com.itangcent.common.utils.GsonUtils
 import com.itangcent.common.utils.cast
 import com.itangcent.common.utils.longest
+import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.AnnotationHelper
 
 @Singleton
 open class StandardAnnotationHelper : AnnotationHelper {
+
+    @Inject
+    private val actionContext: ActionContext? = null
+
     override fun hasAnn(psiElement: PsiElement?, annName: String): Boolean {
         return findAnn(psiElement, annName) != null
     }
 
     override fun findAnnMap(psiElement: PsiElement?, annName: String): Map<String, Any?>? {
         val psiAnn = findAnn(psiElement, annName) ?: return null
-        return annToMap(psiAnn)
+        return actionContext!!.callInReadUI { annToMap(psiAnn) }
     }
 
     protected fun annToMap(psiAnn: PsiAnnotation): LinkedHashMap<String, Any?> {
@@ -47,11 +53,13 @@ open class StandardAnnotationHelper : AnnotationHelper {
 
     override fun findAttrAsString(psiElement: PsiElement?, annName: String, vararg attrs: String): String? {
         val ann = findAnn(psiElement, annName) ?: return null
-        return attrs
-            .mapNotNull { ann.findAttributeValue(it) }
-            .mapNotNull { resolveValue(it) }
-            .map { tinyAnnStr(it) }
-            .longest()
+        return actionContext!!.callInReadUI {
+            return@callInReadUI attrs
+                .mapNotNull { ann.findAttributeValue(it) }
+                .mapNotNull { resolveValue(it) }
+                .map { tinyAnnStr(it) }
+                .longest()
+        }
     }
 
     private fun findAnn(psiElement: PsiElement?, annName: String): PsiAnnotation? {

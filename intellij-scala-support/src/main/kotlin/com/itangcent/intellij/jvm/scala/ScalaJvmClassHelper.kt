@@ -13,13 +13,67 @@ import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.ScClass
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.ScTemplateDefinition
 import java.util.*
 
-class ScalaJvmClassHelper(private val jvmClassHelper: JvmClassHelper) : JvmClassHelper by jvmClassHelper {
+class ScalaJvmClassHelper : JvmClassHelper {
+
+    //region not implemented
+    override fun isStaticFinal(field: PsiField): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isMap(psiClass: PsiClass): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isMap(psiType: PsiType): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isCollection(psiClass: PsiClass): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isCollection(psiType: PsiType): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isPublicStaticFinal(field: PsiField): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isNormalType(typeName: String): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getDefaultValue(typeName: String): Any? {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isBasicMethod(methodName: String): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isEnum(psiType: PsiType): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun resolveClassToType(psiClass: PsiClass): PsiType? {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isInheritor(psiClass: PsiClass, vararg baseClass: String): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isInheritor(psiType: PsiType, vararg baseClass: String): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+    //endregion
 
     override fun isAccessibleField(field: PsiField): Boolean {
         if (field is ScalaPsiFieldAdaptor) {
             return true
         }
-        return jvmClassHelper.isAccessibleField(field)
+        return false
     }
 
     override fun getAllFields(psiClass: PsiClass): Array<PsiField> {
@@ -40,14 +94,14 @@ class ScalaJvmClassHelper(private val jvmClassHelper: JvmClassHelper) : JvmClass
             return fields.toTypedArray()
         }
 
-        return jvmClassHelper.getAllFields(psiClass)
+        return emptyArray()
     }
 
     override fun resolveClassInType(psiType: PsiType): PsiClass? {
         if (psiType is ScalaTypeParameterType2PsiTypeParameterAdaptor) {
             return psiType.getTypeParameterType()
         }
-        return jvmClassHelper.resolveClassInType(psiType)
+        return null
     }
 
     override fun getAllMethods(psiClass: PsiClass): Array<PsiMethod> {
@@ -59,7 +113,7 @@ class ScalaJvmClassHelper(private val jvmClassHelper: JvmClassHelper) : JvmClass
             }
             return methods.toTypedArray()
         }
-        return jvmClassHelper.getAllMethods(psiClass)
+        return emptyArray()
     }
 
     companion object {

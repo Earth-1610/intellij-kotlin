@@ -1,5 +1,6 @@
 package com.itangcent.common.utils
 
+import java.lang.reflect.AccessibleObject
 import java.lang.reflect.Modifier
 import java.util.*
 import kotlin.jvm.internal.CallableReference
@@ -369,4 +370,13 @@ fun invokeTopMethodByMethodName(
     }
     throw IllegalArgumentException("Can't find the method named :$methodName with args ${methodArgs.toList().toString()} in the same file with ${otherCallableReference.name}")
 
+}
+
+fun <T : AccessibleObject, R> T.privileged(handle: (T) -> R): R {
+    return try {
+        handle(this)
+    } catch (e: IllegalAccessException) {
+        this.isAccessible = true
+        handle(this)
+    }
 }

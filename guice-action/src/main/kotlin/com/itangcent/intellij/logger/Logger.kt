@@ -1,35 +1,33 @@
 package com.itangcent.intellij.logger
 
 import com.google.inject.ImplementedBy
-import com.itangcent.common.exception.ProcessCanceledException
-import org.apache.commons.lang3.exception.ExceptionUtils
 
 
 @ImplementedBy(ConsoleRunnerLogger::class)
-interface Logger {
-    fun log(msg: String) {
+interface Logger : com.itangcent.common.logger.ILogger {
+    override fun log(msg: String) {
         log(BasicLevel.ALL, msg)
     }
 
     fun log(level: Level, msg: String)
 
-    fun trace(msg: String) {
+    override fun trace(msg: String) {
         log(BasicLevel.TRACE, msg)
     }
 
-    fun debug(msg: String) {
+    override fun debug(msg: String) {
         log(BasicLevel.DEBUG, msg)
     }
 
-    fun info(msg: String) {
+    override fun info(msg: String) {
         log(BasicLevel.INFO, msg)
     }
 
-    fun warn(msg: String) {
+    override fun warn(msg: String) {
         log(BasicLevel.WARN, msg)
     }
 
-    fun error(msg: String) {
+    override fun error(msg: String) {
         log(BasicLevel.ERROR, msg)
     }
 
@@ -77,11 +75,17 @@ interface Logger {
         companion object {
 
             fun toLevel(levelStr: String): Level {
-                return toLevel(levelStr, ALL)
+                return toLevel(
+                    levelStr,
+                    ALL
+                )
             }
 
             fun toLevel(level: Int): Level {
-                return toLevel(level, ALL)
+                return toLevel(
+                    level,
+                    ALL
+                )
             }
 
             fun toLevel(level: Int, defaultLevel: Level): Level {
@@ -109,16 +113,5 @@ interface Logger {
                 }
             }
         }
-    }
-}
-
-fun Logger.traceError(msg: String, e: Throwable) {
-    this.error(msg)
-    this.traceError(e)
-}
-
-fun Logger.traceError(e: Throwable) {
-    if (e !is ProcessCanceledException) {
-        this.trace(ExceptionUtils.getStackTrace(e))
     }
 }

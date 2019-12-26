@@ -10,7 +10,33 @@ import com.itangcent.intellij.jvm.DocHelper
 import org.jetbrains.plugins.scala.lang.scaladoc.lexer.ScalaDocTokenType
 import org.jetbrains.plugins.scala.lang.scaladoc.psi.api.ScDocComment
 
-class ScalaDocHelper(private val docHelper: DocHelper) : DocHelper by docHelper {
+class ScalaDocHelper : DocHelper {
+
+    //region not implemented
+    override fun getTagMapOfDocComment(psiElement: PsiElement?): Map<String, String?> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getSubTagMapOfDocComment(psiElement: PsiElement?, tag: String): Map<String, String?> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun findDocsByTagAndName(psiElement: PsiElement?, tag: String, name: String): String? {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun findDocsByTag(psiElement: PsiElement?, tag: String?): List<String>? {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun findDocByTag(psiElement: PsiElement?, tag: String?): String? {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun hasTag(psiElement: PsiElement?, tag: String?): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+    //endregion
 
     override fun getAttrOfDocComment(psiElement: PsiElement?): String? {
 
@@ -30,15 +56,10 @@ class ScalaDocHelper(private val docHelper: DocHelper) : DocHelper by docHelper 
             }
         }
 
-        return docHelper.getAttrOfDocComment(psiElement)
+        return null
     }
 
     override fun getDocCommentContent(docComment: PsiDocComment): String? {
-
-        val docCommentContent = docHelper.getDocCommentContent(docComment)
-        if (!docCommentContent.isNullOrBlank()) {
-            return docCommentContent
-        }
 
         if (docComment is ScDocComment) {
             return docComment.children
@@ -48,6 +69,6 @@ class ScalaDocHelper(private val docHelper: DocHelper) : DocHelper by docHelper 
                 .joinToString(separator = " ") { it.text }
         }
 
-        return docCommentContent
+        return null
     }
 }

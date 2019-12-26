@@ -13,6 +13,7 @@ import com.itangcent.common.concurrent.AQSCountLatch
 import com.itangcent.common.concurrent.CountLatch
 import com.itangcent.common.concurrent.ValueHolder
 import com.itangcent.common.exception.ProcessCanceledException
+import com.itangcent.common.logger.traceError
 import com.itangcent.common.utils.IDUtils
 import com.itangcent.common.utils.ThreadPoolUtils
 import com.itangcent.intellij.constant.EventKey
@@ -20,7 +21,6 @@ import com.itangcent.intellij.extend.guice.KotlinModule
 import com.itangcent.intellij.extend.guice.instance
 import com.itangcent.intellij.extend.guice.singleton
 import com.itangcent.intellij.logger.Logger
-import com.itangcent.intellij.logger.traceError
 import org.aopalliance.intercept.MethodInterceptor
 import java.awt.EventQueue
 import java.lang.reflect.Method
@@ -502,6 +502,10 @@ class ActionContext {
             defaultInjects.add(inject)
         }
 
+        fun removeDefaultInject(inject: (ActionContextBuilder) -> Unit) {
+            defaultInjects.remove(inject)
+        }
+
         private fun setContext(actionContext: ActionContext) {
             setContext(
                 actionContext,
@@ -511,16 +515,25 @@ class ActionContext {
 
         private fun setContext(actionContext: ActionContext, flag: Int) {
             val existContext = localContext.get()
-            if (existContext == null) {
-                localContext.set(
+            when {
+                existContext == null -> localContext.set(
                     ThreadLocalContext(
                         actionContext,
                         flag,
                         1
                     )
                 )
-            } else {
-                existContext.addCount()
+                existContext.actionContext != actionContext -> {
+                    existContext.releaseCount()
+                    localContext.set(
+                        ThreadLocalContext(
+                            actionContext,
+                            flag,
+                            1
+                        )
+                    )
+                }
+                else -> existContext.addCount()
             }
         }
 
@@ -663,6 +676,7 @@ class ActionContext {
                 moduleActions.clear()
             }
             val actionContext = ActionContext(*appendModules.toTypedArray())
+            ActionContext.setContext(actionContext)
             contextActions.forEach { it(actionContext) }
             actionContext.runAsync {
                 actionContext.onStart()

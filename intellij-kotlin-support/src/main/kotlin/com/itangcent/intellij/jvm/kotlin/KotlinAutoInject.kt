@@ -1,16 +1,23 @@
 package com.itangcent.intellij.jvm.kotlin
 
-import com.itangcent.common.SetupAble
+import com.itangcent.common.logger.ILogger
+import com.itangcent.common.logger.traceError
+import com.itangcent.common.spi.SetupAble
+import com.itangcent.common.spi.SpiUtils
 import com.itangcent.intellij.jvm.*
+import com.itangcent.intellij.jvm.spi.AutoInjectKit
+
 
 @Suppress("UNCHECKED_CAST")
 class KotlinAutoInject : SetupAble {
 
     override fun init() {
-        try {
-            val classLoader = KotlinAutoInject::class.java.classLoader
-            if (classLoader.loadClass("org.jetbrains.kotlin.psi.KtClass") != null) {
+        val logger: ILogger? = SpiUtils.loadService(ILogger::class)
 
+        try {
+            logger?.debug("try load kotlin injects")
+            val classLoader = KotlinAutoInject::class.java.classLoader
+            if (AutoInjectKit.tryLoad(classLoader, "org.jetbrains.kotlin.psi.KtClass") != null) {
                 AutoInjectKit.tryLoadAndWrap(
                     classLoader,
                     DocHelper::class,
@@ -38,8 +45,8 @@ class KotlinAutoInject : SetupAble {
                     "com.itangcent.intellij.jvm.kotlin.KotlinPsiResolver"
                 )
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            logger?.traceError("load kotlin injects failed", e)
         }
     }
-
 }
