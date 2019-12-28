@@ -1,19 +1,22 @@
-package com.itangcent.intellij.jvm.kotlin
+package com.itangcent.intellij.jvm.scala
 
 import com.intellij.psi.PsiMember
 import com.itangcent.intellij.jvm.standard.AbstractLinkExtractor
 import java.util.regex.Pattern
 
-open class KotlinLinkExtractor : AbstractLinkExtractor() {
+/**
+ * see https://docs.scala-lang.org/style/scaladoc.html
+ */
+open class ScalaLinkExtractor : AbstractLinkExtractor() {
 
     override fun findLink(doc: String, psiMember: PsiMember, resolver: (String) -> String?): String {
 
-        if (!KtPsiUtils.isKtPsiInst(psiMember)) {
+        if (!ScPsiUtils.isScPsiInst(psiMember)) {
             throw NotImplementedError()
         }
 
-        if (doc.contains("@link") || doc.contains("[")) {
-            val pattern = Pattern.compile("\\{@link(.*?)}|\\[(.*?)]")
+        if (doc.contains("@link") || doc.contains("[[")) {
+            val pattern = Pattern.compile("\\{@link(.*?)}|\\[\\[(.*?)]]")
             val matcher = pattern.matcher(doc)
 
             val sb = StringBuffer()

@@ -18,6 +18,10 @@ import java.util.*
 @Singleton
 class KotlinDocHelper : DocHelper {
 
+    override fun getSuffixComment(psiElement: PsiElement): String? {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     @Inject
     private val actionContext: ActionContext? = null
 

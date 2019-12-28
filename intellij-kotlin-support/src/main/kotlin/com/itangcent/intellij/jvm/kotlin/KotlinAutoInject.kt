@@ -34,12 +34,12 @@ class KotlinAutoInject : SetupAble {
                     JvmClassHelper::class,
                     "com.itangcent.intellij.jvm.kotlin.KotlinJvmClassHelper"
                 )
-                AutoInjectKit.tryLoadAndBind(
+                AutoInjectKit.tryLoadAndWrap(
                     classLoader,
                     LinkExtractor::class,
                     "com.itangcent.intellij.jvm.kotlin.KotlinLinkExtractor"
                 )
-                AutoInjectKit.tryLoadAndBind(
+                AutoInjectKit.tryLoadAndWrap(
                     classLoader,
                     PsiResolver::class,
                     "com.itangcent.intellij.jvm.kotlin.KotlinPsiResolver"
