@@ -2,7 +2,7 @@ package com.itangcent.intellij.jvm.scala
 
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
-import com.itangcent.intellij.jvm.PsiResolver
+import com.itangcent.intellij.jvm.standard.StandardPsiResolver
 
 
 /**
@@ -10,25 +10,7 @@ import com.itangcent.intellij.jvm.PsiResolver
  * see https://docs.scala-lang.org/style/scaladoc.html
  * Create links to referenced Scala Library classes using the square-bracket syntax, e.g. [[scala.Option]]
  */
-open class ScalaPsiResolver : PsiResolver {
-
-    //region not implemented
-    override fun resolveClass(className: String, psiElement: PsiElement): PsiClass? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun resolvePropertyOrMethodOfClass(psiClass: PsiClass, propertyOrMethod: String): PsiElement? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun getContainingClass(psiElement: PsiElement): PsiClass? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun resolveRefText(psiExpression: PsiElement?): String? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-    //endregion  not implemented
+open class ScalaPsiResolver : StandardPsiResolver() {
 
     override fun resolveClassWithPropertyOrMethod(
         classNameWithProperty: String,
@@ -38,25 +20,32 @@ open class ScalaPsiResolver : PsiResolver {
             throw NotImplementedError()
         }
 
-        //[kotlin.reflect.KClass]
-        var linkClass = resolveClass(classNameWithProperty, psiElement)
+        val cwp: String = if (classNameWithProperty.startsWith('[')) {
+            classNameWithProperty.trim('[', ']')
+        } else {
+            classNameWithProperty
+        }
+
+        //[scala.xxxClass]
+        var linkClass = resolveClass(cwp, psiElement)
         if (linkClass != null) {
             return linkClass to null
         }
 
-        //[kotlin.reflect.KClass.properties]
-        if (classNameWithProperty.contains('.')) {
-            val linkClassName = classNameWithProperty.substringBeforeLast(".")
-            val linkMethodOrProperty = classNameWithProperty.substringAfterLast(".", "").trim()
+        //[scala.xxxClass.properties]
+        if (cwp.contains('.')) {
+            val linkClassName = cwp.substringBeforeLast(".")
+            val linkMethodOrProperty = cwp.substringAfterLast(".", "").trim()
             linkClass = resolveClass(linkClassName, psiElement) ?: return null
             return linkClass to resolvePropertyOrMethodOfClass(linkClass, linkMethodOrProperty)
         }
 
         //[properties]
         linkClass = getContainingClass(psiElement) ?: return null
-        resolvePropertyOrMethodOfClass(linkClass, classNameWithProperty)?.let {
+        resolvePropertyOrMethodOfClass(linkClass, cwp)?.let {
             return linkClass to it
         }
+
         return null
     }
 }

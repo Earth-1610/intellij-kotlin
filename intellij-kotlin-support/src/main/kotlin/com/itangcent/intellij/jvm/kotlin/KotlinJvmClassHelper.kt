@@ -56,6 +56,10 @@ class KotlinJvmClassHelper : JvmClassHelper {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
+    override fun isEnum(psiClass: PsiClass): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     override fun resolveClassInType(psiType: PsiType): PsiClass? {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }

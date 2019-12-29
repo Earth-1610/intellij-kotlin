@@ -75,6 +75,10 @@ open class StandardJvmClassHelper : JvmClassHelper {
         return cls?.isEnum ?: false
     }
 
+    override fun isEnum(psiClass: PsiClass): Boolean {
+        return psiClass.isEnum
+    }
+
     override fun isStaticFinal(field: PsiField): Boolean {
         return hasAnyModify(field, staticFinalFieldModifiers)
     }

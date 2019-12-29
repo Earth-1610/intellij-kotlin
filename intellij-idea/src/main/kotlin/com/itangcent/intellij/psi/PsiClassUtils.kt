@@ -102,12 +102,30 @@ object PsiClassUtils {
         return cls.findFieldByName(fieldName, true)
     }
 
+    @Deprecated(message = "will be removed soon", replaceWith = ReplaceWith("fullNameOfMember"))
     fun fullNameOfMemmber(psiClass: PsiClass?, psiMember: PsiElement): String {
+        return fullNameOfMember(psiClass, psiMember)
+    }
+
+    fun fullNameOfMember(psiClass: PsiClass?, psiMember: PsiElement): String {
         if (psiMember is PsiMethod) {
             return fullNameOfMethod(psiClass, psiMember)
         }
         if (psiMember is PsiField) {
             return fullNameOfField(psiClass, psiMember)
+        }
+        return ""
+    }
+
+    fun nameOfMember(psiMember: PsiElement): String {
+        if (psiMember is PsiNamedElement) {
+            return psiMember.name ?: ""
+        }
+        if (psiMember is PsiMethod) {
+            return psiMember.name
+        }
+        if (psiMember is PsiField) {
+            return psiMember.name
         }
         return ""
     }

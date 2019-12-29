@@ -28,7 +28,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         val suffixComment = docHelper.getSuffixComment(field)
         val docByRule = ruleComputer!!.computer(ClassRuleKeys.FIELD_DOC, field)
 
-        return attrInDoc.append(docByRule).append(suffixComment)
+        return attrInDoc.append(suffixComment).append(docByRule)
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -300,7 +300,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                                 kv.safeComputeIfAbsent("@comment") { KV.create<String, Any?>() } as KV<String, Any?>
                             resolveSeeDoc(
                                 fieldName, enumClass, Arrays.asList(
-                                    PsiClassUtils.fullNameOfMemmber(
+                                    PsiClassUtils.fullNameOfMember(
                                         classWithFieldOrMethod.first!!,
                                         convertFieldOrMethod
                                     )

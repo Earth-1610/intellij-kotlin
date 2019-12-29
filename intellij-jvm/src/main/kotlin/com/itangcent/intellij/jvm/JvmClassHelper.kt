@@ -31,6 +31,8 @@ interface JvmClassHelper {
 
     fun isEnum(psiType: PsiType): Boolean
 
+    fun isEnum(psiClass: PsiClass): Boolean
+
     fun resolveClassInType(psiType: PsiType): PsiClass?
 
     fun resolveClassToType(psiClass: PsiClass): PsiType?
