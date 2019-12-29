@@ -1,8 +1,8 @@
 package com.itangcent.intellij.jvm.standard
 
 import com.google.inject.Singleton
-import com.intellij.psi.PsiDocCommentOwner
-import com.intellij.psi.PsiElement
+import com.intellij.psi.*
+import com.intellij.psi.javadoc.PsiDocComment
 import com.intellij.util.containers.stream
 import com.itangcent.common.utils.cast
 import com.itangcent.common.utils.reduceSafely
@@ -109,14 +109,19 @@ open class StandardDocHelper : DocHelper {
         return psiElement.cast(PsiDocCommentOwner::class)?.docComment
             ?.let { docComment ->
                 return@let ActionContext.getContext()!!.callInReadUI {
-                    val descriptions = docComment.descriptionElements
-                    return@callInReadUI descriptions.stream()
-                        .map { desc -> desc.text }
-                        ?.reduce { s1, s2 -> s1 + s2 }
-                        ?.map { it.trim() }
-                        ?.orElse(null)
+                    return@callInReadUI getDocCommentContent(docComment)
                 }
             }
+    }
+
+
+    override fun getDocCommentContent(docComment: PsiDocComment): String? {
+        val descriptions = docComment.descriptionElements
+        return descriptions.stream()
+            .map { desc -> desc.text }
+            ?.reduce { s1, s2 -> s1 + s2 }
+            ?.map { it.trim() }
+            ?.orElse(null)
     }
 
     override fun getSubTagMapOfDocComment(psiElement: PsiElement?, tag: String): Map<String, String?> {
@@ -158,14 +163,37 @@ open class StandardDocHelper : DocHelper {
                     val tagMap: HashMap<String, String?> = HashMap()
                     docComment.tags.forEach { tag ->
                         tagMap[tag.name] = tag.dataElements
-                            .map { it?.text }
-                            .filterNot { StringUtils.isBlank(it) }
-                            .filterNotNull()
-                            .map { it.trim() }
-                            .reduceSafely { s1, s2 -> s1 + s2 }
+                            .mapNotNull { it?.text }
+                            .filter { it.isNotBlank() }
+                            .joinToString { it.trim() }
                     }
                     return@callInReadUI tagMap
                 }
             } ?: Collections.emptyMap()
+    }
+
+    override fun getSuffixComment(psiElement: PsiElement): String? {
+
+        if (psiElement.text.contains("//")) {
+            return psiElement.children
+                .filter { it is PsiDocComment && it.tokenType == JavaTokenType.END_OF_LINE_COMMENT }
+                .map { it.text }
+                .firstOrNull()
+        }
+
+        var nextSibling: PsiElement = psiElement
+        while (true) {
+            nextSibling = nextSibling.nextSibling ?: return null
+            if (nextSibling is PsiWhiteSpace) {
+                if (nextSibling.text.contains('\n')) {
+                    return null
+                }
+                continue
+            }
+            if (nextSibling is PsiComment) {
+                break
+            }
+        }
+        return (nextSibling as? PsiComment)?.text?.trim()?.removePrefix("//")
     }
 }

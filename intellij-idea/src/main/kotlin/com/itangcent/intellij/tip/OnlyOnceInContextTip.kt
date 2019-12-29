@@ -1,7 +1,7 @@
 package com.itangcent.intellij.tip
 
 import com.google.inject.Singleton
-import com.itangcent.common.SetupAble
+import com.itangcent.common.spi.SetupAble
 import com.itangcent.common.utils.IDUtils
 import com.itangcent.intellij.constant.EventKey
 import com.itangcent.intellij.context.ActionContext
@@ -49,7 +49,7 @@ internal class OnlyOnceInContextTipCache {
     }
 }
 
-internal class OnlyOnceInContextTipSetup : SetupAble {
+class OnlyOnceInContextTipSetup : SetupAble {
     override fun init() {
         ActionContext.addDefaultInject { actionContextBuilder ->
             //                actionContextBuilder.bindInstance(OnlyOnceInContextTipCache::class, OnlyOnceInContextTipCache.instance)

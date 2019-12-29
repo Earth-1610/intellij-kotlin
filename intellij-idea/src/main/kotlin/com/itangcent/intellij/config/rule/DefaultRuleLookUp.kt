@@ -2,11 +2,10 @@ package com.itangcent.intellij.config.rule
 
 import com.google.inject.Inject
 import com.google.inject.Singleton
+import com.itangcent.common.logger.traceError
 import com.itangcent.intellij.config.ConfigReader
-import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.PostConstruct
 import com.itangcent.intellij.logger.Logger
-import com.itangcent.intellij.logger.traceError
 import com.itangcent.intellij.psi.ContextSwitchListener
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
@@ -23,13 +22,14 @@ open class DefaultRuleLookUp : RuleLookUp {
     @Inject
     protected val ruleParser: RuleParser? = null
 
+    @Inject
+    protected val contextSwitchListener: ContextSwitchListener? = null
+
     protected var ruleCaches: ConcurrentHashMap<String, List<Rule<*>>> =
         ConcurrentHashMap(10)
 
     @PostConstruct
     fun init() {
-        val contextSwitchListener: ContextSwitchListener? = ActionContext.getContext()
-            ?.instance(ContextSwitchListener::class)
         contextSwitchListener!!.onModuleChange {
             ruleCaches.clear()
         }

@@ -1,13 +1,88 @@
 package com.itangcent.intellij.jvm.kotlin
 
 import com.google.common.collect.Sets
-import com.google.inject.Singleton
+import com.intellij.psi.PsiClass
+import com.intellij.psi.PsiField
+import com.intellij.psi.PsiMethod
+import com.intellij.psi.PsiType
+import com.itangcent.intellij.jvm.JvmClassHelper
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
+import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.normalTypes
 import java.util.*
 import kotlin.reflect.KClass
 
-@Singleton
-class KotlinJvmClassHelper : StandardJvmClassHelper() {
+class KotlinJvmClassHelper : JvmClassHelper {
+    override fun isAccessibleField(field: PsiField): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isStaticFinal(field: PsiField): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isMap(psiClass: PsiClass): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isMap(psiType: PsiType): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isCollection(psiClass: PsiClass): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isCollection(psiType: PsiType): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isPublicStaticFinal(field: PsiField): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isNormalType(typeName: String): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getDefaultValue(typeName: String): Any? {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isBasicMethod(methodName: String): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isEnum(psiType: PsiType): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isEnum(psiClass: PsiClass): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun resolveClassInType(psiType: PsiType): PsiClass? {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun resolveClassToType(psiClass: PsiClass): PsiType? {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isInheritor(psiClass: PsiClass, vararg baseClass: String): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isInheritor(psiType: PsiType, vararg baseClass: String): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getAllFields(psiClass: PsiClass): Array<PsiField> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getAllMethods(psiClass: PsiClass): Array<PsiMethod> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
 
     companion object {
 

@@ -38,7 +38,9 @@ class SimpleRuleParser : RuleParser {
                 val annName = annStr.substringBefore("#").trim()
                 val annValue = annStr.substringAfter("#", "value").trim()
                 StringRule.of { context ->
-                    context.getResource()?.let { annotationHelper!!.findAttrAsString(it, annName, annValue) }
+                    context.getResource()?.let {
+                        annotationHelper!!.findAttrAsString(it, annName, annValue)
+                    }
                 }
             }
             tinyRuleStr.startsWith("#") -> {
@@ -178,14 +180,12 @@ class SimpleRuleParser : RuleParser {
                     }$"
                 )
 
-                return@computeIfAbsent {
-                    pattern.matcher(it).matches()
+                return@computeIfAbsent { s ->
+                    pattern.matcher(s).matches()
                 }
             }
 
-            return@computeIfAbsent {
-                str == it
-            }
+            return@computeIfAbsent { s -> str == s }
         }
     }
 

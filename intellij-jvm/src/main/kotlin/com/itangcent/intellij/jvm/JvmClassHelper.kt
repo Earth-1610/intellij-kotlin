@@ -2,8 +2,8 @@ package com.itangcent.intellij.jvm
 
 import com.google.inject.ImplementedBy
 import com.intellij.psi.PsiClass
-import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiField
+import com.intellij.psi.PsiMethod
 import com.intellij.psi.PsiType
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 
@@ -31,6 +31,8 @@ interface JvmClassHelper {
 
     fun isEnum(psiType: PsiType): Boolean
 
+    fun isEnum(psiClass: PsiClass): Boolean
+
     fun resolveClassInType(psiType: PsiType): PsiClass?
 
     fun resolveClassToType(psiClass: PsiClass): PsiType?
@@ -38,4 +40,8 @@ interface JvmClassHelper {
     fun isInheritor(psiClass: PsiClass, vararg baseClass: String): Boolean
 
     fun isInheritor(psiType: PsiType, vararg baseClass: String): Boolean
+
+    fun getAllFields(psiClass: PsiClass): Array<PsiField>
+
+    fun getAllMethods(psiClass: PsiClass): Array<PsiMethod>
 }

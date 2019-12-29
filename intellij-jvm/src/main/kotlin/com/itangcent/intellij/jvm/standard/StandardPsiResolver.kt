@@ -5,6 +5,7 @@ import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
 import com.itangcent.intellij.jvm.DuckTypeHelper
+import com.itangcent.intellij.jvm.JvmClassHelper
 import com.itangcent.intellij.jvm.PsiResolver
 import com.itangcent.intellij.jvm.SourceHelper
 
@@ -38,6 +39,9 @@ open class StandardPsiResolver : PsiResolver {
 
     @Inject
     private val sourceHelper: SourceHelper? = null
+
+    @Inject
+    private val jvmClassHelper: JvmClassHelper? = null
 
     override fun resolveClass(className: String, psiElement: PsiElement): PsiClass? {
         return when {
@@ -101,6 +105,7 @@ open class StandardPsiResolver : PsiResolver {
         }
     }
 
+
     override fun resolvePropertyOrMethodOfClass(psiClass: PsiClass, propertyOrMethod: String): PsiElement? {
 
         if (propertyOrMethod.endsWith(")")) {
@@ -139,8 +144,8 @@ open class StandardPsiResolver : PsiResolver {
 
             return null
         } else {
-            return psiClass.allFields.firstOrNull { it.name == propertyOrMethod }
-                ?: psiClass.allMethods.firstOrNull { it.name == propertyOrMethod }
+            return jvmClassHelper!!.getAllFields(psiClass).firstOrNull { it.name == propertyOrMethod }
+                ?: jvmClassHelper.getAllMethods(psiClass).firstOrNull { it.name == propertyOrMethod }
         }
     }
 

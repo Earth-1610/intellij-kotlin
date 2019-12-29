@@ -6,8 +6,8 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
-import com.itangcent.common.Setup
 import com.itangcent.common.exception.ProcessCanceledException
+import com.itangcent.common.spi.Setup
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.singleton
 import com.itangcent.intellij.extend.guice.with
@@ -82,7 +82,7 @@ abstract class KotlinAnAction : AnAction {
 
     companion object {
         init {
-            Setup.load()
+            Setup.load(KotlinAnAction::class.java.classLoader)
         }
     }
 }

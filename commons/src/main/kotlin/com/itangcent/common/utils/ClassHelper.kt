@@ -22,30 +22,43 @@ object ClassHelper {
     }
 
     fun <T : Any> newInstance(type: KClass<T>, vararg params: Any): Any {
+        val constructors = type.constructors
+        if (constructors.size == 1) {
+            try {
+                return constructors.first().call(*params)
+            } catch (e: Exception) {
+                throw IllegalArgumentException("Illegal params to instance Class[" + type.simpleName + "]")
+            }
+        }
+
         val constructor: KFunction<Any>?
 
         constructor = when {
-            params.isEmpty() -> type.constructors.firstOrNull { it.parameters.isEmpty() }
-            else -> type.constructors.firstOrNull {
+            params.isEmpty() -> constructors.firstOrNull { it.parameters.isEmpty() }
+            else -> constructors.firstOrNull {
                 isAssignable(
                     params,
-                    it.parameters.stream().map { param -> param.type.classifier as KClass<*> }.toTypedArray()
+                    it.parameters.map { param -> param.type.classifier as KClass<*> }.toTypedArray()
                 )
             }
         }
 
-        if (constructor == null) {
-            throw IllegalArgumentException("Illegal params to instance Class[" + type.simpleName + "]")
+        if (constructor != null) {
+            try {
+                return constructor.call(*params)
+            } catch (e: Exception) {
+                throw IllegalArgumentException("Illegal params to instance Class[" + type.simpleName + "]")
+            }
         }
-        try {
-            return constructor.call(*params)
-        } catch (e: InstantiationException) {
-            throw IllegalArgumentException("Illegal params to instance Class[" + type.simpleName + "]")
-        } catch (e: IllegalAccessException) {
-            throw IllegalArgumentException("Illegal params to instance Class[" + type.simpleName + "]")
-        } catch (e: InvocationTargetException) {
-            throw IllegalArgumentException("Illegal params to instance Class[" + type.simpleName + "]")
+
+        constructors.filter { it.parameters.size == params.size }.forEach {
+            try {
+                return it.call(*params)
+            } catch (e: Exception) {
+            }
         }
+
+        throw IllegalArgumentException("Illegal params to instance Class[" + type.simpleName + "]")
 
     }
 
@@ -90,4 +103,8 @@ object ClassHelper {
             onReflectionException(e)
         }
     }
+}
+
+fun <T : Any> KClass<T>.newInstance(vararg params: Any): Any {
+    return ClassHelper.newInstance(this, params)
 }

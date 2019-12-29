@@ -68,7 +68,6 @@ fun String.toBool(defaultValue: Boolean = false): Boolean {
     }
 }
 
-
 fun StringBuilder.appendlnIfNotEmpty(): StringBuilder {
     if (this.isNotEmpty()) {
         this.appendln()
@@ -98,5 +97,20 @@ fun String?.append(str: String?, split: String = " "): String? {
         this == null -> str
         str == null -> this
         else -> this + split + str
+    }
+}
+
+fun String?.trimToNull(): String? {
+    return when {
+        this.isNullOrBlank() -> null
+        else -> this
+    }
+}
+
+fun String?.appendln(): String? {
+    return when {
+        this.isNullOrBlank() -> this
+        this!!.endsWith('\n') -> this
+        else -> "${this}\n"
     }
 }

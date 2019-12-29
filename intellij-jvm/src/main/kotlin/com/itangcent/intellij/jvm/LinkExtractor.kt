@@ -12,4 +12,5 @@ interface LinkExtractor {
         psiMember: PsiMember,
         resolve: LinkResolver
     ): String?
+
 }

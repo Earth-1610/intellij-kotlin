@@ -7,6 +7,7 @@ import com.intellij.psi.*
 import com.intellij.psi.impl.java.stubs.impl.PsiClassStubImpl
 import com.intellij.util.containers.isNullOrEmpty
 import com.itangcent.common.utils.KV
+import com.itangcent.common.utils.append
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.jvm.SingleDuckType
 import org.apache.commons.lang3.StringUtils
@@ -23,45 +24,11 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
 
     override fun getAttrOfField(field: PsiField): String? {
 
-        var result: String? = null
-
         val attrInDoc = docHelper!!.getAttrOfDocComment(field)
-        if (StringUtils.isNotBlank(attrInDoc)) {
-            result = (result ?: "") + attrInDoc
-        }
-
+        val suffixComment = docHelper.getSuffixComment(field)
         val docByRule = ruleComputer!!.computer(ClassRuleKeys.FIELD_DOC, field)
 
-        if (StringUtils.isNotBlank(docByRule)) {
-            result = (result ?: "") + docByRule
-        }
-
-        var fieldText = field.text
-        if (fieldText.contains("//")) {
-            fieldText = fieldText.trim()
-
-            val lines = fieldText.split('\r', '\n')
-            var innerDoc = ""
-            for (line in lines) {
-                if (StringUtils.isBlank(line)) {
-                    continue
-                }
-                //ignore region/endregion
-                if (!line.contains("//")
-                    || line.startsWith("//region")
-                    || line.startsWith("//endregion")
-                ) {
-                    continue
-                }
-                if (innerDoc.isNotEmpty()) innerDoc += ","
-                innerDoc += line.substringAfter("//").trim()
-            }
-            if (StringUtils.isNotBlank(innerDoc)) {
-                result = (result ?: "") + innerDoc
-            }
-        }
-
-        return result
+        return attrInDoc.append(suffixComment).append(docByRule)
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -333,7 +300,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                                 kv.safeComputeIfAbsent("@comment") { KV.create<String, Any?>() } as KV<String, Any?>
                             resolveSeeDoc(
                                 fieldName, enumClass, Arrays.asList(
-                                    PsiClassUtils.fullNameOfMemmber(
+                                    PsiClassUtils.fullNameOfMember(
                                         classWithFieldOrMethod.first!!,
                                         convertFieldOrMethod
                                     )
