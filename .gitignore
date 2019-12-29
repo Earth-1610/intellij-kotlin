@@ -46,3 +46,7 @@ intellij-kotlin-support/build/
 /idea-sandbox/
 
 /libs/
+
+intellij-scala-support/idea-sandbox/
+
+intellij-scala-support/build/

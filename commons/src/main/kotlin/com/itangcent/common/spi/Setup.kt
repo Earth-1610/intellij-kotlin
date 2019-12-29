@@ -1,5 +1,7 @@
-package com.itangcent.common
+package com.itangcent.common.spi
 
+import com.itangcent.common.logger.ILogger
+import com.itangcent.common.logger.traceError
 import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.full.createInstance
@@ -22,7 +24,10 @@ object Setup {
     }
 
     fun setup(key: String, setup: () -> Unit) {
+        val logger: ILogger? = SpiUtils.loadService(ILogger::class)
+        logger?.debug("try setup key:$key")
         if (setups.contains(key)) {
+            logger?.debug("key:$key has already setup")
             return
         }
         synchronized(this) {
@@ -48,18 +53,22 @@ object Setup {
         }
     }
 
-    private var loadAble = true
     fun load() {
-        synchronized(this) {
-            if (loadAble) {
-                loadAble = false
-                val setupAbles = ServiceLoader.load(
-                    SetupAble::class.java,
-                    SetupAble::class.java.classLoader
-                )
-                for (setupAble in setupAbles) {
-                    setup(setupAble)
-                }
+        load(SetupAble::class.java.classLoader)
+    }
+
+    fun load(classLoader: ClassLoader) {
+        val logger: ILogger? = SpiUtils.loadService(ILogger::class)
+        val setupAbles = ServiceLoader.load(
+            SetupAble::class.java, classLoader
+        )
+        for (setupAble in setupAbles) {
+            logger?.debug("try setup:$setupAble")
+            try {
+                setup(setupAble)
+                logger?.debug("setup:$setupAble success")
+            } catch (e: Throwable) {
+                logger?.traceError("setup:$setupAble failed", e)
             }
         }
     }

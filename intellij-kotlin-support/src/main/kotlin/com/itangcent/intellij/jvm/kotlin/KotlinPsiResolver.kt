@@ -23,31 +23,38 @@ import com.itangcent.intellij.jvm.standard.StandardPsiResolver
  * Note that KDoc does not have any syntax for resolving overloaded members in links. Since the Kotlin documentation generation tool puts the documentation for all overloads of a function on the same page, identifying a specific overloaded function is not required for the link to work.
  */
 open class KotlinPsiResolver : StandardPsiResolver() {
+
     override fun resolveClassWithPropertyOrMethod(
         classNameWithProperty: String,
         psiElement: PsiElement
     ): Pair<PsiClass?, PsiElement?>? {
         if (!KtPsiUtils.isKtPsiInst(psiElement)) {
-            return super.resolveClassWithPropertyOrMethod(classNameWithProperty, psiElement)
+            throw NotImplementedError()
+        }
+
+        val cwp: String = if (classNameWithProperty.startsWith('[')) {
+            classNameWithProperty.trim('[', ']')
+        } else {
+            classNameWithProperty
         }
 
         //[kotlin.reflect.KClass]
-        var linkClass = resolveClass(classNameWithProperty, psiElement)
+        var linkClass = resolveClass(cwp, psiElement)
         if (linkClass != null) {
             return linkClass to null
         }
 
         //[kotlin.reflect.KClass.properties]
-        if (classNameWithProperty.contains('.')) {
-            val linkClassName = classNameWithProperty.substringBeforeLast(".")
-            val linkMethodOrProperty = classNameWithProperty.substringAfterLast(".", "").trim()
+        if (cwp.contains('.')) {
+            val linkClassName = cwp.substringBeforeLast(".")
+            val linkMethodOrProperty = cwp.substringAfterLast(".", "").trim()
             linkClass = resolveClass(linkClassName, psiElement) ?: return null
             return linkClass to resolvePropertyOrMethodOfClass(linkClass, linkMethodOrProperty)
         }
 
         //[properties]
         linkClass = getContainingClass(psiElement) ?: return null
-        resolvePropertyOrMethodOfClass(linkClass, classNameWithProperty)?.let {
+        resolvePropertyOrMethodOfClass(linkClass, cwp)?.let {
             return linkClass to it
         }
         return null

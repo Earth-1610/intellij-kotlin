@@ -1,4 +1,4 @@
-package com.itangcent.common
+package com.itangcent.common.spi
 
 interface SetupAble {
     fun init()

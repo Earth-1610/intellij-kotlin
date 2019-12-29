@@ -1,15 +1,15 @@
 package com.itangcent.intellij.jvm.kotlin
 
 import com.intellij.psi.PsiMember
-import com.itangcent.intellij.jvm.standard.StandardLinkExtractor
+import com.itangcent.intellij.jvm.standard.AbstractLinkExtractor
 import java.util.regex.Pattern
 
-open class KotlinLinkExtractor : StandardLinkExtractor() {
+open class KotlinLinkExtractor : AbstractLinkExtractor() {
 
     override fun findLink(doc: String, psiMember: PsiMember, resolver: (String) -> String?): String {
 
         if (!KtPsiUtils.isKtPsiInst(psiMember)) {
-            return super.findLink(doc, psiMember, resolver)
+            throw NotImplementedError()
         }
 
         if (doc.contains("@link") || doc.contains("[")) {

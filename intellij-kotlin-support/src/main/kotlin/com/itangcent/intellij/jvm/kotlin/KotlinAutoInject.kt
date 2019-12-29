@@ -1,63 +1,52 @@
 package com.itangcent.intellij.jvm.kotlin
 
-import com.itangcent.common.SetupAble
-import com.itangcent.intellij.context.ActionContext
-import com.itangcent.intellij.extend.guice.withUnsafe
+import com.itangcent.common.logger.ILogger
+import com.itangcent.common.logger.traceError
+import com.itangcent.common.spi.SetupAble
+import com.itangcent.common.spi.SpiUtils
 import com.itangcent.intellij.jvm.*
-import kotlin.reflect.KClass
+import com.itangcent.intellij.jvm.spi.AutoInjectKit
+
 
 @Suppress("UNCHECKED_CAST")
 class KotlinAutoInject : SetupAble {
 
     override fun init() {
-        try {
-            val classLoader = KotlinAutoInject::class.java.classLoader
-            if (classLoader.loadClass("org.jetbrains.kotlin.psi.KtClass") != null) {
+        val logger: ILogger? = SpiUtils.loadService(ILogger::class)
 
-                tryLoadAndBind(
-                    classLoader, DocHelper::class,
+        try {
+            logger?.debug("try load kotlin injects")
+            val classLoader = KotlinAutoInject::class.java.classLoader
+            if (AutoInjectKit.tryLoad(classLoader, "org.jetbrains.kotlin.psi.KtClass") != null) {
+                AutoInjectKit.tryLoadAndWrap(
+                    classLoader,
+                    DocHelper::class,
                     "com.itangcent.intellij.jvm.kotlin.KotlinDocHelper"
                 )
-                tryLoadAndBind(
+
+                AutoInjectKit.tryLoadAndWrap(
                     classLoader,
                     AnnotationHelper::class,
                     "com.itangcent.intellij.jvm.kotlin.KotlinAnnotationHelper"
                 )
-                tryLoadAndBind(
+                AutoInjectKit.tryLoadAndWrap(
                     classLoader,
                     JvmClassHelper::class,
                     "com.itangcent.intellij.jvm.kotlin.KotlinJvmClassHelper"
                 )
-                tryLoadAndBind(
+                AutoInjectKit.tryLoadAndWrap(
                     classLoader,
                     LinkExtractor::class,
                     "com.itangcent.intellij.jvm.kotlin.KotlinLinkExtractor"
                 )
-                tryLoadAndBind(
+                AutoInjectKit.tryLoadAndWrap(
                     classLoader,
                     PsiResolver::class,
                     "com.itangcent.intellij.jvm.kotlin.KotlinPsiResolver"
                 )
             }
-        } catch (e: Exception) {
-        }
-    }
-
-    private fun tryLoadAndBind(
-        classLoader: ClassLoader,
-        injectClass: KClass<*>,
-        bindClassName: String
-    ) {
-        try {
-            val bindClass =
-                classLoader.loadClass(bindClassName).kotlin
-
-            ActionContext.addDefaultInject { actionContextBuilder ->
-                actionContextBuilder.bind(injectClass) {
-                    it.withUnsafe(bindClass)
-                }
-            }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            logger?.traceError("load kotlin injects failed", e)
         }
     }
 }

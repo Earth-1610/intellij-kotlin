@@ -3,11 +3,13 @@ package com.itangcent.intellij.jvm.kotlin
 import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
+import com.intellij.util.containers.stream
+import com.itangcent.common.utils.GsonUtils
 import com.itangcent.common.utils.invokeMethod
 import com.itangcent.common.utils.longest
+import com.itangcent.intellij.jvm.AnnotationHelper
 import com.itangcent.intellij.jvm.PsiClassHelper
 import com.itangcent.intellij.jvm.PsiResolver
-import com.itangcent.intellij.jvm.standard.StandardAnnotationHelper
 import org.jetbrains.kotlin.asJava.classes.KtLightClass
 import org.jetbrains.kotlin.asJava.classes.KtLightClassForSourceDeclaration
 import org.jetbrains.kotlin.asJava.elements.KtLightMember
@@ -19,7 +21,7 @@ import org.jetbrains.kotlin.psi.psiUtil.plainContent
  * see https://kotlinlang.org/docs/reference/annotations.html
  */
 @Singleton
-class KotlinAnnotationHelper : StandardAnnotationHelper() {
+class KotlinAnnotationHelper : AnnotationHelper {
 
     @Inject
     private val fqNameHelper: FqNameHelper? = null
@@ -36,7 +38,7 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
             return true
         }
 
-        return super.hasAnn(psiElement, annName)
+        return false
     }
 
     override fun findAnnMap(psiElement: PsiElement?, annName: String): Map<String, Any?>? {
@@ -50,25 +52,25 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
                         ret[argumentName] = resolveValue(valueArgument.getArgumentExpression())
                     }
                 }
-//            super.findAnnMap(psiElement, annName)?.forEach { k, v ->
+//            annotationHelper.findAnnMap(psiElement, annName)?.forEach { k, v ->
 //                ret.putIfAbsent(k, v)
 //            }
             return ret
         }
 
-        return super.findAnnMap(psiElement, annName)
+        return null
     }
 
-
     override fun findAttr(psiElement: PsiElement?, annName: String): Any? {
-        val ktAnnotation = findKtAnnotation(psiElement, annName)
-        if (ktAnnotation != null) {
-            return ktAnnotation.valueArguments
-                .map { resolveValue(it.getArgumentExpression()) }
-                .firstOrNull()
-        }
-
-        return super.findAttr(psiElement, annName)
+//        val ktAnnotation = findKtAnnotation(psiElement, annName)
+//        if (ktAnnotation != null) {
+//            return ktAnnotation.valueArguments
+//                .map { resolveValue(it.getArgumentExpression()) }
+//                .firstOrNull()
+//        }
+//
+//        return annotationHelper.findAttr(psiElement, annName)
+        return findAttr(psiElement, annName, "value")
     }
 
     override fun findAttr(psiElement: PsiElement?, annName: String, vararg attrs: String): Any? {
@@ -84,7 +86,7 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
         }
 
 
-        return super.findAttr(psiElement, annName, *attrs)
+        return null
     }
 
     override fun findAttrAsString(psiElement: PsiElement?, annName: String): String? {
@@ -96,7 +98,7 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
                 .longest()
         }
 
-        return super.findAttrAsString(psiElement, annName)
+        return null
     }
 
     override fun findAttrAsString(psiElement: PsiElement?, annName: String, vararg attrs: String): String? {
@@ -111,7 +113,7 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
                 .longest()
         }
 
-        return super.findAttrAsString(psiElement, annName, *attrs)
+        return null
     }
 
     private fun getArgName(psiElement: PsiElement?, annName: String, valArg: ValueArgument?, index: Int): String? {
@@ -174,7 +176,7 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
         return null
     }
 
-    override fun resolveValue(psiExpression: PsiElement?): Any? {
+    fun resolveValue(psiExpression: PsiElement?): Any? {
         when {
             psiExpression == null -> return null
             CompatibleKtClass.isKtLightPsiLiteral(psiExpression) -> {
@@ -189,6 +191,9 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
             psiExpression is PsiLiteralExpression -> return psiExpression.value?.toString()
             psiExpression is KtCollectionLiteralExpression -> {
                 return psiExpression.getInnerExpressions().map { resolveValue(it) }.toTypedArray()
+            }
+            psiExpression is KtDotQualifiedExpression -> {
+                return resolveValue(psiExpression.selectorExpression)
             }
             psiExpression is PsiReferenceExpression -> {
                 val value = psiExpression.resolve()
@@ -220,5 +225,25 @@ class KotlinAnnotationHelper : StandardAnnotationHelper() {
         }
 
         return psiExpression.text
+    }
+
+    fun tinyAnnStr(annStr: Any?): String? {
+        return when (annStr) {
+            null -> null
+            is Array<*> -> annStr.joinToString(separator = "\n")
+            is Collection<*> -> annStr.joinToString(separator = "\n")
+            is String -> annStr
+            else -> GsonUtils.toJson(annStr)
+        }
+    }
+
+    protected fun annToMap(psiAnn: PsiAnnotation): LinkedHashMap<String, Any?> {
+        val map: LinkedHashMap<String, Any?> = LinkedHashMap()
+        psiAnn.parameterList.attributes.stream()
+            .forEach { attr ->
+                map[attr.name ?: "value"] = resolveValue(attr.value)
+            }
+
+        return map
     }
 }
