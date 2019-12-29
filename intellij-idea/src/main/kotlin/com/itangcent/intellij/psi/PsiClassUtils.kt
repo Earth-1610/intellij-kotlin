@@ -114,7 +114,17 @@ object PsiClassUtils {
         if (psiMember is PsiField) {
             return fullNameOfField(psiClass, psiMember)
         }
-        return ""
+        return nameOfMember(psiMember)
+    }
+
+    fun fullNameOfMember(psiMember: PsiElement): String {
+        if (psiMember is PsiMethod) {
+            return fullNameOfMethod(psiMember)
+        }
+        if (psiMember is PsiField) {
+            return fullNameOfField(psiMember)
+        }
+        return nameOfMember(psiMember)
     }
 
     fun nameOfMember(psiMember: PsiElement): String {

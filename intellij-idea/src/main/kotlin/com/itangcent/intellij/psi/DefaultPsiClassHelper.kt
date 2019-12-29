@@ -6,8 +6,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.*
 import com.intellij.psi.impl.java.stubs.impl.PsiClassStubImpl
 import com.intellij.util.containers.isNullOrEmpty
+import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.KV
-import com.itangcent.common.utils.append
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.jvm.SingleDuckType
 import org.apache.commons.lang3.StringUtils
@@ -22,14 +22,6 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     @Inject
     protected val project: Project? = null
 
-    override fun getAttrOfField(field: PsiField): String? {
-
-        val attrInDoc = docHelper!!.getAttrOfDocComment(field)
-        val suffixComment = docHelper.getSuffixComment(field)
-        val docByRule = ruleComputer!!.computer(ClassRuleKeys.FIELD_DOC, field)
-
-        return attrInDoc.append(suffixComment).append(docByRule)
-    }
 
     @Suppress("UNCHECKED_CAST")
     protected open fun resolveSeeDoc(field: PsiField, comment: HashMap<String, Any?>) {
@@ -87,12 +79,29 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     }
 
     override fun getJsonFieldName(psiField: PsiField): String {
-        val nameByRule = ruleComputer!!.computer(ClassRuleKeys.FIELD_NAME, psiField)
-        if (!nameByRule.isNullOrBlank()) {
-            return nameByRule
+        try {
+            val nameByRule = ruleComputer!!.computer(ClassRuleKeys.FIELD_NAME, psiField)
+            if (!nameByRule.isNullOrBlank()) {
+                return nameByRule
+            }
+        } catch (e: Exception) {
+            logger!!.traceWarn("error to get field name:${PsiClassUtils.fullNameOfField(psiField)}", e)
         }
 
         return psiField.name
+    }
+
+    override fun getJsonFieldName(psiMethod: PsiMethod): String {
+        try {
+            val nameByRule = ruleComputer!!.computer(ClassRuleKeys.FIELD_NAME, psiMethod)
+            if (!nameByRule.isNullOrBlank()) {
+                return nameByRule
+            }
+        } catch (e: Exception) {
+            logger!!.traceWarn("error to get field name:${PsiClassUtils.fullNameOfMethod(psiMethod)}", e)
+        }
+
+        return psiMethod.name
     }
 
     override fun getResourceClass(psiClass: PsiClass): PsiClass {
@@ -119,10 +128,18 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         option: Int,
         kv: KV<String, Any?>
     ): Boolean {
-        if (fieldOrMethod is PsiField &&
-            ruleComputer?.computer(ClassRuleKeys.FIELD_IGNORE, fieldOrMethod) == true
-        ) {
-            return false
+        try {
+            if (fieldOrMethod is PsiField &&
+                ruleComputer?.computer(ClassRuleKeys.FIELD_IGNORE, fieldOrMethod) == true
+            ) {
+                return false
+            }
+        } catch (e: Exception) {
+            logger!!.traceWarn(
+                "failed to infer whether a field should be ignored:${PsiClassUtils.fullNameOfMember(
+                    fieldOrMethod
+                )}", e
+            )
         }
 
         return super.beforeParseFieldOrMethod(fieldType, fieldOrMethod, resourcePsiClass, option, kv)
@@ -136,10 +153,18 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         option: Int,
         kv: KV<String, Any?>
     ): Boolean {
-        if (fieldOrMethod is PsiField &&
-            ruleComputer?.computer(ClassRuleKeys.FIELD_IGNORE, fieldOrMethod) == true
-        ) {
-            return false
+        try {
+            if (fieldOrMethod is PsiField &&
+                ruleComputer?.computer(ClassRuleKeys.FIELD_IGNORE, fieldOrMethod) == true
+            ) {
+                return false
+            }
+        } catch (e: Exception) {
+            logger!!.traceWarn(
+                "failed to infer whether a field should be ignored:${PsiClassUtils.fullNameOfMember(
+                    fieldOrMethod
+                )}", e
+            )
         }
 
         return super.beforeParseFieldOrMethod(fieldType, fieldOrMethod, resourcePsiClass, duckType, option, kv)
@@ -419,5 +444,9 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                 }
             }
         }
+    }
+
+    override fun getAttrOfField(field: PsiField): String? {
+        return docHelper!!.getAttrOfField(field)
     }
 }

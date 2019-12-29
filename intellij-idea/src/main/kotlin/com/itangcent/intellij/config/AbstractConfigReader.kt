@@ -1,6 +1,7 @@
 package com.itangcent.intellij.config
 
 import com.google.inject.Inject
+import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.*
 import com.itangcent.intellij.logger.Logger
 import com.itangcent.intellij.tip.OnlyOnceInContextTip
@@ -113,7 +114,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
         try {
             yamlProperties = yaml.load(configInfoContent)
         } catch (e: Exception) {
-            logger!!.warn("load yaml failed")
+            logger!!.traceWarn("load yaml failed", e)
             return
         }
 

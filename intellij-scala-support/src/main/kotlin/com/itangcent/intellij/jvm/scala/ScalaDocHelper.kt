@@ -2,6 +2,7 @@ package com.itangcent.intellij.jvm.scala
 
 import com.intellij.psi.PsiDocCommentOwner
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiField
 import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.psi.javadoc.PsiDocComment
 import com.itangcent.common.utils.append
@@ -178,5 +179,13 @@ class ScalaDocHelper : DocHelper {
         }
 
         return null
+    }
+
+    override fun getAttrOfField(field: PsiField): String? {
+
+        val attrInDoc = getAttrOfDocComment(field)
+        val suffixComment = getSuffixComment(field)
+
+        return attrInDoc.append(suffixComment)
     }
 }

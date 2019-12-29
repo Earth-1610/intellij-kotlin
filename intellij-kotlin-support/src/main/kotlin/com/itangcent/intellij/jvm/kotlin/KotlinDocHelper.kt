@@ -3,6 +3,7 @@ package com.itangcent.intellij.jvm.kotlin
 import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiField
 import com.intellij.psi.javadoc.PsiDocComment
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.DocHelper
@@ -17,8 +18,11 @@ import java.util.*
 
 @Singleton
 class KotlinDocHelper : DocHelper {
-
     override fun getSuffixComment(psiElement: PsiElement): String? {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getAttrOfField(field: PsiField): String? {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 

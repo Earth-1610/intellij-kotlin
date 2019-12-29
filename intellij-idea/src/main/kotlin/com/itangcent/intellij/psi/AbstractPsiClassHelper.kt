@@ -1,11 +1,13 @@
 package com.itangcent.intellij.psi
 
 import com.google.inject.Inject
-import com.intellij.lang.jvm.JvmNamedElement
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
-import com.itangcent.common.utils.*
+import com.itangcent.common.utils.KV
+import com.itangcent.common.utils.invokeMethod
+import com.itangcent.common.utils.isNullOrBlank
+import com.itangcent.common.utils.trimToNull
 import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.PostConstruct
@@ -588,7 +590,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         return resolveEnumOrStatic(cls, property, defaultPropertyName)
     }
 
-
     @Suppress("UNCHECKED_CAST")
     override fun resolveEnumOrStatic(
         cls: PsiClass?,
@@ -606,7 +607,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             if (!valProperty.isBlank()) {
                 val candidateProperty = propertyNameOfGetter(valProperty)
                 if (candidateProperty != null && valProperty != candidateProperty) {
-                    if (!jvmClassHelper!!.getAllFields(cls)
+                    if (!jvmClassHelper.getAllFields(cls)
                             .filter { it.name == valProperty }
                             .any() && jvmClassHelper.getAllFields(cls)
                             .filter { it.name == candidateProperty }
@@ -618,7 +619,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             }
 
             for (enumConstant in enumConstants) {
-                val mappedVal = (enumConstant["params"] as HashMap<String, Any?>?)
+                val mappedVal = (enumConstant["params"] as? HashMap<String, Any?>?)
                     ?.get(valProperty) ?: continue
 
                 var desc = enumConstant["desc"]
@@ -626,10 +627,10 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     desc = (enumConstant["params"] as HashMap<String, Any?>?)!!
                         .filterKeys { k -> k != valProperty }
                         .map { entry -> entry.value.toString() }
-                        .reduceSafely { s1, s2 -> "$s1 $s2" }
-                        ?.trim()
+                        .joinToString(" ")
+                        .trimToNull()
                 }
-                if (desc == null || (desc is String && desc.isBlank())) {
+                if (desc.isNullOrBlank()) {
                     desc = enumConstant["name"]
                 }
                 options.add(
@@ -637,7 +638,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                         .set("value", mappedVal)
                         .set("desc", desc)
                 )
-
             }
 
         } else {
@@ -718,101 +718,19 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     override fun parseEnumConstant(psiClass: PsiClass): List<Map<String, Any?>> {
         actionContext!!.checkStatus()
         val sourcePsiClass = getResourceClass(psiClass)
-        if (!sourcePsiClass.isEnum) return ArrayList()
+        if (!jvmClassHelper!!.isEnum(sourcePsiClass)) return ArrayList()
 
         if (staticResolvedInfo.containsKey(sourcePsiClass)) {
             return staticResolvedInfo[sourcePsiClass]!!
         }
 
         val res = ArrayList<Map<String, Any?>>()
-        for (field in jvmClassHelper!!.getAllFields(sourcePsiClass)) {
-
-            val value = field.computeConstantValue() ?: continue
-
-            if (value !is PsiEnumConstant) continue
-
-            val constant = HashMap<String, Any?>()
-            val params = HashMap<String, Any?>()
-            val construct = value.resolveConstructor()
-            val expressions = value.argumentList?.expressions
-            val parameters = construct?.parameterList?.parameters
-            if (expressions != null && parameters != null && parameters.isNotEmpty()) {
-                if (parameters.last().isVarArgs) {
-
-                    for (index in 0 until parameters.size - 1) {
-                        params[parameters[index].name!!] = resolveExpr(expressions[index])
-                    }
-                    try {
-                        //resolve varArgs
-                        val lastVarArgParam: ArrayList<Any?> = ArrayList(1)
-                        params[parameters[parameters.size - 1].name!!] = lastVarArgParam
-                        for (index in parameters.size - 1..expressions.size) {
-                            lastVarArgParam.add(resolveExpr(expressions[index]))
-                        }
-                    } catch (e: Throwable) {
-                    }
-                }
-
-                for ((index, parameter) in parameters.withIndex()) {
-                    try {
-                        params[parameter.name!!] = resolveExpr(expressions[index])
-                    } catch (e: Throwable) {
-                    }
-                }
-            }
-            constant["params"] = params
-            constant["name"] = field.name
-            constant["desc"] = getAttrOfField(field)
-            res.add(constant)
+        for ((index, field) in jvmClassHelper.getAllFields(sourcePsiClass).withIndex()) {
+            psiResolver!!.resolveEnumFields(index, field)?.let { res.add(it) }
         }
 
         staticResolvedInfo[sourcePsiClass] = res
         return res
-    }
-
-    protected fun resolveExpr(expOrEle: Any): Any? {
-        if (expOrEle is PsiExpression) {
-            return resolveExpr(expOrEle)
-        } else if (expOrEle is PsiElement) {
-            return resolveExpr(expOrEle)
-        }
-        return expOrEle.toString()
-    }
-
-    protected open fun resolveExpr(psiExpression: PsiExpression): Any? {
-        when (psiExpression) {
-            is PsiLiteralExpression -> return psiExpression.value
-            is PsiReferenceExpression -> {
-                val value = psiExpression.resolve()
-                if (value != null) {
-                    return resolveExpr(value)
-                }
-            }
-            is JvmNamedElement -> return psiExpression.name
-        }
-        return psiExpression.text
-    }
-
-    protected open fun resolveExpr(psiElement: PsiElement): Any? {
-        when (psiElement) {
-            is PsiVariable -> {
-                val constantValue = psiElement.computeConstantValue()
-                if (constantValue != null && constantValue != psiElement) {
-                    return resolveExpr(constantValue)
-                }
-                return psiElement.name
-            }
-            is JvmNamedElement -> return psiElement.name
-        }
-        return psiElement.text
-    }
-
-    override fun getAttrOfField(field: PsiField): String? {
-
-        val attrInDoc = docHelper!!.getAttrOfDocComment(field)
-        val suffixComment = docHelper.getSuffixComment(field)
-
-        return attrInDoc.append(suffixComment)
     }
 
     override fun isNormalType(psiType: PsiType): Boolean {
@@ -853,6 +771,17 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     override fun getJsonFieldName(psiField: PsiField): String {
         return psiField.name
+    }
+
+    override fun getJsonFieldName(psiMethod: PsiMethod): String {
+        val name = psiMethod.name
+        if (name.startsWith("is")) {
+            return name.removePrefix("is").decapitalize()
+        }
+        if (name.startsWith("get")) {
+            return name.removePrefix("get").decapitalize()
+        }
+        return name
     }
 
     open fun getResourceClass(psiClass: PsiClass): PsiClass {

@@ -7,7 +7,9 @@ import com.itangcent.common.utils.GsonUtils
 import com.itangcent.common.utils.cast
 import com.itangcent.intellij.jvm.AnnotationHelper
 import org.jetbrains.plugins.scala.lang.psi.api.base.ScLiteral
-import org.jetbrains.plugins.scala.lang.psi.api.expr.*
+import org.jetbrains.plugins.scala.lang.psi.api.expr.ScAnnotation
+import org.jetbrains.plugins.scala.lang.psi.api.expr.ScAnnotationExpr
+import org.jetbrains.plugins.scala.lang.psi.api.expr.ScAssignStmt
 import org.jetbrains.plugins.scala.lang.psi.api.statements.ScAnnotationsHolder
 import java.util.*
 
@@ -31,11 +33,11 @@ class ScalaAnnotationHelper : AnnotationHelper {
                         val name: String? = if (assignName.isDefined) {
                             assignName.get()
                         } else {
-                            valueOf(annotationParameter.lExpression)?.toString() ?: "value"
+                            ScPsiUtils.valueOf(annotationParameter.lExpression)?.toString() ?: "value"
                         }
                         val rExpression = annotationParameter.rExpression
                         if (rExpression.isDefined) {
-                            map[name!!] = valueOf(rExpression.get())
+                            map[name!!] = ScPsiUtils.valueOf(rExpression.get())
                         }
                     } else if (annotationParameter is ScLiteral) {
                         map["value"] = annotationParameter.value ?: annotationParameter.text
@@ -66,14 +68,14 @@ class ScalaAnnotationHelper : AnnotationHelper {
                         val name: String? = if (assignName.isDefined) {
                             assignName.get()
                         } else {
-                            valueOf(annotationParameter.lExpression)?.toString() ?: "value"
+                            ScPsiUtils.valueOf(annotationParameter.lExpression)?.toString() ?: "value"
                         }
                         if (!attrs.contains(name)) {
                             continue
                         }
                         val rExpression = annotationParameter.rExpression
                         if (rExpression.isDefined) {
-                            return valueOf(rExpression.get())
+                            return ScPsiUtils.valueOf(rExpression.get())
                         }
                     } else if (annotationParameter is ScLiteral) {
                         if (!attrs.contains("value")) {
@@ -104,22 +106,6 @@ class ScalaAnnotationHelper : AnnotationHelper {
             is String -> annStr
             else -> GsonUtils.toJson(annStr)
         }
-    }
-
-    private fun valueOf(scExpr: ScExpression): Any? {
-        if (scExpr is ScLiteral) {
-            return scExpr.value
-        }
-        if (scExpr is ScMethodCall) {
-            if (scExpr.invokedExpr.text == "Array") {
-                val list: LinkedList<Any> = LinkedList()
-                for (argumentExpression in scExpr.argumentExpressions()) {
-                    valueOf(argumentExpression)?.let { list.add(it) }
-                }
-                return list
-            }
-        }
-        return scExpr.text
     }
 
     private fun findScAnnotation(psiElement: PsiElement?, annName: String): ScAnnotationExpr? {

@@ -1,9 +1,6 @@
 package com.itangcent.intellij.jvm
 
-import com.intellij.psi.PsiClass
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiField
-import com.intellij.psi.PsiType
+import com.intellij.psi.*
 import com.itangcent.common.utils.KV
 
 interface PsiClassHelper {
@@ -30,10 +27,13 @@ interface PsiClassHelper {
 
     fun getJsonFieldName(psiField: PsiField): String
 
+    fun getJsonFieldName(psiMethod: PsiMethod): String
+
     fun parseStaticFields(psiClass: PsiClass): List<Map<String, Any?>>
 
     fun parseEnumConstant(psiClass: PsiClass): List<Map<String, Any?>>
 
+    @Deprecated(message = "replace with [DocHelper#getAttrOfField]")
     fun getAttrOfField(field: PsiField): String?
 
     fun resolveEnumOrStatic(
