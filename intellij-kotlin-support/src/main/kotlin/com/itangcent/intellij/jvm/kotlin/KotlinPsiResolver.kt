@@ -2,7 +2,6 @@ package com.itangcent.intellij.jvm.kotlin
 
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
-import com.itangcent.intellij.jvm.PsiResolver
 import com.itangcent.intellij.jvm.standard.StandardPsiResolver
 
 
@@ -23,25 +22,7 @@ import com.itangcent.intellij.jvm.standard.StandardPsiResolver
  *
  * Note that KDoc does not have any syntax for resolving overloaded members in links. Since the Kotlin documentation generation tool puts the documentation for all overloads of a function on the same page, identifying a specific overloaded function is not required for the link to work.
  */
-open class KotlinPsiResolver : PsiResolver {
-
-    //region not implemented
-    override fun resolveClass(className: String, psiElement: PsiElement): PsiClass? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun resolvePropertyOrMethodOfClass(psiClass: PsiClass, propertyOrMethod: String): PsiElement? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun getContainingClass(psiElement: PsiElement): PsiClass? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun resolveRefText(psiExpression: PsiElement?): String? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-    //endregion  not implemented
+open class KotlinPsiResolver : StandardPsiResolver() {
 
     override fun resolveClassWithPropertyOrMethod(
         classNameWithProperty: String,
@@ -51,23 +32,29 @@ open class KotlinPsiResolver : PsiResolver {
             throw NotImplementedError()
         }
 
+        val cwp: String = if (classNameWithProperty.startsWith('[')) {
+            classNameWithProperty.trim('[', ']')
+        } else {
+            classNameWithProperty
+        }
+
         //[kotlin.reflect.KClass]
-        var linkClass = resolveClass(classNameWithProperty, psiElement)
+        var linkClass = resolveClass(cwp, psiElement)
         if (linkClass != null) {
             return linkClass to null
         }
 
         //[kotlin.reflect.KClass.properties]
-        if (classNameWithProperty.contains('.')) {
-            val linkClassName = classNameWithProperty.substringBeforeLast(".")
-            val linkMethodOrProperty = classNameWithProperty.substringAfterLast(".", "").trim()
+        if (cwp.contains('.')) {
+            val linkClassName = cwp.substringBeforeLast(".")
+            val linkMethodOrProperty = cwp.substringAfterLast(".", "").trim()
             linkClass = resolveClass(linkClassName, psiElement) ?: return null
             return linkClass to resolvePropertyOrMethodOfClass(linkClass, linkMethodOrProperty)
         }
 
         //[properties]
         linkClass = getContainingClass(psiElement) ?: return null
-        resolvePropertyOrMethodOfClass(linkClass, classNameWithProperty)?.let {
+        resolvePropertyOrMethodOfClass(linkClass, cwp)?.let {
             return linkClass to it
         }
         return null

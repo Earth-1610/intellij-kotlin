@@ -5,9 +5,7 @@ import com.intellij.lang.jvm.JvmNamedElement
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
-import com.itangcent.common.utils.KV
-import com.itangcent.common.utils.invokeMethod
-import com.itangcent.common.utils.reduceSafely
+import com.itangcent.common.utils.*
 import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.PostConstruct
@@ -16,7 +14,6 @@ import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.ELEMENT_OF_COLLECTION
 import com.itangcent.intellij.logger.Logger
 import com.itangcent.intellij.util.Magics
-import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.exception.ExceptionUtils
 import java.util.*
 import kotlin.collections.ArrayList
@@ -518,7 +515,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         if (JsonOption.readGetter(option)) {
             for (method in psiClass.allMethods) {
                 val methodName = method.name
-                if (jvmClassHelper!!.isBasicMethod(methodName)) continue
+                if (jvmClassHelper.isBasicMethod(methodName)) continue
                 val propertyName = propertyNameOfGetter(methodName) ?: continue
                 if (readGetter && !fieldNames!!.add(propertyName)) continue
                 if (method.isConstructor) continue
@@ -555,15 +552,39 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         var property: String? = null
         val cls: PsiClass?
 
+        val classAndPropertyOrMethod =
+            psiResolver!!.resolveClassWithPropertyOrMethod(classNameWithProperty, context)
+
+        if (classAndPropertyOrMethod?.first != null) {
+            return if (classAndPropertyOrMethod.second != null) {
+                resolveEnumOrStatic(
+                    classAndPropertyOrMethod.first!!,
+                    PsiClassUtils.nameOfMember(classAndPropertyOrMethod.second!!),
+                    defaultPropertyName
+                )
+            } else {
+                property = classNameWithProperty
+                    .substringAfter(classAndPropertyOrMethod.first!!.name ?: "")
+                    .filterNot { "[]()".contains(it) }
+                    .takeIf { it.isNotBlank() }
+                resolveEnumOrStatic(
+                    classAndPropertyOrMethod.first!!,
+                    property,
+                    defaultPropertyName
+                )
+            }
+        }
+
         if (classNameWithProperty.contains("#")) {
             clsName = classNameWithProperty.substringBefore("#")
-            property = classNameWithProperty.substringAfter("#")
+            property = classNameWithProperty
+                .substringAfter("#")
                 .trim()
                 .removeSuffix("()")
         } else {
             clsName = classNameWithProperty.trim().removeSuffix("()")
         }
-        cls = psiResolver!!.resolveClass(clsName, context)?.let { getResourceClass(it) }
+        cls = psiResolver.resolveClass(clsName, context)?.let { getResourceClass(it) }
         return resolveEnumOrStatic(cls, property, defaultPropertyName)
     }
 
@@ -578,10 +599,10 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
         val options: ArrayList<HashMap<String, Any?>> = ArrayList()
 
-        if (cls.isEnum) {
+        if (jvmClassHelper!!.isEnum(cls)) {
             val enumConstants = parseEnumConstant(cls)
 
-            var valProperty = property ?: defaultPropertyName
+            var valProperty = property.trimToNull() ?: defaultPropertyName
             if (!valProperty.isBlank()) {
                 val candidateProperty = propertyNameOfGetter(valProperty)
                 if (candidateProperty != null && valProperty != candidateProperty) {
@@ -788,39 +809,10 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     override fun getAttrOfField(field: PsiField): String? {
 
-        var result: String? = null
-
         val attrInDoc = docHelper!!.getAttrOfDocComment(field)
-        if (StringUtils.isNotBlank(attrInDoc)) {
-            result = (result ?: "") + attrInDoc
-        }
+        val suffixComment = docHelper.getSuffixComment(field)
 
-        var fieldText = field.text
-        if (fieldText.contains("//")) {
-            fieldText = fieldText.trim()
-
-            val lines = fieldText.split('\r', '\n')
-            var innerDoc = ""
-            for (line in lines) {
-                if (StringUtils.isBlank(line)) {
-                    continue
-                }
-                //ignore region/endregion
-                if (!line.contains("//")
-                    || line.startsWith("//region")
-                    || line.startsWith("//endregion")
-                ) {
-                    continue
-                }
-                if (innerDoc.isNotEmpty()) innerDoc += ","
-                innerDoc += line.substringAfter("//").trim()
-            }
-            if (StringUtils.isNotBlank(innerDoc)) {
-                result = (result ?: "") + innerDoc
-            }
-        }
-
-        return result
+        return attrInDoc.append(suffixComment)
     }
 
     override fun isNormalType(psiType: PsiType): Boolean {

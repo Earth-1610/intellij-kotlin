@@ -104,3 +104,7 @@ object ClassHelper {
         }
     }
 }
+
+fun <T : Any> KClass<T>.newInstance(vararg params: Any): Any {
+    return ClassHelper.newInstance(this, params)
+}

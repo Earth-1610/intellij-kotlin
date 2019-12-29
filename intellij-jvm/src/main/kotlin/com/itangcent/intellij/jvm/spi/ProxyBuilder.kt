@@ -7,7 +7,8 @@ import com.itangcent.intellij.context.ActionContext
 import java.lang.reflect.*
 import java.util.*
 import kotlin.reflect.KClass
-import kotlin.reflect.full.createInstance
+import kotlin.reflect.KFunction
+import kotlin.reflect.KParameter
 
 class ProxyBuilder {
 
@@ -25,12 +26,29 @@ class ProxyBuilder {
     }
 
     private val implementClasses: LinkedList<KClass<*>> = LinkedList()
+    private val delegateBuilders: LinkedList<DelegateBuilder> = LinkedList()
 
     fun addImplementClass(implementClass: KClass<*>) {
         if (implementClasses.contains(implementClass)) {
             logger?.warn("add implement class repeatedly:${implementClass.qualifiedName}")
         }
-        implementClasses.addFirst(implementClass)
+        delegateBuilders.add(createDelegateBuilder(implementClass))
+    }
+
+    private fun createDelegateBuilder(implementClass: KClass<*>): DelegateBuilder {
+        val noArgsConstructor = implementClass.constructors.singleOrNull { it.parameters.all(KParameter::isOptional) }
+        if (noArgsConstructor != null) {
+            return SingleDelegateBuilder(noArgsConstructor)
+        }
+
+        val oneArgsConstructor = implementClass.constructors.singleOrNull {
+            it.parameters.size == 1
+        }
+        if (oneArgsConstructor != null) {
+            return ConstructorDelegateBuilder(oneArgsConstructor)
+        }
+
+        throw IllegalArgumentException("noArgsConstructor/oneArgsConstructor was required for ${implementClass.qualifiedName}")
     }
 
     companion object {
@@ -38,17 +56,20 @@ class ProxyBuilder {
     }
 
     private fun buildProxy(): Any {
-        val delegates = implementClasses.map { it.createInstance() }
-            .toTypedArray()
+        val delegates: Array<Any?> = kotlin.Array(implementClasses.size) { null }
+        for ((index, delegateBuilder) in delegateBuilders.withIndex()) {
+            delegates[index] = delegateBuilder.buildInstance(delegates)
+        }
         return Proxy.newProxyInstance(
             injectClass.java.classLoader, arrayOf(injectClass.java),
-            ProxyBean(delegates)
+            ProxyBean(delegates.requireNoNulls().reversedArray())
         )
     }
 
     @Volatile
     private var injected: Boolean = false
 
+    @Suppress("UNCHECKED_CAST")
     fun injectByDefault() {
         if (!injected) {
             injected = true
@@ -57,6 +78,22 @@ class ProxyBuilder {
                 actionContextBuilder.bindInstance(injectClass as KClass<Any>, buildProxy)
             }
         }
+    }
+}
+
+interface DelegateBuilder {
+    fun buildInstance(delegates: Array<Any?>): Any
+}
+
+class SingleDelegateBuilder(private val constructor: KFunction<Any>) : DelegateBuilder {
+    override fun buildInstance(delegates: Array<Any?>): Any {
+        return constructor.callBy(emptyMap())
+    }
+}
+
+class ConstructorDelegateBuilder(private val constructor: KFunction<Any>) : DelegateBuilder {
+    override fun buildInstance(delegates: Array<Any?>): Any {
+        return constructor.call(delegates.first()!!)
     }
 }
 

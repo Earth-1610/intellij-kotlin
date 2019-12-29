@@ -42,7 +42,7 @@ open class StandardPsiResolver : PsiResolver {
 
     @Inject
     private val jvmClassHelper: JvmClassHelper? = null
-    
+
     override fun resolveClass(className: String, psiElement: PsiElement): PsiClass? {
         return when {
             className.contains(".") -> duckTypeHelper!!.findClass(className, psiElement)
@@ -145,7 +145,7 @@ open class StandardPsiResolver : PsiResolver {
             return null
         } else {
             return jvmClassHelper!!.getAllFields(psiClass).firstOrNull { it.name == propertyOrMethod }
-                ?: psiClass.allMethods.firstOrNull { it.name == propertyOrMethod }
+                ?: jvmClassHelper.getAllMethods(psiClass).firstOrNull { it.name == propertyOrMethod }
         }
     }
 

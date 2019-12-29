@@ -4,10 +4,13 @@ import com.intellij.psi.PsiDocCommentOwner
 import com.intellij.psi.PsiElement
 import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.psi.javadoc.PsiDocComment
+import com.itangcent.common.utils.append
+import com.itangcent.common.utils.appendln
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.DocHelper
 import org.jetbrains.plugins.scala.lang.scaladoc.lexer.ScalaDocTokenType
 import org.jetbrains.plugins.scala.lang.scaladoc.psi.api.ScDocComment
+import org.jetbrains.plugins.scala.lang.scaladoc.psi.api.ScDocSyntaxElement
 import org.jetbrains.plugins.scala.lang.scaladoc.psi.api.ScDocTag
 import java.util.*
 
@@ -136,7 +139,7 @@ class ScalaDocHelper : DocHelper {
         }
 
         if (ScPsiUtils.isScPsiInst(psiElement)) {
-            var content = (psiElement as? PsiDocCommentOwner)?.docComment
+            val content = (psiElement as? PsiDocCommentOwner)?.docComment
                 ?.let { docComment ->
                     return@let ActionContext.getContext()!!.callInReadUI {
                         return@callInReadUI getDocCommentContent(docComment)
@@ -150,15 +153,28 @@ class ScalaDocHelper : DocHelper {
         return null
     }
 
-
     override fun getDocCommentContent(docComment: PsiDocComment): String? {
 
         if (docComment is ScDocComment) {
-            return docComment.children
-                .filter { it is LeafPsiElement }
-                .map { it as LeafPsiElement }
-                .filter { it.elementType == ScalaDocTokenType.DOC_COMMENT_DATA }
-                .joinToString(separator = " ") { it.text }
+            var str: String? = null
+            for (child in docComment.children) {
+                if (child is LeafPsiElement) {
+                    if (child.elementType == ScalaDocTokenType.DOC_COMMENT_DATA) {
+                        child.text.trim()
+                            .takeIf { it.isNotBlank() }
+                            ?.let { str = str.append(it) }
+                    } else if (child.elementType == ScalaDocTokenType.DOC_WHITESPACE) {
+                        if (child.text.contains('\n')) {
+                            str = str.appendln()
+                        }
+                    }
+                } else if (child is ScDocSyntaxElement) {
+                    child.text.trim()
+                        .takeIf { it.isNotBlank() }
+                        ?.let { str = str.append(it) }
+                }
+            }
+            return str?.trim()
         }
 
         return null

@@ -11,9 +11,10 @@ import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.norm
 import org.jetbrains.plugins.scala.lang.psi.api.statements.ScVariable
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.ScClass
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.ScTemplateDefinition
+import org.jetbrains.plugins.scala.lang.psi.light.PsiClassWrapper
 import java.util.*
 
-class ScalaJvmClassHelper : JvmClassHelper {
+class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
 
     //region not implemented
     override fun isStaticFinal(field: PsiField): Boolean {
@@ -53,7 +54,22 @@ class ScalaJvmClassHelper : JvmClassHelper {
     }
 
     override fun isEnum(psiType: PsiType): Boolean {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+
+        val cls = resolveClassInType(psiType)
+
+        return cls?.let { isEnum(it) } ?: false
+    }
+
+    override fun isEnum(psiClass: PsiClass): Boolean {
+        if (psiClass is PsiClassWrapper) {
+            for (superClass in psiClass.definition().supers()) {
+                if (superClass.isEnum || superClass.qualifiedName == "scala.Enumeration") {
+                    return true
+                }
+            }
+        }
+
+        throw NotImplementedError()
     }
 
     override fun resolveClassToType(psiClass: PsiClass): PsiType? {
