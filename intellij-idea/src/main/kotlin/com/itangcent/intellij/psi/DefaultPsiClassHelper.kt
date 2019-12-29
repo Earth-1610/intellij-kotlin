@@ -101,7 +101,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
             logger!!.traceWarn("error to get field name:${PsiClassUtils.fullNameOfMethod(psiMethod)}", e)
         }
 
-        return psiMethod.name
+        return super.getJsonFieldName(psiMethod)
     }
 
     override fun getResourceClass(psiClass: PsiClass): PsiClass {
