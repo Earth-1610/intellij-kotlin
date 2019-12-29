@@ -95,7 +95,13 @@ abstract class AbstractConfigReader : MutableConfigReader {
     @Suppress("UNCHECKED_CAST")
     private fun loadYamlConfig(configInfoContent: String) {
         val yaml = Yaml()
-        val yamlProperties = yaml.load(configInfoContent)
+        val yamlProperties: Any
+        try {
+            yamlProperties = yaml.load(configInfoContent)
+        } catch (e: Exception) {
+            logger!!.warn("load yaml failed")
+            return
+        }
 
         if (yamlProperties is Map<*, *>) {
             (yamlProperties as Map<Any?, Any?>).flat { k, v ->
@@ -124,7 +130,6 @@ abstract class AbstractConfigReader : MutableConfigReader {
         } else if (!ignoreNotFoundFile) {
             logger!!.error("$path not be found")
         }
-
     }
 
     private fun resolvePath(path: String): String {
