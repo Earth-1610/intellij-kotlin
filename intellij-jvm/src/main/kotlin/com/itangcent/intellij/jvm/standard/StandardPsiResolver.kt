@@ -212,7 +212,7 @@ open class StandardPsiResolver : PsiResolver {
         }
         constant["params"] = params
         constant["name"] = psiField.name
-        constant["desc"] = docHelper!!.getAttrOfField(psiField)
+        constant["desc"] = docHelper!!.getAttrOfField(psiField)?.trim()
         return constant
     }
 

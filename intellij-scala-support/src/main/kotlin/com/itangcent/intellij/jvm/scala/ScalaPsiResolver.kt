@@ -64,7 +64,7 @@ open class ScalaPsiResolver : StandardPsiResolver() {
             val expr = psiField.expr()
             if (expr is ScMethodCall) {
                 if (expr.invokedExpr.text == "Value") {
-                    val attrOfField = docHelper!!.getAttrOfField(psiField)
+                    val attrOfField = docHelper!!.getAttrOfField(psiField)?.trim()
                     val args = expr.args()
                     val exprs = args.exprs()
 

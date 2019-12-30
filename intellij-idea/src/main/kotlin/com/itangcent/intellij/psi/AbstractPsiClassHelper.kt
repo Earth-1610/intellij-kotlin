@@ -708,7 +708,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 KV.create<String, Any?>()
                     .set("name", field.name)
                     .set("value", value.toString())
-                    .set("desc", getAttrOfField(field))
+                    .set("desc", docHelper!!.getAttrOfField(field)?.trim())
             )
         }
         staticResolvedInfo[resourceClass] = res

@@ -6,7 +6,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiField
 import com.intellij.psi.javadoc.PsiDocComment
 import com.itangcent.intellij.context.ActionContext
-import com.itangcent.intellij.jvm.DocHelper
+import com.itangcent.intellij.jvm.standard.StandardDocHelper
 import org.apache.commons.lang3.StringUtils
 import org.jetbrains.kotlin.asJava.elements.KtLightElement
 import org.jetbrains.kotlin.kdoc.parser.KDocKnownTag
@@ -17,20 +17,25 @@ import org.jetbrains.kotlin.psi.KtDeclaration
 import java.util.*
 
 @Singleton
-class KotlinDocHelper : DocHelper {
-    override fun getSuffixComment(psiElement: PsiElement): String? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun getAttrOfField(field: PsiField): String? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+class KotlinDocHelper : StandardDocHelper() {
 
     @Inject
     private val actionContext: ActionContext? = null
 
+    override fun getSuffixComment(psiElement: PsiElement): String? {
+        if (!KtPsiUtils.isKtPsiInst(psiElement)) {
+            throw NotImplementedError()
+        }
+
+        return super.getSuffixComment(psiElement)
+    }
+
     override fun getDocCommentContent(docComment: PsiDocComment): String? {
-        return null
+        if (!KtPsiUtils.isKtPsiInst(docComment)) {
+            throw NotImplementedError()
+        }
+
+        return super.getDocCommentContent(docComment)
     }
 
     override fun hasTag(psiElement: PsiElement?, tag: String?): Boolean {
@@ -279,4 +284,14 @@ class KotlinDocHelper : DocHelper {
 
         return null
     }
+
+    override fun getAttrOfField(field: PsiField): String? {
+
+        if (!KtPsiUtils.isKtPsiInst(field)) {
+            throw NotImplementedError()
+        }
+
+        return super.getAttrOfField(field)
+    }
+
 }

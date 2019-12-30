@@ -86,4 +86,6 @@ class ScalaPsiFieldAdaptor(private val scVariable: ScVariable) : PsiField, PsiMo
         return null
     }
 
+
+
 }
