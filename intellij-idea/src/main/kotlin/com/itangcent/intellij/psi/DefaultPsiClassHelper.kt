@@ -405,7 +405,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
             }
             if (fieldOrMethod is PsiField) {
                 val field: PsiField = fieldOrMethod
-                commentKV[fieldName] = getAttrOfField(field)
+                commentKV[fieldName] = docHelper!!.getAttrOfField(field)?.trim()
                 resolveSeeDoc(field, commentKV)
             } else if (fieldOrMethod is PsiMethod) {
                 val attrInDoc = docHelper!!.getAttrOfDocComment(fieldOrMethod)
@@ -435,7 +435,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
             }
             if (fieldOrMethod is PsiField) {
                 val field: PsiField = fieldOrMethod
-                commentKV[fieldName] = getAttrOfField(field)
+                commentKV[fieldName] = docHelper!!.getAttrOfField(field)?.trim()
                 resolveSeeDoc(field, commentKV)
             } else if (fieldOrMethod is PsiMethod) {
                 val attrInDoc = docHelper!!.getAttrOfDocComment(fieldOrMethod)
@@ -447,6 +447,6 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     }
 
     override fun getAttrOfField(field: PsiField): String? {
-        return docHelper!!.getAttrOfField(field)
+        return docHelper!!.getAttrOfField(field)?.trim()
     }
 }

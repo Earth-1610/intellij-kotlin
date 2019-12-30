@@ -181,8 +181,9 @@ open class StandardDocHelper : DocHelper {
 
         if (psiElement.text.contains("//")) {
             return psiElement.children
-                .filter { it is PsiDocComment && it.tokenType == JavaTokenType.END_OF_LINE_COMMENT }
-                .map { it.text }
+                .filter { (it is PsiComment) && it.tokenType == JavaTokenType.END_OF_LINE_COMMENT }
+                .map { it.text.trim() }
+                .map { it.removePrefix("//") }
                 .firstOrNull()
         }
 
