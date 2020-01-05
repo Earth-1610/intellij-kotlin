@@ -1,8 +1,8 @@
 package com.itangcent.intellij.jvm.scala.adaptor
 
 import com.intellij.psi.*
+import com.itangcent.intellij.jvm.scala.compatible.ScCompatibleAnnotationsHolder
 import org.jetbrains.plugins.scala.lang.psi.api.base.types.ScTypeElement
-import org.jetbrains.plugins.scala.lang.psi.api.statements.ScAnnotationsHolder
 
 /**
  * read only
@@ -29,8 +29,8 @@ class ScalaPsiTypeElementAdaptor(private val scTypeElement: ScTypeElement) : Psi
         val type = scTypeElement.type
         if (type.isRight) {
             val right = type.right()
-            if (scTypeElement is ScAnnotationsHolder) {
-                val annotations = scTypeElement.annotations()
+            if (ScCompatibleAnnotationsHolder.isInstance(scTypeElement)) {
+                val annotations = ScCompatibleAnnotationsHolder.annotations(scTypeElement)
                 val toList = annotations.toList()
                 val annotationList: ArrayList<PsiAnnotation> = ArrayList()
                 for (scAnnotation in toList) {
