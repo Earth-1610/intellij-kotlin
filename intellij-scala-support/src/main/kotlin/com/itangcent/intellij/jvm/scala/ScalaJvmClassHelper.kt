@@ -4,12 +4,15 @@ import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiField
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.PsiType
+import com.itangcent.common.utils.invokeMethod
 import com.itangcent.intellij.jvm.JvmClassHelper
+import com.itangcent.intellij.jvm.scala.adaptor.ScPatternDefinitionPsiFieldAdaptor
 import com.itangcent.intellij.jvm.scala.adaptor.ScalaPsiFieldAdaptor
 import com.itangcent.intellij.jvm.scala.adaptor.ScalaTypeParameterType2PsiTypeParameterAdaptor
+import com.itangcent.intellij.jvm.scala.compatible.ScCompatiblePhysicalMethodSignature
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.normalTypes
+import org.jetbrains.plugins.scala.lang.psi.api.statements.ScPatternDefinition
 import org.jetbrains.plugins.scala.lang.psi.api.statements.ScVariable
-import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.ScClass
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.ScTemplateDefinition
 import org.jetbrains.plugins.scala.lang.psi.light.PsiClassWrapper
 import java.util.*
@@ -93,24 +96,31 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
     }
 
     override fun getAllFields(psiClass: PsiClass): Array<PsiField> {
-        if (psiClass is ScClass) {
-//            val allVals = psiClass.allVals()
-//            val valList = allVals.toList()
-//            for (tuple2 in valList) {
-//                var element = tuple2._1()
-//                val scSubstitutor = tuple2._2()
-//            }
-            val members = psiClass.members()
-            val fields: LinkedList<PsiField> = LinkedList()
-            for (member in members) {
-                if (member is ScVariable) {
-                    fields.add(ScalaPsiFieldAdaptor(member))
-                }
-            }
-            return fields.toTypedArray()
+
+        if (psiClass is PsiClassWrapper) {
+            collectFields(psiClass.definition())
+                .takeIf { it.isNotEmpty() }
+                ?.let { return it }
+        }
+
+        if (psiClass is ScTemplateDefinition) {
+            return collectFields(psiClass)
         }
 
         return emptyArray()
+    }
+
+    private fun collectFields(scTemplateDefinition: ScTemplateDefinition): Array<PsiField> {
+        val members = scTemplateDefinition.members()
+        val fields: LinkedList<PsiField> = LinkedList()
+        for (member in members) {
+            if (member is ScVariable) {
+                fields.add(ScalaPsiFieldAdaptor(member))
+            } else if (member is ScPatternDefinition) {
+                fields.add(ScPatternDefinitionPsiFieldAdaptor(member))
+            }
+        }
+        return fields.toTypedArray()
     }
 
     override fun resolveClassInType(psiType: PsiType): PsiClass? {
@@ -122,10 +132,10 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
 
     override fun getAllMethods(psiClass: PsiClass): Array<PsiMethod> {
         if (psiClass is ScTemplateDefinition) {
-            val allMethods = psiClass.allMethods()
+            val allMethods = psiClass.invokeMethod("allMethods")?.castToList()
             val methods: LinkedList<PsiMethod> = LinkedList()
-            for (method in allMethods) {
-                methods.add(method.method())
+            allMethods?.forEach { method ->
+                ScCompatiblePhysicalMethodSignature.method(method)?.let { methods.add(it) }
             }
             return methods.toTypedArray()
         }

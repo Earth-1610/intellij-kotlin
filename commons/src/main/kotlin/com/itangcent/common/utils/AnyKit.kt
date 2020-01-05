@@ -131,3 +131,13 @@ fun Any?.isNullOrBlank(): Boolean {
         else -> false
     }
 }
+
+fun Any?.toInt(): Int? {
+    return when {
+        this == null -> null
+        this is Int -> this
+        this is Number -> this.toInt()
+        this is String -> this.toIntOrNull()
+        else -> null
+    }
+}

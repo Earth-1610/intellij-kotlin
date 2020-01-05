@@ -4,10 +4,7 @@ import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
-import com.itangcent.intellij.jvm.DuckTypeHelper
-import com.itangcent.intellij.jvm.JvmClassHelper
-import com.itangcent.intellij.jvm.PsiResolver
-import com.itangcent.intellij.jvm.SourceHelper
+import com.itangcent.intellij.jvm.*
 
 
 /**
@@ -42,6 +39,9 @@ open class StandardPsiResolver : PsiResolver {
 
     @Inject
     private val jvmClassHelper: JvmClassHelper? = null
+
+    @Inject
+    protected val docHelper: DocHelper? = null
 
     override fun resolveClass(className: String, psiElement: PsiElement): PsiClass? {
         return when {
@@ -104,7 +104,6 @@ open class StandardPsiResolver : PsiResolver {
             linkClass to resolvePropertyOrMethodOfClass(linkClass, linkMethodOrProperty)
         }
     }
-
 
     override fun resolvePropertyOrMethodOfClass(psiClass: PsiClass, propertyOrMethod: String): PsiElement? {
 
@@ -177,6 +176,45 @@ open class StandardPsiResolver : PsiResolver {
             }
             else -> return psiExpression.text
         }
+    }
+
+    override fun resolveEnumFields(index: Int, psiField: PsiField): Map<String, Any?>? {
+        val value =
+            (psiField as? PsiEnumConstant) ?: (psiField.computeConstantValue() as? PsiEnumConstant) ?: return null
+
+        val constant: HashMap<String, Any?> = LinkedHashMap<String, Any?>()
+        val params = HashMap<String, Any?>()
+        val construct = value.resolveConstructor()
+        val expressions = value.argumentList?.expressions
+        val parameters = construct?.parameterList?.parameters
+        if (expressions != null && parameters != null && parameters.isNotEmpty()) {
+            if (parameters.last().isVarArgs) {
+
+                for (index in 0 until parameters.size - 1) {
+                    params[parameters[index].name!!] = PsiUtils.resolveExpr(expressions[index])
+                }
+                try {
+                    //resolve varArgs
+                    val lastVarArgParam: ArrayList<Any?> = ArrayList(1)
+                    params[parameters[parameters.size - 1].name!!] = lastVarArgParam
+                    for (index in parameters.size - 1..expressions.size) {
+                        lastVarArgParam.add(PsiUtils.resolveExpr(expressions[index]))
+                    }
+                } catch (e: Throwable) {
+                }
+            }
+
+            for ((index, parameter) in parameters.withIndex()) {
+                try {
+                    params[parameter.name!!] = PsiUtils.resolveExpr(expressions[index])
+                } catch (e: Throwable) {
+                }
+            }
+        }
+        constant["params"] = params
+        constant["name"] = psiField.name
+        constant["desc"] = docHelper!!.getAttrOfField(psiField)?.trim()
+        return constant
     }
 
 }

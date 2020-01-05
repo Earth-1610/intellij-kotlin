@@ -6,9 +6,7 @@ import com.intellij.psi.PsiModifierListOwner
 import com.itangcent.common.utils.GsonUtils
 import com.itangcent.common.utils.cast
 import com.itangcent.intellij.jvm.AnnotationHelper
-import org.jetbrains.plugins.scala.lang.psi.api.base.ScLiteral
-import org.jetbrains.plugins.scala.lang.psi.api.expr.*
-import org.jetbrains.plugins.scala.lang.psi.api.statements.ScAnnotationsHolder
+import com.itangcent.intellij.jvm.scala.compatible.*
 import java.util.*
 
 class ScalaAnnotationHelper : AnnotationHelper {
@@ -23,22 +21,22 @@ class ScalaAnnotationHelper : AnnotationHelper {
             val scAnnotation = findScAnnotation(psiElement, annName)
             if (scAnnotation != null) {
                 val map: HashMap<String, Any?> = HashMap()
-                val annotationParameters = scAnnotation.annotationParameters
+                val annotationParameters = ScCompatibleAnnotationExpr.getAnnotationParameters(scAnnotation)
                 for (annotationParameter in annotationParameters) {
 
-                    if (annotationParameter is ScAssignStmt) {
-                        val assignName = annotationParameter.assignName()
-                        val name: String? = if (assignName.isDefined) {
-                            assignName.get()
-                        } else {
-                            valueOf(annotationParameter.lExpression)?.toString() ?: "value"
+                    if (ScCompatibleAssignment.isInstance(annotationParameter)) {
+                        val name: String? = ScCompatibleAssignment.referenceName(annotationParameter)
+                            ?: (ScCompatibleAssignment.leftExpression(annotationParameter)?.let {
+                                ScPsiUtils.valueOf(it)?.toString()
+                            }
+                                ?: "value")
+                        val rExpression = ScCompatibleAssignment.rightExpression(annotationParameter)
+                        if (rExpression != null) {
+                            map[name!!] = ScPsiUtils.valueOf(rExpression)
                         }
-                        val rExpression = annotationParameter.rExpression
-                        if (rExpression.isDefined) {
-                            map[name!!] = valueOf(rExpression.get())
-                        }
-                    } else if (annotationParameter is ScLiteral) {
-                        map["value"] = annotationParameter.value ?: annotationParameter.text
+                    } else if (ScCompatibleLiteral.isInstance(annotationParameter)) {
+                        map["value"] = ScCompatibleLiteral.getValue(annotationParameter) ?:
+                                ScCompatibleLiteral.getText(annotationParameter)
                     }
                 }
                 return map
@@ -59,25 +57,25 @@ class ScalaAnnotationHelper : AnnotationHelper {
         if (ScPsiUtils.isScPsiInst(psiElement)) {
             val scAnnotation = findScAnnotation(psiElement, annName)
             if (scAnnotation != null) {
-                val annotationParameters = scAnnotation.annotationParameters
+                val annotationParameters = ScCompatibleAnnotationExpr.getAnnotationParameters(scAnnotation)
                 for (annotationParameter in annotationParameters) {
-                    if (annotationParameter is ScAssignStmt) {
-                        val assignName = annotationParameter.assignName()
-                        val name: String? = if (assignName.isDefined) {
-                            assignName.get()
-                        } else {
-                            valueOf(annotationParameter.lExpression)?.toString() ?: "value"
-                        }
+                    if (ScCompatibleAssignment.isInstance(annotationParameter)) {
+                        val name: String? = ScCompatibleAssignment.referenceName(annotationParameter)
+                            ?: (ScCompatibleAssignment.leftExpression(annotationParameter)?.let {
+                                ScPsiUtils.valueOf(it)?.toString()
+                            }
+                                ?: "value")
                         if (!attrs.contains(name)) {
                             continue
                         }
-                        val rExpression = annotationParameter.rExpression
-                        if (rExpression.isDefined) {
-                            return valueOf(rExpression.get())
+                        val rExpression = ScCompatibleAssignment.rightExpression(annotationParameter)
+                        if (rExpression != null) {
+                            return ScPsiUtils.valueOf(rExpression)
                         }
-                    } else if (annotationParameter is ScLiteral) {
+                    } else if (ScCompatibleLiteral.isInstance(annotationParameter)) {
                         if (!attrs.contains("value")) {
-                            return annotationParameter.value ?: annotationParameter.text
+                            return ScCompatibleLiteral.getValue(annotationParameter)
+                                ?: ScCompatibleLiteral.getText(annotationParameter)
                         }
                     }
                 }
@@ -106,42 +104,31 @@ class ScalaAnnotationHelper : AnnotationHelper {
         }
     }
 
-    private fun valueOf(scExpr: ScExpression): Any? {
-        if (scExpr is ScLiteral) {
-            return scExpr.value
-        }
-        if (scExpr is ScMethodCall) {
-            if (scExpr.invokedExpr.text == "Array") {
-                val list: LinkedList<Any> = LinkedList()
-                for (argumentExpression in scExpr.argumentExpressions()) {
-                    valueOf(argumentExpression)?.let { list.add(it) }
-                }
-                return list
-            }
-        }
-        return scExpr.text
-    }
+    /**
+     * @return ScAnnotationExpr
+     */
+    private fun findScAnnotation(psiElement: PsiElement?, annName: String): Any? {
 
-    private fun findScAnnotation(psiElement: PsiElement?, annName: String): ScAnnotationExpr? {
+        if (psiElement == null) return null
 
         var annotation = (psiElement.cast(PsiAnnotationOwner::class)?.annotations
             ?: psiElement.cast(PsiModifierListOwner::class)?.annotations)
             ?.firstOrNull { it.qualifiedName == annName }
 
-        if (annotation != null && annotation is ScAnnotation) {
-            return annotation.annotationExpr()
+        if (annotation != null && ScCompatibleAnnotation.isInstance(annotation)) {
+            return ScCompatibleAnnotation.annotationExpr(annotation)
         }
 
-        if (psiElement is ScAnnotationsHolder) {
-            annotation = psiElement.findAnnotation(annName)
+        if (ScCompatibleAnnotationsHolder.isInstance(psiElement)) {
+            annotation = ScCompatibleAnnotationsHolder.findAnnotation(psiElement, annName)
 
-            if (annotation != null && annotation is ScAnnotation) {
-                return annotation.annotationExpr()
+            if (annotation != null && ScCompatibleAnnotation.isInstance(annotation)) {
+                return ScCompatibleAnnotation.annotationExpr(annotation)
             }
 
-            for (ann in psiElement.annotations()) {
-                if (ann.qualifiedName == annName) {
-                    return ann.annotationExpr()
+            for (ann in ScCompatibleAnnotationsHolder.annotations(psiElement)) {
+                if (ann.qualifiedName == annName && ScCompatibleAnnotation.isInstance(ann)) {
+                    return ScCompatibleAnnotation.annotationExpr(ann)
                 }
             }
         }

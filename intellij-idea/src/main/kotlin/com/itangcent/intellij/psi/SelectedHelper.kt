@@ -10,6 +10,7 @@ import com.intellij.psi.PsiClassOwner
 import com.intellij.psi.PsiDirectory
 import com.intellij.psi.PsiFile
 import com.itangcent.common.concurrent.AQSCountLatch
+import com.itangcent.common.logger.traceWarn
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.logger.Logger
 import com.itangcent.intellij.util.DirFilter
@@ -84,7 +85,7 @@ object SelectedHelper {
                         return@runInReadUI
                     }
                 } catch (e: Exception) {
-                    logger.warn("error handle class")
+                    logger.traceWarn("error handle class", e)
                 }
 
                 try {
@@ -96,7 +97,7 @@ object SelectedHelper {
                         return@runInReadUI
                     }
                 } catch (e: Exception) {
-                    logger.warn("error handle navigatable")
+                    logger.traceWarn("error handle navigatable", e)
                 }
 
                 try {
@@ -115,7 +116,7 @@ object SelectedHelper {
                         return@runInReadUI
                     }
                 } catch (e: Exception) {
-                    logger.warn("error handle navigatables")
+                    logger.traceWarn("error handle navigatables", e)
                 }
 
                 aqsCount.up()

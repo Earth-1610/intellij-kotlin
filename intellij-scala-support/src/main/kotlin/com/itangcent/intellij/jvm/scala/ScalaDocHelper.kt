@@ -2,25 +2,20 @@ package com.itangcent.intellij.jvm.scala
 
 import com.intellij.psi.PsiDocCommentOwner
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiField
 import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.psi.javadoc.PsiDocComment
 import com.itangcent.common.utils.append
 import com.itangcent.common.utils.appendln
 import com.itangcent.intellij.context.ActionContext
-import com.itangcent.intellij.jvm.DocHelper
+import com.itangcent.intellij.jvm.standard.StandardDocHelper
 import org.jetbrains.plugins.scala.lang.scaladoc.lexer.ScalaDocTokenType
 import org.jetbrains.plugins.scala.lang.scaladoc.psi.api.ScDocComment
 import org.jetbrains.plugins.scala.lang.scaladoc.psi.api.ScDocSyntaxElement
 import org.jetbrains.plugins.scala.lang.scaladoc.psi.api.ScDocTag
 import java.util.*
 
-class ScalaDocHelper : DocHelper {
-
-    //region not implemented
-    override fun getSuffixComment(psiElement: PsiElement): String? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-    //endregion
+class ScalaDocHelper : StandardDocHelper() {
 
     override fun getTagMapOfDocComment(psiElement: PsiElement?): Map<String, String?> {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
@@ -178,5 +173,23 @@ class ScalaDocHelper : DocHelper {
         }
 
         return null
+    }
+
+    override fun getSuffixComment(psiElement: PsiElement): String? {
+
+        if (!ScPsiUtils.isScPsiInst(psiElement)) {
+            throw NotImplementedError()
+        }
+
+        return super.getSuffixComment(psiElement)
+    }
+
+    override fun getAttrOfField(field: PsiField): String? {
+
+        if (!ScPsiUtils.isScPsiInst(field)) {
+            throw NotImplementedError()
+        }
+
+        return super.getAttrOfField(field)
     }
 }

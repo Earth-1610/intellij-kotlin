@@ -94,7 +94,7 @@ fun String.truncate(limit: Int, truncated: String = "..."): String {
 
 fun String?.append(str: String?, split: String = " "): String? {
     return when {
-        this == null -> str
+        this.isNullOrBlank() -> str
         str == null -> this
         else -> this + split + str
     }
