@@ -32,6 +32,7 @@ class ProxyBuilder {
         if (implementClasses.contains(implementClass)) {
             logger?.warn("add implement class repeatedly:${implementClass.qualifiedName}")
         }
+        implementClasses.add(implementClass)
         delegateBuilders.add(createDelegateBuilder(implementClass))
     }
 
@@ -56,7 +57,7 @@ class ProxyBuilder {
     }
 
     private fun buildProxy(): Any {
-        val delegates: Array<Any?> = kotlin.Array(implementClasses.size) { null }
+        val delegates: Array<Any?> = kotlin.Array(delegateBuilders.size) { null }
         for ((index, delegateBuilder) in delegateBuilders.withIndex()) {
             delegates[index] = delegateBuilder.buildInstance(delegates)
         }

@@ -308,11 +308,10 @@ fun invokeClassMethodByMethodName(classObj: Any, methodName: String, vararg meth
                 modifyFiled.setInt(method, modifyFiled.getInt(method) and Modifier.FINAL.inv())
 
                 try {
-                    if (methodArgs.isNotEmpty()) {
-
-                        return method.invoke(classObj, *methodArgs)
+                    return if (methodArgs.isNotEmpty()) {
+                        method.invoke(classObj, *methodArgs)
                     } else {
-                        return method.invoke(classObj)
+                        method.invoke(classObj)
                     }
                 } catch (e: IllegalArgumentException) {
                     return@forEach
@@ -324,7 +323,7 @@ fun invokeClassMethodByMethodName(classObj: Any, methodName: String, vararg meth
     }
 
 
-    throw IllegalArgumentException("Can't find the method named :$methodName with args ${methodArgs.toList().toString()} in the classObj : $classObj")
+    throw IllegalArgumentException("Can't find the method named :$methodName with args ${methodArgs.toList()} in the classObj : $classObj")
 }
 
 /**

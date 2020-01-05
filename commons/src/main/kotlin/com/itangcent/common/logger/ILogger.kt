@@ -18,6 +18,11 @@ interface ILogger {
     fun error(msg: String)
 }
 
+fun ILogger.traceWarn(msg: String, e: Throwable) {
+    this.warn(msg)
+    this.traceError(e)
+}
+
 fun ILogger.traceError(msg: String, e: Throwable) {
     this.error(msg)
     this.traceError(e)

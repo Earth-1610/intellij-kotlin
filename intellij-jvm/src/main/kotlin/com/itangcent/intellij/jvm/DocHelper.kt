@@ -2,6 +2,7 @@ package com.itangcent.intellij.jvm
 
 import com.google.inject.ImplementedBy
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiField
 import com.intellij.psi.javadoc.PsiDocComment
 import com.itangcent.intellij.jvm.standard.StandardDocHelper
 
@@ -25,4 +26,6 @@ interface DocHelper {
     fun hasTag(psiElement: PsiElement?, tag: String?): Boolean
     
     fun getSuffixComment(psiElement: PsiElement): String?
+
+    fun getAttrOfField(field: PsiField): String?
 }

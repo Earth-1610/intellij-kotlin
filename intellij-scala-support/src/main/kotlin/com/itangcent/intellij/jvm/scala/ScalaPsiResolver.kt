@@ -2,7 +2,12 @@ package com.itangcent.intellij.jvm.scala
 
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiField
+import com.itangcent.common.utils.KV
+import com.itangcent.common.utils.toInt
+import com.itangcent.intellij.jvm.scala.adaptor.ScPatternDefinitionPsiFieldAdaptor
 import com.itangcent.intellij.jvm.standard.StandardPsiResolver
+import org.jetbrains.plugins.scala.lang.psi.api.expr.ScMethodCall
 
 
 /**
@@ -48,4 +53,73 @@ open class ScalaPsiResolver : StandardPsiResolver() {
 
         return null
     }
+
+    override fun resolveEnumFields(index: Int, psiField: PsiField): Map<String, Any?>? {
+
+        if (!ScPsiUtils.isScPsiInst(psiField)) {
+            throw NotImplementedError()
+        }
+
+        if (psiField is ScPatternDefinitionPsiFieldAdaptor) {
+            val expr = psiField.expr()
+            if (expr is ScMethodCall) {
+                if (expr.invokedExpr.text == "Value") {
+                    val attrOfField = docHelper!!.getAttrOfField(psiField)?.trim()
+                    val args = expr.args()
+                    val exprs = args.exprs()
+
+                    if (exprs.size() == 2) {
+                        var id: Int = index
+                        var name: String? = null
+                        var index = 0
+                        for (ex in exprs) {
+                            val value = ScPsiUtils.valueOf(ex)
+                            if (index == 0) {
+                                id = value.toInt() ?: 0
+                            } else {
+                                name = value.toString()
+                                break
+                            }
+                            index++
+                        }
+
+                        return KV.create<String, Any?>()
+                            .set("name", name ?: psiField.name)
+                            .set("desc", attrOfField)
+                            .set(
+                                "params", KV.create<String, Any>()
+                                    .set("id", id)
+                                    .set("name", name ?: psiField.name)
+                            )
+                    } else if (exprs.size() == 1) {
+                        val head = exprs.head()
+                        val value: Any? = ScPsiUtils.valueOf(head) ?: return null
+                        if (value is Int) {
+                            return KV.create<String, Any?>()
+                                .set("name", psiField.name)
+                                .set("desc", attrOfField)
+                                .set(
+                                    "params", KV.create<String, Any>()
+                                        .set("id", value)
+                                        .set("name", psiField.name)
+                                )
+                        } else if (value is String) {
+                            return KV.create<String, Any?>()
+                                .set("name", psiField.name)
+                                .set("desc", attrOfField)
+                                .set(
+                                    "params", KV.create<String, Any>()
+                                        .set("id", index)
+                                        .set("name", value)
+                                )
+                        }
+                    }
+                }
+            }
+
+        }
+
+        return null
+    }
+
 }

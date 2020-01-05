@@ -1,18 +1,24 @@
 package com.itangcent.intellij.jvm.standard
 
+import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.psi.javadoc.PsiDocComment
 import com.intellij.util.containers.stream
+import com.itangcent.common.utils.append
 import com.itangcent.common.utils.cast
 import com.itangcent.common.utils.reduceSafely
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.DocHelper
+import com.itangcent.intellij.jvm.ExtendProvider
 import org.apache.commons.lang3.StringUtils
 import java.util.*
 
 @Singleton
 open class StandardDocHelper : DocHelper {
+
+    @Inject(optional = true)
+    private val extendProvider: ExtendProvider? = null
 
     override fun hasTag(psiElement: PsiElement?, tag: String?): Boolean {
         return psiElement.cast(PsiDocCommentOwner::class)?.docComment
@@ -114,7 +120,6 @@ open class StandardDocHelper : DocHelper {
             }
     }
 
-
     override fun getDocCommentContent(docComment: PsiDocComment): String? {
         val descriptions = docComment.descriptionElements
         return descriptions.stream()
@@ -174,10 +179,17 @@ open class StandardDocHelper : DocHelper {
 
     override fun getSuffixComment(psiElement: PsiElement): String? {
 
-        if (psiElement.text.contains("//")) {
+        val text = psiElement.text
+        //text maybe null
+        if (text == null) {
+            return null
+        }
+
+        if (text.contains("//")) {
             return psiElement.children
-                .filter { it is PsiDocComment && it.tokenType == JavaTokenType.END_OF_LINE_COMMENT }
-                .map { it.text }
+                .filter { (it is PsiComment) && it.tokenType == JavaTokenType.END_OF_LINE_COMMENT }
+                .map { it.text.trim() }
+                .map { it.removePrefix("//") }
                 .firstOrNull()
         }
 
@@ -185,7 +197,7 @@ open class StandardDocHelper : DocHelper {
         while (true) {
             nextSibling = nextSibling.nextSibling ?: return null
             if (nextSibling is PsiWhiteSpace) {
-                if (nextSibling.text.contains('\n')) {
+                if (nextSibling.text?.contains('\n') ?: false) {
                     return null
                 }
                 continue
@@ -195,5 +207,14 @@ open class StandardDocHelper : DocHelper {
             }
         }
         return (nextSibling as? PsiComment)?.text?.trim()?.removePrefix("//")
+    }
+
+    override fun getAttrOfField(field: PsiField): String? {
+
+        val attrInDoc = getAttrOfDocComment(field)
+        val suffixComment = getSuffixComment(field)
+        val docByRule = extendProvider?.extraDoc(field)
+
+        return attrInDoc.append(suffixComment).append(docByRule)
     }
 }
