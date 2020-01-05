@@ -179,7 +179,13 @@ open class StandardDocHelper : DocHelper {
 
     override fun getSuffixComment(psiElement: PsiElement): String? {
 
-        if (psiElement.text.contains("//")) {
+        val text = psiElement.text
+        //text maybe null
+        if (text == null) {
+            return null
+        }
+
+        if (text.contains("//")) {
             return psiElement.children
                 .filter { (it is PsiComment) && it.tokenType == JavaTokenType.END_OF_LINE_COMMENT }
                 .map { it.text.trim() }
@@ -191,7 +197,7 @@ open class StandardDocHelper : DocHelper {
         while (true) {
             nextSibling = nextSibling.nextSibling ?: return null
             if (nextSibling is PsiWhiteSpace) {
-                if (nextSibling.text.contains('\n')) {
+                if (nextSibling.text?.contains('\n') ?: false) {
                     return null
                 }
                 continue

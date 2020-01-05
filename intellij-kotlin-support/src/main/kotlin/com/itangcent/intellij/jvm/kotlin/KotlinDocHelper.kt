@@ -27,6 +27,17 @@ class KotlinDocHelper : StandardDocHelper() {
             throw NotImplementedError()
         }
 
+
+        val text = psiElement.text
+        //text maybe null
+        if (text == null) {
+            return null
+        }
+
+        if (text.contains("//")) {
+            return text.substringAfterLast("//")
+        }
+
         return super.getSuffixComment(psiElement)
     }
 

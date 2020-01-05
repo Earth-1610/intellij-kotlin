@@ -4,10 +4,12 @@ import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiField
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.PsiType
+import com.itangcent.common.utils.invokeMethod
 import com.itangcent.intellij.jvm.JvmClassHelper
 import com.itangcent.intellij.jvm.scala.adaptor.ScPatternDefinitionPsiFieldAdaptor
 import com.itangcent.intellij.jvm.scala.adaptor.ScalaPsiFieldAdaptor
 import com.itangcent.intellij.jvm.scala.adaptor.ScalaTypeParameterType2PsiTypeParameterAdaptor
+import com.itangcent.intellij.jvm.scala.compatible.ScCompatiblePhysicalMethodSignature
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.normalTypes
 import org.jetbrains.plugins.scala.lang.psi.api.statements.ScPatternDefinition
 import org.jetbrains.plugins.scala.lang.psi.api.statements.ScVariable
@@ -130,10 +132,10 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
 
     override fun getAllMethods(psiClass: PsiClass): Array<PsiMethod> {
         if (psiClass is ScTemplateDefinition) {
-            val allMethods = psiClass.allMethods()
+            val allMethods = psiClass.invokeMethod("allMethods")?.castToList()
             val methods: LinkedList<PsiMethod> = LinkedList()
-            for (method in allMethods) {
-                methods.add(method.method())
+            allMethods?.forEach { method ->
+                ScCompatiblePhysicalMethodSignature.method(method)?.let { methods.add(it) }
             }
             return methods.toTypedArray()
         }

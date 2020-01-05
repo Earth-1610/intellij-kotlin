@@ -179,7 +179,8 @@ open class StandardPsiResolver : PsiResolver {
     }
 
     override fun resolveEnumFields(index: Int, psiField: PsiField): Map<String, Any?>? {
-        val value = psiField.computeConstantValue() as? PsiEnumConstant ?: return null
+        val value =
+            (psiField as? PsiEnumConstant) ?: (psiField.computeConstantValue() as? PsiEnumConstant) ?: return null
 
         val constant: HashMap<String, Any?> = LinkedHashMap<String, Any?>()
         val params = HashMap<String, Any?>()

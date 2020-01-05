@@ -216,7 +216,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                                 kv.safeComputeIfAbsent("@comment") { KV.create<String, Any?>() } as KV<String, Any?>
                             resolveSeeDoc(
                                 fieldName, enumClass, Arrays.asList(
-                                    PsiClassUtils.fullNameOfMemmber(
+                                    PsiClassUtils.fullNameOfMember(
                                         classWithFieldOrMethod.first!!,
                                         convertFieldOrMethod
                                     )
