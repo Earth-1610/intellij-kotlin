@@ -110,22 +110,24 @@ abstract class AbstractConfigReader : MutableConfigReader {
     @Suppress("UNCHECKED_CAST")
     private fun loadYamlConfig(configInfoContent: String) {
         val yaml = Yaml()
-        val yamlProperties: Any
+        val yamlProperties: Iterable<Any>
         try {
-            yamlProperties = yaml.load(configInfoContent)
+            yamlProperties = yaml.loadAll(configInfoContent)
         } catch (e: Exception) {
             logger!!.traceWarn("load yaml failed", e)
             return
         }
 
-        if (yamlProperties is Map<*, *>) {
-            (yamlProperties as Map<Any?, Any?>).flat { k, v ->
-                val name = resolveProperty(k)
-                val value = resolveProperty(v)
-                if (name == "properties.additional") {
-                    loadConfigFile(value)
-                } else {
-                    configInfo.put(name.trim(), value.trim())
+        for (yamlProperty in yamlProperties) {
+            if (yamlProperty is Map<*, *>) {
+                (yamlProperty as Map<Any?, Any?>).flat { k, v ->
+                    val name = resolveProperty(k)
+                    val value = resolveProperty(v)
+                    if (name == "properties.additional") {
+                        loadConfigFile(value)
+                    } else {
+                        configInfo.put(name.trim(), value.trim())
+                    }
                 }
             }
         }
