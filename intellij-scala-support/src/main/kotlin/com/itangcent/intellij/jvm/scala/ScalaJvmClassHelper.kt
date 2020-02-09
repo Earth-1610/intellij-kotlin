@@ -1,10 +1,10 @@
 package com.itangcent.intellij.jvm.scala
 
-import com.intellij.psi.PsiClass
-import com.intellij.psi.PsiField
-import com.intellij.psi.PsiMethod
-import com.intellij.psi.PsiType
+import com.intellij.lang.jvm.JvmParameter
+import com.intellij.psi.*
+import com.itangcent.common.utils.getPropertyValue
 import com.itangcent.common.utils.invokeMethod
+import com.itangcent.common.utils.isNullOrBlank
 import com.itangcent.intellij.jvm.JvmClassHelper
 import com.itangcent.intellij.jvm.scala.adaptor.ScPatternDefinitionPsiFieldAdaptor
 import com.itangcent.intellij.jvm.scala.adaptor.ScalaPsiFieldAdaptor
@@ -140,6 +140,119 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
             return methods.toTypedArray()
         }
         return emptyArray()
+    }
+
+    override fun defineClassCode(psiClass: PsiClass): String {
+        val sb = StringBuilder()
+        //modifiers
+        psiClass.modifiers.forEach {
+            sb.append(it.name.toLowerCase()).append(" ")
+        }
+        when {
+            psiClass.isInterface -> sb.append("trait ")
+            else -> sb.append("class ")
+        }
+        var appendExtends = false
+        sb.append(psiClass.name)
+        psiClass.extendsListTypes
+            .takeIf { !it.isNullOrBlank() }
+            ?.let {
+                if (!appendExtends) {
+                    sb.append("extends ")
+                    appendExtends = true
+                }
+                sb.append(it.joinToString(separator = " ,") { type -> type.canonicalText })
+                    .append(" ")
+            }
+        psiClass.implementsListTypes
+            .takeIf { !it.isNullOrBlank() }
+            ?.let {
+                if (!appendExtends) {
+                    sb.append("extends ")
+                    appendExtends = true
+                }
+                sb.append(it.joinToString(separator = " ,") { type -> type.canonicalText })
+                    .append(" ")
+            }
+        return sb.append(";").toString()
+    }
+
+    override fun defineMethodCode(psiMethod: PsiMethod): String {
+        val sb = StringBuilder()
+        //modifiers
+        psiMethod.modifiers.forEach {
+            sb.append(it.name.toLowerCase()).append(" ")
+        }
+        if (psiMethod.isConstructor) {
+            sb.append("def this ")
+                .append("(")
+        } else {
+            sb.append("def ")
+                .append(psiMethod.name)
+                .append("(")
+        }
+        for ((index, parameter) in psiMethod.parameters.withIndex()) {
+            if (index > 0) {
+                sb.append(", ")
+            }
+            if (parameter is PsiParameter) {
+                sb.append(defineParamCode(parameter as PsiParameter))
+            } else {
+                sb.append(defineParamCode(parameter))
+            }
+        }
+        sb.append(")")
+        if (!psiMethod.isConstructor) {
+            psiMethod.returnType?.let {
+                sb.append(": ")
+                    .append(it.canonicalText).append(" ")
+            }
+        }
+        return sb.append(";").toString()
+    }
+
+    override fun defineFieldCode(psiField: PsiField): String {
+        val sb = StringBuilder()
+        //modifiers
+        psiField.modifiers.forEach {
+            sb.append(it.name.toLowerCase()).append(" ")
+        }
+        if (psiField is PsiEnumConstant) {
+            sb.append(psiField.name)
+            psiField.argumentList?.expressions
+                ?.takeIf { !it.isNullOrBlank() }
+                ?.joinToString(separator = ", ") { it.text }
+                ?.let {
+                    sb.append("(")
+                        .append(it)
+                        .append(")")
+                }
+        } else {
+            sb.append(psiField.name)
+                .append(": ")
+                .append(psiField.type.canonicalText)
+        }
+        return sb.append(";").toString()
+    }
+
+    override fun defineParamCode(psiParameter: PsiParameter): String {
+        val sb = StringBuilder()
+        sb.append(psiParameter.type.canonicalText)
+            .append(" ")
+            .append(psiParameter.name)
+        return sb.toString()
+    }
+
+    private fun defineParamCode(psiParameter: JvmParameter): String {
+        val sb = StringBuilder()
+        sb.append(psiParameter.name)
+            .append(": ")
+            .append(psiParameter.type.getPropertyValue("text"))
+        return sb.toString()
+    }
+
+    override fun defineOtherCode(psiElement: PsiElement): String {
+        return psiElement.text
     }
 
     companion object {
