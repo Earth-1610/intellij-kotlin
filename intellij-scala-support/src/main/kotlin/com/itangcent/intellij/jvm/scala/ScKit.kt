@@ -19,7 +19,6 @@ fun Any.castToList(): List<Any> {
     return emptyList()
 }
 
-
 @Suppress("UNCHECKED_CAST")
 fun <T : Any> Any.castToTypedList(): List<T> {
     (this as? scala.collection.Iterable<T?>)?.toKtList()?.filterNotNull()?.let { return it }
