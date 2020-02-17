@@ -4,14 +4,13 @@ import com.google.common.collect.Sets
 import com.intellij.lang.jvm.JvmParameter
 import com.intellij.psi.*
 import com.itangcent.common.utils.getPropertyValue
-import com.itangcent.common.utils.isNullOrBlank
 import com.itangcent.intellij.jvm.JvmClassHelper
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.normalTypes
 import java.util.*
 import kotlin.reflect.KClass
 
-class KotlinJvmClassHelper : JvmClassHelper {
+class KotlinJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
     override fun isAccessibleField(field: PsiField): Boolean {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
@@ -84,11 +83,25 @@ class KotlinJvmClassHelper : JvmClassHelper {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
+    override fun extractModifiers(psiElement: PsiElement): List<String> {
+        return jvmClassHelper.extractModifiers(psiElement)
+    }
+
+    override fun defineCode(psiElement: PsiElement): String {
+        if (!KtPsiUtils.isKtPsiInst(psiElement)) {
+            throw NotImplementedError("not implemented")
+        }
+        return super.defineCode(psiElement)
+    }
+
     override fun defineClassCode(psiClass: PsiClass): String {
+        if (!KtPsiUtils.isKtPsiInst(psiClass)) {
+            throw NotImplementedError("not implemented")
+        }
         val sb = StringBuilder()
         //modifiers
-        psiClass.modifiers.forEach {
-            sb.append(it.name.toLowerCase()).append(" ")
+        extractModifiers(psiClass).forEach {
+            sb.append(it).append(" ")
         }
         when {
             psiClass.isInterface -> sb.append("interface ")
@@ -99,33 +112,36 @@ class KotlinJvmClassHelper : JvmClassHelper {
         var colon = false
         sb.append(psiClass.name)
         psiClass.extendsListTypes
-            .takeIf { !it.isNullOrBlank() }
+            .takeIf { !it.isNullOrEmpty() }
             ?.let {
                 if (!colon) {
-                    sb.append(": ")
+                    sb.append(" : ")
                     colon = true
                 }
                 sb.append(it.joinToString(separator = " ,") { type -> type.canonicalText })
-                    .append(" ")
             }
         psiClass.implementsListTypes
-            .takeIf { !it.isNullOrBlank() }
+            .takeIf { !it.isNullOrEmpty() }
             ?.let {
                 if (!colon) {
-                    sb.append(": ")
+                    sb.append(" : ")
                     colon = true
+                } else {
+                    sb.append(" ")
                 }
                 sb.append(it.joinToString(separator = " ,") { type -> type.canonicalText })
-                    .append(" ")
             }
         return sb.append(";").toString()
     }
 
     override fun defineMethodCode(psiMethod: PsiMethod): String {
+        if (!KtPsiUtils.isKtPsiInst(psiMethod)) {
+            throw NotImplementedError("not implemented")
+        }
         val sb = StringBuilder()
         //modifiers
-        psiMethod.modifiers.forEach {
-            sb.append(it.name.toLowerCase()).append(" ")
+        extractModifiers(psiMethod).forEach {
+            sb.append(it).append(" ")
         }
         if (psiMethod.isConstructor) {
             sb.append("constructor")
@@ -156,15 +172,18 @@ class KotlinJvmClassHelper : JvmClassHelper {
     }
 
     override fun defineFieldCode(psiField: PsiField): String {
+        if (!KtPsiUtils.isKtPsiInst(psiField)) {
+            throw NotImplementedError("not implemented")
+        }
         val sb = StringBuilder()
         //modifiers
-        psiField.modifiers.forEach {
-            sb.append(it.name.toLowerCase()).append(" ")
+        extractModifiers(psiField).forEach {
+            sb.append(it).append(" ")
         }
         if (psiField is PsiEnumConstant) {
             sb.append(psiField.name)
             psiField.argumentList?.expressions
-                ?.takeIf { !it.isNullOrBlank() }
+                ?.takeIf { !it.isNullOrEmpty() }
                 ?.joinToString(separator = ", ") { it.text }
                 ?.let {
                     sb.append("(")
@@ -180,6 +199,9 @@ class KotlinJvmClassHelper : JvmClassHelper {
     }
 
     override fun defineParamCode(psiParameter: PsiParameter): String {
+        if (!KtPsiUtils.isKtPsiInst(psiParameter)) {
+            throw NotImplementedError("not implemented")
+        }
         val sb = StringBuilder()
         sb.append(psiParameter.type.canonicalText)
             .append(" ")
@@ -196,6 +218,9 @@ class KotlinJvmClassHelper : JvmClassHelper {
     }
 
     override fun defineOtherCode(psiElement: PsiElement): String {
+        if (!KtPsiUtils.isKtPsiInst(psiElement)) {
+            throw NotImplementedError("not implemented")
+        }
         return psiElement.text
     }
 

@@ -1,12 +1,13 @@
 package com.itangcent.intellij.jvm.standard
 
 import com.google.inject.Singleton
+import com.intellij.lang.jvm.JvmModifier
+import com.intellij.lang.jvm.JvmModifiersOwner
 import com.intellij.lang.jvm.JvmParameter
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
 import com.itangcent.common.utils.getPropertyValue
-import com.itangcent.common.utils.isNullOrBlank
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.jvm.JvmClassHelper
 import com.sun.jmx.remote.internal.ArrayQueue
@@ -129,11 +130,28 @@ open class StandardJvmClassHelper : JvmClassHelper {
         return psiClass.allMethods
     }
 
+    override fun extractModifiers(psiElement: PsiElement): List<String> {
+        if (psiElement is PsiModifierListOwner) {
+            val modifierList = psiElement.modifierList ?: return emptyList()
+            return PsiModifier.MODIFIERS
+                .filter { modifierList.hasModifierProperty(it) }
+                .map { it.toLowerCase() }
+                .toList()
+        }
+        if (psiElement is JvmModifiersOwner) {
+            return JvmModifier.values()
+                .filter { psiElement.hasModifier(it) }
+                .map { it.name.toLowerCase() }
+                .toList()
+        }
+        return emptyList()
+    }
+
     override fun defineClassCode(psiClass: PsiClass): String {
         val sb = StringBuilder()
         //modifiers
-        psiClass.modifiers.forEach {
-            sb.append(it.name.toLowerCase()).append(" ")
+        extractModifiers(psiClass).forEach {
+            sb.append(it).append(" ")
         }
         when {
             psiClass.isInterface -> sb.append("interface ")
@@ -143,16 +161,16 @@ open class StandardJvmClassHelper : JvmClassHelper {
         }
         sb.append(psiClass.name)
         psiClass.extendsListTypes
-            .takeIf { !it.isNullOrBlank() }
+            .takeIf { !it.isNullOrEmpty() }
             ?.let {
-                sb.append("extends ")
+                sb.append(" extends ")
                     .append(it.joinToString(separator = " ,") { type -> type.canonicalText })
                     .append(" ")
             }
         psiClass.implementsListTypes
-            .takeIf { !it.isNullOrBlank() }
+            .takeIf { !it.isNullOrEmpty() }
             ?.let {
-                sb.append("implements ")
+                sb.append(" implements ")
                     .append(it.joinToString(separator = " ,") { type -> type.canonicalText })
                     .append(" ")
             }
@@ -162,8 +180,8 @@ open class StandardJvmClassHelper : JvmClassHelper {
     override fun defineMethodCode(psiMethod: PsiMethod): String {
         val sb = StringBuilder()
         //modifiers
-        psiMethod.modifiers.forEach {
-            sb.append(it.name.toLowerCase()).append(" ")
+        extractModifiers(psiMethod).forEach {
+            sb.append(it).append(" ")
         }
         if (!psiMethod.isConstructor) {
             psiMethod.returnType?.let {
@@ -188,13 +206,13 @@ open class StandardJvmClassHelper : JvmClassHelper {
     override fun defineFieldCode(psiField: PsiField): String {
         val sb = StringBuilder()
         //modifiers
-        psiField.modifiers.forEach {
-            sb.append(it.name.toLowerCase()).append(" ")
+        extractModifiers(psiField).forEach {
+            sb.append(it).append(" ")
         }
         if (psiField is PsiEnumConstant) {
             sb.append(psiField.name)
             psiField.argumentList?.expressions
-                ?.takeIf { !it.isNullOrBlank() }
+                ?.takeIf { !it.isNullOrEmpty() }
                 ?.joinToString(separator = ", ") { it.text }
                 ?.let {
                     sb.append("(")
