@@ -1,14 +1,12 @@
 package com.itangcent.intellij.jvm
 
 import com.google.inject.ImplementedBy
-import com.intellij.psi.PsiClass
-import com.intellij.psi.PsiField
-import com.intellij.psi.PsiMethod
-import com.intellij.psi.PsiType
+import com.intellij.psi.*
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 
 @ImplementedBy(StandardJvmClassHelper::class)
 interface JvmClassHelper {
+
     fun isAccessibleField(field: PsiField): Boolean
 
     fun isStaticFinal(field: PsiField): Boolean
@@ -44,4 +42,43 @@ interface JvmClassHelper {
     fun getAllFields(psiClass: PsiClass): Array<PsiField>
 
     fun getAllMethods(psiClass: PsiClass): Array<PsiMethod>
+
+    /**
+     * define code without implement code
+     */
+    fun defineCode(psiElement: PsiElement): String {
+        return when (psiElement) {
+            is PsiClass -> defineClassCode(psiElement)
+            is PsiMethod -> defineMethodCode(psiElement)
+            is PsiField -> defineFieldCode(psiElement)
+            is PsiParameter -> defineParamCode(psiElement)
+            else -> defineOtherCode(psiElement)
+        }
+    }
+
+    /**
+     * define code without class body
+     */
+    fun defineClassCode(psiClass: PsiClass): String
+
+    /**
+     * define code without method body
+     */
+    fun defineMethodCode(psiMethod: PsiMethod): String
+
+    /**
+     * define code without get/set
+     */
+    fun defineFieldCode(psiField: PsiField): String
+
+    /**
+     * define code
+     */
+    fun defineParamCode(psiParameter: PsiParameter): String
+
+    /**
+     * other psi element
+     */
+    fun defineOtherCode(psiElement: PsiElement): String
+
 }
