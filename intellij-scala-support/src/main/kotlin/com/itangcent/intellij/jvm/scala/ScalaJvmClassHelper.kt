@@ -4,7 +4,6 @@ import com.intellij.lang.jvm.JvmParameter
 import com.intellij.psi.*
 import com.itangcent.common.utils.getPropertyValue
 import com.itangcent.common.utils.invokeMethod
-import com.itangcent.common.utils.isNullOrBlank
 import com.itangcent.intellij.jvm.JvmClassHelper
 import com.itangcent.intellij.jvm.scala.adaptor.ScPatternDefinitionPsiFieldAdaptor
 import com.itangcent.intellij.jvm.scala.adaptor.ScalaPsiFieldAdaptor
@@ -142,11 +141,25 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
         return emptyArray()
     }
 
+    override fun extractModifiers(psiElement: PsiElement): List<String> {
+        return jvmClassHelper.extractModifiers(psiElement)
+    }
+
+    override fun defineCode(psiElement: PsiElement): String {
+        if (!ScPsiUtils.isScPsiInst(psiElement)) {
+            throw NotImplementedError("not implemented")
+        }
+        return super.defineCode(psiElement)
+    }
+
     override fun defineClassCode(psiClass: PsiClass): String {
+        if (!ScPsiUtils.isScPsiInst(psiClass)) {
+            throw NotImplementedError("not implemented")
+        }
         val sb = StringBuilder()
         //modifiers
-        psiClass.modifiers.forEach {
-            sb.append(it.name.toLowerCase()).append(" ")
+        extractModifiers(psiClass).forEach {
+            sb.append(it).append(" ")
         }
         when {
             psiClass.isInterface -> sb.append("trait ")
@@ -155,33 +168,36 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
         var appendExtends = false
         sb.append(psiClass.name)
         psiClass.extendsListTypes
-            .takeIf { !it.isNullOrBlank() }
+            .takeIf { !it.isNullOrEmpty() }
             ?.let {
                 if (!appendExtends) {
-                    sb.append("extends ")
+                    sb.append(" extends ")
                     appendExtends = true
                 }
                 sb.append(it.joinToString(separator = " ,") { type -> type.canonicalText })
-                    .append(" ")
             }
         psiClass.implementsListTypes
-            .takeIf { !it.isNullOrBlank() }
+            .takeIf { !it.isNullOrEmpty() }
             ?.let {
                 if (!appendExtends) {
-                    sb.append("extends ")
+                    sb.append(" extends ")
                     appendExtends = true
+                } else {
+                    sb.append(" ")
                 }
                 sb.append(it.joinToString(separator = " ,") { type -> type.canonicalText })
-                    .append(" ")
             }
         return sb.append(";").toString()
     }
 
     override fun defineMethodCode(psiMethod: PsiMethod): String {
+        if (!ScPsiUtils.isScPsiInst(psiMethod)) {
+            throw NotImplementedError("not implemented")
+        }
         val sb = StringBuilder()
         //modifiers
-        psiMethod.modifiers.forEach {
-            sb.append(it.name.toLowerCase()).append(" ")
+        extractModifiers(psiMethod).forEach {
+            sb.append(it).append(" ")
         }
         if (psiMethod.isConstructor) {
             sb.append("def this ")
@@ -212,15 +228,18 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
     }
 
     override fun defineFieldCode(psiField: PsiField): String {
+        if (!ScPsiUtils.isScPsiInst(psiField)) {
+            throw NotImplementedError("not implemented")
+        }
         val sb = StringBuilder()
         //modifiers
-        psiField.modifiers.forEach {
-            sb.append(it.name.toLowerCase()).append(" ")
+        extractModifiers(psiField).forEach {
+            sb.append(it).append(" ")
         }
         if (psiField is PsiEnumConstant) {
             sb.append(psiField.name)
             psiField.argumentList?.expressions
-                ?.takeIf { !it.isNullOrBlank() }
+                ?.takeIf { !it.isNullOrEmpty() }
                 ?.joinToString(separator = ", ") { it.text }
                 ?.let {
                     sb.append("(")
@@ -236,6 +255,9 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
     }
 
     override fun defineParamCode(psiParameter: PsiParameter): String {
+        if (!ScPsiUtils.isScPsiInst(psiParameter)) {
+            throw NotImplementedError("not implemented")
+        }
         val sb = StringBuilder()
         sb.append(psiParameter.type.canonicalText)
             .append(" ")
@@ -252,6 +274,9 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
     }
 
     override fun defineOtherCode(psiElement: PsiElement): String {
+        if (!ScPsiUtils.isScPsiInst(psiElement)) {
+            throw NotImplementedError("not implemented")
+        }
         return psiElement.text
     }
 
