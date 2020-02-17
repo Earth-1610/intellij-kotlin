@@ -1,9 +1,12 @@
 package com.itangcent.intellij.jvm.standard
 
 import com.google.inject.Singleton
+import com.intellij.lang.jvm.JvmParameter
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
+import com.itangcent.common.utils.getPropertyValue
+import com.itangcent.common.utils.isNullOrBlank
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.jvm.JvmClassHelper
 import com.sun.jmx.remote.internal.ArrayQueue
@@ -124,6 +127,106 @@ open class StandardJvmClassHelper : JvmClassHelper {
 
     override fun getAllMethods(psiClass: PsiClass): Array<PsiMethod> {
         return psiClass.allMethods
+    }
+
+    override fun defineClassCode(psiClass: PsiClass): String {
+        val sb = StringBuilder()
+        //modifiers
+        psiClass.modifiers.forEach {
+            sb.append(it.name.toLowerCase()).append(" ")
+        }
+        when {
+            psiClass.isInterface -> sb.append("interface ")
+            psiClass.isEnum -> sb.append("enum ")
+            psiClass.isAnnotationType -> sb.append("@interface ")
+            else -> sb.append("class ")
+        }
+        sb.append(psiClass.name)
+        psiClass.extendsListTypes
+            .takeIf { !it.isNullOrBlank() }
+            ?.let {
+                sb.append("extends ")
+                    .append(it.joinToString(separator = " ,") { type -> type.canonicalText })
+                    .append(" ")
+            }
+        psiClass.implementsListTypes
+            .takeIf { !it.isNullOrBlank() }
+            ?.let {
+                sb.append("implements ")
+                    .append(it.joinToString(separator = " ,") { type -> type.canonicalText })
+                    .append(" ")
+            }
+        return sb.append(";").toString()
+    }
+
+    override fun defineMethodCode(psiMethod: PsiMethod): String {
+        val sb = StringBuilder()
+        //modifiers
+        psiMethod.modifiers.forEach {
+            sb.append(it.name.toLowerCase()).append(" ")
+        }
+        if (!psiMethod.isConstructor) {
+            psiMethod.returnType?.let {
+                sb.append(it.canonicalText).append(" ")
+            }
+        }
+        sb.append(psiMethod.name)
+            .append("(")
+        for ((index, parameter) in psiMethod.parameters.withIndex()) {
+            if (index > 0) {
+                sb.append(", ")
+            }
+            if (parameter is PsiParameter) {
+                sb.append(defineParamCode(parameter as PsiParameter))
+            } else {
+                sb.append(defineParamCode(parameter))
+            }
+        }
+        return sb.append(")").append(";").toString()
+    }
+
+    override fun defineFieldCode(psiField: PsiField): String {
+        val sb = StringBuilder()
+        //modifiers
+        psiField.modifiers.forEach {
+            sb.append(it.name.toLowerCase()).append(" ")
+        }
+        if (psiField is PsiEnumConstant) {
+            sb.append(psiField.name)
+            psiField.argumentList?.expressions
+                ?.takeIf { !it.isNullOrBlank() }
+                ?.joinToString(separator = ", ") { it.text }
+                ?.let {
+                    sb.append("(")
+                        .append(it)
+                        .append(")")
+                }
+        } else {
+            sb.append(psiField.type.canonicalText)
+                .append(" ")
+                .append(psiField.name)
+        }
+        return sb.append(";").toString()
+    }
+
+    override fun defineParamCode(psiParameter: PsiParameter): String {
+        val sb = StringBuilder()
+        sb.append(psiParameter.type.canonicalText)
+            .append(" ")
+            .append(psiParameter.name)
+        return sb.toString()
+    }
+
+    private fun defineParamCode(psiParameter: JvmParameter): String {
+        val sb = StringBuilder()
+        sb.append(psiParameter.type.getPropertyValue("text"))
+            .append(" ")
+            .append(psiParameter.name)
+        return sb.toString()
+    }
+
+    override fun defineOtherCode(psiElement: PsiElement): String {
+        return psiElement.text
     }
 
     companion object {
