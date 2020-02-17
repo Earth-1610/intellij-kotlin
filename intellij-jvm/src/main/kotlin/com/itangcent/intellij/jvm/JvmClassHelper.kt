@@ -43,6 +43,8 @@ interface JvmClassHelper {
 
     fun getAllMethods(psiClass: PsiClass): Array<PsiMethod>
 
+    fun extractModifiers(psiElement: PsiElement): List<String>
+
     /**
      * define code without implement code
      */
