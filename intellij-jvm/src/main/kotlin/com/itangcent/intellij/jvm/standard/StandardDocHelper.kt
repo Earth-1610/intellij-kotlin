@@ -170,7 +170,7 @@ open class StandardDocHelper : DocHelper {
                         tagMap[tag.name] = tag.dataElements
                             .mapNotNull { it?.text }
                             .filter { it.isNotBlank() }
-                            .joinToString { it.trim() }
+                            .joinToString(separator = "") { it.trim() }
                     }
                     return@callInReadUI tagMap
                 }
@@ -179,11 +179,8 @@ open class StandardDocHelper : DocHelper {
 
     override fun getSuffixComment(psiElement: PsiElement): String? {
 
-        val text = psiElement.text
         //text maybe null
-        if (text == null) {
-            return null
-        }
+        val text = psiElement.text ?: return null
 
         if (text.contains("//")) {
             return psiElement.children
@@ -197,7 +194,7 @@ open class StandardDocHelper : DocHelper {
         while (true) {
             nextSibling = nextSibling.nextSibling ?: return null
             if (nextSibling is PsiWhiteSpace) {
-                if (nextSibling.text?.contains('\n') ?: false) {
+                if (nextSibling.text?.contains('\n') == true) {
                     return null
                 }
                 continue
