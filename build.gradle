@@ -20,7 +20,7 @@ plugins {
 }
 
 group 'com.itangcent'
-version '0.2.8.RELEASE'
+version '0.2.9-SNAPSHOT'
 
 apply plugin: 'kotlin'
 apply plugin: 'org.jetbrains.intellij'
