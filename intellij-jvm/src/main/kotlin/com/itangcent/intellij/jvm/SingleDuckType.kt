@@ -22,16 +22,44 @@ class SingleDuckType : DuckType {
         this.genericInfo = genericInfo
     }
 
+    private var canonicalText: String? = null
+
+    override fun canonicalText(): String {
+        if (canonicalText != null) {
+            return canonicalText!!
+        }
+        canonicalText = buildCanonicalText()
+        return canonicalText!!
+    }
+
+    private fun buildCanonicalText(): String {
+        return when {
+            genericInfo.isNullOrEmpty() -> psiCls.qualifiedName ?: ""
+            else -> {
+                val sb = StringBuilder()
+                sb.append(psiCls.qualifiedName)
+                    .append("<")
+                for ((index, typeParameter) in psiCls.typeParameters.withIndex()) {
+                    if (index > 0) {
+                        sb.append(",")
+                    }
+                    sb.append(genericInfo[typeParameter.name]?.canonicalText() ?: "java.lang.Object")
+                }
+                sb.append(">").toString()
+            }
+        }
+    }
+
     override fun toString(): String {
-        if (genericInfo == null) {
-            return "$psiCls"
+        return if (genericInfo == null) {
+            "$psiCls"
         } else {
             val sb = StringBuilder()
             genericInfo.forEach { t, u ->
                 if (sb.isNotEmpty()) sb.append(",")
                 sb.append(t).append("->").append(u)
             }
-            return "$psiCls with [$sb]"
+            "$psiCls with [$sb]"
         }
     }
 

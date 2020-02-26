@@ -8,6 +8,10 @@ class ArrayDuckType : DuckType {
         this.componentType = componentClass
     }
 
+    override fun canonicalText(): String {
+        return componentType.canonicalText() + "[]"
+    }
+
     fun componentType(): DuckType {
         return componentType
     }

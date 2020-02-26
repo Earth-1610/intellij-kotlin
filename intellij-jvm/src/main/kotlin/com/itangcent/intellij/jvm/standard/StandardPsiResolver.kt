@@ -43,12 +43,20 @@ open class StandardPsiResolver : PsiResolver {
     @Inject
     protected val docHelper: DocHelper? = null
 
+    @Deprecated(message = "will be removed next version")
     override fun resolveClass(className: String, psiElement: PsiElement): PsiClass? {
         return when {
             className.contains(".") -> duckTypeHelper!!.findClass(className, psiElement)
             else -> getContainingClass(psiElement)?.let { resolveClassFromImport(it, className) }
                 ?: duckTypeHelper!!.findClass(className, psiElement)
         }?.let { sourceHelper?.getSourceClass(it) }
+    }
+
+    override fun resolveClassOrType(className: String, psiElement: PsiElement): Any? {
+        return when {
+            className.contains("<") -> duckTypeHelper!!.findType(className, psiElement)
+            else -> duckTypeHelper!!.resolveClass(className, psiElement)
+        }
     }
 
     protected open fun resolveClassFromImport(psiClass: PsiClass, clsName: String): PsiClass? {
@@ -81,7 +89,7 @@ open class StandardPsiResolver : PsiResolver {
     override fun resolveClassWithPropertyOrMethod(
         classNameWithProperty: String,
         psiElement: PsiElement
-    ): Pair<PsiClass?, PsiElement?>? {
+    ): Pair<Any?, PsiElement?>? {
 
         //{@link #method(args...)}
         //{@link #property}
@@ -97,11 +105,11 @@ open class StandardPsiResolver : PsiResolver {
         //{@link java.class#property}
         val linkClassName = classNameWithProperty.substringBefore("#")
         val linkMethodOrProperty = classNameWithProperty.substringAfter("#", "").trim()
-        val linkClass = resolveClass(linkClassName, psiElement) ?: return null
         return if (linkMethodOrProperty.isBlank()) {
-            linkClass to null
+            resolveClassOrType(linkClassName, psiElement) to null
         } else {
-            linkClass to resolvePropertyOrMethodOfClass(linkClass, linkMethodOrProperty)
+            duckTypeHelper!!.resolveClass(linkClassName, psiElement)
+                ?.let { it to resolvePropertyOrMethodOfClass(it, linkMethodOrProperty) }
         }
     }
 

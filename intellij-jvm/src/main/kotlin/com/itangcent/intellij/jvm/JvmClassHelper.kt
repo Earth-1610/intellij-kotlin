@@ -84,3 +84,15 @@ interface JvmClassHelper {
     fun defineOtherCode(psiElement: PsiElement): String
 
 }
+
+
+fun Any?.asPsiClass(jvmClassHelper: JvmClassHelper): PsiClass? {
+    if (this == null) return null
+    if (this is PsiType) {
+        return jvmClassHelper.resolveClassInType(this)
+    }
+    if (this is PsiClass) {
+        return this
+    }
+    return null
+}
