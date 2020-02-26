@@ -22,17 +22,11 @@ open class UnknownPsiElementContext : RuleContext {
     }
 
     override fun asPsiDocCommentOwner(): PsiDocCommentOwner? {
-        if (psiElement is PsiDocCommentOwner) {
-            return psiElement as PsiDocCommentOwner
-        }
-        return null
+        return psiElement as? PsiDocCommentOwner
     }
 
     override fun asPsiModifierListOwner(): PsiModifierListOwner? {
-        if (psiElement is PsiModifierListOwner) {
-            return psiElement as PsiModifierListOwner
-        }
-        return null
+        return psiElement as? PsiModifierListOwner?
     }
 
 }

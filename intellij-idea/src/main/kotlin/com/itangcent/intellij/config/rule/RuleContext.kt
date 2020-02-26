@@ -10,6 +10,10 @@ interface RuleContext {
         return getResource()
     }
 
+    fun getPsiContext(): PsiElement? {
+        return getResource()
+    }
+
     fun getResource(): PsiElement?
 
     fun getName(): String?

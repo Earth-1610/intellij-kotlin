@@ -558,22 +558,25 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             psiResolver!!.resolveClassWithPropertyOrMethod(classNameWithProperty, context)
 
         if (classAndPropertyOrMethod?.first != null) {
-            return if (classAndPropertyOrMethod.second != null) {
-                resolveEnumOrStatic(
-                    classAndPropertyOrMethod.first!!,
-                    PsiClassUtils.nameOfMember(classAndPropertyOrMethod.second!!),
-                    defaultPropertyName
-                )
-            } else {
-                property = classNameWithProperty
-                    .substringAfter(classAndPropertyOrMethod.first!!.name ?: "")
-                    .filterNot { "[]()".contains(it) }
-                    .takeIf { it.isNotBlank() }
-                resolveEnumOrStatic(
-                    classAndPropertyOrMethod.first!!,
-                    property,
-                    defaultPropertyName
-                )
+            val first = classAndPropertyOrMethod.first?.asPsiClass(jvmClassHelper!!)
+            if (first != null) {
+                return if (classAndPropertyOrMethod.second != null) {
+                    resolveEnumOrStatic(
+                        first,
+                        PsiClassUtils.nameOfMember(classAndPropertyOrMethod.second!!),
+                        defaultPropertyName
+                    )
+                } else {
+                    property = classNameWithProperty
+                        .substringAfter(first.name ?: "")
+                        .filterNot { "[]()".contains(it) }
+                        .takeIf { it.isNotBlank() }
+                    resolveEnumOrStatic(
+                        first,
+                        property,
+                        defaultPropertyName
+                    )
+                }
             }
         }
 
@@ -586,7 +589,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         } else {
             clsName = classNameWithProperty.trim().removeSuffix("()")
         }
-        cls = psiResolver.resolveClass(clsName, context)?.let { getResourceClass(it) }
+        cls = duckTypeHelper!!.resolveClass(clsName, context)?.let { getResourceClass(it) }
         return resolveEnumOrStatic(cls, property, defaultPropertyName)
     }
 
