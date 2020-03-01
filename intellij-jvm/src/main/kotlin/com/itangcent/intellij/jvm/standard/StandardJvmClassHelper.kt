@@ -25,17 +25,13 @@ open class StandardJvmClassHelper : JvmClassHelper {
 
     override fun isInheritor(psiType: PsiType, vararg baseClass: String): Boolean {
 
-        if (baseClass.contains(psiType.presentableText)) {
+        if (baseClass.contains(psiType.canonicalText.substringBefore('<'))) {
             return true
         }
 
         val cls = resolveClassInType(psiType)
         if (cls != null) {
-            for (superCls in cls.supers) {
-                if (baseClass.contains(superCls.qualifiedName)) {
-                    return true
-                }
-            }
+            return isInheritor(cls, *baseClass)
         }
 
         return false
