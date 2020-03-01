@@ -121,7 +121,7 @@ open class StandardPsiResolver : PsiResolver {
             }
 
             val methodName = propertyOrMethod.substringBefore("(")
-            var candidates = psiClass.allMethods.filter { it.name == methodName }.toList()
+            var candidates = jvmClassHelper!!.getAllMethods(psiClass).filter { it.name == methodName }.toList()
             when {
                 candidates.isEmpty() -> return null
                 candidates.size == 1 -> return candidates[0]

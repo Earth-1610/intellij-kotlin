@@ -515,7 +515,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         }
 
         if (JsonOption.readGetter(option)) {
-            for (method in psiClass.allMethods) {
+            for (method in jvmClassHelper.getAllMethods(psiClass)) {
                 val methodName = method.name
                 if (jvmClassHelper.isBasicMethod(methodName)) continue
                 val propertyName = propertyNameOfGetter(methodName) ?: continue
