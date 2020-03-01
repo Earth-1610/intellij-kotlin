@@ -1,20 +1,31 @@
 package com.itangcent.intellij.jvm
 
 import com.intellij.psi.*
+import com.itangcent.intellij.context.ActionContext
 
 public abstract class AbstractLinkResolve : LinkResolver {
-    override fun linkToPsiElement(plainText: String, linkTo: PsiElement?): String? {
+
+    override fun linkToPsiElement(plainText: String, linkTo: Any?): String? {
         return when (linkTo) {
             null -> linkToUnresolved(plainText)
             is PsiClass -> linkToClass(plainText, linkTo)
             is PsiMethod -> linkToMethod(plainText, linkTo)
             is PsiField -> linkToField(plainText, linkTo)
-            else -> linkToOther(plainText, linkTo)
+            is PsiType -> linkToType(plainText, linkTo)
+            is PsiElement -> linkToOther(plainText, linkTo)
+            else -> linkToUnresolved(plainText)
         }
     }
 
     open fun linkToUnresolved(plainText: String): String? {
         return plainText
+    }
+
+    open fun linkToType(plainText: String, linkType: PsiType): String? {
+        return ActionContext.getContext()?.instance(JvmClassHelper::class)
+            ?.resolveClassInType(linkType)?.let {
+                linkToClass(plainText, it)
+            }
     }
 
     abstract fun linkToClass(plainText: String, linkClass: PsiClass): String?

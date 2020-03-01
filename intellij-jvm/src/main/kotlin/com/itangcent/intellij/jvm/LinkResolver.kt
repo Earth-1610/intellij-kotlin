@@ -9,6 +9,6 @@ interface LinkResolver {
      */
     fun linkToPsiElement(
         plainText: String,
-        linkTo: PsiElement?
+        linkTo: Any?
     ): String?
 }

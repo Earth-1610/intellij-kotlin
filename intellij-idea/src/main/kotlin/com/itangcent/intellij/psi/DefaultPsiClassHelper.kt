@@ -10,6 +10,7 @@ import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.KV
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.jvm.SingleDuckType
+import com.itangcent.intellij.jvm.asPsiClass
 import org.apache.commons.lang3.StringUtils
 import java.util.*
 
@@ -217,7 +218,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                             resolveSeeDoc(
                                 fieldName, enumClass, Arrays.asList(
                                     PsiClassUtils.fullNameOfMember(
-                                        classWithFieldOrMethod.first!!,
+                                        classWithFieldOrMethod.first.asPsiClass(jvmClassHelper),
                                         convertFieldOrMethod
                                     )
                                 ), commentKV
@@ -326,7 +327,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                             resolveSeeDoc(
                                 fieldName, enumClass, Arrays.asList(
                                     PsiClassUtils.fullNameOfMember(
-                                        classWithFieldOrMethod.first!!,
+                                        classWithFieldOrMethod.first.asPsiClass(jvmClassHelper),
                                         convertFieldOrMethod
                                     )
                                 ), commentKV

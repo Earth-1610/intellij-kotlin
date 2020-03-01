@@ -3,7 +3,6 @@ package com.itangcent.intellij.jvm
 import com.intellij.psi.PsiPrimitiveType
 
 class SinglePrimitiveDuckType : DuckType {
-
     fun psiType(): PsiPrimitiveType {
         return psiType
     }
@@ -12,6 +11,10 @@ class SinglePrimitiveDuckType : DuckType {
 
     constructor(psiType: PsiPrimitiveType) {
         this.psiType = psiType
+    }
+
+    override fun canonicalText(): String {
+        return psiType.canonicalText
     }
 
     override fun toString(): String {

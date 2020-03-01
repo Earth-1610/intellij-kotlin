@@ -1,3 +1,5 @@
 package com.itangcent.intellij.jvm
 
-interface DuckType
+interface DuckType {
+    fun canonicalText(): String
+}

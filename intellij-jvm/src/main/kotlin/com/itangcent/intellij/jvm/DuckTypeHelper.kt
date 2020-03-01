@@ -3,6 +3,7 @@ package com.itangcent.intellij.jvm
 import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
+import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
 import com.itangcent.common.utils.safeComputeIfAbsent
@@ -10,6 +11,7 @@ import com.itangcent.intellij.logger.Logger
 import com.siyeh.ig.psiutils.ClassUtils
 import org.apache.commons.lang3.StringUtils
 import java.util.*
+import kotlin.collections.LinkedHashMap
 
 @Singleton
 class DuckTypeHelper {
@@ -19,6 +21,9 @@ class DuckTypeHelper {
 
     @Inject
     private val jvmClassHelper: JvmClassHelper? = null
+
+    @Inject
+    private val sourceHelper: SourceHelper? = null
 
     private val classCanonicalTextCache: HashMap<String, PsiClass?> = HashMap()
 
@@ -30,7 +35,20 @@ class DuckTypeHelper {
 
     fun ensureType(type: PsiType): DuckType? {
         if (type is PsiClassType) {
-            return type.resolve()?.let { SingleDuckType(it) }
+            val parameters = type.parameters
+            if (parameters.isNullOrEmpty()) {
+                return type.resolve()?.let { SingleDuckType(it) }
+            } else {
+                val psiClass = type.resolve() ?: return null
+                val genericInfo: HashMap<String, DuckType?> = LinkedHashMap()
+                for ((index, typeParameter) in psiClass.typeParameters.withIndex()) {
+                    if (parameters.size > index) {
+                        val typeParam = parameters[index]
+                        genericInfo[typeParameter.name!!] = ensureType(typeParam)
+                    }
+                }
+                return type.resolve()?.let { SingleDuckType(it, genericInfo) }
+            }
         }
         if (type is PsiArrayType) {
             return ensureType(type.componentType)?.let { ArrayDuckType(it) }
@@ -152,7 +170,7 @@ class DuckTypeHelper {
                 return null
             }
             else -> {
-                val paramCls = findClass(typeCanonicalText, context)
+                val paramCls = resolveClass(typeCanonicalText, context)
                 return when (paramCls) {
                     null -> {
                         if (typeCanonicalText.length == 1) {//maybe generic
@@ -174,6 +192,22 @@ class DuckTypeHelper {
         }
     }
 
+    fun resolveClass(fqClassName: String, context: PsiElement): PsiClass? {
+        return when {
+            fqClassName.contains(".") -> findClass(fqClassName, context)
+            else -> getContainingClass(context)?.let { resolveClassFromImport(it, fqClassName) }
+                ?: findClass(fqClassName, context)
+        }?.let { sourceHelper?.getSourceClass(it) }
+    }
+
+    fun getContainingClass(psiElement: PsiElement): PsiClass? {
+        if (psiElement is PsiClass) return psiElement
+        if (psiElement is PsiMember) {
+            psiElement.containingClass?.let { return it }
+        }
+        return null
+    }
+
     fun findClass(fqClassName: String, context: PsiElement): PsiClass? {
         if (fqClassName.isEmpty()) return null
 
@@ -192,7 +226,7 @@ class DuckTypeHelper {
         }
 
         if (cls == null) {
-            if (fqClassName.contains("")) return null
+            if (fqClassName.contains(".")) return null
 
             try {
                 cls = ClassUtils.findClass("java.lang." + fqClassName.capitalize(), context)
@@ -209,11 +243,38 @@ class DuckTypeHelper {
         return cls
     }
 
+    protected open fun resolveClassFromImport(psiClass: PsiClass, clsName: String): PsiClass? {
+
+        val imports = PsiTreeUtil.findChildrenOfType(psiClass.context, PsiImportStatement::class.java)
+
+        var cls = imports
+            .mapNotNull { it.qualifiedName }
+            .firstOrNull { it.endsWith(".$clsName") }
+            ?.let { findClass(it, psiClass) }
+        if (cls != null) {
+            return cls
+        }
+
+        val defaultPackage = psiClass.qualifiedName!!.substringBeforeLast(".")
+        cls = findClass("$defaultPackage.$clsName", psiClass)
+        if (cls != null) {
+            return cls
+        }
+        cls = imports
+            .mapNotNull { it.qualifiedName }
+            .filter { it.endsWith(".*") }
+            .map { it -> it.removeSuffix("*") + clsName }
+            .map { findClass(it, psiClass) }
+            .firstOrNull()
+
+        return cls
+    }
+
     fun extractClassFromCanonicalText(typeCanonicalText: String, context: PsiElement): PsiClass? {
         val classCanonicalText = StringUtils.substringBefore(typeCanonicalText, "<")
         return classCanonicalTextCache.safeComputeIfAbsent(
             classCanonicalText
-        ) { findClass(classCanonicalText, context) }
+        ) { resolveClass(classCanonicalText, context) }
     }
 
     fun extractTypeParams(typeCanonicalText: String): Array<String>? {
@@ -262,7 +323,7 @@ class DuckTypeHelper {
     fun buildPsiType(type: String, context: PsiElement): PsiType? {
 
         if (!type.contains('<')) {
-            val cls = findClass(type, context)
+            val cls = resolveClass(type, context)
             if (cls != null) {
                 return PsiTypesUtil.getClassType(cls)
             }
@@ -313,6 +374,7 @@ class DuckTypeHelper {
     }
 
     //region isQualified--------------------------------------------------------
+
     private val qualifiedInfoCache: HashMap<PsiType, Boolean> = HashMap()
 
     fun isQualified(psiType: PsiType, context: PsiElement): Boolean {
@@ -353,6 +415,7 @@ class DuckTypeHelper {
         }
         return true
     }
+
     //endregion isQualified--------------------------------------------------------
 
     companion object {
