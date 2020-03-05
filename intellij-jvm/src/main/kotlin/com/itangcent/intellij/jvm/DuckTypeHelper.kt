@@ -7,6 +7,7 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
 import com.itangcent.common.utils.safeComputeIfAbsent
+import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 import com.itangcent.intellij.logger.Logger
 import com.siyeh.ig.psiutils.ClassUtils
 import org.apache.commons.lang3.StringUtils
@@ -116,6 +117,9 @@ class DuckTypeHelper {
                 return clsWithParam
             }
         }
+        if (psiType is PsiPrimitiveType) {
+            return SinglePrimitiveDuckType(psiType)
+        }
         val paramCls = PsiUtil.resolveClassInClassTypeOnly(psiType)
         return when (paramCls) {
             null -> null
@@ -168,6 +172,9 @@ class DuckTypeHelper {
                 }
                 logger!!.error("error to find class:$typeCanonicalText")
                 return null
+            }
+            StandardJvmClassHelper.isPrimitive(typeCanonicalText) -> {
+                return SinglePrimitiveDuckType(StandardJvmClassHelper.getPrimitiveType(typeCanonicalText)!!)
             }
             else -> {
                 val paramCls = resolveClass(typeCanonicalText, context)

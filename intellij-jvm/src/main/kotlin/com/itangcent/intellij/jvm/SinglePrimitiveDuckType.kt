@@ -1,15 +1,15 @@
 package com.itangcent.intellij.jvm
 
-import com.intellij.psi.PsiPrimitiveType
+import com.intellij.psi.PsiType
 
 class SinglePrimitiveDuckType : DuckType {
-    fun psiType(): PsiPrimitiveType {
+    fun psiType(): PsiType {
         return psiType
     }
 
-    private val psiType: PsiPrimitiveType
+    private val psiType: PsiType
 
-    constructor(psiType: PsiPrimitiveType) {
+    constructor(psiType: PsiType) {
         this.psiType = psiType
     }
 
