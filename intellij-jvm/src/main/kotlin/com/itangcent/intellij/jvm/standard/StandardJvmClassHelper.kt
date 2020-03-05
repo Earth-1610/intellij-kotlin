@@ -274,6 +274,8 @@ open class StandardJvmClassHelper : JvmClassHelper {
         var collectionClasses: Array<String>? = null
         var mapClasses: Array<String>? = null
 
+        private val PRIMITIVE_TYPES = HashMap<String, PsiType>(9)
+
         fun init() {
             if (normalTypes.isEmpty()) {
                 normalTypes["Boolean"] = false
@@ -323,6 +325,24 @@ open class StandardJvmClassHelper : JvmClassHelper {
                 addClass(LinkedHashMap::class.java, mapClasses)
                 this.mapClasses = mapClasses.toTypedArray()
             }
+
+            PRIMITIVE_TYPES[PsiType.VOID.canonicalText] = PsiType.VOID;
+            PRIMITIVE_TYPES[PsiType.BYTE.canonicalText] = PsiType.BYTE;
+            PRIMITIVE_TYPES[PsiType.CHAR.canonicalText] = PsiType.CHAR;
+            PRIMITIVE_TYPES[PsiType.DOUBLE.canonicalText] = PsiType.DOUBLE;
+            PRIMITIVE_TYPES[PsiType.FLOAT.canonicalText] = PsiType.FLOAT;
+            PRIMITIVE_TYPES[PsiType.LONG.canonicalText] = PsiType.LONG;
+            PRIMITIVE_TYPES[PsiType.INT.canonicalText] = PsiType.INT;
+            PRIMITIVE_TYPES[PsiType.SHORT.canonicalText] = PsiType.SHORT;
+            PRIMITIVE_TYPES[PsiType.BOOLEAN.canonicalText] = PsiType.BOOLEAN;
+        }
+
+        fun isPrimitive(typeName: String): Boolean {
+            return PRIMITIVE_TYPES.contains(typeName)
+        }
+
+        fun getPrimitiveType(typeName: String): PsiType? {
+            return PRIMITIVE_TYPES[typeName]
         }
 
         init {
