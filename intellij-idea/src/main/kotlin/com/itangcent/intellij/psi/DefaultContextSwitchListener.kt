@@ -12,6 +12,7 @@ open class DefaultContextSwitchListener : ContextSwitchListener {
 
     private var context: PsiElement? = null
 
+    @Volatile
     private var module: Module? = null
 
     protected var moduleCache: MutableMap<String, Module> = LinkedHashMap()

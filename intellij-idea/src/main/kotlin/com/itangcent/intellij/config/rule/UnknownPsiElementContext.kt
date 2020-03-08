@@ -28,5 +28,16 @@ open class UnknownPsiElementContext : RuleContext {
     override fun asPsiModifierListOwner(): PsiModifierListOwner? {
         return psiElement as? PsiModifierListOwner?
     }
+}
 
+open class CompanionUnknownPsiElementContext : UnknownPsiElementContext {
+    private var _core: Any
+
+    constructor(core: Any, psiElement: PsiElement) : super(psiElement) {
+        this._core = core
+    }
+
+    override fun getCore(): Any? {
+        return _core
+    }
 }

@@ -2,12 +2,17 @@ package com.itangcent.intellij.jvm
 
 import com.intellij.psi.*
 import com.itangcent.common.utils.KV
+import com.itangcent.intellij.jvm.duck.DuckType
 
 interface PsiClassHelper {
 
     fun getTypeObject(psiType: PsiType?, context: PsiElement): Any?
 
     fun getTypeObject(psiType: PsiType?, context: PsiElement, option: Int): Any?
+
+    fun getTypeObject(duckType: DuckType?, context: PsiElement): Any?
+
+    fun getTypeObject(duckType: DuckType?, context: PsiElement, option: Int): Any?
 
     fun getFields(psiClass: PsiClass?): KV<String, Any?>
 
@@ -54,4 +59,7 @@ interface PsiClassHelper {
         cls: PsiClass?, property: String?,
         defaultPropertyName: String
     ): ArrayList<HashMap<String, Any?>>?
+
+    fun isNormalType(duckType: DuckType): Boolean
+    fun getDefaultValue(duckType: DuckType): Any?
 }

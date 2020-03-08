@@ -5,6 +5,7 @@ import com.intellij.psi.*
 import com.itangcent.common.utils.getPropertyValue
 import com.itangcent.common.utils.invokeMethod
 import com.itangcent.intellij.jvm.JvmClassHelper
+import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.scala.adaptor.ScPatternDefinitionPsiFieldAdaptor
 import com.itangcent.intellij.jvm.scala.adaptor.ScalaPsiFieldAdaptor
 import com.itangcent.intellij.jvm.scala.adaptor.ScalaTypeParameterType2PsiTypeParameterAdaptor
@@ -19,7 +20,16 @@ import java.util.*
 class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
 
     //region not implemented
+
     override fun isStaticFinal(field: PsiField): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isInheritor(duckType: DuckType, vararg baseClass: String): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isMap(duckType: DuckType): Boolean {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
@@ -28,6 +38,10 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
     }
 
     override fun isMap(psiType: PsiType): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isCollection(duckType: DuckType): Boolean {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
@@ -55,6 +69,10 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
+    override fun isEnum(duckType: DuckType): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     override fun isEnum(psiType: PsiType): Boolean {
 
         val cls = resolveClassInType(psiType)
@@ -72,6 +90,18 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
         }
 
         throw NotImplementedError()
+    }
+
+    override fun isInterface(psiType: PsiType): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isInterface(psiClass: PsiClass): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isInterface(duckType: DuckType): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun resolveClassToType(psiClass: PsiClass): PsiType? {
@@ -109,6 +139,10 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
         return emptyArray()
     }
 
+    override fun getFields(psiClass: PsiClass): Array<PsiField> {
+        return getAllFields(psiClass)
+    }
+
     private fun collectFields(scTemplateDefinition: ScTemplateDefinition): Array<PsiField> {
         val members = scTemplateDefinition.members()
         val fields: LinkedList<PsiField> = LinkedList()
@@ -129,6 +163,11 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
         return null
     }
 
+    /**
+     * Returns the list of methods in the class and all its superclasses.
+     *
+     * @return the list of methods.
+     */
     override fun getAllMethods(psiClass: PsiClass): Array<PsiMethod> {
         if (psiClass is ScTemplateDefinition) {
             val allMethods = psiClass.invokeMethod("allMethods")?.castToList()
@@ -139,6 +178,15 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
             return methods.toTypedArray()
         }
         return emptyArray()
+    }
+
+    /**
+     * Returns the list of methods in the class.
+     *
+     * @return the list of methods.
+     */
+    override fun getMethods(psiClass: PsiClass): Array<PsiMethod> {
+        return getAllMethods(psiClass)
     }
 
     override fun extractModifiers(psiElement: PsiElement): List<String> {
