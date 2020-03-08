@@ -5,12 +5,18 @@ import com.intellij.lang.jvm.JvmParameter
 import com.intellij.psi.*
 import com.itangcent.common.utils.getPropertyValue
 import com.itangcent.intellij.jvm.JvmClassHelper
+import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.normalTypes
 import java.util.*
 import kotlin.reflect.KClass
 
 class KotlinJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
+
+    override fun isInheritor(duckType: DuckType, vararg baseClass: String): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     override fun isAccessibleField(field: PsiField): Boolean {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
@@ -23,7 +29,15 @@ class KotlinJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper 
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
+    override fun isMap(duckType: DuckType): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     override fun isMap(psiType: PsiType): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isCollection(duckType: DuckType): Boolean {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
@@ -51,11 +65,27 @@ class KotlinJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper 
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
+    override fun isEnum(duckType: DuckType): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     override fun isEnum(psiType: PsiType): Boolean {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun isEnum(psiClass: PsiClass): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isInterface(psiType: PsiType): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isInterface(psiClass: PsiClass): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isInterface(duckType: DuckType): Boolean {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
@@ -80,6 +110,14 @@ class KotlinJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper 
     }
 
     override fun getAllMethods(psiClass: PsiClass): Array<PsiMethod> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getMethods(psiClass: PsiClass): Array<PsiMethod> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getFields(psiClass: PsiClass): Array<PsiField> {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 

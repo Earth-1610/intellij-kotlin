@@ -9,8 +9,9 @@ import com.intellij.util.containers.isNullOrEmpty
 import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.KV
 import com.itangcent.common.utils.safeComputeIfAbsent
-import com.itangcent.intellij.jvm.SingleDuckType
 import com.itangcent.intellij.jvm.asPsiClass
+import com.itangcent.intellij.jvm.duck.DuckType
+import com.itangcent.intellij.jvm.duck.SingleDuckType
 import org.apache.commons.lang3.StringUtils
 import java.util.*
 
@@ -123,7 +124,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     }
 
     override fun beforeParseFieldOrMethod(
-        fieldType: PsiType,
+        fieldType: DuckType,
         fieldOrMethod: PsiElement,
         resourcePsiClass: PsiClass,
         option: Int,
@@ -147,7 +148,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     }
 
     override fun beforeParseFieldOrMethod(
-        fieldType: PsiType,
+        fieldType: DuckType,
         fieldOrMethod: PsiElement,
         resourcePsiClass: PsiClass,
         duckType: SingleDuckType,
@@ -175,15 +176,15 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     @Suppress("UNCHECKED_CAST")
     override fun parseFieldOrMethod(
         fieldName: String,
-        fieldType: PsiType,
+        fieldType: DuckType,
         fieldOrMethod: PsiElement,
         resourcePsiClass: PsiClass,
         option: Int,
         kv: KV<String, Any?>
     ) {
-        if (jvmClassHelper!!.isEnum(fieldType)) {
+        if (fieldType is SingleDuckType && jvmClassHelper!!.isEnum(fieldType.psiClass())) {
             val convertTo = ruleComputer!!.computer(ClassRuleKeys.ENUM_CONVERT, fieldType, null)
-            val enumClass = jvmClassHelper.resolveClassInType(fieldType)!!
+            val enumClass = fieldType.psiClass()
             if (!convertTo.isNullOrBlank()) {
                 if (convertTo.contains("#")) {
                     val classWithFieldOrMethod =
@@ -193,23 +194,27 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                     } else {
                         val convertFieldOrMethod = classWithFieldOrMethod.second!!
                         if (convertFieldOrMethod is PsiField) {
-                            super.parseFieldOrMethod(
-                                fieldName,
-                                convertFieldOrMethod.type,
-                                convertFieldOrMethod,
-                                resourcePsiClass,
-                                option,
-                                kv
-                            )
+                            duckTypeHelper!!.ensureType(convertFieldOrMethod.type)?.let {
+                                super.parseFieldOrMethod(
+                                    fieldName,
+                                    it,
+                                    convertFieldOrMethod,
+                                    resourcePsiClass,
+                                    option,
+                                    kv
+                                )
+                            }
                         } else if (convertFieldOrMethod is PsiMethod) {
-                            super.parseFieldOrMethod(
-                                fieldName,
-                                convertFieldOrMethod.returnType!!,
-                                convertFieldOrMethod,
-                                resourcePsiClass,
-                                option,
-                                kv
-                            )
+                            duckTypeHelper!!.ensureType(convertFieldOrMethod.returnType!!)?.let {
+                                super.parseFieldOrMethod(
+                                    fieldName,
+                                    it,
+                                    convertFieldOrMethod,
+                                    resourcePsiClass,
+                                    option,
+                                    kv
+                                )
+                            }
                         }
                         //doc comment
                         if (JsonOption.needComment(option)) {
@@ -227,13 +232,13 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                         return
                     }
                 } else {
-                    val resolveClass = duckTypeHelper!!.findClass(convertTo, fieldOrMethod)
+                    val resolveClass = duckTypeHelper!!.resolve(convertTo, fieldOrMethod)
                     if (resolveClass == null) {
                         logger!!.error("failed to resolve class:$convertTo")
                     } else {
                         super.parseFieldOrMethod(
                             fieldName,
-                            jvmClassHelper.resolveClassToType(resolveClass)!!,
+                            resolveClass,
                             fieldOrMethod,
                             resourcePsiClass,
                             option,
@@ -246,7 +251,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
 
             super.parseFieldOrMethod(
                 fieldName,
-                duckTypeHelper!!.findType("java.lang.String", fieldOrMethod)!!,
+                duckTypeHelper!!.resolve("java.lang.String", fieldOrMethod)!!,
                 fieldOrMethod,
                 resourcePsiClass,
                 option,
@@ -280,7 +285,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     @Suppress("UNCHECKED_CAST")
     override fun parseFieldOrMethod(
         fieldName: String,
-        fieldType: PsiType,
+        fieldType: DuckType,
         fieldOrMethod: PsiElement,
         resourcePsiClass: PsiClass,
         duckType: SingleDuckType,
@@ -288,9 +293,9 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         kv: KV<String, Any?>
     ) {
 
-        if (jvmClassHelper!!.isEnum(fieldType)) {
+        if (fieldType is SingleDuckType && jvmClassHelper!!.isEnum(fieldType.psiClass())) {
             val convertTo = ruleComputer!!.computer(ClassRuleKeys.ENUM_CONVERT, fieldType, null)
-            val enumClass = jvmClassHelper.resolveClassInType(fieldType)!!
+            val enumClass = fieldType.psiClass()
             if (!convertTo.isNullOrBlank()) {
                 if (convertTo.contains("#")) {
                     val classWithFieldOrMethod =
@@ -300,25 +305,29 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                     } else {
                         val convertFieldOrMethod = classWithFieldOrMethod.second!!
                         if (convertFieldOrMethod is PsiField) {
-                            super.parseFieldOrMethod(
-                                fieldName,
-                                convertFieldOrMethod.type,
-                                convertFieldOrMethod,
-                                resourcePsiClass,
-                                duckType,
-                                option,
-                                kv
-                            )
+                            duckTypeHelper!!.ensureType(convertFieldOrMethod.type)?.let {
+                                super.parseFieldOrMethod(
+                                    fieldName,
+                                    it,
+                                    convertFieldOrMethod,
+                                    resourcePsiClass,
+                                    duckType,
+                                    option,
+                                    kv
+                                )
+                            }
                         } else if (convertFieldOrMethod is PsiMethod) {
-                            super.parseFieldOrMethod(
-                                fieldName,
-                                convertFieldOrMethod.returnType!!,
-                                convertFieldOrMethod,
-                                resourcePsiClass,
-                                duckType,
-                                option,
-                                kv
-                            )
+                            duckTypeHelper!!.ensureType(convertFieldOrMethod.returnType!!)?.let {
+                                super.parseFieldOrMethod(
+                                    fieldName,
+                                    it,
+                                    convertFieldOrMethod,
+                                    resourcePsiClass,
+                                    duckType,
+                                    option,
+                                    kv
+                                )
+                            }
                         }
                         //doc comment
                         if (JsonOption.needComment(option)) {
@@ -336,13 +345,13 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                         return
                     }
                 } else {
-                    val resolveClass = duckTypeHelper!!.findClass(convertTo, fieldOrMethod)
-                    if (resolveClass == null) {
+                    val convertToType = duckTypeHelper!!.resolve(convertTo, fieldOrMethod)
+                    if (convertToType == null) {
                         logger!!.error("failed to resolve class:$convertTo")
                     } else {
                         super.parseFieldOrMethod(
                             fieldName,
-                            jvmClassHelper.resolveClassToType(resolveClass)!!,
+                            convertToType,
                             fieldOrMethod,
                             resourcePsiClass,
                             duckType,
@@ -354,15 +363,17 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                 }
             }
 
-            super.parseFieldOrMethod(
-                fieldName,
-                duckTypeHelper!!.findType("java.lang.String", fieldOrMethod)!!,
-                fieldOrMethod,
-                resourcePsiClass,
-                duckType,
-                option,
-                kv
-            )
+            duckTypeHelper!!.resolve("java.lang.String", fieldOrMethod)?.let {
+                super.parseFieldOrMethod(
+                    fieldName,
+                    it,
+                    fieldOrMethod,
+                    resourcePsiClass,
+                    duckType,
+                    option,
+                    kv
+                )
+            }
 
             //doc comment
             if (JsonOption.needComment(option)) {
@@ -391,39 +402,9 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     @Suppress("UNCHECKED_CAST")
     override fun afterParseFieldOrMethod(
         fieldName: String,
-        fieldType: PsiType,
+        fieldType: DuckType,
         fieldOrMethod: PsiElement,
         resourcePsiClass: PsiClass,
-        option: Int,
-        kv: KV<String, Any?>
-    ) {
-        //doc comment
-        if (JsonOption.needComment(option)) {
-            var commentKV: KV<String, Any?>? = kv["@comment"] as KV<String, Any?>?
-            if (commentKV == null) {
-                commentKV = KV.create()
-                kv["@comment"] = commentKV
-            }
-            if (fieldOrMethod is PsiField) {
-                val field: PsiField = fieldOrMethod
-                commentKV[fieldName] = docHelper!!.getAttrOfField(field)?.trim()
-                resolveSeeDoc(field, commentKV)
-            } else if (fieldOrMethod is PsiMethod) {
-                val attrInDoc = docHelper!!.getAttrOfDocComment(fieldOrMethod)
-                if (StringUtils.isNotBlank(attrInDoc)) {
-                    commentKV[fieldName] = attrInDoc
-                }
-            }
-        }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    override fun afterParseFieldOrMethod(
-        fieldName: String,
-        fieldType: PsiType,
-        fieldOrMethod: PsiElement,
-        resourcePsiClass: PsiClass,
-        duckType: SingleDuckType,
         option: Int,
         kv: KV<String, Any?>
     ) {

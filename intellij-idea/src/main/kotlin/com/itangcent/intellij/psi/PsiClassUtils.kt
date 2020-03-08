@@ -2,6 +2,7 @@ package com.itangcent.intellij.psi
 
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTypesUtil
+import com.itangcent.intellij.jvm.duck.DuckType
 import com.siyeh.ig.psiutils.ClassUtils
 
 object PsiClassUtils {

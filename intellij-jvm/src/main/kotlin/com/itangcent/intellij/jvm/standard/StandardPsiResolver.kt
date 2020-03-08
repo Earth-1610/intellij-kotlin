@@ -32,7 +32,7 @@ import com.itangcent.intellij.jvm.*
 open class StandardPsiResolver : PsiResolver {
 
     @Inject
-    private val duckTypeHelper: DuckTypeHelper? = null
+    protected val duckTypeHelper: DuckTypeHelper? = null
 
     @Inject
     private val sourceHelper: SourceHelper? = null

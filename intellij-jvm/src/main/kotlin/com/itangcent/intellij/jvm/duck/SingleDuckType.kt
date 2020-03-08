@@ -1,4 +1,4 @@
-package com.itangcent.intellij.jvm
+package com.itangcent.intellij.jvm.duck
 
 import com.intellij.psi.PsiClass
 
@@ -23,6 +23,10 @@ class SingleDuckType : DuckType {
     }
 
     private var canonicalText: String? = null
+
+    override fun isSingle(): Boolean {
+        return true
+    }
 
     override fun canonicalText(): String {
         if (canonicalText != null) {
@@ -81,5 +85,11 @@ class SingleDuckType : DuckType {
         return result
     }
 
+    override fun name(): String {
+        return psiCls.name ?: ""
+    }
 
+    override fun unbox(): DuckType {
+        return this
+    }
 }

@@ -1,4 +1,6 @@
-package com.itangcent.intellij.jvm
+package com.itangcent.intellij.jvm.duck
+
+import com.itangcent.intellij.jvm.DuckTypeHelper
 
 class ArrayDuckType : DuckType {
 
@@ -9,7 +11,11 @@ class ArrayDuckType : DuckType {
     }
 
     override fun canonicalText(): String {
-        return componentType.canonicalText() + "[]"
+        return componentType.canonicalText() + DuckTypeHelper.ARRAY_SUFFIX
+    }
+
+    override fun isSingle(): Boolean {
+        return false
     }
 
     fun componentType(): DuckType {
@@ -31,4 +37,11 @@ class ArrayDuckType : DuckType {
         return componentType.hashCode()
     }
 
+    override fun name(): String {
+        return componentType.name() + DuckTypeHelper.ARRAY_SUFFIX
+    }
+
+    override fun unbox(): DuckType {
+        return componentType.unbox()
+    }
 }

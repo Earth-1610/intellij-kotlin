@@ -2,6 +2,7 @@ package com.itangcent.intellij.jvm
 
 import com.google.inject.ImplementedBy
 import com.intellij.psi.*
+import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 
 @ImplementedBy(StandardJvmClassHelper::class)
@@ -15,9 +16,13 @@ interface JvmClassHelper {
 
     fun isMap(psiType: PsiType): Boolean
 
+    fun isMap(duckType: DuckType): Boolean
+
     fun isCollection(psiClass: PsiClass): Boolean
 
     fun isCollection(psiType: PsiType): Boolean
+
+    fun isCollection(duckType: DuckType): Boolean
 
     fun isPublicStaticFinal(field: PsiField): Boolean
 
@@ -27,9 +32,47 @@ interface JvmClassHelper {
 
     fun isBasicMethod(methodName: String): Boolean
 
+    /**
+     * Checks if the class is an enumeration.
+     *
+     * @return true if the class is an enumeration, false otherwise.
+     */
     fun isEnum(psiType: PsiType): Boolean
 
+    /**
+     * Checks if the class is an enumeration.
+     *
+     * @return true if the class is an enumeration, false otherwise.
+     */
     fun isEnum(psiClass: PsiClass): Boolean
+
+    /**
+     * Checks if the class is an enumeration.
+     *
+     * @return true if the class is an enumeration, false otherwise.
+     */
+    fun isEnum(duckType: DuckType): Boolean
+
+    /**
+     * Checks if the class is an interface.
+     *
+     * @return true if the class is an interface, false otherwise.
+     */
+    fun isInterface(psiType: PsiType): Boolean
+
+    /**
+     * Checks if the class is an interface.
+     *
+     * @return true if the class is an interface, false otherwise.
+     */
+    fun isInterface(psiClass: PsiClass): Boolean
+
+    /**
+     * Checks if the class is an interface.
+     *
+     * @return true if the class is an interface, false otherwise.
+     */
+    fun isInterface(duckType: DuckType): Boolean
 
     fun resolveClassInType(psiType: PsiType): PsiClass?
 
@@ -39,9 +82,35 @@ interface JvmClassHelper {
 
     fun isInheritor(psiType: PsiType, vararg baseClass: String): Boolean
 
+    fun isInheritor(duckType: DuckType, vararg baseClass: String): Boolean
+
+    /**
+     * Returns the list of fields in the class and all its superclasses.
+     *
+     * @return the list of fields.
+     */
     fun getAllFields(psiClass: PsiClass): Array<PsiField>
 
+    /**
+     * Returns the list of methods in the class and all its superclasses.
+     *
+     * @return the list of methods.
+     */
     fun getAllMethods(psiClass: PsiClass): Array<PsiMethod>
+
+    /**
+     * Returns the list of methods in the class.
+     *
+     * @return the list of methods.
+     */
+    fun getMethods(psiClass: PsiClass): Array<PsiMethod>
+
+    /**
+     * Returns the list of fields in the class.
+     *
+     * @return the list of fields.
+     */
+    fun getFields(psiClass: PsiClass): Array<PsiField>
 
     fun extractModifiers(psiElement: PsiElement): List<String>
 
@@ -82,7 +151,6 @@ interface JvmClassHelper {
      * other psi element
      */
     fun defineOtherCode(psiElement: PsiElement): String
-
 }
 
 
