@@ -105,7 +105,22 @@ class DuckTypeHelper {
         }
 
         if (psiType is PsiClassType) {
-            return psiType.resolve()?.let { ensureTypeToClass(it, typeParams) }
+            val parameters = psiType.parameters
+            if (parameters.isNullOrEmpty()) {
+                return psiType.resolve()?.let { ensureTypeToClass(it, typeParams) }
+            } else {
+                val psiClass = psiType.resolve() ?: return null
+                val genericInfo: HashMap<String, DuckType?> = LinkedHashMap()
+                for ((index, typeParameter) in psiClass.typeParameters.withIndex()) {
+                    if (parameters.size > index) {
+                        val typeParam = parameters[index]
+                        genericInfo[typeParameter.name!!] = ensureType(typeParam, typeParams)
+                    } else {
+                        genericInfo[typeParameter.name!!] = ensureTypeToClass(typeParameter, typeParams)
+                    }
+                }
+                return SingleDuckType(psiClass, genericInfo)
+            }
         }
 
         if (psiType is PsiArrayType) {

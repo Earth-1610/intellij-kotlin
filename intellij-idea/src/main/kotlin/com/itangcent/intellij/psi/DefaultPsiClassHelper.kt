@@ -24,7 +24,6 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     @Inject
     protected val project: Project? = null
 
-
     @Suppress("UNCHECKED_CAST")
     protected open fun resolveSeeDoc(field: PsiField, comment: HashMap<String, Any?>) {
         val sees = getSees(field)
@@ -147,32 +146,6 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         return super.beforeParseFieldOrMethod(fieldType, fieldOrMethod, resourcePsiClass, option, kv)
     }
 
-    override fun beforeParseFieldOrMethod(
-        fieldType: DuckType,
-        fieldOrMethod: PsiElement,
-        resourcePsiClass: PsiClass,
-        duckType: SingleDuckType,
-        option: Int,
-        kv: KV<String, Any?>
-    ): Boolean {
-        try {
-            if (fieldOrMethod is PsiField &&
-                ruleComputer?.computer(ClassRuleKeys.FIELD_IGNORE, fieldOrMethod) == true
-            ) {
-                return false
-            }
-        } catch (e: Exception) {
-            logger!!.traceWarn(
-                "failed to infer whether a field should be ignored:${PsiClassUtils.fullNameOfMember(
-                    fieldOrMethod
-                )}", e
-            )
-        }
-
-        return super.beforeParseFieldOrMethod(fieldType, fieldOrMethod, resourcePsiClass, duckType, option, kv)
-    }
-
-
     @Suppress("UNCHECKED_CAST")
     override fun parseFieldOrMethod(
         fieldName: String,
@@ -280,123 +253,6 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
             return
         }
         super.parseFieldOrMethod(fieldName, fieldType, fieldOrMethod, resourcePsiClass, option, kv)
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    override fun parseFieldOrMethod(
-        fieldName: String,
-        fieldType: DuckType,
-        fieldOrMethod: PsiElement,
-        resourcePsiClass: PsiClass,
-        duckType: SingleDuckType,
-        option: Int,
-        kv: KV<String, Any?>
-    ) {
-
-        if (fieldType is SingleDuckType && jvmClassHelper!!.isEnum(fieldType.psiClass())) {
-            val convertTo = ruleComputer!!.computer(ClassRuleKeys.ENUM_CONVERT, fieldType, null)
-            val enumClass = fieldType.psiClass()
-            if (!convertTo.isNullOrBlank()) {
-                if (convertTo.contains("#")) {
-                    val classWithFieldOrMethod =
-                        psiResolver!!.resolveClassWithPropertyOrMethod(convertTo, enumClass)
-                    if (classWithFieldOrMethod == null) {
-                        logger!!.error("failed to resolve:$convertTo")
-                    } else {
-                        val convertFieldOrMethod = classWithFieldOrMethod.second!!
-                        if (convertFieldOrMethod is PsiField) {
-                            duckTypeHelper!!.ensureType(convertFieldOrMethod.type)?.let {
-                                super.parseFieldOrMethod(
-                                    fieldName,
-                                    it,
-                                    convertFieldOrMethod,
-                                    resourcePsiClass,
-                                    duckType,
-                                    option,
-                                    kv
-                                )
-                            }
-                        } else if (convertFieldOrMethod is PsiMethod) {
-                            duckTypeHelper!!.ensureType(convertFieldOrMethod.returnType!!)?.let {
-                                super.parseFieldOrMethod(
-                                    fieldName,
-                                    it,
-                                    convertFieldOrMethod,
-                                    resourcePsiClass,
-                                    duckType,
-                                    option,
-                                    kv
-                                )
-                            }
-                        }
-                        //doc comment
-                        if (JsonOption.needComment(option)) {
-                            val commentKV: KV<String, Any?> =
-                                kv.safeComputeIfAbsent("@comment") { KV.create<String, Any?>() } as KV<String, Any?>
-                            resolveSeeDoc(
-                                fieldName, enumClass, Arrays.asList(
-                                    PsiClassUtils.fullNameOfMember(
-                                        classWithFieldOrMethod.first.asPsiClass(jvmClassHelper),
-                                        convertFieldOrMethod
-                                    )
-                                ), commentKV
-                            )
-                        }
-                        return
-                    }
-                } else {
-                    val convertToType = duckTypeHelper!!.resolve(convertTo, fieldOrMethod)
-                    if (convertToType == null) {
-                        logger!!.error("failed to resolve class:$convertTo")
-                    } else {
-                        super.parseFieldOrMethod(
-                            fieldName,
-                            convertToType,
-                            fieldOrMethod,
-                            resourcePsiClass,
-                            duckType,
-                            option,
-                            kv
-                        )
-                        return
-                    }
-                }
-            }
-
-            duckTypeHelper!!.resolve("java.lang.String", fieldOrMethod)?.let {
-                super.parseFieldOrMethod(
-                    fieldName,
-                    it,
-                    fieldOrMethod,
-                    resourcePsiClass,
-                    duckType,
-                    option,
-                    kv
-                )
-            }
-
-            //doc comment
-            if (JsonOption.needComment(option)) {
-                val commentKV: KV<String, Any?> =
-                    kv.safeComputeIfAbsent("@comment") { KV.create<String, Any?>() } as KV<String, Any?>
-
-                val options: ArrayList<HashMap<String, Any?>> = ArrayList()
-
-                parseEnumConstant(enumClass).forEach { field ->
-                    options.add(
-                        KV.create<String, Any?>()
-                            .set("value", field["name"])
-                            .set("desc", field["desc"])
-                    )
-                }
-
-                if (options.isNotEmpty()) {
-                    commentKV["$fieldName@options"] = options
-                }
-            }
-            return
-        }
-        super.parseFieldOrMethod(fieldName, fieldType, fieldOrMethod, resourcePsiClass, duckType, option, kv)
     }
 
     @Suppress("UNCHECKED_CAST")

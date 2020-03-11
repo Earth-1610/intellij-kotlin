@@ -410,19 +410,31 @@ open class StandardJvmClassHelper : JvmClassHelper {
 
         fun init() {
             if (normalTypes.isEmpty()) {
+                normalTypes["boolean"] = false
                 normalTypes["Boolean"] = false
                 normalTypes["Void"] = null
+                normalTypes["void"] = null
+                normalTypes["char"] = 'a'
+                normalTypes["Character"] = 'a'
                 normalTypes["null"] = null
                 normalTypes["Byte"] = 0
+                normalTypes["byte"] = 0
                 normalTypes["Short"] = 0
+                normalTypes["short"] = 0
                 normalTypes["Integer"] = 0
+                normalTypes["int"] = 0
                 normalTypes["Long"] = 0L
+                normalTypes["long"] = 0L
                 normalTypes["Float"] = 0.0F
+                normalTypes["float"] = 0.0F
                 normalTypes["Double"] = 0.0
+                normalTypes["double"] = 0.0
                 normalTypes["String"] = ""
                 normalTypes["BigDecimal"] = 0.0
+                normalTypes["class"] = null
                 normalTypes["Class"] = null
                 normalTypes["java.lang.Boolean"] = false
+                normalTypes["java.lang.Character"] = 'a'
                 normalTypes["java.lang.Void"] = null
                 normalTypes["java.lang.Byte"] = 0
                 normalTypes["java.lang.Short"] = 0
