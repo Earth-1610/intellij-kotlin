@@ -323,134 +323,129 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         val typeOfCls = PsiTypesUtil.getClassType(psiClass)
 
         val type = tryCastTo(typeOfCls, psiClass)
-        if (type is PsiPrimitiveType) {       //primitive Type
-            return PsiTypesUtil.getDefaultValueOfType(type)
-        } else {    //reference Type
-            when {
-                isNormalType(type) -> //normal Type
-                    return getDefaultValue(type)
-                type is PsiArrayType -> {   //array type
-                    val deepType = type.getDeepComponentType()
-                    val list = ArrayList<Any>()
-                    cacheResolvedInfo(clsWithParam, option, list)
+
+        when {
+            isNormalType(type) -> //normal Type
+                return getDefaultValue(type)
+            type is PsiArrayType -> {   //array type
+                val deepType = type.getDeepComponentType()
+                val list = ArrayList<Any>()
+                cacheResolvedInfo(clsWithParam, option, list)
+                when {
+                    deepType is PsiPrimitiveType -> list.add(PsiTypesUtil.getDefaultValue(deepType))
+                    isNormalType(deepType) -> getDefaultValue(deepType)?.let {
+                        list.add(
+                            it
+                        )
+                    }
+                    else -> getTypeObject(
+                        duckTypeHelper!!.ensureType(deepType, clsWithParam.genericInfo),
+                        context,
+                        option
+                    )?.let { list.add(it) }
+                }
+                return copy(list)
+            }
+            jvmClassHelper!!.isCollection(type) -> {   //list type
+                val list = ArrayList<Any>()
+
+                cacheResolvedInfo(clsWithParam, option, list)
+                val iterableType = PsiUtil.extractIterableTypeParameter(type, false)
+                if (iterableType == null) {//maybe generic type
+                    val realIterableType = clsWithParam.genericInfo?.get(ELEMENT_OF_COLLECTION)
+                    if (realIterableType != null) {
+                        getTypeObject(realIterableType, context, option)?.let { list.add(it) }
+                        return copy(list)
+                    }
+                }
+
+                if (iterableType != null) {
                     when {
-                        deepType is PsiPrimitiveType -> list.add(PsiTypesUtil.getDefaultValue(deepType))
-                        isNormalType(deepType) -> getDefaultValue(deepType)?.let {
+                        isNormalType(iterableType) -> getDefaultValue(iterableType)?.let {
                             list.add(
                                 it
                             )
                         }
                         else -> getTypeObject(
-                            duckTypeHelper!!.ensureType(deepType, clsWithParam.genericInfo),
-                            context,
-                            option
+                            duckTypeHelper!!.ensureType(
+                                iterableType,
+                                clsWithParam.genericInfo
+                            ), context, option
                         )?.let { list.add(it) }
                     }
-                    return copy(list)
                 }
-                jvmClassHelper!!.isCollection(type) -> {   //list type
-                    val list = ArrayList<Any>()
 
-                    cacheResolvedInfo(clsWithParam, option, list)
-                    val iterableType = PsiUtil.extractIterableTypeParameter(type, false)
-                    if (iterableType == null) {//maybe generic type
-                        val realIterableType = clsWithParam.genericInfo?.get(ELEMENT_OF_COLLECTION)
-                        if (realIterableType != null) {
-                            getTypeObject(realIterableType, context, option)?.let { list.add(it) }
-                            return copy(list)
+                return copy(list)
+            }
+            jvmClassHelper.isMap(type) -> {
+                //list type
+                val map: HashMap<Any, Any?> = HashMap()
+                cacheResolvedInfo(clsWithParam, option, map)
+                val keyType = PsiUtil.substituteTypeParameter(type, CommonClassNames.JAVA_UTIL_MAP, 0, false)
+                val valueType = PsiUtil.substituteTypeParameter(type, CommonClassNames.JAVA_UTIL_MAP, 1, false)
+
+                var defaultKey: Any? = null
+
+                if (keyType == null) {
+                    val realKeyType = clsWithParam.genericInfo?.get(StandardJvmClassHelper.KEY_OF_MAP)
+                    defaultKey = getTypeObject(realKeyType, context, option)
+                }
+
+                if (defaultKey == null) {
+                    defaultKey = if (keyType != null) {
+                        getTypeObject(
+                            duckTypeHelper!!.ensureType(keyType, clsWithParam.genericInfo),
+                            context,
+                            option
+                        )
+                    } else {
+                        ""
+                    }
+                }
+
+                var defaultValue: Any? = null
+
+                if (valueType == null) {
+                    val realValueType = clsWithParam.genericInfo?.get(StandardJvmClassHelper.VALUE_OF_MAP)
+                    defaultValue = getTypeObject(realValueType, context, option)
+                }
+                if (defaultValue == null) {
+                    defaultValue = if (valueType == null) {
+                        null
+                    } else {
+                        getTypeObject(
+                            duckTypeHelper!!.ensureType(valueType, clsWithParam.genericInfo),
+                            context,
+                            option
+                        )
+                    }
+                }
+
+                if (defaultKey != null) {
+                    map[defaultKey] = defaultValue
+                }
+
+                return copy(map)
+            }
+            jvmClassHelper.isEnum(type) -> {
+                return ""//by default use enum name `String`
+            }
+            else -> //class type
+            {
+                if (psiClass is PsiTypeParameter) {
+                    val typeParams = clsWithParam.genericInfo
+                    if (typeParams != null) {
+                        val realType = typeParams[psiClass.name]
+                        if (realType != null) {
+                            return getTypeObject(realType, context, option)
                         }
                     }
-
-                    if (iterableType != null) {
-                        when {
-                            isNormalType(iterableType) -> getDefaultValue(iterableType)?.let {
-                                list.add(
-                                    it
-                                )
-                            }
-                            else -> getTypeObject(
-                                duckTypeHelper!!.ensureType(
-                                    iterableType,
-                                    clsWithParam.genericInfo
-                                ), context, option
-                            )?.let { list.add(it) }
-                        }
-                    }
-
-                    return copy(list)
                 }
-                jvmClassHelper.isMap(type) -> {
-                    //list type
-                    val map: HashMap<Any, Any?> = HashMap()
-                    cacheResolvedInfo(clsWithParam, option, map)
-                    val keyType = PsiUtil.substituteTypeParameter(type, CommonClassNames.JAVA_UTIL_MAP, 0, false)
-                    val valueType = PsiUtil.substituteTypeParameter(type, CommonClassNames.JAVA_UTIL_MAP, 1, false)
 
-                    var defaultKey: Any? = null
-
-                    if (keyType == null) {
-                        val realKeyType = clsWithParam.genericInfo?.get(StandardJvmClassHelper.KEY_OF_MAP)
-                        defaultKey = getTypeObject(realKeyType, context, option)
-                    }
-
-                    if (defaultKey == null) {
-                        defaultKey = if (keyType != null) {
-                            getTypeObject(
-                                duckTypeHelper!!.ensureType(keyType, clsWithParam.genericInfo),
-                                context,
-                                option
-                            )
-                        } else {
-                            ""
-                        }
-                    }
-
-                    var defaultValue: Any? = null
-
-                    if (valueType == null) {
-                        val realValueType = clsWithParam.genericInfo?.get(StandardJvmClassHelper.VALUE_OF_MAP)
-                        defaultValue = getTypeObject(realValueType, context, option)
-                    }
-                    if (defaultValue == null) {
-                        defaultValue = if (valueType == null) {
-                            null
-                        } else {
-                            getTypeObject(
-                                duckTypeHelper!!.ensureType(valueType, clsWithParam.genericInfo),
-                                context,
-                                option
-                            )
-                        }
-                    }
-
-                    if (defaultKey != null) {
-                        map[defaultKey] = defaultValue
-                    }
-
-                    return copy(map)
+                if (ruleComputer!!.computer(ClassRuleKeys.TYPE_IS_FILE, psiClass) == true) {
+                    return Magics.FILE_STR
                 }
-                jvmClassHelper.isEnum(type) -> {
-                    return ""//by default use enum name `String`
-                }
-                else -> //class type
-                {
-                    val clsOfType = jvmClassHelper.resolveClassInType(type) ?: return null
-
-                    if (clsOfType is PsiTypeParameter) {
-                        val typeParams = clsWithParam.genericInfo
-                        if (typeParams != null) {
-                            val realType = typeParams[clsOfType.name]
-                            if (realType != null) {
-                                return getTypeObject(realType, context, option)
-                            }
-                        }
-                    }
-
-                    if (ruleComputer!!.computer(ClassRuleKeys.TYPE_IS_FILE, clsOfType) == true) {
-                        return Magics.FILE_STR
-                    }
-                    return getFields(clsWithParam, option)
-                }
+                return getFields(clsWithParam, option)
             }
         }
     }
@@ -479,7 +474,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     fieldType,
                     fieldOrMethod,
                     psiClass,
-                    clsWithParam,
                     option,
                     kv
                 )
@@ -490,7 +484,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             val name = fieldName()
             if (!kv.contains(name)) {
 
-                parseFieldOrMethod(name, fieldType, fieldOrMethod, psiClass, clsWithParam, option, kv)
+                parseFieldOrMethod(name, fieldType, fieldOrMethod, psiClass, option, kv)
 
                 afterParseFieldOrMethod(name, fieldType, fieldOrMethod, psiClass, option, kv)
             }
@@ -869,29 +863,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     //return false to ignore current fieldOrMethod
-    open fun beforeParseFieldOrMethod(
-        fieldType: DuckType,
-        fieldOrMethod: PsiElement,
-        resourcePsiClass: PsiClass,
-        duckType: SingleDuckType,
-        option: Int,
-        kv: KV<String, Any?>
-    ): Boolean {
-        return true
-    }
-
-
-    open fun parseFieldOrMethod(
-        fieldName: String,
-        fieldType: DuckType,
-        fieldOrMethod: PsiElement,
-        resourcePsiClass: PsiClass,
-        duckType: SingleDuckType,
-        option: Int,
-        kv: KV<String, Any?>
-    ) {
-        kv[fieldName] = getTypeObject(fieldType, fieldOrMethod, option)
-    }
 }
 
 object JsonOption {
