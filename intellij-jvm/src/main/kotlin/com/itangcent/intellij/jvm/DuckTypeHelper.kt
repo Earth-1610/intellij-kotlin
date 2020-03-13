@@ -11,9 +11,7 @@ import com.itangcent.intellij.jvm.duck.ArrayDuckType
 import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.duck.SingleDuckType
 import com.itangcent.intellij.jvm.duck.SingleUnresolvedDuckType
-import com.itangcent.intellij.jvm.element.ExplicitClass
-import com.itangcent.intellij.jvm.element.ExplicitClassWithGenericInfo
-import com.itangcent.intellij.jvm.element.ExplicitClassWithOutGenericInfo
+import com.itangcent.intellij.jvm.element.*
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 import com.itangcent.intellij.logger.Logger
 import com.siyeh.ig.psiutils.ClassUtils
@@ -22,7 +20,7 @@ import java.util.*
 import kotlin.collections.LinkedHashMap
 
 @Singleton
-class DuckTypeHelper {
+open class DuckTypeHelper {
 
     @Inject
     private val logger: Logger? = null
@@ -43,6 +41,18 @@ class DuckTypeHelper {
 
     fun explicit(psiClass: PsiClass): ExplicitClass {
         return ExplicitClassWithOutGenericInfo(this, psiClass)
+    }
+
+    fun explicit(psiElement: PsiElement): ExplicitElement<*>? {
+        if (psiElement is PsiClass) {
+            return explicit(psiElement)
+        } else if (psiElement is PsiMethod) {
+            return ExplicitMethodWithOutGenericInfo(explicit(psiElement.containingClass!!), psiElement)
+        } else if (psiElement is PsiField) {
+            return ExplicitFieldWithOutGenericInfo(explicit(psiElement.containingClass!!), psiElement)
+        }
+        logger!!.error("you can not explicit PsiElement beyond class/method/field")
+        return null
     }
 
     fun explicit(singleDuckType: SingleDuckType): ExplicitClass {

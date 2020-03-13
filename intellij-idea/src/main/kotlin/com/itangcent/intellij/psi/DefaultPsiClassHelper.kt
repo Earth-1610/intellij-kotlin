@@ -9,9 +9,13 @@ import com.intellij.util.containers.isNullOrEmpty
 import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.KV
 import com.itangcent.common.utils.safeComputeIfAbsent
+import com.itangcent.intellij.config.rule.computer
 import com.itangcent.intellij.jvm.asPsiClass
 import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.duck.SingleDuckType
+import com.itangcent.intellij.jvm.element.ExplicitClass
+import com.itangcent.intellij.jvm.element.ExplicitElement
+import com.itangcent.intellij.jvm.element.ExplicitField
 import org.apache.commons.lang3.StringUtils
 import java.util.*
 
@@ -124,23 +128,15 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
 
     override fun beforeParseFieldOrMethod(
         fieldType: DuckType,
-        fieldOrMethod: PsiElement,
-        resourcePsiClass: PsiClass,
+        fieldOrMethod: ExplicitElement<*>,
+        resourcePsiClass: ExplicitClass,
         option: Int,
         kv: KV<String, Any?>
     ): Boolean {
-        try {
-            if (fieldOrMethod is PsiField &&
-                ruleComputer?.computer(ClassRuleKeys.FIELD_IGNORE, fieldOrMethod) == true
-            ) {
-                return false
-            }
-        } catch (e: Exception) {
-            logger!!.traceWarn(
-                "failed to infer whether a field should be ignored:${PsiClassUtils.fullNameOfMember(
-                    fieldOrMethod
-                )}", e
-            )
+        if (fieldOrMethod is ExplicitField &&
+            ruleComputer?.computer(ClassRuleKeys.FIELD_IGNORE, fieldOrMethod) == true
+        ) {
+            return false
         }
 
         return super.beforeParseFieldOrMethod(fieldType, fieldOrMethod, resourcePsiClass, option, kv)
@@ -150,8 +146,8 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     override fun parseFieldOrMethod(
         fieldName: String,
         fieldType: DuckType,
-        fieldOrMethod: PsiElement,
-        resourcePsiClass: PsiClass,
+        fieldOrMethod: ExplicitElement<*>,
+        resourcePsiClass: ExplicitClass,
         option: Int,
         kv: KV<String, Any?>
     ) {
@@ -171,7 +167,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                                 super.parseFieldOrMethod(
                                     fieldName,
                                     it,
-                                    convertFieldOrMethod,
+                                    duckTypeHelper.explicit(convertFieldOrMethod)!!,
                                     resourcePsiClass,
                                     option,
                                     kv
@@ -182,7 +178,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                                 super.parseFieldOrMethod(
                                     fieldName,
                                     it,
-                                    convertFieldOrMethod,
+                                    duckTypeHelper.explicit(convertFieldOrMethod)!!,
                                     resourcePsiClass,
                                     option,
                                     kv
@@ -205,7 +201,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                         return
                     }
                 } else {
-                    val resolveClass = duckTypeHelper!!.resolve(convertTo, fieldOrMethod)
+                    val resolveClass = duckTypeHelper!!.resolve(convertTo, fieldOrMethod.psi())
                     if (resolveClass == null) {
                         logger!!.error("failed to resolve class:$convertTo")
                     } else {
@@ -224,7 +220,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
 
             super.parseFieldOrMethod(
                 fieldName,
-                duckTypeHelper!!.resolve("java.lang.String", fieldOrMethod)!!,
+                duckTypeHelper!!.resolve("java.lang.String", fieldOrMethod.psi())!!,
                 fieldOrMethod,
                 resourcePsiClass,
                 option,
@@ -259,8 +255,8 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     override fun afterParseFieldOrMethod(
         fieldName: String,
         fieldType: DuckType,
-        fieldOrMethod: PsiElement,
-        resourcePsiClass: PsiClass,
+        fieldOrMethod: ExplicitElement<*>,
+        resourcePsiClass: ExplicitClass,
         option: Int,
         kv: KV<String, Any?>
     ) {

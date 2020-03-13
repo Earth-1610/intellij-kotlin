@@ -17,6 +17,7 @@ import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.duck.SingleDuckType
 import com.itangcent.intellij.jvm.duck.SingleUnresolvedDuckType
 import com.itangcent.intellij.jvm.element.ExplicitClass
+import com.itangcent.intellij.jvm.element.ExplicitElement
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.ELEMENT_OF_COLLECTION
 import com.itangcent.intellij.logger.Logger
@@ -252,17 +253,18 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
             beforeParseClass(resourcePsiClass, option, kv)
 
-            foreachField(duckTypeHelper!!.explicit(resourcePsiClass), option) { fieldName, fieldType, fieldOrMethod ->
+            val explicitClass = duckTypeHelper!!.explicit(resourcePsiClass)
+            foreachField(explicitClass, option) { fieldName, fieldType, fieldOrMethod ->
 
-                if (!beforeParseFieldOrMethod(fieldType, fieldOrMethod, resourcePsiClass, option, kv)) {
+                if (!beforeParseFieldOrMethod(fieldType, fieldOrMethod, explicitClass, option, kv)) {
                     return@foreachField
                 }
                 val name = fieldName()
                 if (!kv.contains(name)) {
 
-                    parseFieldOrMethod(name, fieldType, fieldOrMethod, resourcePsiClass, option, kv)
+                    parseFieldOrMethod(name, fieldType, fieldOrMethod, explicitClass, option, kv)
 
-                    afterParseFieldOrMethod(name, fieldType, fieldOrMethod, resourcePsiClass, option, kv)
+                    afterParseFieldOrMethod(name, fieldType, fieldOrMethod, explicitClass, option, kv)
                 }
             }
 
@@ -468,12 +470,13 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         cacheResolvedInfo(clsWithParam, option, kv)
         beforeParseType(psiClass, clsWithParam, option, kv)
 
-        foreachField(duckTypeHelper!!.explicit(clsWithParam), option) { fieldName, fieldType, fieldOrMethod ->
+        val explicitClass = duckTypeHelper!!.explicit(clsWithParam)
+        foreachField(explicitClass, option) { fieldName, fieldType, fieldOrMethod ->
 
             if (!beforeParseFieldOrMethod(
                     fieldType,
                     fieldOrMethod,
-                    psiClass,
+                    explicitClass,
                     option,
                     kv
                 )
@@ -484,9 +487,9 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             val name = fieldName()
             if (!kv.contains(name)) {
 
-                parseFieldOrMethod(name, fieldType, fieldOrMethod, psiClass, option, kv)
+                parseFieldOrMethod(name, fieldType, fieldOrMethod, explicitClass, option, kv)
 
-                afterParseFieldOrMethod(name, fieldType, fieldOrMethod, psiClass, option, kv)
+                afterParseFieldOrMethod(name, fieldType, fieldOrMethod, explicitClass, option, kv)
             }
         }
 
@@ -501,7 +504,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         handle: (
             name: () -> String,
             type: DuckType,
-            fieldOrMethod: PsiElement
+            fieldOrMethod: ExplicitElement<*>
         ) -> Unit
     ) {
         actionContext!!.checkStatus()
@@ -518,12 +521,13 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 continue
             }
 
-            if (!jvmClassHelper.isAccessibleField(psiField)) {
-                continue
-            }
+            //it should be decided by rule {@link com.itangcent.intellij.psi.ClassRuleKeys#FIELD_IGNORE}
+//            if (!jvmClassHelper.isAccessibleField(psiField)) {
+//                continue
+//            }
 
             if (!readGetter || fieldNames!!.add(explicitField.name())) {
-                handle({ getJsonFieldName(psiField) }, explicitField.getType(), psiField)
+                handle({ getJsonFieldName(psiField) }, explicitField.getType(), explicitField)
             }
         }
 
@@ -539,7 +543,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 if (method.hasModifierProperty(PsiModifier.STATIC)) continue
                 if (!method.hasModifierProperty(PsiModifier.PUBLIC)) continue
 
-                explicitMethod.getReturnType()?.let { handle({ propertyName }, it, method) }
+                explicitMethod.getReturnType()?.let { handle({ propertyName }, it, explicitMethod) }
             }
         }
         fieldNames?.clear()
@@ -824,8 +828,8 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     //return false to ignore current fieldOrMethod
     open fun beforeParseFieldOrMethod(
         fieldType: DuckType,
-        fieldOrMethod: PsiElement,
-        resourcePsiClass: PsiClass,
+        fieldOrMethod: ExplicitElement<*>,
+        resourcePsiClass: ExplicitClass,
         option: Int,
         kv: KV<String, Any?>
     ): Boolean {
@@ -835,19 +839,19 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     open fun parseFieldOrMethod(
         fieldName: String,
         fieldType: DuckType,
-        fieldOrMethod: PsiElement,
-        resourcePsiClass: PsiClass,
+        fieldOrMethod: ExplicitElement<*>,
+        resourcePsiClass: ExplicitClass,
         option: Int,
         kv: KV<String, Any?>
     ) {
-        kv[fieldName] = getTypeObject(fieldType, fieldOrMethod, option)
+        kv[fieldName] = getTypeObject(fieldType, fieldOrMethod.psi(), option)
     }
 
     open fun afterParseFieldOrMethod(
         fieldName: String,
         fieldType: DuckType,
-        fieldOrMethod: PsiElement,
-        resourcePsiClass: PsiClass,
+        fieldOrMethod: ExplicitElement<*>,
+        resourcePsiClass: ExplicitClass,
         option: Int,
         kv: KV<String, Any?>
     ) {
