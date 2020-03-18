@@ -1,7 +1,7 @@
 
-ext.'signing.keyId' = '***'
-ext.'signing.password' = '***'
-ext.'signing.secretKeyRingFile' = '/***/gpg/secret.gpg'
+ext.'signing.keyId' = '92C2AF59'
+ext.'signing.password' = 'hdhrbyurb3hy7'
+ext.'signing.secretKeyRingFile' = '/Users/toming/Code/osproject/temp/gpg/secret.gpg'
 
-ext.'sonatypeUsername'='***'
-ext.'sonatypePassword'='***'
+ext.'sonatypeUsername'='tangcent'
+ext.'sonatypePassword'='ZEaGB9uzXNxqhLZ&'
