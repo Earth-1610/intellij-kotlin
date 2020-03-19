@@ -10,6 +10,9 @@ import com.intellij.psi.util.PsiUtil
 import com.itangcent.common.utils.getPropertyValue
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.jvm.JvmClassHelper
+import com.itangcent.intellij.jvm.duck.DuckType
+import com.itangcent.intellij.jvm.duck.SingleDuckType
+import com.itangcent.intellij.jvm.duck.SingleUnresolvedDuckType
 import com.sun.jmx.remote.internal.ArrayQueue
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
@@ -22,6 +25,27 @@ open class StandardJvmClassHelper : JvmClassHelper {
     private val typeCache: java.util.HashMap<PsiType, PsiClass?> = java.util.LinkedHashMap()
 
     private val classCache: java.util.HashMap<PsiClass?, PsiType> = java.util.LinkedHashMap()
+
+    override fun isInheritor(duckType: DuckType, vararg baseClass: String): Boolean {
+
+        if (baseClass.contains(duckType.canonicalText().substringBefore('<'))) {
+            return true
+        }
+
+        if (!duckType.isSingle()) {
+            return false
+        }
+
+        if (duckType is SingleDuckType) {
+            return isInheritor(duckType.psiClass(), *baseClass)
+        }
+
+        if (duckType is SingleUnresolvedDuckType) {
+            return isInheritor(duckType.psiType(), *baseClass)
+        }
+
+        return false
+    }
 
     override fun isInheritor(psiType: PsiType, vararg baseClass: String): Boolean {
 
@@ -60,6 +84,10 @@ open class StandardJvmClassHelper : JvmClassHelper {
         return isInheritor(psiClass, *collectionClasses!!)
     }
 
+    override fun isCollection(duckType: DuckType): Boolean {
+        return isInheritor(duckType, *collectionClasses!!)
+    }
+
     override fun isMap(psiClass: PsiClass): Boolean {
         return isInheritor(psiClass, *mapClasses!!)
     }
@@ -68,6 +96,15 @@ open class StandardJvmClassHelper : JvmClassHelper {
         return isInheritor(psiType, *mapClasses!!)
     }
 
+    override fun isMap(duckType: DuckType): Boolean {
+        return isInheritor(duckType, *mapClasses!!)
+    }
+
+    /**
+     * Checks if the class is an enumeration.
+     *
+     * @return true if the class is an enumeration, false otherwise.
+     */
     override fun isEnum(psiType: PsiType): Boolean {
 
         val cls = resolveClassInType(psiType)
@@ -75,8 +112,75 @@ open class StandardJvmClassHelper : JvmClassHelper {
         return cls?.isEnum ?: false
     }
 
+    /**
+     * Checks if the class is an enumeration.
+     *
+     * @return true if the class is an enumeration, false otherwise.
+     */
     override fun isEnum(psiClass: PsiClass): Boolean {
         return psiClass.isEnum
+    }
+
+    /**
+     * Checks if the class is an enumeration.
+     *
+     * @return true if the class is an enumeration, false otherwise.
+     */
+    override fun isEnum(duckType: DuckType): Boolean {
+        if (!duckType.isSingle()) {
+            return false
+        }
+
+        if (duckType is SingleDuckType) {
+            return isEnum(duckType.psiClass())
+        }
+
+        if (duckType is SingleUnresolvedDuckType) {
+            return isEnum(duckType.psiType())
+        }
+
+        return false
+    }
+
+    /**
+     * Checks if the class is an interface.
+     *
+     * @return true if the class is an interface, false otherwise.
+     */
+    override fun isInterface(psiType: PsiType): Boolean {
+        val cls = resolveClassInType(psiType)
+
+        return cls?.isInterface ?: false
+    }
+
+    /**
+     * Checks if the class is an interface.
+     *
+     * @return true if the class is an interface, false otherwise.
+     */
+    override fun isInterface(psiClass: PsiClass): Boolean {
+        return psiClass.isInterface
+    }
+
+    /**
+     * Checks if the class is an interface.
+     *
+     * @return true if the class is an interface, false otherwise.
+     */
+    override fun isInterface(duckType: DuckType): Boolean {
+        if (!duckType.isSingle()) {
+            return false
+        }
+
+        if (duckType is SingleDuckType) {
+            return isInterface(duckType.psiClass())
+        }
+
+        if (duckType is SingleUnresolvedDuckType) {
+            return isInterface(duckType.psiType())
+        }
+
+        return false
     }
 
     override fun isStaticFinal(field: PsiField): Boolean {
@@ -118,12 +222,40 @@ open class StandardJvmClassHelper : JvmClassHelper {
         }
     }
 
+    /**
+     * Returns the list of fields in the class and all its superclasses.
+     *
+     * @return the list of fields.
+     */
     override fun getAllFields(psiClass: PsiClass): Array<PsiField> {
         return psiClass.allFields
     }
 
+    /**
+     * Returns the list of methods in the class and all its superclasses.
+     *
+     * @return the list of methods.
+     */
     override fun getAllMethods(psiClass: PsiClass): Array<PsiMethod> {
         return psiClass.allMethods
+    }
+
+    /**
+     * Returns the list of methods in the class.
+     *
+     * @return the list of methods.
+     */
+    override fun getMethods(psiClass: PsiClass): Array<PsiMethod> {
+        return psiClass.methods
+    }
+
+    /**
+     * Returns the list of fields in the class.
+     *
+     * @return the list of fields.
+     */
+    override fun getFields(psiClass: PsiClass): Array<PsiField> {
+        return psiClass.fields
     }
 
     override fun extractModifiers(psiElement: PsiElement): List<String> {
@@ -278,18 +410,31 @@ open class StandardJvmClassHelper : JvmClassHelper {
 
         fun init() {
             if (normalTypes.isEmpty()) {
+                normalTypes["boolean"] = false
                 normalTypes["Boolean"] = false
                 normalTypes["Void"] = null
+                normalTypes["void"] = null
+                normalTypes["char"] = 'a'
+                normalTypes["Character"] = 'a'
+                normalTypes["null"] = null
                 normalTypes["Byte"] = 0
+                normalTypes["byte"] = 0
                 normalTypes["Short"] = 0
+                normalTypes["short"] = 0
                 normalTypes["Integer"] = 0
+                normalTypes["int"] = 0
                 normalTypes["Long"] = 0L
+                normalTypes["long"] = 0L
                 normalTypes["Float"] = 0.0F
+                normalTypes["float"] = 0.0F
                 normalTypes["Double"] = 0.0
+                normalTypes["double"] = 0.0
                 normalTypes["String"] = ""
                 normalTypes["BigDecimal"] = 0.0
+                normalTypes["class"] = null
                 normalTypes["Class"] = null
                 normalTypes["java.lang.Boolean"] = false
+                normalTypes["java.lang.Character"] = 'a'
                 normalTypes["java.lang.Void"] = null
                 normalTypes["java.lang.Byte"] = 0
                 normalTypes["java.lang.Short"] = 0

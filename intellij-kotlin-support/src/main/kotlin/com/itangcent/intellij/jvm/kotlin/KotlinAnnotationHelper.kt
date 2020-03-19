@@ -8,6 +8,7 @@ import com.itangcent.common.utils.GsonUtils
 import com.itangcent.common.utils.invokeMethod
 import com.itangcent.common.utils.longest
 import com.itangcent.intellij.jvm.AnnotationHelper
+import com.itangcent.intellij.jvm.DuckTypeHelper
 import com.itangcent.intellij.jvm.PsiClassHelper
 import com.itangcent.intellij.jvm.PsiResolver
 import org.jetbrains.kotlin.asJava.classes.KtLightClass
@@ -31,6 +32,9 @@ class KotlinAnnotationHelper : AnnotationHelper {
 
     @Inject(optional = true)
     private val psiResolver: PsiResolver? = null
+
+    @Inject(optional = true)
+    private val duckTypeHelper: DuckTypeHelper? = null
 
     override fun hasAnn(psiElement: PsiElement?, annName: String): Boolean {
 
@@ -134,7 +138,7 @@ class KotlinAnnotationHelper : AnnotationHelper {
             return null
         }
 
-        val resolveClass = psiResolver!!.resolveClass(annName, psiElement) ?: return null
+        val resolveClass = duckTypeHelper!!.resolveClass(annName, psiElement) ?: return null
         if (resolveClass is KtLightClass) {
             val parameters = resolveClass.kotlinOrigin?.getPrimaryConstructorParameterList()?.parameters ?: return null
             if (parameters.size > index) {

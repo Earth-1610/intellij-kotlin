@@ -7,6 +7,11 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
 import com.itangcent.common.utils.safeComputeIfAbsent
+import com.itangcent.intellij.jvm.duck.ArrayDuckType
+import com.itangcent.intellij.jvm.duck.DuckType
+import com.itangcent.intellij.jvm.duck.SingleDuckType
+import com.itangcent.intellij.jvm.duck.SingleUnresolvedDuckType
+import com.itangcent.intellij.jvm.element.*
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 import com.itangcent.intellij.logger.Logger
 import com.siyeh.ig.psiutils.ClassUtils
@@ -15,7 +20,7 @@ import java.util.*
 import kotlin.collections.LinkedHashMap
 
 @Singleton
-class DuckTypeHelper {
+open class DuckTypeHelper {
 
     @Inject
     private val logger: Logger? = null
@@ -34,6 +39,33 @@ class DuckTypeHelper {
 
     private val nameToTypeCache: HashMap<String, PsiType?> = LinkedHashMap()
 
+    fun explicit(psiClass: PsiClass): ExplicitClass {
+        return ExplicitClassWithOutGenericInfo(this, psiClass)
+    }
+
+    fun explicit(psiElement: PsiElement): ExplicitElement<*>? {
+        if (psiElement is PsiClass) {
+            return explicit(psiElement)
+        } else if (psiElement is PsiMethod) {
+            return ExplicitMethodWithOutGenericInfo(explicit(psiElement.containingClass!!), psiElement)
+        } else if (psiElement is PsiField) {
+            return ExplicitFieldWithOutGenericInfo(explicit(psiElement.containingClass!!), psiElement)
+        }
+        logger!!.error("you can not explicit PsiElement beyond class/method/field")
+        return null
+    }
+
+    fun explicit(singleDuckType: SingleDuckType): ExplicitClass {
+        if (singleDuckType.genericInfo.isNullOrEmpty()) {
+            return ExplicitClassWithOutGenericInfo(this, singleDuckType.psiClass())
+        } else {
+            return ExplicitClassWithGenericInfo(
+                this, singleDuckType.genericInfo,
+                singleDuckType.psiClass()
+            )
+        }
+    }
+
     fun ensureType(type: PsiType): DuckType? {
         if (type is PsiClassType) {
             val parameters = type.parameters
@@ -46,14 +78,18 @@ class DuckTypeHelper {
                     if (parameters.size > index) {
                         val typeParam = parameters[index]
                         genericInfo[typeParameter.name!!] = ensureType(typeParam)
+                    } else {
+                        genericInfo[typeParameter.name!!] = ensureTypeToClass(typeParameter, null)
                     }
                 }
-                return type.resolve()?.let { SingleDuckType(it, genericInfo) }
+                return type.resolve()?.let { SingleDuckType(psiClass, genericInfo) }
             }
         }
+
         if (type is PsiArrayType) {
             return ensureType(type.componentType)?.let { ArrayDuckType(it) }
         }
+
         if (type is PsiDisjunctionType) {
             val lub = type.leastUpperBound
             if (lub is PsiClassType) {
@@ -62,9 +98,14 @@ class DuckTypeHelper {
         }
 
         if (type is PsiPrimitiveType) {
-            return SinglePrimitiveDuckType(type)
+            return SingleUnresolvedDuckType(type)
         }
-        return null
+
+        if (type is PsiClass) {
+            return ensureTypeToClass(type, null)
+        }
+
+        return SingleUnresolvedDuckType(type)
 
     }
 
@@ -74,7 +115,22 @@ class DuckTypeHelper {
         }
 
         if (psiType is PsiClassType) {
-            return psiType.resolve()?.let { ensureTypeToClass(it, typeParams) }
+            val parameters = psiType.parameters
+            if (parameters.isNullOrEmpty()) {
+                return psiType.resolve()?.let { ensureTypeToClass(it, typeParams) }
+            } else {
+                val psiClass = psiType.resolve() ?: return null
+                val genericInfo: HashMap<String, DuckType?> = LinkedHashMap()
+                for ((index, typeParameter) in psiClass.typeParameters.withIndex()) {
+                    if (parameters.size > index) {
+                        val typeParam = parameters[index]
+                        genericInfo[typeParameter.name!!] = ensureType(typeParam, typeParams)
+                    } else {
+                        genericInfo[typeParameter.name!!] = ensureTypeToClass(typeParameter, typeParams)
+                    }
+                }
+                return SingleDuckType(psiClass, genericInfo)
+            }
         }
 
         if (psiType is PsiArrayType) {
@@ -88,37 +144,49 @@ class DuckTypeHelper {
             }
         }
 
-
         if (psiType is PsiPrimitiveType) {
-            return SinglePrimitiveDuckType(psiType)
+            return SingleUnresolvedDuckType(psiType)
         }
-        return null
+
+        if (psiType is PsiClass) {
+            return ensureTypeToClass(psiType, null)
+        }
+
+        return SingleUnresolvedDuckType(psiType)
     }
 
-    private fun ensureTypeToClass(psiType: PsiClass, typeParams: Map<String, DuckType?>?): DuckType? {
+    private fun ensureTypeToClass(psiClass: PsiClass, typeParams: Map<String, DuckType?>?): DuckType? {
 
-        if (psiType is PsiTypeParameter) {
-            val realType = typeParams?.get(psiType.name)
+        if (psiClass is PsiTypeParameter) {
+            val realType = typeParams?.get(psiClass.name)
             if (realType != null) {
                 return realType
             }
+        } else if (psiClass.hasTypeParameters()) {
+            val genericInfo: HashMap<String, DuckType?> = LinkedHashMap()
+            for (typeParameter in psiClass.typeParameters) {
+                genericInfo[typeParameter.name!!] = ensureTypeToClass(typeParameter, typeParams)
+            }
+            return SingleDuckType(psiClass, genericInfo)
         }
-        return SingleDuckType(psiType)
+        return SingleDuckType(psiClass)
     }
 
     /**
-     * resolve canonical representation of the type to TmType
+     * resolve canonical representation of the type to DuckType
      */
     fun resolve(psiType: PsiType, context: PsiElement): DuckType? {
         val typeCanonicalText = psiType.canonicalText
-        if (typeCanonicalText.contains('<') && typeCanonicalText.endsWith('>')) {
+        if (typeCanonicalText.contains('<') && typeCanonicalText.endsWith('>')
+            || typeCanonicalText.endsWith("[]")
+        ) {
             val clsWithParam = resolve(typeCanonicalText, context)
             if (clsWithParam != null) {
                 return clsWithParam
             }
         }
         if (psiType is PsiPrimitiveType) {
-            return SinglePrimitiveDuckType(psiType)
+            return SingleUnresolvedDuckType(psiType)
         }
         val paramCls = PsiUtil.resolveClassInClassTypeOnly(psiType)
         return when (paramCls) {
@@ -146,7 +214,11 @@ class DuckTypeHelper {
             }
             typeCanonicalText.endsWith("[]") -> {
                 val componentTypeCanonicalText = typeCanonicalText.removeSuffix(ARRAY_SUFFIX)
-                return resolve(componentTypeCanonicalText, context)?.let { ArrayDuckType(it) }
+                return resolve(componentTypeCanonicalText, context)?.let {
+                    ArrayDuckType(
+                        it
+                    )
+                }
             }
             typeCanonicalText.startsWith("? extends") -> return resolve(
                 typeCanonicalText.removePrefix("? extends").trim(),
@@ -174,7 +246,11 @@ class DuckTypeHelper {
                 return null
             }
             StandardJvmClassHelper.isPrimitive(typeCanonicalText) -> {
-                return SinglePrimitiveDuckType(StandardJvmClassHelper.getPrimitiveType(typeCanonicalText)!!)
+                return SingleUnresolvedDuckType(
+                    StandardJvmClassHelper.getPrimitiveType(
+                        typeCanonicalText
+                    )!!
+                )
             }
             else -> {
                 val paramCls = resolveClass(typeCanonicalText, context)
@@ -386,30 +462,30 @@ class DuckTypeHelper {
 
     fun isQualified(psiType: PsiType, context: PsiElement): Boolean {
         return qualifiedInfoCache.safeComputeIfAbsent(psiType) {
-            val tmType = resolve(psiType, context) ?: return@safeComputeIfAbsent true
-            return@safeComputeIfAbsent isQualified(tmType)
+            val duckType = resolve(psiType, context) ?: return@safeComputeIfAbsent true
+            return@safeComputeIfAbsent isQualified(duckType)
         } ?: false
     }
 
-    private fun isQualified(tmType: DuckType): Boolean {
-        if (tmType is SingleDuckType) {
-            if (tmType.psiClass().qualifiedName == CommonClassNames.JAVA_LANG_OBJECT) {
+    fun isQualified(duckType: DuckType): Boolean {
+        if (duckType is SingleDuckType) {
+            if (duckType.psiClass().qualifiedName == CommonClassNames.JAVA_LANG_OBJECT) {
                 return false
             }
-            if (tmType.psiClass().isInterface) {
-                if (!jvmClassHelper!!.isCollection(tmType.psiClass()) && !jvmClassHelper.isMap(tmType.psiClass())) {
+            if (duckType.psiClass().isInterface) {
+                if (!jvmClassHelper!!.isCollection(duckType.psiClass()) && !jvmClassHelper.isMap(duckType.psiClass())) {
                     return false
                 }
             }
 
-            val typeParameterCount = tmType.psiClass().typeParameters.size
+            val typeParameterCount = duckType.psiClass().typeParameters.size
             if (typeParameterCount == 0) return true
-            if (typeParameterCount < tmType.genericInfo?.size ?: 0) {
+            if (typeParameterCount < duckType.genericInfo?.size ?: 0) {
                 return false
             }
-            if (tmType.genericInfo == null) return false
+            if (duckType.genericInfo == null) return false
 
-            for (value in tmType.genericInfo.values) {
+            for (value in duckType.genericInfo.values) {
                 if (value == null) return false
                 if (!isQualified(value)) {
                     return false
@@ -417,10 +493,19 @@ class DuckTypeHelper {
             }
 
             return true
-        } else if (tmType is ArrayDuckType) {
-            return isQualified(tmType.componentType())
+        } else if (duckType is ArrayDuckType) {
+            return isQualified(duckType.componentType())
         }
         return true
+    }
+
+    fun javaLangObjectType(context: PsiElement): SingleDuckType {
+        return SingleDuckType(
+            findClass(
+                CommonClassNames.JAVA_LANG_OBJECT,
+                context
+            )!!
+        )
     }
 
     //endregion isQualified--------------------------------------------------------

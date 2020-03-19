@@ -39,7 +39,7 @@ open class KotlinPsiResolver : StandardPsiResolver() {
         }
 
         //[kotlin.reflect.KClass]
-        var linkClass = resolveClass(cwp, psiElement)
+        var linkClass = duckTypeHelper!!.resolveClass(cwp, psiElement)
         if (linkClass != null) {
             return linkClass to null
         }
@@ -48,7 +48,7 @@ open class KotlinPsiResolver : StandardPsiResolver() {
         if (cwp.contains('.')) {
             val linkClassName = cwp.substringBeforeLast(".")
             val linkMethodOrProperty = cwp.substringAfterLast(".", "").trim()
-            linkClass = resolveClass(linkClassName, psiElement) ?: return null
+            linkClass = duckTypeHelper.resolveClass(linkClassName, psiElement) ?: return null
             return linkClass to resolvePropertyOrMethodOfClass(linkClass, linkMethodOrProperty)
         }
 

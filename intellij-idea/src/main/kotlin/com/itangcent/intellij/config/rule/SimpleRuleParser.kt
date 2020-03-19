@@ -7,6 +7,13 @@ import com.itangcent.common.utils.toBool
 import com.itangcent.intellij.jvm.AnnotationHelper
 import com.itangcent.intellij.jvm.DocHelper
 import com.itangcent.intellij.jvm.JvmClassHelper
+import com.itangcent.intellij.jvm.duck.DuckType
+import com.itangcent.intellij.jvm.duck.SingleDuckType
+import com.itangcent.intellij.jvm.duck.SingleUnresolvedDuckType
+import com.itangcent.intellij.jvm.element.ExplicitClass
+import com.itangcent.intellij.jvm.element.ExplicitElement
+import com.itangcent.intellij.jvm.element.ExplicitField
+import com.itangcent.intellij.jvm.element.ExplicitMethod
 import java.util.regex.Pattern
 
 @Singleton
@@ -195,10 +202,37 @@ class SimpleRuleParser : RuleParser {
             is PsiField -> PsiFieldContext(target)
             is PsiMethod -> PsiMethodContext(target)
             is PsiElement -> UnknownPsiElementContext(target)
+            is ExplicitElement<*> -> {
+                return when (target) {
+                    is ExplicitClass -> ExplicitClassContext(target)
+                    is ExplicitMethod -> ExplicitMethodContext(target)
+                    is ExplicitField -> ExplicitFieldContext(target)
+                    else -> CompanionUnknownPsiElementContext(target, target.psi())
+                }
+            }
             is PsiType -> PsiTypeContext(
                 target,
-                jvmClassHelper!!.resolveClassInType(target)!!
+                jvmClassHelper!!.resolveClassInType(target)
             )
+            is DuckType -> {
+                return when (target) {
+                    is SingleDuckType -> {
+                        PsiClassContext(target.psiClass())
+                    }
+                    is SingleUnresolvedDuckType -> {
+                        PsiTypeContext(
+                            target.psiType(),
+                            jvmClassHelper!!.resolveClassInType(target.psiType())
+                        )
+                    }
+                    else -> {
+                        DuckTypeContext(
+                            target,
+                            null
+                        )
+                    }
+                }
+            }
             is String -> StringRuleContext(
                 target,
                 context!!

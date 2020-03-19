@@ -4,6 +4,7 @@ import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiDocCommentOwner
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiModifierListOwner
+import com.itangcent.intellij.jvm.element.ExplicitClass
 
 open class PsiClassContext : RuleContext {
 
@@ -31,5 +32,18 @@ open class PsiClassContext : RuleContext {
 
     override fun asPsiModifierListOwner(): PsiModifierListOwner? {
         return psiClass
+    }
+}
+
+
+class ExplicitClassContext : PsiClassContext {
+    private var explicitClass: ExplicitClass
+
+    constructor(explicitClass: ExplicitClass) : super(explicitClass.psi()) {
+        this.explicitClass = explicitClass
+    }
+
+    override fun getCore(): Any? {
+        return explicitClass
     }
 }

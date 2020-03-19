@@ -60,28 +60,27 @@ abstract class AbstractConfigReader : MutableConfigReader {
     }
 
     private fun loadPropertiesConfig(configInfoContent: String) {
-        for (line in configInfoContent.lines()) {
-            val trimLine = line.trim()
 
+        LineReader(configInfoContent) { line ->
             //ignore blank line
-            if (trimLine.isBlank()) {
-                continue
+            if (line.isBlank()) {
+                return@LineReader
             }
 
             //resolve comment setting
-            if (trimLine.startsWith("###")) {
-                resolveSetting(trimLine.removePrefix("###").trim())
-                continue
+            if (line.startsWith("###")) {
+                resolveSetting(line.removePrefix("###").trim())
+                return@LineReader
             }
 
             //ignore comment
-            if (trimLine.startsWith("#")) {
-                continue
+            if (line.startsWith("#")) {
+                return@LineReader
             }
 
             //resolve name&value
-            parseEqualLine(trimLine)
-        }
+            parseEqualLine(line)
+        }.lines()
     }
 
     private fun parseEqualLine(line: String) {
@@ -335,6 +334,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
         )
 
         val KEY_FILTER_EQULA_VALUE = Pattern.compile("(\\S*?\\[.*?])\\s*=\\s*(.*?)")
+
     }
 }
 

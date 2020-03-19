@@ -1,8 +1,9 @@
-package com.itangcent.intellij.jvm
+package com.itangcent.intellij.jvm.duck
 
 import com.intellij.psi.PsiType
 
-class SinglePrimitiveDuckType : DuckType {
+class SingleUnresolvedDuckType : DuckType {
+
     fun psiType(): PsiType {
         return psiType
     }
@@ -17,6 +18,10 @@ class SinglePrimitiveDuckType : DuckType {
         return psiType.canonicalText
     }
 
+    override fun isSingle(): Boolean {
+        return true
+    }
+
     override fun toString(): String {
         return psiType.toString()
     }
@@ -25,7 +30,7 @@ class SinglePrimitiveDuckType : DuckType {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as SinglePrimitiveDuckType
+        other as SingleUnresolvedDuckType
 
         if (psiType != other.psiType) return false
 
@@ -36,5 +41,11 @@ class SinglePrimitiveDuckType : DuckType {
         return psiType.hashCode()
     }
 
+    override fun name(): String {
+        return psiType.presentableText
+    }
 
+    override fun unbox(): DuckType {
+        return this
+    }
 }
