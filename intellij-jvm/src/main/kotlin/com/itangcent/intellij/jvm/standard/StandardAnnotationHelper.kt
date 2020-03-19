@@ -78,14 +78,14 @@ open class StandardAnnotationHelper : AnnotationHelper {
             is PsiLiteralExpression -> return psiExpression.value?.toString()
             is PsiReferenceExpression -> {
                 val value = psiExpression.resolve()
-                if (value is PsiExpression) {
+                if (value is PsiElement && psiExpression != value) {
                     return resolveValue(value)
                 }
             }
             is PsiField -> {
                 val constantValue = psiExpression.computeConstantValue()
                 if (constantValue != null) {
-                    if (constantValue is PsiExpression) {
+                    if (constantValue is PsiElement && psiExpression != constantValue) {
                         return resolveValue(constantValue)
                     }
                     return constantValue
