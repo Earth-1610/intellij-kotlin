@@ -9,8 +9,14 @@ import org.jetbrains.plugins.scala.lang.psi.api.statements.ScPatternDefinition
 /**
  * read only
  */
-class ScPatternDefinitionPsiFieldAdaptor(private val scPatternDefinition: ScPatternDefinition) : PsiField,
+class ScPatternDefinitionPsiFieldAdaptor(private val scPatternDefinition: ScPatternDefinition) :
+    ScAdaptor<ScPatternDefinition>,
+    PsiField,
     PsiModifierListOwner by scPatternDefinition {
+
+    override fun adaptor(): ScPatternDefinition {
+        return scPatternDefinition
+    }
 
     override fun setInitializer(initializer: PsiExpression?) {
         throw UnsupportedOperationException()
@@ -95,6 +101,21 @@ class ScPatternDefinitionPsiFieldAdaptor(private val scPatternDefinition: ScPatt
             return null
         }
         return expr.get()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ScPatternDefinitionPsiFieldAdaptor
+
+        if (scPatternDefinition != other.scPatternDefinition) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return scPatternDefinition.hashCode()
     }
 
 }

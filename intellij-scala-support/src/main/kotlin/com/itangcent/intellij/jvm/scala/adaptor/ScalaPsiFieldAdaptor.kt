@@ -8,7 +8,12 @@ import org.jetbrains.plugins.scala.lang.psi.api.statements.ScVariable
 /**
  * read only
  */
-class ScalaPsiFieldAdaptor(private val scVariable: ScVariable) : PsiField, PsiModifierListOwner by scVariable {
+class ScalaPsiFieldAdaptor(private val scVariable: ScVariable) : PsiField, ScAdaptor<ScVariable>,
+    PsiModifierListOwner by scVariable {
+
+    override fun adaptor(): ScVariable {
+        return scVariable
+    }
 
     override fun setInitializer(initializer: PsiExpression?) {
         throw UnsupportedOperationException()
@@ -86,6 +91,19 @@ class ScalaPsiFieldAdaptor(private val scVariable: ScVariable) : PsiField, PsiMo
         return null
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
 
+        other as ScalaPsiFieldAdaptor
+
+        if (scVariable != other.scVariable) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return scVariable.hashCode()
+    }
 
 }
