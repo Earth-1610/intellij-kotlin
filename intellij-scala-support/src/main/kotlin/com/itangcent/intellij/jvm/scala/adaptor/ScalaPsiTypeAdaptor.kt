@@ -22,7 +22,9 @@ import javax.swing.Icon
  * read only
  */
 open class ScalaPsiTypeAdaptor :
+    ScAdaptor<ScType>,
     PsiType {
+
     private val scType: ScType
 
     private constructor(scType: ScType) : super(emptyTypeAnnotationProvider) {
@@ -31,6 +33,10 @@ open class ScalaPsiTypeAdaptor :
 
     constructor(scType: ScType, annotationProvider: TypeAnnotationProvider) : super(annotationProvider) {
         this.scType = scType
+    }
+
+    override fun adaptor(): ScType {
+        return scType
     }
 
     override fun equalsToText(text: String): Boolean {
@@ -65,6 +71,22 @@ open class ScalaPsiTypeAdaptor :
         return true
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ScalaPsiTypeAdaptor
+
+        if (scType != other.scType) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return scType.hashCode()
+    }
+
+
     companion object {
         val emptyTypeAnnotationProvider = TypeAnnotationProvider.Static.create(emptyArray())
 
@@ -73,16 +95,16 @@ open class ScalaPsiTypeAdaptor :
         }
 
         fun build(scType: ScType, annotationProvider: TypeAnnotationProvider): PsiType {
-            if (scType is ScTypeParam) {
-                return ScalaPsiTypeParameterAdaptor(scType, scType, annotationProvider)
+            return if (scType is ScTypeParam) {
+                ScalaPsiTypeParameterAdaptor(scType, scType, annotationProvider)
             } else if (scType is TypeParameterType) {
-                return ScalaTypeParameterType2PsiTypeParameterAdaptor(
+                ScalaTypeParameterType2PsiTypeParameterAdaptor(
                     TypeParameterTypeWrapper(scType),
                     scType,
                     annotationProvider
                 )
             } else {
-                return ScalaPsiTypeAdaptor(scType, annotationProvider)
+                ScalaPsiTypeAdaptor(scType, annotationProvider)
             }
         }
     }

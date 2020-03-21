@@ -450,6 +450,10 @@ open class DuckTypeHelper {
         ).elementFactory.createType(clazz, *parameters)
     }
 
+    fun createType(psiType: PsiType, context: PsiElement?, vararg parameters: PsiType): PsiClassType? {
+        return jvmClassHelper!!.resolveClassInType(psiType)?.let { createType(it, context, *parameters) }
+    }
+
     fun findType(canonicalText: String, context: PsiElement): PsiType? {
         return nameToTypeCache.safeComputeIfAbsent(canonicalText) {
             return@safeComputeIfAbsent buildPsiType(canonicalText, context)
