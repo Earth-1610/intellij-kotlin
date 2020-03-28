@@ -5,13 +5,10 @@ import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.psi.javadoc.PsiDocComment
 import com.intellij.util.containers.stream
-import com.itangcent.common.utils.append
-import com.itangcent.common.utils.cast
-import com.itangcent.common.utils.reduceSafely
+import com.itangcent.common.utils.*
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.DocHelper
 import com.itangcent.intellij.jvm.ExtendProvider
-import org.apache.commons.lang3.StringUtils
 import java.util.*
 
 @Singleton
@@ -62,13 +59,14 @@ open class StandardDocHelper : DocHelper {
                     val res: LinkedList<String> = LinkedList()
                     for (paramDocTag in tags) {
                         val data = paramDocTag.dataElements
+                            .stream()
                             .map { it?.text }
-                            .filterNot { StringUtils.isBlank(it) }
-                            .filterNotNull()
+                            .filter { it.notNullOrEmpty() }
+                            .map { it!! }
                             .map { it.trim() }
                             .reduceSafely { s1, s2 -> "$s1 $s2" }
-                        if (!data.isNullOrEmpty()) {
-                            res.add(data)
+                        if (data.notNullOrEmpty()) {
+                            res.add(data!!)
                         }
                     }
                     return@callInReadUI res
@@ -86,9 +84,8 @@ open class StandardDocHelper : DocHelper {
                         var value: String? = null
 
                         val elements = paramDocTag.dataElements
-                            .asSequence()
                             .map { it?.text }
-                            .filterNot { StringUtils.isBlank(it) }
+                            .filterNot { it.notNullOrEmpty() }
 
                         loop@ for (element in elements) {
                             when {
@@ -140,9 +137,8 @@ open class StandardDocHelper : DocHelper {
                         var value: String? = null
 
                         val elements = paramDocTag.dataElements
-                            .asSequence()
-                            .map { it?.text }
-                            .filterNot { StringUtils.isBlank(it) }
+                            .stream()
+                            .mapNotNull { it.text }
 
                         for (element in elements) {
                             when {
@@ -168,8 +164,8 @@ open class StandardDocHelper : DocHelper {
                     val tagMap: HashMap<String, String?> = HashMap()
                     docComment.tags.forEach { tag ->
                         tagMap[tag.name] = tag.dataElements
-                            .mapNotNull { it?.text }
-                            .filter { it.isNotBlank() }
+                            .stream()
+                            .mapNotNull { it.text }
                             .joinToString(separator = "") { it.trim() }
                     }
                     return@callInReadUI tagMap
@@ -184,6 +180,7 @@ open class StandardDocHelper : DocHelper {
 
         if (text.contains("//")) {
             return psiElement.children
+                .stream()
                 .filter { (it is PsiComment) && it.tokenType == JavaTokenType.END_OF_LINE_COMMENT }
                 .map { it.text.trim() }
                 .map { it.removePrefix("//") }
