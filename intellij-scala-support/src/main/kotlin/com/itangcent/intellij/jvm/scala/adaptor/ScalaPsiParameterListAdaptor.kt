@@ -2,6 +2,7 @@ package com.itangcent.intellij.jvm.scala.adaptor
 
 import com.intellij.psi.PsiParameter
 import com.intellij.psi.PsiParameterList
+import com.itangcent.common.utils.mapToTypedArray
 
 /**
  * read only
@@ -15,9 +16,9 @@ class ScalaPsiParameterListAdaptor(private val psiParameterList: PsiParameterLis
     }
 
     override fun getParameters(): Array<PsiParameter> {
-        return psiParameterList.parameters.map {
+        return psiParameterList.parameters.mapToTypedArray {
             ScalaPsiParameterAdaptor(it)
-        }.toTypedArray()
+        }
     }
 
     override fun equals(other: Any?): Boolean {

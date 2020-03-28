@@ -9,6 +9,7 @@ import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.jvm.DuckTypeHelper
 import com.itangcent.intellij.jvm.JvmClassHelper
+import com.itangcent.intellij.jvm.duck.DuckType
 import java.util.*
 
 @Singleton
@@ -31,6 +32,16 @@ open class DefaultClassRuleConfig : ClassRuleConfig {
             ) ?: return@safeComputeIfAbsent psiType
             return@safeComputeIfAbsent duckTypeHelper!!.findType(convert, realContext) ?: psiType
         } as PsiType? ?: psiType
+    }
+
+    override fun tryConvert(duckType: DuckType, context: PsiElement?): DuckType {
+        if (context == null) return duckType
+        return convertRule.safeComputeIfAbsent(duckType) {
+            val convert = ruleComputer!!.computer(
+                ClassRuleKeys.CLASS_CONVERT, duckType, context
+            ) ?: return@safeComputeIfAbsent duckType
+            return@safeComputeIfAbsent duckTypeHelper!!.resolve(convert, context) ?: duckType
+        } as DuckType? ?: duckType
     }
 
     override fun tryConvert(psiClass: PsiClass): PsiClass {

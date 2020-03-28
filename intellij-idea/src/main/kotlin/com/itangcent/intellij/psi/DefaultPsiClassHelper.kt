@@ -67,6 +67,10 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         return classRuleConfig?.tryConvert(psiType, context) ?: psiType
     }
 
+    override fun tryCastTo(duckType: DuckType, context: PsiElement): DuckType {
+        return classRuleConfig?.tryConvert(duckType, context) ?: duckType
+    }
+
     override fun isNormalType(psiType: PsiType): Boolean {
         return jvmClassHelper!!.isNormalType(classRuleConfig!!.tryConvert(psiType).canonicalText)
     }
@@ -267,12 +271,13 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                 commentKV = KV.create()
                 kv["@comment"] = commentKV
             }
-            if (fieldOrMethod is PsiField) {
-                val field: PsiField = fieldOrMethod
-                commentKV[fieldName] = docHelper!!.getAttrOfField(field)?.trim()
+            val psiFieldOrMethod = fieldOrMethod.psi()
+            if (psiFieldOrMethod is PsiField) {
+                val field: PsiField = psiFieldOrMethod
+                commentKV[fieldName] = docHelper!!.getAttrOfField(psiFieldOrMethod)?.trim()
                 resolveSeeDoc(field, commentKV)
-            } else if (fieldOrMethod is PsiMethod) {
-                val attrInDoc = docHelper!!.getAttrOfDocComment(fieldOrMethod)
+            } else if (psiFieldOrMethod is PsiMethod) {
+                val attrInDoc = docHelper!!.getAttrOfDocComment(psiFieldOrMethod)
                 if (StringUtils.isNotBlank(attrInDoc)) {
                     commentKV[fieldName] = attrInDoc
                 }
