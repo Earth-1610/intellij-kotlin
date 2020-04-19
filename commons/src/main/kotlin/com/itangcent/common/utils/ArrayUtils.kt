@@ -7,7 +7,7 @@ object ArrayUtils {
      * This value is returned by methods in this class and can also be used in comparisons with values returned by
      * various method from [java.util.List].
      */
-    val INDEX_NOT_FOUND = -1
+    const val INDEX_NOT_FOUND = -1
 
     /**
      *

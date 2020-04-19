@@ -1,6 +1,6 @@
 package com.itangcent.intellij.util
 
-import com.itangcent.common.function.ResultHolder
+import com.itangcent.common.concurrent.ValueHolder
 import com.itangcent.common.utils.ClassHelper
 import java.awt.Dialog
 import java.awt.EventQueue
@@ -16,13 +16,15 @@ object UIUtils {
 
     @Suppress("UNCHECKED_CAST")
     fun <T : Dialog> create(dialogCls: KClass<T>): T {
-        val resultHolder = ResultHolder<T>()
+        val resultHolder = ValueHolder<T>()
         EventQueue.invokeLater {
-            val dialog: Dialog = ClassHelper.newInstance(dialogCls) as Dialog
-            dialog.pack()
-            dialog.isVisible = true
-            resultHolder.setResultVal(dialog as T)
+            resultHolder.compute {
+                val dialog: Dialog = ClassHelper.newInstance(dialogCls) as Dialog
+                dialog.pack()
+                dialog.isVisible = true
+                return@compute dialog as T
+            }
         }
-        return resultHolder.getResultVal()!!
+        return resultHolder.value()!!
     }
 }

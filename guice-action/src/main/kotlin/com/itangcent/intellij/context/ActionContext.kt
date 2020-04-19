@@ -256,7 +256,7 @@ class ActionContext {
                         countLatch.up()
                     }
                 }
-                return valueHolder.getData()
+                return valueHolder.value()
             }
         }
     }
@@ -305,7 +305,7 @@ class ActionContext {
                     countLatch.up()
                 }
             })
-            return valueHolder.getData()
+            return valueHolder.value()
         }
     }
 
@@ -351,7 +351,7 @@ class ActionContext {
                     countLatch.up()
                 }
             }
-            return valueHolder.getData()
+            return valueHolder.value()
         }
     }
 

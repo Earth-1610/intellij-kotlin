@@ -1,10 +1,9 @@
 package com.itangcent.common.utils
 
-import com.itangcent.common.function.Holder
+import com.itangcent.common.concurrent.MutableHolder
 import org.apache.commons.lang3.ArrayUtils
 import java.util.concurrent.TimeUnit
 import java.util.function.BiConsumer
-import java.util.function.Function
 import java.util.regex.Pattern
 
 /**
@@ -26,22 +25,22 @@ object TimeSpanUtils {
     private val carries = longArrayOf(1000L, 1000L, 1000L, 60L, 60L, 24L)
 
     fun parse(timeSpan: String): Long? {
-        if (org.apache.commons.lang3.StringUtils.isBlank(timeSpan)) {
+        if (timeSpan.isNullOrBlank()) {
             return 0L
         }
-        val holder = Holder.of(0L)
+        val holder = MutableHolder.of(0L)
         match(
             timeSpan,
             BiConsumer { duration, unit ->
-                holder.updateData(Function { span ->
+                holder.updateData { span ->
                     span!! + convert(
                         duration,
                         unit,
                         TimeUnit.MILLISECONDS
                     ).toLong()
-                })
+                }
             })
-        return holder.getData()
+        return holder.value()
     }
 
     fun parse(timeSpan: String, timeUnit: TimeUnit): Long {
@@ -53,19 +52,19 @@ object TimeSpanUtils {
         if (org.apache.commons.lang3.StringUtils.isBlank(timeSpan)) {
             return 0.0
         }
-        val holder = Holder.of<Double>(0.0)
+        val holder = MutableHolder.of<Double>(0.0)
         match(
             timeSpan,
             BiConsumer { duration, unit ->
-                holder.updateData(Function { span ->
+                holder.updateData { span ->
                     span!! + convert(
                         duration,
                         unit,
                         timeUnit
                     )
-                })
+                }
             })
-        return holder.getData()
+        return holder.value()
     }
 
     fun pretty(duration: Long, unit: TimeUnit): String {
