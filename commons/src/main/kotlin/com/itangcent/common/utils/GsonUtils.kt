@@ -22,7 +22,7 @@ object GsonUtils {
         .serializeNulls()
         .create()
 
-    private val pretty_gson = GsonBuilder()
+    private val prettyGson = GsonBuilder()
         .setExclusionStrategies(RegisterExclusionStrategy().exclude(Visional::class.java))
         .registerTypeAdapterFactory(NumberObjectTypeAdapter.FACTORY)
         .setPrettyPrinting()
@@ -60,11 +60,11 @@ object GsonUtils {
     }
 
     fun prettyJsonSafely(any: Any?): String {
-        return pretty_gson.toJson(resolveCycle(any))
+        return prettyGson.toJson(resolveCycle(any))
     }
 
     fun prettyJson(any: Any?): String {
-        return pretty_gson.toJson(any)
+        return prettyGson.toJson(any)
     }
 
     fun prettyJsonWithNulls(any: Any?): String {

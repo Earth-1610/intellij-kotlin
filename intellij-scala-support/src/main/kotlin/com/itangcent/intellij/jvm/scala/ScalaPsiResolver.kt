@@ -32,7 +32,7 @@ open class ScalaPsiResolver : StandardPsiResolver() {
         }
 
         //[scala.xxxClass]
-        var linkClass = resolveClass(cwp, psiElement)
+        var linkClass = duckTypeHelper!!.resolveClass(cwp, psiElement)
         if (linkClass != null) {
             return linkClass to null
         }
@@ -41,7 +41,7 @@ open class ScalaPsiResolver : StandardPsiResolver() {
         if (cwp.contains('.')) {
             val linkClassName = cwp.substringBeforeLast(".")
             val linkMethodOrProperty = cwp.substringAfterLast(".", "").trim()
-            linkClass = resolveClass(linkClassName, psiElement) ?: return null
+            linkClass = duckTypeHelper.resolveClass(linkClassName, psiElement) ?: return null
             return linkClass to resolvePropertyOrMethodOfClass(linkClass, linkMethodOrProperty)
         }
 
