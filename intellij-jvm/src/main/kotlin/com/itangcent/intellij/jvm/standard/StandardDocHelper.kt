@@ -78,28 +78,30 @@ open class StandardDocHelper : DocHelper {
         return psiElement.cast(PsiDocCommentOwner::class)?.docComment
             ?.let { docComment ->
                 return@let ActionContext.getContext()!!.callInReadUI {
-                    for (paramDocTag in docComment.findTagsByName(tag)) {
+                    loopTags@ for (paramDocTag in docComment.findTagsByName(tag)) {
 
-                        var n: String? = null
+                        var matched = false
                         var value: String? = null
 
                         val elements = paramDocTag.dataElements
                             .map { it?.text }
-                            .filterNot { it.notNullOrEmpty() }
+                            .filter { it.notNullOrEmpty() }
 
-                        loop@ for (element in elements) {
+                        for (element in elements) {
                             when {
-                                n == null -> if (n == name) {
-                                    n = element
-                                } else {
-                                    continue@loop
+                                !matched -> if (element.notNullOrBlank()) {
+                                    if (element != name) {
+                                        continue@loopTags
+                                    } else {
+                                        matched = true
+                                    }
                                 }
                                 value == null -> value = element
                                 else -> value += element
                             }
                         }
 
-                        if (n == name) {
+                        if (matched) {
                             return@callInReadUI value
                         }
                     }

@@ -434,7 +434,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         cacheResolvedInfo(clsWithParam, option, kv)
         beforeParseType(psiClass, clsWithParam, option, kv)
 
-        val explicitClass = duckTypeHelper!!.explicit(clsWithParam)
+        val explicitClass = duckTypeHelper!!.explicit(getResourceType(clsWithParam))
         foreachField(explicitClass, option) { fieldName, fieldType, fieldOrMethod ->
 
             if (!beforeParseFieldOrMethod(
@@ -783,6 +783,31 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     open fun getResourceClass(psiClass: PsiClass): PsiClass {
         return psiClass
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    open fun <T : DuckType> getResourceType(duckType: T): T {
+        return when (duckType) {
+            is SingleDuckType -> {
+                val psiClass = duckType.psiClass()
+                val resourceClass = getResourceClass(psiClass)
+                if (resourceClass == psiClass) {
+                    duckType
+                } else {
+                    SingleDuckType(resourceClass, duckType.genericInfo) as T
+                }
+            }
+            is ArrayDuckType -> {
+                val componentType = duckType.componentType()
+                val resourceComponentType = getResourceType(componentType)
+                if (resourceComponentType == componentType) {
+                    duckType
+                } else {
+                    ArrayDuckType(componentType) as T
+                }
+            }
+            else -> duckType
+        }
     }
 
     open fun beforeParseClass(psiClass: PsiClass, option: Int, kv: KV<String, Any?>) {
