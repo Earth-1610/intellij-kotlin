@@ -145,3 +145,7 @@ fun Any?.toInt(): Int? {
 fun String?.notNullOrEmpty(): Boolean {
     return !this.isNullOrEmpty()
 }
+
+fun String?.notNullOrBlank(): Boolean {
+    return !this.isNullOrBlank()
+}
