@@ -10,8 +10,6 @@ interface ExplicitParameter : DuckExplicitElement<PsiParameter> {
 
     fun containMethod(): ExplicitMethod
 
-    fun containClass(): ExplicitClass
-
     fun name(): String
 }
 

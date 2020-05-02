@@ -9,8 +9,6 @@ interface ExplicitMethod : DuckExplicitElement<PsiMethod> {
 
     fun getParameters(): Array<ExplicitParameter>
 
-    fun containClass(): ExplicitClass
-
     fun name(): String
 }
 
