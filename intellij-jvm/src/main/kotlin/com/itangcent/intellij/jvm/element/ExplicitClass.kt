@@ -66,6 +66,10 @@ class ExplicitClassWithGenericInfo : ExplicitElementWithGenericInfo<PsiClass>, E
         return psiClass.name ?: ""
     }
 
+    override fun containClass(): ExplicitClass {
+        return this
+    }
+
     /**
      * Returns the list of classes that this class or interface extends.
      *
@@ -151,7 +155,6 @@ class ExplicitClassWithGenericInfo : ExplicitElementWithGenericInfo<PsiClass>, E
 }
 
 class ExplicitClassWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiClass>, ExplicitClass {
-
     private val psiClass: PsiClass
 
     constructor(duckTypeHelper: DuckTypeHelper, psiClass: PsiClass) : super(duckTypeHelper) {
@@ -164,6 +167,10 @@ class ExplicitClassWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiCla
 
     override fun name(): String {
         return psiClass.name ?: ""
+    }
+
+    override fun containClass(): ExplicitClass {
+        return this
     }
 
     /**

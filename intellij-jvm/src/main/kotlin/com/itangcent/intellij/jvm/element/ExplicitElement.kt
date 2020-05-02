@@ -8,6 +8,8 @@ import com.itangcent.intellij.jvm.DuckTypeHelper
 interface ExplicitElement<E : PsiElement> {
 
     fun psi(): E
+
+    fun containClass(): ExplicitClass
 }
 
 interface DuckExplicitElement<E : PsiElement> : ExplicitElement<E> {
