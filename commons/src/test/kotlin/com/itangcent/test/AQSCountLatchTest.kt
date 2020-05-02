@@ -11,7 +11,7 @@ class AQSCountLatchTest {
     @Test
     fun testAQSCountLatch() {
         val aqs = AQSCountLatch()
-        for (index in 1..10) {
+        for (index in 1..5) {
             TimeUnit.MILLISECONDS.sleep(10)
             Thread {
                 for (ignore in 0..index) {
@@ -24,6 +24,6 @@ class AQSCountLatchTest {
                 }
             }.start()
         }
-        assertTimeout(Duration.ofMillis(300)) { aqs.waitFor() }
+        assertTimeout(Duration.ofMillis(300)) { aqs.waitFor(1000) }
     }
 }
