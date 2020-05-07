@@ -11,7 +11,7 @@ class OnlyOnceInContextTip(private val content: String) : Tip {
 
     private val tipId = IDUtils.shortUUID()
 
-    override fun tipable(): Boolean {
+    override fun tipAble(): Boolean {
         val context = ActionContext.getContext() ?: return false
         val instance = context.instance(OnlyOnceInContextTipCache::class)
         return instance.trySetCache(tipId)

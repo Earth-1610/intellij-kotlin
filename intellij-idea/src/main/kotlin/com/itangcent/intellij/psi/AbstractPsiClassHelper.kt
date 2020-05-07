@@ -380,7 +380,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                         null
                     } else {
                         getTypeObject(
-                            duckTypeHelper!!.ensureType(valueType, duckType.genericInfo),
+                            duckTypeHelper.ensureType(valueType, duckType.genericInfo),
                             context,
                             option
                         )

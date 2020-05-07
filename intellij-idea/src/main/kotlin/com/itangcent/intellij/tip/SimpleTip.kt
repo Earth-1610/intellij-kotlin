@@ -1,7 +1,7 @@
 package com.itangcent.intellij.tip
 
 class SimpleTip(private val content: String) : Tip {
-    override fun tipable(): Boolean {
+    override fun tipAble(): Boolean {
         return true
     }
 

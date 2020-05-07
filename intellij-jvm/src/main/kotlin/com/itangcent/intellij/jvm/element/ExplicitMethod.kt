@@ -5,11 +5,20 @@ import com.itangcent.intellij.jvm.duck.DuckType
 
 interface ExplicitMethod : DuckExplicitElement<PsiMethod> {
 
+    /**
+     * Returns the return type of the method.
+     *
+     * @return the method return type, or null if the method is a constructor.
+     */
     fun getReturnType(): DuckType?
 
+    /**
+     * Returns the parameter list for the method.
+     *
+     * @return the parameter list instance.
+     */
     fun getParameters(): Array<ExplicitParameter>
 
-    fun name(): String
 }
 
 class ExplicitMethodWithGenericInfo : ExplicitElementWithGenericInfo<PsiMethod>, ExplicitMethod {

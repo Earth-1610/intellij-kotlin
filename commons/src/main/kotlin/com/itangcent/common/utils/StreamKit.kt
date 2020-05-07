@@ -8,8 +8,6 @@ import kotlin.reflect.KClass
  *
  * If the collection could be huge, you can specify a non-negative value of [limit], in which case only the first [limit]
  * elements will be appended, followed by the [truncated] string (which defaults to "...").
- *
- * @sample samples.collections.Collections.Transformations.joinToString
  */
 public fun <T> Stream<T>.joinToString(
     separator: CharSequence = ", ",
@@ -27,8 +25,6 @@ public fun <T> Stream<T>.joinToString(
  *
  * If the collection could be huge, you can specify a non-negative value of [limit], in which case only the first [limit]
  * elements will be appended, followed by the [truncated] string (which defaults to "...").
- *
- * @sample samples.collections.Collections.Transformations.joinTo
  */
 public fun <T, A : Appendable> Stream<T>.joinTo(
     buffer: A,
@@ -61,7 +57,6 @@ internal fun <T> Appendable.appendElement(element: T, transform: ((T) -> CharSeq
     }
 }
 
-
 fun <T> Stream<T>.firstOrNull(): T? {
     return this.findFirst().orElse(null)
 }
@@ -70,6 +65,9 @@ fun <T> Stream<T>.firstOrNull(predicate: (T) -> Boolean): T? {
     return this.filter(predicate).firstOrNull()
 }
 
+/**
+ * Returns a sequential ordered stream whose elements are the specified array.
+ */
 fun <T> kotlin.Array<T>?.stream(): java.util.stream.Stream<T> {
     if (this.isNullOrEmpty()) {
         return Stream.empty()
@@ -153,14 +151,14 @@ inline fun <T, reified R> Collection<T>.mapToTypedArray(transform: (T) -> R): Ar
 }
 
 @Suppress("UNCHECKED_CAST")
-fun <T> Stream<T?>.filterNotNull(): Stream<T> {
+fun <T> Stream<T>.filterNotNull(): Stream<T> {
     return this
         .filter { it != null }
         .map { it!! }
 }
 
 @Suppress("UNCHECKED_CAST")
-fun <T, R> Stream<T?>.mapNotNull(transform: (T) -> R?): Stream<R> {
+fun <T, R> Stream<T>.mapNotNull(transform: (T) -> R?): Stream<R> {
     return this
         .filter { it != null }
         .map { transform(it!!) }

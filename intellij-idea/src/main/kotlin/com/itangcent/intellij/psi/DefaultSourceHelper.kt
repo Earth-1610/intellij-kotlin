@@ -27,12 +27,15 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiJavaFile
 import com.intellij.psi.PsiManager
+import com.intellij.psi.StubBasedPsiElement
 import com.intellij.psi.impl.compiled.ClsClassImpl
+import com.intellij.psi.impl.java.stubs.impl.PsiClassStubImpl
 import com.intellij.util.containers.stream
+import com.itangcent.intellij.jvm.SourceHelper
 import java.io.File
 import java.util.*
 
-class SourceHelper : com.itangcent.intellij.jvm.SourceHelper {
+open class DefaultSourceHelper : SourceHelper {
 
     @Inject(optional = true)
     private var myProject: Project? = null
@@ -48,6 +51,11 @@ class SourceHelper : com.itangcent.intellij.jvm.SourceHelper {
     ): PsiClass {
         try {
             if (myProject == null) {
+                return original
+            }
+
+            //it's unnecessary to find source of local class.
+            if (isLocalClass(original)) {
                 return original
             }
 
@@ -87,6 +95,14 @@ class SourceHelper : com.itangcent.intellij.jvm.SourceHelper {
         }
 
         return original
+    }
+
+    protected open fun isLocalClass(psiClass: PsiClass): Boolean {
+        if (psiClass is StubBasedPsiElement<*>) {
+            val stub = psiClass.stub
+            return stub is PsiClassStubImpl<*> && stub.isLocalClassInner
+        }
+        return false
     }
 
     private fun tryFindSourceClass(
