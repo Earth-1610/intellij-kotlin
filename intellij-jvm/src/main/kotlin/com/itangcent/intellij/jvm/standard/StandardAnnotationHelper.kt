@@ -3,10 +3,7 @@ package com.itangcent.intellij.jvm.standard
 import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
-import com.intellij.util.containers.stream
-import com.itangcent.common.utils.GsonUtils
-import com.itangcent.common.utils.cast
-import com.itangcent.common.utils.longest
+import com.itangcent.common.utils.*
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.AnnotationHelper
 
@@ -55,9 +52,10 @@ open class StandardAnnotationHelper : AnnotationHelper {
         val ann = findAnn(psiElement, annName) ?: return null
         return actionContext!!.callInReadUI {
             return@callInReadUI attrs
+                .stream()
                 .mapNotNull { ann.findAttributeValue(it) }
                 .mapNotNull { resolveValue(it) }
-                .map { tinyAnnStr(it) }
+                .mapNotNull { tinyAnnStr(it) }
                 .longest()
         }
     }

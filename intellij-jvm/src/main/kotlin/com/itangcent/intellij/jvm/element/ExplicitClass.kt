@@ -6,6 +6,7 @@ import com.intellij.psi.PsiClassType
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.DuckTypeHelper
 import com.itangcent.intellij.jvm.JvmClassHelper
+import com.itangcent.intellij.jvm.SourceHelper
 import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.duck.SingleDuckType
 
@@ -29,7 +30,7 @@ interface ExplicitClass : DuckExplicitElement<PsiClass> {
     /**
      * collect all methods in the class and all its superclasses.
      */
-    fun collectMethods(jvmClassHelper: JvmClassHelper, action: (ExplicitMethod) -> Unit)
+    fun collectMethods(action: (ExplicitMethod) -> Unit)
 
     /**
      * Returns the list of fields in the class and all its superclasses.
@@ -41,12 +42,13 @@ interface ExplicitClass : DuckExplicitElement<PsiClass> {
     /**
      * collect all fields in the class and all its superclasses.
      */
-    fun collectFields(jvmClassHelper: JvmClassHelper, action: (ExplicitField) -> Unit)
-
-    fun name(): String
+    fun collectFields(action: (ExplicitField) -> Unit)
 
     fun asDuckType(): DuckType
 }
+
+val jvmClassHelper: JvmClassHelper = ActionContext.local()
+val sourceHelper: SourceHelper = ActionContext.local()
 
 class ExplicitClassWithGenericInfo : ExplicitElementWithGenericInfo<PsiClass>, ExplicitClass {
     private val psiClass: PsiClass
@@ -92,28 +94,26 @@ class ExplicitClassWithGenericInfo : ExplicitElementWithGenericInfo<PsiClass>, E
      * @return the list of methods.
      */
     override fun methods(): ArrayList<ExplicitMethod> {
-        val jvmClassHelper = ActionContext.getContext()!!.instance(JvmClassHelper::class)
         val explicitMethods: ArrayList<ExplicitMethod> = ArrayList()
-        collectMethods(jvmClassHelper) { explicitMethods.add(it) }
+        collectMethods { explicitMethods.add(it) }
         return explicitMethods
     }
 
     /**
      * collect all methods in the class and all its superclasses.
      */
-    override fun collectMethods(jvmClassHelper: JvmClassHelper, action: (ExplicitMethod) -> Unit) {
+    override fun collectMethods(action: (ExplicitMethod) -> Unit) {
         val methods = jvmClassHelper.getMethods(psiClass)
         for (method in methods) {
             action(ExplicitMethodWithGenericInfo(this, method))
         }
-        this.extends()?.forEach { it.collectMethods(jvmClassHelper, action) }
+        this.extends()?.forEach { it.collectMethods(action) }
     }
 
     override fun fields(): ArrayList<ExplicitField> {
-        val jvmClassHelper = ActionContext.getContext()!!.instance(JvmClassHelper::class)
         val explicitFields: ArrayList<ExplicitField> = ArrayList()
         val fieldName: HashSet<String> = HashSet()
-        collectFields(jvmClassHelper) {
+        collectFields {
             if (fieldName.add(it.name())) {
                 explicitFields.add(it)
             }
@@ -121,27 +121,29 @@ class ExplicitClassWithGenericInfo : ExplicitElementWithGenericInfo<PsiClass>, E
         return explicitFields
     }
 
-    override fun collectFields(jvmClassHelper: JvmClassHelper, action: (ExplicitField) -> Unit) {
+    override fun collectFields(action: (ExplicitField) -> Unit) {
         val fields = jvmClassHelper.getFields(psiClass)
         for (field in fields) {
             action(ExplicitFieldWithGenericInfo(this, field))
         }
-        this.extends()?.forEach { it.collectFields(jvmClassHelper, action) }
+        this.extends()?.forEach { it.collectFields(action) }
     }
 
     private fun resolve(psiClassType: PsiClassType): ExplicitClass? {
-        if (psiClassType.hasParameters()) {
+        val psiClass = ActionContext.getContext()
+            ?.instance(JvmClassHelper::class)
+            ?.resolveClassInType(psiClassType)
+            ?.let { sourceHelper.getSourceClass(it) }
+            ?: return null
+        return if (psiClassType.hasParameters()) {
             val subGenericInfo: HashMap<String, DuckType?> = HashMap()
-            val psiClass = ActionContext.getContext()
-                ?.instance(JvmClassHelper::class)
-                ?.resolveClassInType(psiClassType) ?: return null
             val parameters = psiClassType.parameters
             for ((index, typeParameter) in psiClass.typeParameters.withIndex()) {
                 subGenericInfo[typeParameter.name ?: ""] = ensureType(parameters[index])
             }
-            return ExplicitClassWithGenericInfo(duckTypeHelper, subGenericInfo, psiClass)
+            ExplicitClassWithGenericInfo(duckTypeHelper, subGenericInfo, psiClass)
         } else {
-            return ExplicitClassWithOutGenericInfo(this, psiClass)
+            ExplicitClassWithOutGenericInfo(this, psiClass)
         }
     }
 
@@ -196,28 +198,26 @@ class ExplicitClassWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiCla
      * @return the list of methods.
      */
     override fun methods(): ArrayList<ExplicitMethod> {
-        val jvmClassHelper = ActionContext.getContext()!!.instance(JvmClassHelper::class)
         val explicitMethods: ArrayList<ExplicitMethod> = ArrayList()
-        collectMethods(jvmClassHelper) { explicitMethods.add(it) }
+        collectMethods { explicitMethods.add(it) }
         return explicitMethods
     }
 
     /**
      * collect all methods in the class and all its superclasses.
      */
-    override fun collectMethods(jvmClassHelper: JvmClassHelper, action: (ExplicitMethod) -> Unit) {
+    override fun collectMethods(action: (ExplicitMethod) -> Unit) {
         val methods = jvmClassHelper.getMethods(psiClass)
         for (method in methods) {
             action(ExplicitMethodWithOutGenericInfo(this, method))
         }
-        this.extends()?.forEach { it.collectMethods(jvmClassHelper, action) }
+        this.extends()?.forEach { it.collectMethods(action) }
     }
 
     override fun fields(): ArrayList<ExplicitField> {
-        val jvmClassHelper = ActionContext.getContext()!!.instance(JvmClassHelper::class)
         val explicitFields: ArrayList<ExplicitField> = ArrayList()
         val fieldName: HashSet<String> = HashSet()
-        collectFields(jvmClassHelper) {
+        collectFields {
             if (fieldName.add(it.name())) {
                 explicitFields.add(it)
             }
@@ -225,18 +225,20 @@ class ExplicitClassWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiCla
         return explicitFields
     }
 
-    override fun collectFields(jvmClassHelper: JvmClassHelper, action: (ExplicitField) -> Unit) {
+    override fun collectFields(action: (ExplicitField) -> Unit) {
         val fields = jvmClassHelper.getFields(psiClass)
         for (field in fields) {
             action(ExplicitFieldWithOutGenericInfo(this, field))
         }
-        this.extends()?.forEach { it.collectFields(jvmClassHelper, action) }
+        this.extends()?.forEach { it.collectFields(action) }
     }
 
     private fun resolve(psiClassType: PsiClassType): ExplicitClass? {
         val psiClass = ActionContext.getContext()
             ?.instance(JvmClassHelper::class)
-            ?.resolveClassInType(psiClassType) ?: return null
+            ?.resolveClassInType(psiClassType)
+            ?.let { sourceHelper.getSourceClass(it) }
+            ?: return null
         return when {
             psiClassType.hasParameters() -> {
                 val subGenericInfo: HashMap<String, DuckType?> = HashMap()

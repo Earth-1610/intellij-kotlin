@@ -1,8 +1,12 @@
 package com.itangcent.intellij.spi
 
 import com.itangcent.common.spi.SetupAble
+import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.extend.guice.with
 import com.itangcent.intellij.jvm.ExtendProvider
+import com.itangcent.intellij.jvm.SourceHelper
 import com.itangcent.intellij.jvm.spi.AutoInjectKit
+import com.itangcent.intellij.psi.DefaultSourceHelper
 
 class IdeaAutoInject : SetupAble {
 
@@ -13,5 +17,11 @@ class IdeaAutoInject : SetupAble {
             ExtendProvider::class,
             "com.itangcent.intellij.config.RuleExtendProvider"
         )
+
+        ActionContext.addDefaultInject { context ->
+            context.bind(SourceHelper::class) {
+                it.with(DefaultSourceHelper::class)
+            }
+        }
     }
 }

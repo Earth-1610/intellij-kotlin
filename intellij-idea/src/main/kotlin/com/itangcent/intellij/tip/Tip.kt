@@ -1,7 +1,7 @@
 package com.itangcent.intellij.tip
 
 interface Tip {
-    fun tipable(): Boolean
+    fun tipAble(): Boolean
 
     fun content(): String
 }
