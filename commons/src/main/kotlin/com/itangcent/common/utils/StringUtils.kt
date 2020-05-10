@@ -114,3 +114,7 @@ fun String?.appendln(): String? {
         else -> "${this}\n"
     }
 }
+
+fun String?.appendln(str: String): String? {
+    return this.append(str, "\n")
+}
