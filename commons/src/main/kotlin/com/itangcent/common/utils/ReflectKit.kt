@@ -7,7 +7,6 @@ import kotlin.jvm.internal.CallableReference
 import kotlin.jvm.internal.PropertyReference
 import kotlin.reflect.KProperty
 
-
 /**
  * change the property value with new value int the special KProperty in package level property ,not the property in class
  *
@@ -27,7 +26,7 @@ private fun <R> changePropertyValue(classObj: Any?, property: KProperty<R>, newV
     val containerClass: Class<*>
     try {
         containerClass =
-                (owner!!::class.members as ArrayList).firstOrNull { it.name == "jClass" }?.call(owner) as Class<*>
+            (owner!!::class.members as ArrayList).firstOrNull { it.name == "jClass" }?.call(owner) as Class<*>
     } catch (e: Exception) {
         throw IllegalArgumentException("No such property 'jClass'")
     }
@@ -89,7 +88,7 @@ fun changeTopPropertyValueByName(otherCallableReference: CallableReference, prop
     val containerClass: Class<*>
     try {
         containerClass =
-                (owner!!::class.members as ArrayList).firstOrNull { it.name == "jClass" }?.call(owner) as Class<*>
+            (owner!!::class.members as ArrayList).firstOrNull { it.name == "jClass" }?.call(owner) as Class<*>
     } catch (e: Exception) {
         throw IllegalArgumentException("No such property 'jClass'")
     }
@@ -258,7 +257,7 @@ fun getTopPropertyValueByName(otherCallableReference: CallableReference, propert
     val containerClass: Class<*>
     try {
         containerClass =
-                (owner!!::class.members as ArrayList).firstOrNull { it.name == "jClass" }?.call(owner) as Class<*>
+            (owner!!::class.members as ArrayList).firstOrNull { it.name == "jClass" }?.call(owner) as Class<*>
     } catch (e: Exception) {
         throw IllegalArgumentException("No such property 'jClass'")
     }
@@ -338,7 +337,7 @@ fun invokeTopMethodByMethodName(
     val containerClass: Class<*>
     try {
         containerClass =
-                (owner!!::class.members as ArrayList).firstOrNull { it.name == "jClass" }?.call(owner) as Class<*>
+            (owner!!::class.members as ArrayList).firstOrNull { it.name == "jClass" }?.call(owner) as Class<*>
     } catch (e: Exception) {
         throw IllegalArgumentException("No such property 'jClass'")
     }
@@ -367,7 +366,10 @@ fun invokeTopMethodByMethodName(
         }
         tobeSearchMethodClass = tobeSearchMethodClass.superclass
     }
-    throw IllegalArgumentException("Can't find the method named :$methodName with args ${methodArgs.toList().toString()} in the same file with ${otherCallableReference.name}")
+    throw IllegalArgumentException(
+        "Can't find the method named :$methodName with args ${methodArgs.toList()
+            .toString()} in the same file with ${otherCallableReference.name}"
+    )
 
 }
 

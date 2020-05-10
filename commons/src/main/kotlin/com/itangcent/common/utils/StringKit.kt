@@ -53,7 +53,6 @@ object StringUtils {
     val UNDERLINE = '_'
 }
 
-
 /**
  * Returns `true` if the contents of this string is equal to the word "true" or "1",
  * ignoring case, and `false` otherwise.
@@ -117,4 +116,12 @@ fun String?.appendln(): String? {
 
 fun String?.appendln(str: String): String? {
     return this.append(str, "\n")
+}
+
+fun String?.notNullOrEmpty(): Boolean {
+    return !this.isNullOrEmpty()
+}
+
+fun String?.notNullOrBlank(): Boolean {
+    return !this.isNullOrBlank()
 }

@@ -84,7 +84,6 @@ fun <R> KFunction<R>.packageLevelChangeOtherPropertyValueByName(otherPropertyNam
     changeTopPropertyValueByName(this as CallableReference, otherPropertyName, newValue)
 }
 
-
 /**
  * invoke package level method by name which is in the same kotlin file
  */
@@ -99,7 +98,6 @@ fun <R> KFunction<R>.packageLevelInvokeMethodByName(methodName: String, vararg a
     return invokeTopMethodByMethodName(this as CallableReference, methodName, *args)
 }
 
-
 @Suppress("UNCHECKED_CAST")
 fun <Input, Out : Any> Input?.cast(out: KClass<Out>): Out? {
     if (this == null) {
@@ -113,7 +111,7 @@ fun <Input, Out : Any> Input?.cast(out: KClass<Out>): Out? {
     return null
 }
 
-fun Any?.isNullOrEmpty(): Boolean {
+fun Any?.anyIsNullOrEmpty(): Boolean {
     return when {
         this == null -> true
         this is String && this.isEmpty() -> true
@@ -124,7 +122,7 @@ fun Any?.isNullOrEmpty(): Boolean {
     }
 }
 
-fun Any?.isNullOrBlank(): Boolean {
+fun Any?.anyIsNullOrBlank(): Boolean {
     return when {
         this == null -> true
         this is String && this.isBlank() -> true
@@ -140,12 +138,4 @@ fun Any?.toInt(): Int? {
         this is String -> this.toIntOrNull()
         else -> null
     }
-}
-
-fun String?.notNullOrEmpty(): Boolean {
-    return !this.isNullOrEmpty()
-}
-
-fun String?.notNullOrBlank(): Boolean {
-    return !this.isNullOrBlank()
 }

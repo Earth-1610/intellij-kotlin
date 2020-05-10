@@ -98,9 +98,9 @@ object GsonUtils {
         when (any) {
             null -> return null
             is Map<*, *> -> {
-                if (!values.add(any)) return HashMap<Any?, Any?>()
+                if (!values.add(any)) return emptyMap<Any?, Any?>()
                 val newCopy: HashMap<Any?, Any?> = HashMap()
-                any.forEach { key, value ->
+                any.forEach { (key, value) ->
                     newCopy[key] = copy(value, values)
                 }
                 values.pop()
@@ -117,7 +117,6 @@ object GsonUtils {
             }
             else -> return any
         }
-
     }
 
     private fun collectValues(any: Any?): Boolean {
