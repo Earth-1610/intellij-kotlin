@@ -16,11 +16,11 @@ class LineReader(private val content: String, private val lineHandle: (String) -
                 common -> {
                     when {
                         trimLine.endsWith("\\") -> {
-                            oneLine += trimLine.removeSuffix("\\").appendln()
+                            oneLine = oneLine.append(trimLine.removeSuffix("\\"))!!
                             status = wrap
                         }
                         trimLine.endsWith("```") -> {
-                            oneLine += trimLine.removeSuffix("```").appendln()
+                            oneLine = oneLine.append(trimLine.removeSuffix("```"))!!
                             status = block
                         }
                         else -> lineHandle(trimLine)
@@ -28,7 +28,7 @@ class LineReader(private val content: String, private val lineHandle: (String) -
                 }
                 wrap -> {
                     if (trimLine.endsWith("\\")) {
-                        oneLine += trimLine.removeSuffix("\\").appendln()
+                        oneLine += trimLine.removeSuffix("\\")
                         continue@loop
                     } else {
                         oneLine += trimLine
@@ -38,11 +38,11 @@ class LineReader(private val content: String, private val lineHandle: (String) -
                 }
                 block -> {
                     if (trimLine.endsWith("```")) {
-                        oneLine = oneLine.append(trimLine.removeSuffix("```"))!!
+                        oneLine = oneLine.appendln(trimLine.removeSuffix("```"))!!
                         next()
                         continue@loop
                     } else {
-                        oneLine += trimLine
+                        oneLine = oneLine.appendln(trimLine)!!
                         continue@loop
                     }
                 }
@@ -50,6 +50,10 @@ class LineReader(private val content: String, private val lineHandle: (String) -
         }
     }
 
+    /**
+     * line end.
+     * start read next line.
+     */
     private fun next() {
         lineHandle(oneLine)
         oneLine = ""
