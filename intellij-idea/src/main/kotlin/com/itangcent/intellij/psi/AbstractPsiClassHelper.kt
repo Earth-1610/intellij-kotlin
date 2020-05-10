@@ -5,8 +5,8 @@ import com.intellij.psi.*
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
 import com.itangcent.common.utils.KV
+import com.itangcent.common.utils.anyIsNullOrBlank
 import com.itangcent.common.utils.invokeMethod
-import com.itangcent.common.utils.isNullOrBlank
 import com.itangcent.common.utils.trimToNull
 import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.context.ActionContext
@@ -619,7 +619,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                         .joinToString(" ")
                         .trimToNull()
                 }
-                if (desc.isNullOrBlank()) {
+                if (desc.anyIsNullOrBlank()) {
                     desc = enumConstant["name"]
                 }
                 options.add(

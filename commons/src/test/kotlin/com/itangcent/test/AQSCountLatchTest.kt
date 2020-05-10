@@ -24,6 +24,6 @@ class AQSCountLatchTest {
                 }
             }.start()
         }
-        assertTimeout(Duration.ofMillis(300)) { aqs.waitFor(1000) }
+        assertTimeout(Duration.ofMillis(1000)) { aqs.waitFor(1000) }
     }
 }
