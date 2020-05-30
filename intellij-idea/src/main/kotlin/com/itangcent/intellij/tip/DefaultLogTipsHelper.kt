@@ -14,6 +14,3 @@ open class DefaultLogTipsHelper : AbstractTipsHelper() {
         logger?.info(tipContent)
     }
 }
-
-@Deprecated("just for compatibility.Will be removed at next version")
-typealias DefaultTipsHelper = DefaultLogTipsHelper

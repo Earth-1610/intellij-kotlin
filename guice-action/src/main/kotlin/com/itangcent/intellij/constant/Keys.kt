@@ -13,8 +13,5 @@ interface EventKey {
         const val ON_START = "onStart"
 
         const val ON_COMPLETED = "onCompleted"
-
-        @Deprecated(message = "use [ON_COMPLETED]")
-        const val ONCOMPLETED = ON_COMPLETED
     }
 }
