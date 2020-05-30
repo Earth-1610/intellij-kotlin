@@ -62,6 +62,10 @@ class KotlinAnnotationHelper : AnnotationHelper {
         return null
     }
 
+    override fun findAnnMaps(psiElement: PsiElement?, annName: String): List<Map<String, Any?>>? {
+        return findAnnMap(psiElement, annName)?.let { listOf(it) }
+    }
+
     override fun findAttr(psiElement: PsiElement?, annName: String): Any? {
 //        val ktAnnotation = findKtAnnotation(psiElement, annName)
 //        if (ktAnnotation != null) {

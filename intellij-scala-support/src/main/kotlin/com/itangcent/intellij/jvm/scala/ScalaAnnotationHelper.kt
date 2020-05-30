@@ -4,6 +4,7 @@ import com.intellij.psi.PsiAnnotationOwner
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiModifierListOwner
 import com.itangcent.common.utils.GsonUtils
+import com.itangcent.common.utils.notNullOrEmpty
 import com.itangcent.intellij.jvm.AnnotationHelper
 import com.itangcent.intellij.jvm.scala.adaptor.ScAdaptor
 import com.itangcent.intellij.jvm.scala.adaptor.tryCast
@@ -20,33 +21,54 @@ class ScalaAnnotationHelper : AnnotationHelper {
     }
 
     override fun findAnnMap(psiElement: PsiElement?, annName: String): Map<String, Any?>? {
-        if (psiElement == null) return null
+        if (psiElement == null) {
+            return null
+        }
 
         if (ScPsiUtils.isScPsiInst(psiElement)) {
             val scAnnotation = findScAnnotation(psiElement, annName)
             if (scAnnotation != null) {
-                val map: HashMap<String, Any?> = HashMap()
-                val annotationParameters = ScCompatibleAnnotationExpr.getAnnotationParameters(scAnnotation)
-                for (annotationParameter in annotationParameters) {
-                    if (ScCompatibleAssignment.isInstance(annotationParameter)) {
-                        val name: String? = ScCompatibleAssignment.referenceName(annotationParameter)
-                            ?: (ScCompatibleAssignment.leftExpression(annotationParameter)?.let {
-                                ScPsiUtils.valueOf(it)?.toString()
-                            }
-                                ?: "value")
-                        val rExpression = ScCompatibleAssignment.rightExpression(annotationParameter)
-                        if (rExpression != null) {
-                            map[name!!] = ScPsiUtils.valueOf(rExpression)
-                        }
-                    } else if (annotationParameter is ScExpression) {
-                        map["value"] = ScPsiUtils.valueOf(annotationParameter)
-                    }
-                }
-                return map
+                return annToMap(scAnnotation)
             }
         }
 
         return null
+    }
+
+    override fun findAnnMaps(psiElement: PsiElement?, annName: String): List<Map<String, Any?>>? {
+        if (psiElement == null) {
+            return null
+        }
+
+        if (ScPsiUtils.isScPsiInst(psiElement)) {
+            val scAnnotation = findScAnnotations(psiElement, annName)
+            if (scAnnotation.notNullOrEmpty()) {
+                return scAnnotation!!.map { annToMap(scAnnotation) }
+            }
+        }
+
+        return null
+    }
+
+    private fun annToMap(scAnnotation: Any): Map<String, Any?> {
+        val map: HashMap<String, Any?> = HashMap()
+        val annotationParameters = ScCompatibleAnnotationExpr.getAnnotationParameters(scAnnotation)
+        for (annotationParameter in annotationParameters) {
+            if (ScCompatibleAssignment.isInstance(annotationParameter)) {
+                val name: String? = ScCompatibleAssignment.referenceName(annotationParameter)
+                    ?: (ScCompatibleAssignment.leftExpression(annotationParameter)?.let {
+                        ScPsiUtils.valueOf(it)?.toString()
+                    }
+                        ?: "value")
+                val rExpression = ScCompatibleAssignment.rightExpression(annotationParameter)
+                if (rExpression != null) {
+                    map[name!!] = ScPsiUtils.valueOf(rExpression)
+                }
+            } else if (annotationParameter is ScExpression) {
+                map["value"] = ScPsiUtils.valueOf(annotationParameter)
+            }
+        }
+        return map
     }
 
     override fun findAttr(psiElement: PsiElement?, annName: String): Any? {
@@ -136,6 +158,44 @@ class ScalaAnnotationHelper : AnnotationHelper {
                 if (ann.qualifiedName == annName && ScCompatibleAnnotation.isInstance(ann)) {
                     return ScCompatibleAnnotation.annotationExpr(ann)
                 }
+            }
+        }
+
+        return null
+    }
+
+    /**
+     * @return ScAnnotationExpr
+     */
+    private fun findScAnnotations(psiElement: PsiElement?, annName: String): List<Any>? {
+
+        if (psiElement == null) {
+            return null
+        }
+
+        val annotations = (psiElement.tryCast(PsiAnnotationOwner::class)?.annotations
+            ?: psiElement.tryCast(PsiModifierListOwner::class)?.annotations)
+            ?.filter { ScCompatibleAnnotation.isInstance(it) }
+            ?.filter { it.qualifiedName == annName }
+
+        if (annotations.notNullOrEmpty()) {
+            return annotations!!.mapNotNull {
+                ScCompatibleAnnotation.annotationExpr(it)
+            }
+        }
+
+        val core = when (psiElement) {
+            is ScAdaptor<*> -> psiElement.adaptor()!!
+            else -> psiElement
+        }
+
+        if (ScCompatibleAnnotationsHolder.isInstance(core)) {
+            val anns = ScCompatibleAnnotationsHolder.annotations(core)
+                .filter { ScCompatibleAnnotation.isInstance(it) }
+                .filter { it.qualifiedName == annName }
+                .mapNotNull { ScCompatibleAnnotation.annotationExpr(it) }
+            if (anns.isNotEmpty()) {
+                return anns
             }
         }
 

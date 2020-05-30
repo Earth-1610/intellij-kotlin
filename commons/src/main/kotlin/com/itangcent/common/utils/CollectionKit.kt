@@ -12,3 +12,15 @@ public inline fun <S, T : S> Iterable<T>.reduceSafely(operation: (acc: S, T) -> 
     }
     return accumulator
 }
+
+fun Array<*>?.notNullOrEmpty(): Boolean {
+    return !this.isNullOrEmpty()
+}
+
+fun Collection<*>?.notNullOrEmpty(): Boolean {
+    return !this.isNullOrEmpty()
+}
+
+fun Map<*, *>?.notNullOrEmpty(): Boolean {
+    return !this.isNullOrEmpty()
+}

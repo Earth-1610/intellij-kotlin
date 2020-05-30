@@ -22,7 +22,12 @@ open class StandardAnnotationHelper : AnnotationHelper {
         return actionContext!!.callInReadUI { annToMap(psiAnn) }
     }
 
-    protected fun annToMap(psiAnn: PsiAnnotation): LinkedHashMap<String, Any?> {
+    override fun findAnnMaps(psiElement: PsiElement?, annName: String): List<Map<String, Any?>>? {
+        val psiAnn = findAnns(psiElement, annName) ?: return null
+        return actionContext!!.callInReadUI { psiAnn.map { annToMap(it) } }
+    }
+
+    protected fun annToMap(psiAnn: PsiAnnotation): Map<String, Any?> {
         val map: LinkedHashMap<String, Any?> = LinkedHashMap()
         psiAnn.parameterList.attributes.stream()
             .forEach { attr ->
@@ -63,6 +68,15 @@ open class StandardAnnotationHelper : AnnotationHelper {
     private fun findAnn(psiElement: PsiElement?, annName: String): PsiAnnotation? {
         return findAnnotations(psiElement)
             ?.let { annotations -> annotations.firstOrNull { it.qualifiedName == annName } }
+    }
+
+    private fun findAnns(psiElement: PsiElement?, annName: String): List<PsiAnnotation>? {
+        return findAnnotations(psiElement)
+            ?.let { annotations ->
+                annotations.filter {
+                    it.qualifiedName == annName
+                }
+            }
     }
 
     private fun findAnnotations(psiElement: PsiElement?): Array<out PsiAnnotation>? {
