@@ -9,6 +9,8 @@ interface AnnotationHelper {
 
     fun findAnnMap(psiElement: PsiElement?, annName: String): Map<String, Any?>?
 
+    fun findAnnMaps(psiElement: PsiElement?, annName: String): List<Map<String, Any?>>?
+
     fun hasAnn(psiElement: PsiElement?, annName: String): Boolean
 
     fun findAttr(psiElement: PsiElement?, annName: String): Any?
