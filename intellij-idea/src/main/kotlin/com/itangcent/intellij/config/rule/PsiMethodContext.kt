@@ -4,10 +4,11 @@ import com.intellij.psi.PsiDocCommentOwner
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.PsiModifierListOwner
+import com.itangcent.common.utils.SimpleExtensible
 import com.itangcent.intellij.jvm.element.ExplicitMethod
 import com.itangcent.intellij.psi.PsiClassUtils
 
-open class PsiMethodContext : RuleContext {
+open class PsiMethodContext : SimpleExtensible, RuleContext {
 
     protected var psiMethod: PsiMethod
 

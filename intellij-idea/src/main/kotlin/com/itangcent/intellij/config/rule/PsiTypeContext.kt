@@ -1,8 +1,9 @@
 package com.itangcent.intellij.config.rule
 
 import com.intellij.psi.*
+import com.itangcent.common.utils.SimpleExtensible
 
-open class PsiTypeContext : RuleContext {
+open class PsiTypeContext : SimpleExtensible, RuleContext {
 
     protected var psiType: PsiType
 

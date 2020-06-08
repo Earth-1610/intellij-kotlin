@@ -4,9 +4,10 @@ import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiDocCommentOwner
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiModifierListOwner
+import com.itangcent.common.utils.SimpleExtensible
 import com.itangcent.intellij.jvm.element.ExplicitClass
 
-open class PsiClassContext : RuleContext {
+open class PsiClassContext : SimpleExtensible, RuleContext {
 
     protected var psiClass: PsiClass
 
@@ -34,7 +35,6 @@ open class PsiClassContext : RuleContext {
         return psiClass
     }
 }
-
 
 class ExplicitClassContext : PsiClassContext {
     private var explicitClass: ExplicitClass

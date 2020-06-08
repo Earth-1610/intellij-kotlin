@@ -3,8 +3,9 @@ package com.itangcent.intellij.config.rule
 import com.intellij.psi.PsiDocCommentOwner
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiModifierListOwner
+import com.itangcent.common.utils.Extensible
 
-interface RuleContext {
+interface RuleContext : Extensible {
 
     fun getCore(): Any? {
         return getResource()
