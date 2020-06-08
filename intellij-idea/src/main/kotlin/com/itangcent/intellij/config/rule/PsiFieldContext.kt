@@ -4,9 +4,10 @@ import com.intellij.psi.PsiDocCommentOwner
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiField
 import com.intellij.psi.PsiModifierListOwner
+import com.itangcent.common.utils.SimpleExtensible
 import com.itangcent.intellij.jvm.element.ExplicitField
 
-open class PsiFieldContext : RuleContext {
+open class PsiFieldContext : SimpleExtensible, RuleContext {
 
     protected var psiField: PsiField
 
@@ -30,7 +31,6 @@ open class PsiFieldContext : RuleContext {
         return psiField
     }
 }
-
 
 class ExplicitFieldContext : PsiFieldContext {
     private var explicitField: ExplicitField

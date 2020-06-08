@@ -113,6 +113,15 @@ open class StandardAnnotationHelper : AnnotationHelper {
             is PsiArrayInitializerMemberValue -> {
                 return psiExpression.initializers.map { resolveValue(it) }.toTypedArray()
             }
+            is PsiClassObjectAccessExpression -> {
+                val lastChild = psiExpression.lastChild
+                if (lastChild is PsiKeyword && lastChild.text == PsiKeyword.CLASS) {
+                    return resolveValue(psiExpression.firstChild)
+                }
+            }
+            is PsiTypeElement -> {
+                return psiExpression.type.canonicalText
+            }
             else -> {
                 return psiExpression.text
             }

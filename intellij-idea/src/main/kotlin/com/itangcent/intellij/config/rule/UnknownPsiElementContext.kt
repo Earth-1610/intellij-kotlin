@@ -3,9 +3,10 @@ package com.itangcent.intellij.config.rule
 import com.intellij.psi.PsiDocCommentOwner
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiModifierListOwner
+import com.itangcent.common.utils.SimpleExtensible
 import com.itangcent.common.utils.getPropertyValue
 
-open class UnknownPsiElementContext : RuleContext {
+open class UnknownPsiElementContext : SimpleExtensible, RuleContext {
 
     private var psiElement: PsiElement
 

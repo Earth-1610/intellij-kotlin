@@ -4,7 +4,7 @@ import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiField
 import com.itangcent.common.utils.KV
-import com.itangcent.common.utils.toInt
+import com.itangcent.common.utils.asInt
 import com.itangcent.intellij.jvm.scala.adaptor.ScPatternDefinitionPsiFieldAdaptor
 import com.itangcent.intellij.jvm.standard.StandardPsiResolver
 import org.jetbrains.plugins.scala.lang.psi.api.expr.ScMethodCall
@@ -75,7 +75,7 @@ open class ScalaPsiResolver : StandardPsiResolver() {
                         for (ex in exprs) {
                             val value = ScPsiUtils.valueOf(ex)
                             if (index == 0) {
-                                id = value.toInt() ?: 0
+                                id = value.asInt() ?: 0
                             } else {
                                 name = value.toString()
                                 break

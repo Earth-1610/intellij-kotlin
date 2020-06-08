@@ -130,12 +130,28 @@ fun Any?.anyIsNullOrBlank(): Boolean {
     }
 }
 
-fun Any?.toInt(): Int? {
+fun Any?.asInt(): Int? {
     return when {
         this == null -> null
         this is Int -> this
+        this is Boolean -> {
+            return when {
+                this -> 1
+                else -> 0
+            }
+        }
         this is Number -> this.toInt()
         this is String -> this.toIntOrNull()
+        else -> null
+    }
+}
+
+fun Any?.asBool(): Boolean? {
+    return when {
+        this == null -> null
+        this is Boolean -> this
+        this is Number -> this.toInt() == 1
+        this is String -> this == "true" || this == "1"
         else -> null
     }
 }
