@@ -2,7 +2,6 @@ package com.itangcent.intellij.psi
 
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTypesUtil
-import com.itangcent.intellij.jvm.duck.DuckType
 import com.siyeh.ig.psiutils.ClassUtils
 
 object PsiClassUtils {
@@ -101,11 +100,6 @@ object PsiClassUtils {
 
         val fieldName = fullName.substringAfter("#")
         return cls.findFieldByName(fieldName, true)
-    }
-
-    @Deprecated(message = "will be removed soon", replaceWith = ReplaceWith("fullNameOfMember"))
-    fun fullNameOfMemmber(psiClass: PsiClass?, psiMember: PsiElement): String {
-        return fullNameOfMember(psiClass, psiMember)
     }
 
     fun fullNameOfMember(psiClass: PsiClass?, psiMember: PsiElement): String {

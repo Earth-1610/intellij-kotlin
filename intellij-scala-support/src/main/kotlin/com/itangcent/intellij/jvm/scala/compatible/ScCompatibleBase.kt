@@ -7,6 +7,7 @@ import com.itangcent.common.logger.ILogger
 import com.itangcent.common.spi.SpiUtils
 import com.itangcent.common.utils.getPropertyValue
 import com.itangcent.common.utils.invokeMethod
+import com.itangcent.intellij.jvm.scala.adaptor.ScalaPsiMethodAdaptor
 import com.itangcent.intellij.jvm.scala.castToList
 import com.itangcent.intellij.jvm.scala.castToTypedList
 import com.itangcent.intellij.jvm.scala.getOrNull
@@ -156,7 +157,8 @@ object ScCompatiblePhysicalMethodSignature : ScCompatibleBase() {
         )
 
     fun method(target: Any): PsiMethod? {
-        return call(target, "method") as? PsiMethod? ?: return null
+        val method = call(target, "method") as? PsiMethod? ?: return null
+        return ScalaPsiMethodAdaptor(method)
     }
 
 }

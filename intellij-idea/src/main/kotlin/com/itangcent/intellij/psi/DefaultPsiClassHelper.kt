@@ -2,14 +2,13 @@ package com.itangcent.intellij.psi
 
 import com.google.inject.Inject
 import com.google.inject.Singleton
-import com.intellij.openapi.project.Project
 import com.intellij.psi.*
-import com.intellij.psi.impl.java.stubs.impl.PsiClassStubImpl
 import com.intellij.util.containers.isNullOrEmpty
 import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.KV
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.config.rule.computer
+import com.itangcent.intellij.jvm.SourceHelper
 import com.itangcent.intellij.jvm.asPsiClass
 import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.duck.SingleDuckType
@@ -25,8 +24,8 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     @Inject(optional = true)
     protected val classRuleConfig: ClassRuleConfig? = null
 
-    @Inject
-    protected val project: Project? = null
+    @Inject(optional = true)
+    protected val sourceHelper: SourceHelper? = null
 
     @Suppress("UNCHECKED_CAST")
     protected open fun resolveSeeDoc(field: PsiField, comment: HashMap<String, Any?>) {
@@ -65,6 +64,10 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
 
     override fun tryCastTo(psiType: PsiType, context: PsiElement): PsiType {
         return classRuleConfig?.tryConvert(psiType, context) ?: psiType
+    }
+
+    override fun tryCastTo(duckType: DuckType, context: PsiElement): DuckType {
+        return classRuleConfig?.tryConvert(duckType, context) ?: duckType
     }
 
     override fun isNormalType(psiType: PsiType): Boolean {
@@ -110,20 +113,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     }
 
     override fun getResourceClass(psiClass: PsiClass): PsiClass {
-        if (isLocalClass(psiClass)) {
-            return psiClass
-        }
-        return actionContext!!.cacheOrCompute("SourceHelper::instance") {
-            SourceHelper(project!!)
-        }?.getSourceClass(psiClass) ?: psiClass
-    }
-
-    protected open fun isLocalClass(psiClass: PsiClass): Boolean {
-        if (psiClass is StubBasedPsiElement<*>) {
-            val stub = psiClass.stub
-            return stub is PsiClassStubImpl<*> && stub.isLocalClassInner
-        }
-        return false
+        return sourceHelper?.getSourceClass(psiClass) ?: psiClass
     }
 
     override fun beforeParseFieldOrMethod(
@@ -267,12 +257,13 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                 commentKV = KV.create()
                 kv["@comment"] = commentKV
             }
-            if (fieldOrMethod is PsiField) {
-                val field: PsiField = fieldOrMethod
-                commentKV[fieldName] = docHelper!!.getAttrOfField(field)?.trim()
+            val psiFieldOrMethod = fieldOrMethod.psi()
+            if (psiFieldOrMethod is PsiField) {
+                val field: PsiField = psiFieldOrMethod
+                commentKV[fieldName] = docHelper!!.getAttrOfField(psiFieldOrMethod)?.trim()
                 resolveSeeDoc(field, commentKV)
-            } else if (fieldOrMethod is PsiMethod) {
-                val attrInDoc = docHelper!!.getAttrOfDocComment(fieldOrMethod)
+            } else if (psiFieldOrMethod is PsiMethod) {
+                val attrInDoc = docHelper!!.getAttrOfDocComment(psiFieldOrMethod)
                 if (StringUtils.isNotBlank(attrInDoc)) {
                     commentKV[fieldName] = attrInDoc
                 }

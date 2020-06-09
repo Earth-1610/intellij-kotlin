@@ -50,3 +50,5 @@ intellij-kotlin-support/build/
 intellij-scala-support/idea-sandbox/
 
 intellij-scala-support/build/
+
+intellij-idea/out/

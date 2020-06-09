@@ -7,10 +7,10 @@ import com.intellij.util.containers.stream
 import com.itangcent.common.utils.GsonUtils
 import com.itangcent.common.utils.invokeMethod
 import com.itangcent.common.utils.longest
+import com.itangcent.common.utils.mapNotNull
 import com.itangcent.intellij.jvm.AnnotationHelper
 import com.itangcent.intellij.jvm.DuckTypeHelper
 import com.itangcent.intellij.jvm.PsiClassHelper
-import com.itangcent.intellij.jvm.PsiResolver
 import org.jetbrains.kotlin.asJava.classes.KtLightClass
 import org.jetbrains.kotlin.asJava.classes.KtLightClassForSourceDeclaration
 import org.jetbrains.kotlin.asJava.elements.KtLightMember
@@ -29,9 +29,6 @@ class KotlinAnnotationHelper : AnnotationHelper {
 
     @Inject(optional = true)
     private val psiClassHelper: PsiClassHelper? = null
-
-    @Inject(optional = true)
-    private val psiResolver: PsiResolver? = null
 
     @Inject(optional = true)
     private val duckTypeHelper: DuckTypeHelper? = null
@@ -63,6 +60,10 @@ class KotlinAnnotationHelper : AnnotationHelper {
         }
 
         return null
+    }
+
+    override fun findAnnMaps(psiElement: PsiElement?, annName: String): List<Map<String, Any?>>? {
+        return findAnnMap(psiElement, annName)?.let { listOf(it) }
     }
 
     override fun findAttr(psiElement: PsiElement?, annName: String): Any? {
@@ -97,8 +98,9 @@ class KotlinAnnotationHelper : AnnotationHelper {
         val ktAnnotation = findKtAnnotation(psiElement, annName)
         if (ktAnnotation != null) {
             return ktAnnotation.valueArguments
+                .stream()
                 .map { resolveValue(it.getArgumentExpression()) }
-                .map { tinyAnnStr(it) }
+                .mapNotNull { tinyAnnStr(it) }
                 .longest()
         }
 
@@ -112,8 +114,8 @@ class KotlinAnnotationHelper : AnnotationHelper {
                 .filterIndexed { index, valueArgument ->
                     getArgName(psiElement, annName, valueArgument, index)?.let { name -> attrs.contains(name) } == true
                 }
-                .map { resolveValue(it.getArgumentExpression()) }
-                .map { tinyAnnStr(it) }
+                .mapNotNull { resolveValue(it.getArgumentExpression()) }
+                .mapNotNull { tinyAnnStr(it) }
                 .longest()
         }
 

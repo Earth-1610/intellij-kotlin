@@ -1,14 +1,29 @@
 package com.itangcent.intellij.jvm.scala
 
 import scala.Option
+import scala.util.Either
 import java.util.*
 
 @Suppress("UNCHECKED_CAST")
 fun <T> Any?.getOrNull(): T? {
-    (this as? Option<*>)?.takeIf { it.isDefined }?.let { return it.get() as? T? }
-    (this as? Optional<*>)?.takeIf { it.isPresent }?.let { return it.get() as? T? }
+    try {
+        when {
+            this == null -> return null
+            this is Option<*> -> return if (this.isDefined) {
+                return this.get() as? T
+            } else null
+            this is Optional<*> -> return if (this.isPresent) {
+                return this.get() as? T
+            } else null
+            this is Either<*, *> -> return if (this.isRight) {
+                return this.right().get() as? T
+            } else null
+            else -> return this as? T?
+        }
 
-    return this as? T?
+    } catch (e: Throwable) {
+        return null
+    }
 }
 
 fun Any.castToList(): List<Any> {

@@ -3,10 +3,7 @@ package com.itangcent.intellij.jvm.standard
 import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
-import com.intellij.util.containers.stream
-import com.itangcent.common.utils.GsonUtils
-import com.itangcent.common.utils.cast
-import com.itangcent.common.utils.longest
+import com.itangcent.common.utils.*
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.AnnotationHelper
 
@@ -25,7 +22,12 @@ open class StandardAnnotationHelper : AnnotationHelper {
         return actionContext!!.callInReadUI { annToMap(psiAnn) }
     }
 
-    protected fun annToMap(psiAnn: PsiAnnotation): LinkedHashMap<String, Any?> {
+    override fun findAnnMaps(psiElement: PsiElement?, annName: String): List<Map<String, Any?>>? {
+        val psiAnn = findAnns(psiElement, annName) ?: return null
+        return actionContext!!.callInReadUI { psiAnn.map { annToMap(it) } }
+    }
+
+    protected fun annToMap(psiAnn: PsiAnnotation): Map<String, Any?> {
         val map: LinkedHashMap<String, Any?> = LinkedHashMap()
         psiAnn.parameterList.attributes.stream()
             .forEach { attr ->
@@ -55,9 +57,10 @@ open class StandardAnnotationHelper : AnnotationHelper {
         val ann = findAnn(psiElement, annName) ?: return null
         return actionContext!!.callInReadUI {
             return@callInReadUI attrs
+                .stream()
                 .mapNotNull { ann.findAttributeValue(it) }
                 .mapNotNull { resolveValue(it) }
-                .map { tinyAnnStr(it) }
+                .mapNotNull { tinyAnnStr(it) }
                 .longest()
         }
     }
@@ -65,6 +68,15 @@ open class StandardAnnotationHelper : AnnotationHelper {
     private fun findAnn(psiElement: PsiElement?, annName: String): PsiAnnotation? {
         return findAnnotations(psiElement)
             ?.let { annotations -> annotations.firstOrNull { it.qualifiedName == annName } }
+    }
+
+    private fun findAnns(psiElement: PsiElement?, annName: String): List<PsiAnnotation>? {
+        return findAnnotations(psiElement)
+            ?.let { annotations ->
+                annotations.filter {
+                    it.qualifiedName == annName
+                }
+            }
     }
 
     private fun findAnnotations(psiElement: PsiElement?): Array<out PsiAnnotation>? {
@@ -85,8 +97,12 @@ open class StandardAnnotationHelper : AnnotationHelper {
             is PsiField -> {
                 val constantValue = psiExpression.computeConstantValue()
                 if (constantValue != null) {
-                    if (constantValue is PsiElement && psiExpression != constantValue) {
-                        return resolveValue(constantValue)
+                    if (constantValue is PsiElement) {
+                        return if (psiExpression != constantValue) {
+                            resolveValue(constantValue)
+                        } else {
+                            constantValue.text
+                        }
                     }
                     return constantValue
                 }
@@ -96,6 +112,15 @@ open class StandardAnnotationHelper : AnnotationHelper {
             }
             is PsiArrayInitializerMemberValue -> {
                 return psiExpression.initializers.map { resolveValue(it) }.toTypedArray()
+            }
+            is PsiClassObjectAccessExpression -> {
+                val lastChild = psiExpression.lastChild
+                if (lastChild is PsiKeyword && lastChild.text == PsiKeyword.CLASS) {
+                    return resolveValue(psiExpression.firstChild)
+                }
+            }
+            is PsiTypeElement -> {
+                return psiExpression.type.canonicalText
             }
             else -> {
                 return psiExpression.text

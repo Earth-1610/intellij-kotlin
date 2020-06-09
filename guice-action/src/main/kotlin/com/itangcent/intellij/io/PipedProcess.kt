@@ -1,6 +1,6 @@
 package com.itangcent.intellij.io
 
-import com.itangcent.common.function.ResultHolder
+import com.itangcent.common.concurrent.ValueHolder
 import com.itangcent.common.utils.IOUtils
 import java.io.IOException
 import java.io.InputStream
@@ -18,7 +18,7 @@ class PipedProcess : Process() {
     private var outForInputStream: FastPipedOutputStream? = null
     private var outForErrorInputStream: FastPipedOutputStream? = null
 
-    private val exitValueHolder = ResultHolder<Int>()
+    private val exitValueHolder = ValueHolder<Int>()
 
     init {
         try {
@@ -62,16 +62,16 @@ class PipedProcess : Process() {
     }
 
     fun setExitValue(exitValue: Int) {
-        this.exitValueHolder.setResultVal(exitValue)
+        this.exitValueHolder.success(exitValue)
     }
 
     @Throws(InterruptedException::class)
     override fun waitFor(): Int {
-        return exitValueHolder.getResultVal() ?: 0
+        return exitValueHolder.value() ?: 0
     }
 
     override fun exitValue(): Int {
-        return exitValueHolder.peekResult() ?: throw IllegalThreadStateException()
+        return exitValueHolder.peek() ?: throw IllegalThreadStateException()
     }
 
     override fun destroy() {

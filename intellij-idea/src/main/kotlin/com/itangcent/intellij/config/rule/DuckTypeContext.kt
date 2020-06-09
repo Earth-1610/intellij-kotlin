@@ -4,9 +4,10 @@ import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiDocCommentOwner
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiModifierListOwner
+import com.itangcent.common.utils.SimpleExtensible
 import com.itangcent.intellij.jvm.duck.DuckType
 
-open class DuckTypeContext : RuleContext {
+open class DuckTypeContext : SimpleExtensible, RuleContext {
 
     protected var duckType: DuckType
 

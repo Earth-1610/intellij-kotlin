@@ -340,10 +340,29 @@ abstract class AbstractConfigReader : MutableConfigReader {
 
 enum class ResolveMultiType {
 
+    /**
+     * Throw a exception and log it.
+     */
     ERROR,
+
+    /**
+     * Select first value.
+     */
     FIRST,
+
+    /**
+     * Select last value.
+     */
     LAST,
+
+    /**
+     * Select longest value.
+     */
     LONGEST,
+
+    /**
+     * Select shortest value.
+     */
     SHORTEST
 
 }

@@ -22,7 +22,7 @@ object GsonUtils {
         .serializeNulls()
         .create()
 
-    private val pretty_gson = GsonBuilder()
+    private val prettyGson = GsonBuilder()
         .setExclusionStrategies(RegisterExclusionStrategy().exclude(Visional::class.java))
         .registerTypeAdapterFactory(NumberObjectTypeAdapter.FACTORY)
         .setPrettyPrinting()
@@ -60,11 +60,11 @@ object GsonUtils {
     }
 
     fun prettyJsonSafely(any: Any?): String {
-        return pretty_gson.toJson(resolveCycle(any))
+        return prettyGson.toJson(resolveCycle(any))
     }
 
     fun prettyJson(any: Any?): String {
-        return pretty_gson.toJson(any)
+        return prettyGson.toJson(any)
     }
 
     fun prettyJsonWithNulls(any: Any?): String {
@@ -98,9 +98,9 @@ object GsonUtils {
         when (any) {
             null -> return null
             is Map<*, *> -> {
-                if (!values.add(any)) return HashMap<Any?, Any?>()
+                if (!values.add(any)) return emptyMap<Any?, Any?>()
                 val newCopy: HashMap<Any?, Any?> = HashMap()
-                any.forEach { key, value ->
+                any.forEach { (key, value) ->
                     newCopy[key] = copy(value, values)
                 }
                 values.pop()
@@ -117,7 +117,6 @@ object GsonUtils {
             }
             else -> return any
         }
-
     }
 
     private fun collectValues(any: Any?): Boolean {

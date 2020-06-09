@@ -217,11 +217,11 @@ class SimpleRuleParser : RuleParser {
             is DuckType -> {
                 return when (target) {
                     is SingleDuckType -> {
-                        PsiClassContext(target.psiClass())
+                        DuckTypeContext(target, target.psiClass())
                     }
                     is SingleUnresolvedDuckType -> {
-                        PsiTypeContext(
-                            target.psiType(),
+                        DuckTypeContext(
+                            target,
                             jvmClassHelper!!.resolveClassInType(target.psiType())
                         )
                     }

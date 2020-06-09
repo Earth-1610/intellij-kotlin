@@ -7,8 +7,12 @@ import org.jetbrains.plugins.scala.lang.psi.api.base.types.ScTypeElement
 /**
  * read only
  */
-class ScalaPsiTypeElementAdaptor(private val scTypeElement: ScTypeElement) : PsiTypeElement,
+class ScalaPsiTypeElementAdaptor(private val scTypeElement: ScTypeElement) : ScAdaptor<ScTypeElement>, PsiTypeElement,
     PsiElement by scTypeElement {
+    override fun adaptor(): ScTypeElement {
+        return scTypeElement
+    }
+
     override fun findAnnotation(qualifiedName: String): PsiAnnotation? {
         return null
     }
@@ -48,6 +52,21 @@ class ScalaPsiTypeElementAdaptor(private val scTypeElement: ScTypeElement) : Psi
 
     override fun getApplicableAnnotations(): Array<PsiAnnotation> {
         return emptyArray()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ScalaPsiTypeElementAdaptor
+
+        if (scTypeElement != other.scTypeElement) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return scTypeElement.hashCode()
     }
 
 }

@@ -6,10 +6,6 @@ import com.itangcent.intellij.jvm.duck.DuckType
 interface ExplicitField : ExplicitElement<PsiField> {
 
     fun getType(): DuckType
-
-    fun name(): String
-
-    fun containClass(): ExplicitClass
 }
 
 class ExplicitFieldWithGenericInfo : ExplicitElementWithGenericInfo<PsiField>, ExplicitField {

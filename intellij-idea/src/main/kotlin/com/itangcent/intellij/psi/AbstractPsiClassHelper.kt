@@ -5,8 +5,8 @@ import com.intellij.psi.*
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
 import com.itangcent.common.utils.KV
+import com.itangcent.common.utils.anyIsNullOrBlank
 import com.itangcent.common.utils.invokeMethod
-import com.itangcent.common.utils.isNullOrBlank
 import com.itangcent.common.utils.trimToNull
 import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.context.ActionContext
@@ -117,14 +117,13 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     override fun getTypeObject(psiType: PsiType?, context: PsiElement, option: Int): Any? {
         actionContext!!.checkStatus()
-        if (psiType != null) {
-            val resolvedInfo = getResolvedInfo<Any>(psiType, option)
-            if (resolvedInfo != null) {
-                return resolvedInfo
-            }
+        if (psiType == null || psiType == PsiType.NULL) return null
+
+        val resolvedInfo = getResolvedInfo<Any>(psiType, option)
+        if (resolvedInfo != null) {
+            return resolvedInfo
         }
 
-        if (psiType == null || psiType == PsiType.NULL) return null
         val castTo = tryCastTo(psiType, context)
         when {
 //            castTo == PsiType.NULL -> return null
@@ -281,122 +280,87 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     override fun getTypeObject(duckType: DuckType?, context: PsiElement, option: Int): Any? {
         actionContext!!.checkStatus()
 
+        if (duckType == null) return null
+
         val resolvedInfo = getResolvedInfo<Any>(duckType, option)
         if (resolvedInfo != null) {
             return resolvedInfo
         }
 
-        if (duckType == null) return null
+        val type = tryCastTo(duckType, context)
 
-        if (duckType is ArrayDuckType) {
+        if (type is ArrayDuckType) {
             val list = ArrayList<Any>()
-            cacheResolvedInfo(duckType, option, list)
-            getTypeObject(duckType.componentType(), context, option)?.let { list.add(it) }
+            cacheResolvedInfo(type, option, list)
+            getTypeObject(type.componentType(), context, option)?.let { list.add(it) }
             return copy(list)
         }
 
-        if (duckType is SingleDuckType) {
-            return getTypeObject(duckType as SingleDuckType, context, option)
+        if (type is SingleDuckType) {
+            return getTypeObject(type as SingleDuckType, context, option)
         }
 
-        if (duckType is SingleUnresolvedDuckType) {
-            return getTypeObject(duckType.psiType(), context, option)
+        if (type is SingleUnresolvedDuckType) {
+            return getTypeObject(type.psiType(), context, option)
         }
 
         return null
     }
 
-    protected open fun getTypeObject(clsWithParam: SingleDuckType?, context: PsiElement, option: Int): Any? {
+    protected open fun getTypeObject(duckType: SingleDuckType?, context: PsiElement, option: Int): Any? {
         actionContext!!.checkStatus()
+        if (duckType == null) return null
 
-        if (clsWithParam != null) {
-            val resolvedInfo = getResolvedInfo<Any>(clsWithParam, option)
-            if (resolvedInfo != null) {
-                return resolvedInfo
-            }
+        val resolvedInfo = getResolvedInfo<Any>(duckType, option)
+        if (resolvedInfo != null) {
+            return resolvedInfo
         }
 
-        if (clsWithParam == null) return null
         val psiClass = if (JsonOption.needComment(option)) {
-            getResourceClass(clsWithParam.psiClass())
+            getResourceClass(duckType.psiClass())
         } else {
-            clsWithParam.psiClass()
+            duckType.psiClass()
         }
-        val typeOfCls = PsiTypesUtil.getClassType(psiClass)
-
-        val type = tryCastTo(typeOfCls, psiClass)
 
         when {
-            isNormalType(type) -> //normal Type
-                return getDefaultValue(type)
-            type is PsiArrayType -> {   //array type
-                val deepType = type.getDeepComponentType()
-                val list = ArrayList<Any>()
-                cacheResolvedInfo(clsWithParam, option, list)
-                when {
-                    deepType is PsiPrimitiveType -> list.add(PsiTypesUtil.getDefaultValue(deepType))
-                    isNormalType(deepType) -> getDefaultValue(deepType)?.let {
-                        list.add(
-                            it
-                        )
-                    }
-                    else -> getTypeObject(
-                        duckTypeHelper!!.ensureType(deepType, clsWithParam.genericInfo),
-                        context,
-                        option
-                    )?.let { list.add(it) }
-                }
-                return copy(list)
-            }
-            jvmClassHelper!!.isCollection(type) -> {   //list type
+            isNormalType(duckType) -> //normal Type
+                return getDefaultValue(duckType)
+            jvmClassHelper!!.isCollection(duckType) -> {   //list type
                 val list = ArrayList<Any>()
 
-                cacheResolvedInfo(clsWithParam, option, list)
-                val iterableType = PsiUtil.extractIterableTypeParameter(type, false)
-                if (iterableType == null) {//maybe generic type
-                    val realIterableType = clsWithParam.genericInfo?.get(ELEMENT_OF_COLLECTION)
+                cacheResolvedInfo(duckType, option, list)
+
+                if (!duckType.genericInfo.isNullOrEmpty()) {
+                    val realIterableType =
+                        duckType.genericInfo?.get(ELEMENT_OF_COLLECTION) ?: duckType.genericInfo!!.entries.first().value
                     if (realIterableType != null) {
                         getTypeObject(realIterableType, context, option)?.let { list.add(it) }
-                        return copy(list)
-                    }
-                }
-
-                if (iterableType != null) {
-                    when {
-                        isNormalType(iterableType) -> getDefaultValue(iterableType)?.let {
-                            list.add(
-                                it
-                            )
-                        }
-                        else -> getTypeObject(
-                            duckTypeHelper!!.ensureType(
-                                iterableType,
-                                clsWithParam.genericInfo
-                            ), context, option
-                        )?.let { list.add(it) }
                     }
                 }
 
                 return copy(list)
             }
-            jvmClassHelper.isMap(type) -> {
-                //list type
+            jvmClassHelper.isMap(duckType) -> {
+
+                val typeOfCls = duckTypeHelper!!.buildPsiType(duckType, context)
+
+                //map type
                 val map: HashMap<Any, Any?> = HashMap()
-                cacheResolvedInfo(clsWithParam, option, map)
-                val keyType = PsiUtil.substituteTypeParameter(type, CommonClassNames.JAVA_UTIL_MAP, 0, false)
-                val valueType = PsiUtil.substituteTypeParameter(type, CommonClassNames.JAVA_UTIL_MAP, 1, false)
+                cacheResolvedInfo(duckType, option, map)
+                val keyType = PsiUtil.substituteTypeParameter(typeOfCls, CommonClassNames.JAVA_UTIL_MAP, 0, false)
+                val valueType = PsiUtil.substituteTypeParameter(typeOfCls, CommonClassNames.JAVA_UTIL_MAP, 1, false)
 
                 var defaultKey: Any? = null
 
                 if (keyType == null) {
-                    val realKeyType = clsWithParam.genericInfo?.get(StandardJvmClassHelper.KEY_OF_MAP)
+                    val realKeyType = duckType.genericInfo?.get(StandardJvmClassHelper.KEY_OF_MAP)
                     defaultKey = getTypeObject(realKeyType, context, option)
                 }
 
                 if (defaultKey == null) {
                     defaultKey = if (keyType != null) {
                         getTypeObject(
-                            duckTypeHelper!!.ensureType(keyType, clsWithParam.genericInfo),
+                            duckTypeHelper.ensureType(keyType, duckType.genericInfo),
                             context,
                             option
                         )
@@ -408,7 +372,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 var defaultValue: Any? = null
 
                 if (valueType == null) {
-                    val realValueType = clsWithParam.genericInfo?.get(StandardJvmClassHelper.VALUE_OF_MAP)
+                    val realValueType = duckType.genericInfo?.get(StandardJvmClassHelper.VALUE_OF_MAP)
                     defaultValue = getTypeObject(realValueType, context, option)
                 }
                 if (defaultValue == null) {
@@ -416,7 +380,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                         null
                     } else {
                         getTypeObject(
-                            duckTypeHelper!!.ensureType(valueType, clsWithParam.genericInfo),
+                            duckTypeHelper.ensureType(valueType, duckType.genericInfo),
                             context,
                             option
                         )
@@ -429,13 +393,13 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                 return copy(map)
             }
-            jvmClassHelper.isEnum(type) -> {
+            jvmClassHelper.isEnum(duckType) -> {
                 return ""//by default use enum name `String`
             }
             else -> //class type
             {
                 if (psiClass is PsiTypeParameter) {
-                    val typeParams = clsWithParam.genericInfo
+                    val typeParams = duckType.genericInfo
                     if (typeParams != null) {
                         val realType = typeParams[psiClass.name]
                         if (realType != null) {
@@ -447,7 +411,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 if (ruleComputer!!.computer(ClassRuleKeys.TYPE_IS_FILE, psiClass) == true) {
                     return Magics.FILE_STR
                 }
-                return getFields(clsWithParam, option)
+                return getFields(duckType, option)
             }
         }
     }
@@ -470,7 +434,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         cacheResolvedInfo(clsWithParam, option, kv)
         beforeParseType(psiClass, clsWithParam, option, kv)
 
-        val explicitClass = duckTypeHelper!!.explicit(clsWithParam)
+        val explicitClass = duckTypeHelper!!.explicit(getResourceType(clsWithParam))
         foreachField(explicitClass, option) { fieldName, fieldType, fieldOrMethod ->
 
             if (!beforeParseFieldOrMethod(
@@ -559,6 +523,10 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     protected open fun tryCastTo(psiType: PsiType, context: PsiElement): PsiType {
         return psiType
+    }
+
+    protected open fun tryCastTo(duckType: DuckType, context: PsiElement): DuckType {
+        return duckType
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -651,7 +619,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                         .joinToString(" ")
                         .trimToNull()
                 }
-                if (desc.isNullOrBlank()) {
+                if (desc.anyIsNullOrBlank()) {
                     desc = enumConstant["name"]
                 }
                 options.add(
@@ -815,6 +783,31 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     open fun getResourceClass(psiClass: PsiClass): PsiClass {
         return psiClass
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    open fun <T : DuckType> getResourceType(duckType: T): T {
+        return when (duckType) {
+            is SingleDuckType -> {
+                val psiClass = duckType.psiClass()
+                val resourceClass = getResourceClass(psiClass)
+                if (resourceClass == psiClass) {
+                    duckType
+                } else {
+                    SingleDuckType(resourceClass, duckType.genericInfo) as T
+                }
+            }
+            is ArrayDuckType -> {
+                val componentType = duckType.componentType()
+                val resourceComponentType = getResourceType(componentType)
+                if (resourceComponentType == componentType) {
+                    duckType
+                } else {
+                    ArrayDuckType(componentType) as T
+                }
+            }
+            else -> duckType
+        }
     }
 
     open fun beforeParseClass(psiClass: PsiClass, option: Int, kv: KV<String, Any?>) {

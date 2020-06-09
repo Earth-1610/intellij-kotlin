@@ -18,7 +18,7 @@ object Functions {
      * @return the function result or `null` if exception was thrown
      * @throws NullPointerException if `defaultVal` is null
     </T> */
-    fun <T> nullAs(defaultVal: T): Function<T, T> {
+    fun <T> nullAs(defaultVal: T): Function<T?, T> {
         Objects.requireNonNull(defaultVal)
         return Function { value -> value ?: defaultVal }
     }
@@ -32,7 +32,7 @@ object Functions {
      * @return the function result or `null` if exception was thrown
      * @throws NullPointerException if `defaultVal` is null
     </T> */
-    fun <T, R> nullAs(function: Function<T, R>, defaultVal: R): Function<T, R> {
+    fun <T, R> nullAs(function: Function<T?, R>, defaultVal: R): Function<T?, R> {
         Objects.requireNonNull(function)
         return Function { value -> if (value == null) defaultVal else function.apply(value) }
     }

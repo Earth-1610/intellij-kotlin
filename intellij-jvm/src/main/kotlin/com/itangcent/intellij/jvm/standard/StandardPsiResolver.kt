@@ -4,6 +4,8 @@ import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
+import com.itangcent.common.utils.firstOrNull
+import com.itangcent.common.utils.mapNotNull
 import com.itangcent.intellij.jvm.*
 
 
@@ -77,6 +79,7 @@ open class StandardPsiResolver : PsiResolver {
             return cls
         }
         cls = imports
+            .stream()
             .mapNotNull { it.qualifiedName }
             .filter { it.endsWith(".*") }
             .map { it -> it.removeSuffix("*") + clsName }

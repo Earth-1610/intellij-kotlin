@@ -3,7 +3,6 @@ package com.itangcent.common.utils
 import com.itangcent.common.files.DefaultFileTraveler
 import com.itangcent.common.files.FileHandle
 import com.itangcent.common.files.FileTraveler
-import com.itangcent.common.utils.FileUtils.cleanEmptyDir
 import org.apache.commons.lang3.StringUtils
 import java.io.File
 import java.io.FileInputStream
@@ -169,17 +168,6 @@ object FileUtils {
         return cleanEmptyDir(file, null)
     }
 
-    /**
-     * @see cleanEmptyDir
-     */
-    @Deprecated(
-        "replace with cleanEmptyDir",
-        ReplaceWith("cleanEmptyDir(file)", "com.itangcent.common.utils.FileUtils.removeEmptyDir")
-    )
-    fun removeEmptyDir(file: File): Boolean {
-        return cleanEmptyDir(file)
-    }
-
     fun cleanEmptyDir(file: File, onDeleteFailed: Consumer<File>?): Boolean {
         var flag = true
         if (file.isDirectory) {
@@ -201,18 +189,4 @@ object FileUtils {
             return false
 
     }
-
-    /**
-     * @see cleanEmptyDir
-     */
-    @Deprecated(
-        "", ReplaceWith(
-            "cleanEmptyDir(file, onDeleteFailed)",
-            "com.itangcent.common.utils.FileUtils.cleanEmptyDir"
-        )
-    )
-    fun removeEmptyDir(file: File, onDeleteFailed: Consumer<File>?): Boolean {
-        return cleanEmptyDir(file, onDeleteFailed)
-    }
-
 }

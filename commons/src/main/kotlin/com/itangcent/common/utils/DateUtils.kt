@@ -123,7 +123,7 @@ object DateUtils {
         return FastDateFormat.getInstance(fmt).format(date)
     }
 
-    fun format(date: Date, fmt: String): String {
+    fun format(date: Long, fmt: String): String {
         return FastDateFormat.getInstance(fmt).format(date)
     }
 

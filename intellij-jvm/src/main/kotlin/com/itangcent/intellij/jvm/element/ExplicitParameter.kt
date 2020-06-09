@@ -8,11 +8,12 @@ interface ExplicitParameter : DuckExplicitElement<PsiParameter> {
 
     fun getType(): DuckType?
 
+    /**
+     * Returns the method containing the member.
+     *
+     * @return the containing method.
+     */
     fun containMethod(): ExplicitMethod
-
-    fun containClass(): ExplicitClass
-
-    fun name(): String
 }
 
 class ExplicitParameterWithGenericInfo : ExplicitElementWithGenericInfo<PsiParameter>, ExplicitParameter {

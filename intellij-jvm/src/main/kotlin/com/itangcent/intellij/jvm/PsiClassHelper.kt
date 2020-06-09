@@ -61,5 +61,6 @@ interface PsiClassHelper {
     ): ArrayList<HashMap<String, Any?>>?
 
     fun isNormalType(duckType: DuckType): Boolean
+
     fun getDefaultValue(duckType: DuckType): Any?
 }

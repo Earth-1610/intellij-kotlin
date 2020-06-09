@@ -434,6 +434,7 @@ open class StandardJvmClassHelper : JvmClassHelper {
                 normalTypes["class"] = null
                 normalTypes["Class"] = null
                 normalTypes["java.lang.Boolean"] = false
+                normalTypes["java.lang.Object"] = emptyMap<Any, Any>()
                 normalTypes["java.lang.Character"] = 'a'
                 normalTypes["java.lang.Void"] = null
                 normalTypes["java.lang.Byte"] = 0

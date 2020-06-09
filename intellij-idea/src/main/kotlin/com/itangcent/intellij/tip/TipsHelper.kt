@@ -2,7 +2,7 @@ package com.itangcent.intellij.tip
 
 import com.google.inject.ImplementedBy
 
-@ImplementedBy(DefaultTipsHelper::class)
+@ImplementedBy(DefaultLogTipsHelper::class)
 interface TipsHelper {
 
     fun showTips(tip: Tip)

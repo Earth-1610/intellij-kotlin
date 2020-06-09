@@ -48,5 +48,9 @@ class KV<K, V> : LinkedHashMap<K, V>() {
         fun <K, V> create(): KV<K, V> {
             return KV()
         }
+
+        fun any(): KV<Any?, Any?> {
+            return KV()
+        }
     }
 }

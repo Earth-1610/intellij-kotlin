@@ -51,15 +51,15 @@ open class DuckTypeHelper {
         } else if (psiElement is PsiField) {
             return ExplicitFieldWithOutGenericInfo(explicit(psiElement.containingClass!!), psiElement)
         }
-        logger!!.error("you can not explicit PsiElement beyond class/method/field")
+        logger!!.error("can not explicit PsiElement beyond class/method/field:$psiElement")
         return null
     }
 
     fun explicit(singleDuckType: SingleDuckType): ExplicitClass {
-        if (singleDuckType.genericInfo.isNullOrEmpty()) {
-            return ExplicitClassWithOutGenericInfo(this, singleDuckType.psiClass())
+        return if (singleDuckType.genericInfo.isNullOrEmpty()) {
+            ExplicitClassWithOutGenericInfo(this, singleDuckType.psiClass())
         } else {
-            return ExplicitClassWithGenericInfo(
+            ExplicitClassWithGenericInfo(
                 this, singleDuckType.genericInfo,
                 singleDuckType.psiClass()
             )
@@ -448,6 +448,10 @@ open class DuckTypeHelper {
         return JavaPsiFacade.getInstance(
             (context ?: clazz).project
         ).elementFactory.createType(clazz, *parameters)
+    }
+
+    fun createType(psiType: PsiType, context: PsiElement?, vararg parameters: PsiType): PsiClassType? {
+        return jvmClassHelper!!.resolveClassInType(psiType)?.let { createType(it, context, *parameters) }
     }
 
     fun findType(canonicalText: String, context: PsiElement): PsiType? {

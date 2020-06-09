@@ -5,18 +5,12 @@ import com.google.inject.Singleton
 import com.itangcent.intellij.logger.Logger
 
 @Singleton
-open class DefaultTipsHelper : TipsHelper {
+open class DefaultLogTipsHelper : AbstractTipsHelper() {
 
     @Inject
     private val logger: Logger? = null
 
-    override fun showTips(tip: Tip) {
-        if (tip.tipable()) {
-            showTip(tip.content())
-        }
-    }
-
-    open protected fun showTip(tipContent: String) {
+    override fun showTip(tipContent: String) {
         logger?.info(tipContent)
     }
 }
