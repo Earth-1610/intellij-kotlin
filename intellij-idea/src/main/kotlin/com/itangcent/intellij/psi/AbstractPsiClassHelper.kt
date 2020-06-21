@@ -56,11 +56,11 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     @PostConstruct
     fun init() {
-        val contextSwitchListener: ContextSwitchListener? = ActionContext.getContext()
+        ActionContext.getContext()
             ?.instance(ContextSwitchListener::class)
-        contextSwitchListener!!.onModuleChange {
-            resolvedInfo.clear()
-        }
+            ?.onModuleChange {
+                resolvedInfo.clear()
+            }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -84,15 +84,14 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     @Suppress("UNCHECKED_CAST")
     override fun copy(obj: Any?): Any? {
         if (obj == null) return null
-        if (obj is Collection<*>) {
-            try {
+        when (obj) {
+            is Collection<*> -> try {
                 val copyObj = obj::class.createInstance() as MutableCollection<Any?>
                 obj.forEach { element -> copy(element)?.let { copyObj.add(it) } }
                 return copyObj
             } catch (e: Exception) {
             }
-        } else if (obj is Map<*, *>) {
-            try {
+            is Map<*, *> -> try {
                 val copyObj = obj::class.createInstance() as MutableMap<Any?, Any?>
                 obj.forEach { k, v ->
                     copyObj[copy(k)] = copy(v)
@@ -100,10 +99,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 return copyObj
             } catch (e: Exception) {
             }
-        }
-
-        if (obj is Cloneable) {
-            try {
+            is Cloneable -> try {
                 return obj.invokeMethod("clone")
             } catch (e: Exception) {
             }
