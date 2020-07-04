@@ -52,3 +52,5 @@ intellij-scala-support/idea-sandbox/
 intellij-scala-support/build/
 
 intellij-idea/out/
+
+script/publish.gradle
