@@ -8,6 +8,7 @@ import com.intellij.psi.javadoc.PsiDocComment
 import com.itangcent.common.utils.append
 import com.itangcent.common.utils.appendln
 import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.jvm.scala.adaptor.scalaAdaptor
 import com.itangcent.intellij.jvm.standard.StandardDocHelper
 import org.jetbrains.plugins.scala.lang.scaladoc.lexer.ScalaDocTokenType
 import org.jetbrains.plugins.scala.lang.scaladoc.psi.api.ScDocComment
@@ -34,7 +35,10 @@ class ScalaDocHelper : StandardDocHelper() {
                         val subTagMap: HashMap<String, String?> = HashMap()
                         docComment.tags
                             .filter { it.name == "@$tag" }
-                            .forEach { subTagMap[it.valueElement?.text ?: ""] = (it as? ScDocTag)?.allText }
+                            .forEach {
+                                subTagMap[it.valueElement?.text ?: ""] =
+                                    (it as? ScDocTag)?.scalaAdaptor()?.getAllText()
+                            }
                         return@callInReadUI subTagMap
                     }
                 } ?: Collections.emptyMap()
@@ -56,7 +60,7 @@ class ScalaDocHelper : StandardDocHelper() {
                         return@callInReadUI docComment.tags
                             .filter { it.name == "@$tag" }
                             .filter { it.valueElement!!.text == name }
-                            .map { (it as? ScDocTag)?.allText }
+                            .map { (it as? ScDocTag)?.scalaAdaptor()?.getAllText() }
                             .firstOrNull()
                     }
                 }
@@ -77,7 +81,7 @@ class ScalaDocHelper : StandardDocHelper() {
                     return@let ActionContext.getContext()!!.callInReadUI {
                         docComment.tags
                             .filter { it.name == "@$tag" }
-                            .map { (it as? ScDocTag)?.allText }
+                            .map { (it as? ScDocTag)?.scalaAdaptor()?.getAllText() }
                             .filter { !it.isNullOrBlank() }
                             .map { it!! }
                             .toList()
@@ -101,7 +105,7 @@ class ScalaDocHelper : StandardDocHelper() {
                 ?.docComment
                 ?.let { docComment ->
                     return docComment.tags.filter { it.name == "@$tag" }
-                        .map { (it as? ScDocTag)?.allText }
+                        .map { (it as? ScDocTag)?.scalaAdaptor()?.getAllText() }
                         .firstOrNull()
                 }
         }
