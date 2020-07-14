@@ -5,7 +5,6 @@ import com.intellij.psi.javadoc.PsiDocTag
 import com.itangcent.common.utils.invokeMethod
 import org.jetbrains.plugins.scala.lang.scaladoc.psi.api.ScDocTag
 import scala.Function1
-import kotlin.reflect.full.functions
 
 interface ScDocTagAdaptor : ScAdaptor<ScDocTag>, PsiDocTag {
 
@@ -17,8 +16,10 @@ interface ScDocTagAdaptor : ScAdaptor<ScDocTag>, PsiDocTag {
     fun getAllText(): String?
 }
 
+private var invokeAble = ScDocTag::class.java.methods.any { it.name == "getAllText" }
+
 fun ScDocTag.scalaAdaptor(): ScDocTagAdaptor {
-    return if (this::class.functions.any { it.name == "getAllText" }) {
+    return if (invokeAble) {
         InvokeAbleScDocTagAdaptor(this)
     } else {
         OriginalScDocTagAdaptor(this)
