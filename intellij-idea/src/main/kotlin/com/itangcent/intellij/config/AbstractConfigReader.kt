@@ -6,6 +6,7 @@ import com.itangcent.common.utils.*
 import com.itangcent.intellij.logger.Logger
 import com.itangcent.intellij.tip.OnlyOnceInContextTip
 import com.itangcent.intellij.tip.TipsHelper
+import com.itangcent.intellij.util.ActionUtils
 import org.yaml.snakeyaml.Yaml
 import java.io.File
 import java.util.regex.Pattern
@@ -134,9 +135,10 @@ abstract class AbstractConfigReader : MutableConfigReader {
     }
 
     private fun loadConfigFile(path: String) {
-        val configFile = File(resolvePath(path))
+        val resolvePath = resolvePath(path);
+        logger!!.debug("path: $path -> resolvePath: $resolvePath")
+        val configFile = File(resolvePath)
         if (configFile.exists() && configFile.isFile) {
-            put("curr_path", path)
             val configInfoContent = FileUtils.read(configFile)
             if (!configInfoContent.isNullOrEmpty()) {
                 loadConfigInfoContent(configInfoContent!!, path.substringAfterLast("."))
@@ -145,21 +147,25 @@ abstract class AbstractConfigReader : MutableConfigReader {
                 logger!!.error("$path is an empty file")
             }
         } else if (!ignoreNotFoundFile) {
-            logger!!.error("$path not be found")
+            logger.error("path: $path not be found")
         }
     }
 
     private fun resolvePath(path: String): String {
-        if (path.startsWith(".")) {
-            val currPath = getPropertyStringValue("curr_path")
-            if (currPath.isNullOrBlank()) return path
-            return currPath!!.toString().substringBeforeLast(File.separator) + File.separator + path.removePrefix(".")
-        } else if (path.startsWith("/") || path.startsWith("~")) {
-            return path
+        var resolvePath: String
+        if (path.startsWith("/") || path.startsWith("~") || path.indexOf(":") == 1) {
+            resolvePath = path
         } else {
-            val currPath = getPropertyStringValue("curr_path")
+            val currPath = ActionUtils.findCurrentPath();
             if (currPath.isNullOrBlank()) return path
-            return currPath + File.separator + path
+            resolvePath = currPath!!.toString().substringBeforeLast(File.separator) + File.separator + path.removePrefix(".")
+        }
+        if (File.separator.equals("\\")) {
+            return resolvePath.replace("/", File.separator)
+        } else if(File.separator.equals("/")){
+            return resolvePath.replaceAfter("\\", File.separator)
+        }else{
+            return resolvePath
         }
     }
 
