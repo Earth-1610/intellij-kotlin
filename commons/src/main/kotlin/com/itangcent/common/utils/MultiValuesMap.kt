@@ -65,6 +65,18 @@ class MultiValuesMap<K, V>(private val myOrdered: Boolean = false) : Map<K, Coll
         collection.add(value)
     }
 
+    fun replace(key: K, value: V) {
+        var collection: MutableCollection<V>? = myBaseMap[key] as MutableCollection<V>?
+        if (collection == null) {
+            collection = if (myOrdered) LinkedHashSet() else HashSet()
+            myBaseMap[key] = collection
+            collection.add(value)
+        } else {
+            collection.clear()
+            collection.add(value)
+        }
+    }
+
     override operator fun get(key: K): Collection<V>? {
         return myBaseMap[key]
     }
