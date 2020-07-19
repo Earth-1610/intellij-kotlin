@@ -3,6 +3,7 @@ package com.itangcent.intellij.config
 import com.google.inject.Inject
 import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.*
+import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.logger.Logger
 import com.itangcent.intellij.tip.OnlyOnceInContextTip
 import com.itangcent.intellij.tip.TipsHelper
@@ -135,37 +136,30 @@ abstract class AbstractConfigReader : MutableConfigReader {
     }
 
     private fun loadConfigFile(path: String) {
-        val resolvePath = resolvePath(path);
-        logger!!.debug("path: $path -> resolvePath: $resolvePath")
-        val configFile = File(resolvePath)
-        if (configFile.exists() && configFile.isFile) {
+        val currPath = getPropertyStringValue("curr_path")
+        val configFile = SysFileResolve.adaptive().resolveFile(path, currPath)
+        if (configFile != null && configFile.exists() && configFile.isFile) {
             val configInfoContent = FileUtils.read(configFile)
             if (!configInfoContent.isNullOrEmpty()) {
-                loadConfigInfoContent(configInfoContent!!, path.substringAfterLast("."))
+                configInfo.replace("curr_path", configFile.absolutePath.substringBeforeLast(File.separator))
+                try {
+                    loadConfigInfoContent(configInfoContent, path.substringAfterLast("."))
+                } finally {
+                    currPath?.let { configInfo.replace("curr_path", it) }
+                }
                 return
             } else if (!ignoreNotFoundFile) {
-                logger!!.error("$path is an empty file")
+                logger!!.debug("$path is an empty file")
             }
         } else if (!ignoreNotFoundFile) {
-            logger.error("path: $path not be found")
-        }
-    }
-
-    private fun resolvePath(path: String): String {
-        var resolvePath: String
-        if (path.startsWith("/") || path.startsWith("~") || path.indexOf(":") == 1) {
-            resolvePath = path
-        } else {
-            val currPath = ActionUtils.findCurrentPath();
-            if (currPath.isNullOrBlank()) return path
-            resolvePath = currPath!!.toString().substringBeforeLast(File.separator) + File.separator + path.removePrefix(".")
-        }
-        if (File.separator.equals("\\")) {
-            return resolvePath.replace("/", File.separator)
-        } else if(File.separator.equals("/")){
-            return resolvePath.replaceAfter("\\", File.separator)
-        }else{
-            return resolvePath
+            if (configFile != null) {
+                val absolutePath = configFile.absolutePath
+                if (absolutePath != path) {
+                    logger!!.debug("$path not be found. It be resolved as $absolutePath")
+                    return
+                }
+            }
+            logger!!.debug("$path not be found")
         }
     }
 
@@ -345,6 +339,89 @@ abstract class AbstractConfigReader : MutableConfigReader {
     }
 }
 
+private enum class SysFileResolve {
+    OS_SYS_FILE_RESOLVE {
+
+        override fun separator(): String {
+            return "/"
+        }
+
+        override fun isAbsolute(path: String): Boolean {
+            return path.startsWith("/")
+        }
+
+        override fun asFile(path: String): File {
+            return super.asFile(path).takeIf { it.exists() }
+                ?: super.asFile(path.replace('\\', '/'))
+        }
+    },
+
+    WIN_SYS_FILE_RESOLVE {
+
+        override fun separator(): String {
+            return "\\"
+        }
+
+        override fun isAbsolute(path: String): Boolean {
+            return Pattern.matches("[a-zA-Z]+:.*?", path)
+        }
+
+        override fun asFile(path: String): File {
+            return super.asFile(path).takeIf { it.exists() }
+                ?: super.asFile(path.replace('/', '\\'))
+        }
+    };
+
+    abstract fun isAbsolute(path: String): Boolean
+
+    open fun separator(): String {
+        return File.separator
+    }
+
+    fun resolveFile(path: String, currPath: String?): File? {
+        if (isAbsolute(path)) {
+            return asFile(path)
+        }
+
+        if (path.startsWith('~')) {
+            val home = SystemUtils.userHome
+            return asFile(home.removeSuffix(separator()) + separator() + path.substring(1))
+        }
+
+        var p = path
+        var cp = currPath ?: ""
+        while (true) {
+            if (p.startsWith("../")) {//goto parent directory
+                cp = cp.substringBeforeLast(separator())
+                p = p.substring("../".length)
+            } else if (p.startsWith("./")) {//current directory
+                if (cp.isBlank()) return File(p).takeIf { it.exists() }
+                p = p.substring("./".length)
+            }
+            break
+        }
+
+        return asFile(cp.removeSuffix(separator()) + separator() + p.removePrefix(separator()))
+    }
+
+    open fun asFile(path: String): File {
+        return File(path)
+    }
+
+    companion object {
+
+        private var adaptiveSysFileResolve: SysFileResolve? = null
+
+        fun adaptive(): SysFileResolve {
+            if (adaptiveSysFileResolve == null) {
+                val separator = File.separator
+                adaptiveSysFileResolve = values().firstOrNull { it.separator() == separator } ?: OS_SYS_FILE_RESOLVE
+            }
+            return adaptiveSysFileResolve!!
+        }
+    }
+}
+
 enum class ResolveMultiType {
 
     /**
@@ -371,5 +448,4 @@ enum class ResolveMultiType {
      * Select shortest value.
      */
     SHORTEST
-
 }

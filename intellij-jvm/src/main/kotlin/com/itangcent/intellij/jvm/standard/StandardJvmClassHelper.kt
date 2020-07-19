@@ -13,7 +13,6 @@ import com.itangcent.intellij.jvm.JvmClassHelper
 import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.duck.SingleDuckType
 import com.itangcent.intellij.jvm.duck.SingleUnresolvedDuckType
-import com.sun.jmx.remote.internal.ArrayQueue
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
 import kotlin.collections.HashMap
@@ -459,7 +458,7 @@ open class StandardJvmClassHelper : JvmClassHelper {
                 addClass(SortedSet::class.java, collectionClasses)
                 addClass(Queue::class.java, collectionClasses)
                 addClass(Deque::class.java, collectionClasses)
-                addClass(ArrayQueue::class.java, collectionClasses)
+                collectionClasses.add("com.sun.jmx.remote.internal.ArrayQueue")
                 addClass(ArrayBlockingQueue::class.java, collectionClasses)
                 addClass(Stack::class.java, collectionClasses)
                 this.collectionClasses = collectionClasses.toTypedArray()
@@ -501,8 +500,8 @@ open class StandardJvmClassHelper : JvmClassHelper {
         }
 
         fun addClass(cls: Class<*>, classSet: HashSet<String>) {
-            classSet.add(cls.name!!)
-            classSet.add(cls.simpleName!!)
+            classSet.add(cls.name)
+            classSet.add(cls.simpleName)
         }
     }
 }
