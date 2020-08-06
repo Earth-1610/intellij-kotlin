@@ -13,7 +13,7 @@ abstract class RegexBooleanRule : BooleanRule {
     protected abstract fun match(name: String): Pair<Boolean, Map<Int, String>?>?
 
     fun match(context: RuleContext): Pair<Boolean, Map<Int, String>?>? {
-        return match(context.getName() ?: return null)
+        return match(context.toString())
     }
 
     override fun compute(context: RuleContext): Boolean? {
@@ -69,7 +69,7 @@ abstract class RegexBooleanRule : BooleanRule {
     }
 
     class GroupedRegexBooleanRule(keyRegexStr: String, private val valueGroups: Array<Int>) :
-            RegexBooleanRule(keyRegexStr) {
+        RegexBooleanRule(keyRegexStr) {
         override fun renderVal(str: String?, second: Map<Int, String>?): String? {
             if (str.isNullOrBlank()) return str
             var ret: String = str

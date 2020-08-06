@@ -3,6 +3,7 @@ package com.itangcent.common.utils
 import java.util.concurrent.ConcurrentHashMap
 
 interface Extensible {
+
     fun hasExt(attr: String): Boolean
 
     fun hasAnyExt(vararg attr: String): Boolean
@@ -90,4 +91,8 @@ open class ConcurrentExtensible : AbstractExtensible() {
         }
     }
 
+}
+
+fun <T> Extensible.cache(attr: String, value: () -> T?): T? {
+    return this.getExt<T>(attr) ?: value().also { this.setExt(attr, it) }
 }

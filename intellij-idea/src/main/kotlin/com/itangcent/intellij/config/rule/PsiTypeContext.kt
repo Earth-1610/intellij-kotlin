@@ -2,6 +2,7 @@ package com.itangcent.intellij.config.rule
 
 import com.intellij.psi.*
 import com.itangcent.common.utils.SimpleExtensible
+import com.itangcent.common.utils.cache
 
 open class PsiTypeContext : SimpleExtensible, RuleContext {
 
@@ -23,11 +24,11 @@ open class PsiTypeContext : SimpleExtensible, RuleContext {
     }
 
     override fun getName(): String? {
-        return psiType.canonicalText
+        return this.cache("_name") { psiType.canonicalText }
     }
 
     override fun getSimpleName(): String? {
-        return psiType.presentableText
+        return this.cache("_simpleName") { psiType.presentableText }
     }
 
     override fun asPsiDocCommentOwner(): PsiDocCommentOwner? {
@@ -36,5 +37,9 @@ open class PsiTypeContext : SimpleExtensible, RuleContext {
 
     override fun asPsiModifierListOwner(): PsiModifierListOwner? {
         return psiClass
+    }
+
+    override fun toString(): String {
+        return getName() ?: "anonymous"
     }
 }

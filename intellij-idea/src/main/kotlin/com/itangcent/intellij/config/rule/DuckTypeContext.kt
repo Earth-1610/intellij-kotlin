@@ -5,6 +5,7 @@ import com.intellij.psi.PsiDocCommentOwner
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiModifierListOwner
 import com.itangcent.common.utils.SimpleExtensible
+import com.itangcent.common.utils.cache
 import com.itangcent.intellij.jvm.duck.DuckType
 
 open class DuckTypeContext : SimpleExtensible, RuleContext {
@@ -27,11 +28,11 @@ open class DuckTypeContext : SimpleExtensible, RuleContext {
     }
 
     override fun getName(): String? {
-        return duckType.canonicalText()
+        return this.cache("_name") { duckType.canonicalText() }
     }
 
     override fun getSimpleName(): String? {
-        return duckType.name()
+        return this.cache("_simpleName") { duckType.canonicalText() }
     }
 
     override fun asPsiDocCommentOwner(): PsiDocCommentOwner? {
@@ -40,5 +41,9 @@ open class DuckTypeContext : SimpleExtensible, RuleContext {
 
     override fun asPsiModifierListOwner(): PsiModifierListOwner? {
         return psiClass
+    }
+
+    override fun toString(): String {
+        return getName() ?: "anonymous"
     }
 }

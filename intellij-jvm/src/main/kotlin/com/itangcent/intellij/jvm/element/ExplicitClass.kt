@@ -154,6 +154,10 @@ class ExplicitClassWithGenericInfo : ExplicitElementWithGenericInfo<PsiClass>, E
     override fun psi(): PsiClass {
         return psiClass
     }
+
+    override fun toString(): String {
+        return name()
+    }
 }
 
 class ExplicitClassWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiClass>, ExplicitClass {

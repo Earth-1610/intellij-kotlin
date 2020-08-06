@@ -31,4 +31,8 @@ open class StringRuleContext : SimpleExtensible, RuleContext {
         return null
     }
 
+    override fun toString(): String {
+        return this.str
+    }
+
 }

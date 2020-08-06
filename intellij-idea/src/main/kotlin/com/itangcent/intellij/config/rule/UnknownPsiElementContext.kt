@@ -5,6 +5,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiModifierListOwner
 import com.itangcent.common.utils.SimpleExtensible
 import com.itangcent.common.utils.getPropertyValue
+import com.itangcent.intellij.psi.PsiClassUtils
 
 open class UnknownPsiElementContext : SimpleExtensible, RuleContext {
 
@@ -28,6 +29,10 @@ open class UnknownPsiElementContext : SimpleExtensible, RuleContext {
 
     override fun asPsiModifierListOwner(): PsiModifierListOwner? {
         return psiElement as? PsiModifierListOwner?
+    }
+
+    override fun toString(): String {
+        return PsiClassUtils.fullNameOfMember(psiElement)
     }
 }
 

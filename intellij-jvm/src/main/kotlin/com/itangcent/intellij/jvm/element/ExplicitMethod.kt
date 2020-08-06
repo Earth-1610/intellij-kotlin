@@ -54,6 +54,10 @@ class ExplicitMethodWithGenericInfo : ExplicitElementWithGenericInfo<PsiMethod>,
     override fun name(): String {
         return psiMethod.name
     }
+
+    override fun toString(): String {
+        return name()
+    }
 }
 
 class ExplicitMethodWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiMethod>, ExplicitMethod {
@@ -88,5 +92,9 @@ class ExplicitMethodWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiMe
 
     override fun name(): String {
         return psiMethod.name
+    }
+
+    override fun toString(): String {
+        return name()
     }
 }
