@@ -5,6 +5,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.PsiModifierListOwner
 import com.itangcent.common.utils.SimpleExtensible
+import com.itangcent.common.utils.cache
 import com.itangcent.intellij.jvm.element.ExplicitMethod
 import com.itangcent.intellij.psi.PsiClassUtils
 
@@ -21,11 +22,11 @@ open class PsiMethodContext : SimpleExtensible, RuleContext {
     }
 
     override fun getName(): String? {
-        return PsiClassUtils.fullNameOfMethod(psiMethod)
+        return this.cache("_name") { PsiClassUtils.qualifiedNameOfMethod(psiMethod) }
     }
 
     override fun getSimpleName(): String? {
-        return psiMethod.name
+        return this.cache("_simpleName") { psiMethod.name }
     }
 
     override fun asPsiDocCommentOwner(): PsiDocCommentOwner {
@@ -36,6 +37,9 @@ open class PsiMethodContext : SimpleExtensible, RuleContext {
         return psiMethod
     }
 
+    override fun toString(): String {
+        return getName() ?: "anonymous"
+    }
 }
 
 class ExplicitMethodContext : PsiMethodContext {

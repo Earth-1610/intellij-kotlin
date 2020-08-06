@@ -122,9 +122,92 @@ object PsiClassUtils {
         return nameOfMember(psiMember)
     }
 
+    fun qualifiedNameOfMethod(psiMethod: PsiMethod): String {
+        return qualifiedNameOfMethod(psiMethod.containingClass, psiMethod)
+    }
+
+    fun qualifiedNameOfMethod(psiClass: PsiClass?, psiMethod: PsiMethod): String {
+        val sb = StringBuilder()
+        psiClass?.let { sb.append(it.qualifiedName).append("#") }
+        sb.append(psiMethod.name)
+        return sb.toString()
+    }
+
+    fun qualifiedNameOfField(psiField: PsiField): String {
+        return qualifiedNameOfField(psiField.containingClass, psiField)
+    }
+
+    fun qualifiedNameOfField(psiClass: PsiClass?, psiField: PsiField): String {
+        val sb = StringBuilder()
+        psiClass?.let { sb.append(it.qualifiedName).append("#") }
+        sb.append(psiField.name)
+        return sb.toString()
+    }
+
+    fun findMethodFromQualifiedName(qualifiedName: String, context: PsiElement): PsiMethod? {
+        val clsName = qualifiedName.substringBefore("#")
+            .takeIf { it != qualifiedName }
+            ?.let { qualifiedName.substringBeforeLast(".") }
+            .takeIf { it != qualifiedName }
+            ?: return null
+        val cls = ClassUtils.findClass(clsName, context) ?: return null
+
+        val methodAndParams = qualifiedName.substring(clsName.length + 1)
+        val method = methodAndParams.substringBefore("(")
+        val candidates = cls.findMethodsByName(method, true)
+
+        if (candidates.isEmpty()) {
+            return null
+        }
+
+        if (candidates.size == 1) {
+            return candidates[0]
+        }
+
+        for (candidate in candidates) {
+            if (qualifiedNameOfMethod(candidate) == qualifiedName) {
+                return candidate
+            }
+        }
+
+        return null
+    }
+
+    fun findFieldFromQualifiedName(qualifiedName: String, context: PsiElement): PsiField? {
+        val clsName = qualifiedName.substringBefore("#")
+            .takeIf { it != qualifiedName }
+            ?.let { qualifiedName.substringBeforeLast(".") }
+            .takeIf { it != qualifiedName }
+            ?: return null
+        val cls = ClassUtils.findClass(clsName, context) ?: return null
+
+        val fieldName = qualifiedName.substring(clsName.length + 1)
+        return cls.findFieldByName(fieldName, true)
+    }
+
+    fun qualifiedNameOfMember(psiClass: PsiClass?, psiMember: PsiElement): String {
+        if (psiMember is PsiMethod) {
+            return qualifiedNameOfMethod(psiClass, psiMember)
+        }
+        if (psiMember is PsiField) {
+            return qualifiedNameOfField(psiClass, psiMember)
+        }
+        return nameOfMember(psiMember)
+    }
+
+    fun qualifiedNameOfMember(psiMember: PsiElement): String {
+        if (psiMember is PsiMethod) {
+            return qualifiedNameOfMethod(psiMember)
+        }
+        if (psiMember is PsiField) {
+            return qualifiedNameOfField(psiMember)
+        }
+        return nameOfMember(psiMember)
+    }
+
     fun nameOfMember(psiMember: PsiElement): String {
         if (psiMember is PsiNamedElement) {
-            return psiMember.name ?: ""
+            return psiMember.name ?: "anonymous"
         }
         if (psiMember is PsiMethod) {
             return psiMember.name
@@ -132,6 +215,9 @@ object PsiClassUtils {
         if (psiMember is PsiField) {
             return psiMember.name
         }
-        return ""
+        if (psiMember is PsiParameter) {
+            return psiMember.name ?: "anonymous"
+        }
+        return "anonymous"
     }
 }

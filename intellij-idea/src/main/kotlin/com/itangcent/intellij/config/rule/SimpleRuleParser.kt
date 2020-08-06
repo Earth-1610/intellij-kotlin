@@ -58,7 +58,7 @@ class SimpleRuleParser : RuleParser {
             }
             tinyRuleStr.startsWith("~") -> {
                 val suffix = tinyRuleStr.removePrefix("~")
-                StringRule.of { it.getName() + suffix }
+                StringRule.of { it.toString() + suffix }
             }
             else -> StringRule.of { tinyRuleStr }
         }
@@ -131,7 +131,7 @@ class SimpleRuleParser : RuleParser {
         } else {
             //default =
             srule = BooleanRule.of { context ->
-                context.getName() == rule
+                context.toString() == rule
             }
         }
 

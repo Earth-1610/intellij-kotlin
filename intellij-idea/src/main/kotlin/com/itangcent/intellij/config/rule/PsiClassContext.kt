@@ -5,6 +5,7 @@ import com.intellij.psi.PsiDocCommentOwner
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiModifierListOwner
 import com.itangcent.common.utils.SimpleExtensible
+import com.itangcent.common.utils.cache
 import com.itangcent.intellij.jvm.element.ExplicitClass
 
 open class PsiClassContext : SimpleExtensible, RuleContext {
@@ -20,11 +21,11 @@ open class PsiClassContext : SimpleExtensible, RuleContext {
     }
 
     override fun getName(): String? {
-        return psiClass.qualifiedName
+        return this.cache("_name") { psiClass.qualifiedName }
     }
 
     override fun getSimpleName(): String? {
-        return psiClass.name
+        return this.cache("_simpleName") { psiClass.name }
     }
 
     override fun asPsiDocCommentOwner(): PsiDocCommentOwner {
@@ -33,6 +34,10 @@ open class PsiClassContext : SimpleExtensible, RuleContext {
 
     override fun asPsiModifierListOwner(): PsiModifierListOwner? {
         return psiClass
+    }
+
+    override fun toString(): String {
+        return getName() ?: "anonymous"
     }
 }
 

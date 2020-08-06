@@ -35,6 +35,9 @@ class ExplicitFieldWithGenericInfo : ExplicitElementWithGenericInfo<PsiField>, E
         return psiField
     }
 
+    override fun toString(): String {
+        return name()
+    }
 }
 
 class ExplicitFieldWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiField>, ExplicitField {
