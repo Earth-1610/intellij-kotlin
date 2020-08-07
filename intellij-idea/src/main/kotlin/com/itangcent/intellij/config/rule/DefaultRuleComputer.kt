@@ -21,7 +21,7 @@ class DefaultRuleComputer : RuleComputer {
         context: PsiElement?,
         contextHandle: (RuleContext) -> Unit
     ): T? {
-        val rules = ruleLookUp!!.lookUp(ruleKey.name(), ruleKey.ruleType())
+        val rules = ruleLookUp!!.lookUp(ruleKey.nameAndAlias(), ruleKey.ruleType())
 
         if (rules.isNullOrEmpty()) return ruleKey.defaultVal()
 
