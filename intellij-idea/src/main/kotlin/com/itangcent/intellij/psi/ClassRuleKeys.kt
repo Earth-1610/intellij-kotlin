@@ -4,12 +4,24 @@ import com.itangcent.intellij.config.rule.*
 
 object ClassRuleKeys {
 
-    val FIELD_NAME: RuleKey<String> = SimpleRuleKey("json.rule.field.name", StringRule::class, StringRuleMode.SINGLE)
+    val FIELD_NAME: RuleKey<String> = SimpleRuleKey(
+        "field.name",
+        arrayOf("json.rule.field.name"),
+        StringRule::class, StringRuleMode.SINGLE
+    )
 
     val FIELD_IGNORE: RuleKey<Boolean> =
-        SimpleRuleKey("json.rule.field.ignore", BooleanRule::class, BooleanRuleMode.ANY)
+        SimpleRuleKey(
+            "field.ignore",
+            arrayOf("json.rule.field.ignore"),
+            BooleanRule::class, BooleanRuleMode.ANY
+        )
 
-    val FIELD_DOC: RuleKey<String> = SimpleRuleKey("doc.field", StringRule::class, StringRuleMode.MERGE)
+    val FIELD_DOC: RuleKey<String> = SimpleRuleKey(
+        "doc.field",
+        arrayOf("field.doc"),
+        StringRule::class, StringRuleMode.MERGE
+    )
 
     val TYPE_IS_FILE: RuleKey<Boolean> =
         SimpleRuleKey("type.is_file", BooleanRule::class, BooleanRuleMode.ANY)

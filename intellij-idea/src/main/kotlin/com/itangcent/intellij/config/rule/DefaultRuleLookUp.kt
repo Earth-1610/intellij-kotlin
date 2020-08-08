@@ -101,10 +101,7 @@ open class DefaultRuleLookUp : RuleLookUp {
                 logger!!.traceError("error to parse module rule:$key=$value", e)
             }
         }
-        return when {
-            rules.isEmpty() -> emptyList()
-            else -> rules
-        }
+        return rules.takeIf { it.isNotEmpty() } ?: emptyList()
     }
 
 }
