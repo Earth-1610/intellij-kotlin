@@ -18,8 +18,8 @@ object ClassRuleKeys {
         )
 
     val FIELD_DOC: RuleKey<String> = SimpleRuleKey(
-        "doc.field",
-        arrayOf("field.doc"),
+        "field.doc",
+        arrayOf("doc.field"),
         StringRule::class, StringRuleMode.MERGE
     )
 
