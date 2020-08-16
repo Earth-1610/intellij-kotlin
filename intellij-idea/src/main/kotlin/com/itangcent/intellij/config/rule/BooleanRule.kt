@@ -12,6 +12,14 @@ interface BooleanRule : Rule<Boolean> {
     }
 
     companion object {
+        fun of(result: Boolean): BooleanRule {
+            return object : BooleanRule {
+                override fun compute(context: RuleContext): Boolean? {
+                    return result
+                }
+            }
+        }
+
         fun of(booleanRule: (RuleContext) -> Boolean?): BooleanRule {
             return object : BooleanRule {
                 override fun compute(context: RuleContext): Boolean? {
@@ -20,9 +28,9 @@ interface BooleanRule : Rule<Boolean> {
             }
         }
 
-        fun filterWith(boolRule: BooleanRule, booleanRule: BooleanRule): BooleanRule {
+        fun filterWith(filter: BooleanRule, booleanRule: BooleanRule): BooleanRule {
             return of { context ->
-                if (boolRule.compute(context) == true) {
+                if (filter.compute(context) == true) {
                     return@of booleanRule.compute(context)
                 } else {
                     return@of null

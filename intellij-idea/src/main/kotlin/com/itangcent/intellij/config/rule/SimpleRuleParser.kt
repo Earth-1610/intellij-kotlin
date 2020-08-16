@@ -127,7 +127,8 @@ class SimpleRuleParser : RuleParser {
                     findClass(context.getResource())?.let { contentRegex(it.qualifiedName) } ?: false
                 }
             }
-
+        } else if (TRUE_OR_FALSE.contains(tinyRuleStr)) {
+            srule = BooleanRule.of(tinyRuleStr.toBool())
         } else {
             //default =
             srule = BooleanRule.of { context ->
@@ -140,15 +141,15 @@ class SimpleRuleParser : RuleParser {
         return srule
     }
 
-    private fun checkExtend(cls: PsiClass?, extendClassRegex: (String?) -> Boolean): Boolean {
-        if (cls == null) return false
-        var _cls: PsiClass? = cls
+    private fun checkExtend(psiClass: PsiClass?, extendClassRegex: (String?) -> Boolean): Boolean {
+        if (psiClass == null) return false
+        var cls: PsiClass? = psiClass
         do {
-            if (extendClassRegex(_cls!!.qualifiedName)) {
+            if (extendClassRegex(cls!!.qualifiedName)) {
                 return true
             }
-            _cls = _cls.superClass
-        } while (_cls != null && _cls.name != "Object")
+            cls = cls.superClass
+        } while (cls != null && cls.name != "Object")
         return false
 
     }
@@ -244,5 +245,6 @@ class SimpleRuleParser : RuleParser {
     companion object {
         var STAR_DOT = "@S_T_A_R_D_O_T@"
         var STAR = "@O_N_L_Y_S_T_A_R@"
+        val TRUE_OR_FALSE = arrayOf("true", "false")
     }
 }
