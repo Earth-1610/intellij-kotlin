@@ -53,7 +53,7 @@ class ActionContext {
 
     private var countLatch: CountLatch = AQSCountLatch()
 
-    private var executorService: ExecutorService = ThreadPoolUtils.createPool(3, 99, ActionContext::class.java)
+    private var executorService: ExecutorService = ThreadPoolUtils.createPool(6, 6, ActionContext::class.java)
 
     //Use guice to manage the current context instance lifecycle and dependencies
     private var injector: Injector
@@ -689,6 +689,7 @@ class ActionContext {
             const val BIND_WITH_ANNOTATION = "bindWithAnnotation"
             const val BIND = "bind"
             const val BIND_WITH_NAME = "bindWithName"
+
             @Deprecated(
                 message = "instead of bindInstanceWithClass",
                 replaceWith = ReplaceWith("BIND_INSTANCE_WITH_CLASS")
