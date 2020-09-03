@@ -10,20 +10,14 @@ abstract class PathSearchConfigReader : AbstractConfigReader() {
     @Inject
     protected val contextSwitchListener: ContextSwitchListener? = null
 
-    protected fun searchConfigFiles(configFileName: String): List<String>? {
+    protected fun searchConfigFiles(configFileNames: List<String>): List<String>? {
 
         val configFiles: ArrayList<String> = ArrayList()
 
         var currentPath = contextSwitchListener?.getModule()?.moduleFilePath ?: ActionUtils.findCurrentPath()
 
         while (!currentPath.isNullOrBlank()) {
-            val path = "$currentPath${File.separator}$configFileName"
-
-            val configFile = File(path)
-            if (configFile.exists() && configFile.isFile) {
-                logger?.trace("find config file:$path")
-                configFiles.add(path)
-            }
+            searchConfigFileInFolder(currentPath, configFileNames) { configFiles.add(it) }
             if (currentPath.isNullOrBlank() || !currentPath.contains(File.separator)) {
                 break
             }
@@ -31,5 +25,15 @@ abstract class PathSearchConfigReader : AbstractConfigReader() {
         }
 
         return configFiles
+    }
+
+    protected fun searchConfigFileInFolder(path: String, configFileNames: List<String>, handle: (String) -> Unit) {
+        for (configFileName in configFileNames) {
+            val configFile = File("$path${File.separator}$configFileName")
+            if (configFile.exists() && configFile.isFile) {
+                logger?.trace("find config file:$path")
+                handle(configFile.path);
+            }
+        }
     }
 }
