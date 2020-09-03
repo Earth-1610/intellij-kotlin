@@ -3,18 +3,19 @@ package com.itangcent.common.utils
 fun <K, V> MutableMap<K, V>.safeComputeIfAbsent(key: K, mappingFunction: (K) -> V?): V? {
     var mappingValue: V? = null
     try {
-        return this.computeIfAbsent(key) {
-            mappingValue = mappingFunction(it)
-            return@computeIfAbsent mappingValue!!
+        if (this.containsKey(key)) {
+            return this[key]
         }
+        mappingValue = mappingFunction(key)?.also { this[key] = it }
+        mappingValue?.let { this.put(key, it) }
     } catch (e: NullPointerException) {
         return null
     } catch (e: java.lang.NullPointerException) {
         return null
     } catch (e: ConcurrentModificationException) {
         mappingValue?.let { this[key] = it }
-        return mappingValue
     }
+    return mappingValue
 }
 
 fun <K, V> Map<K, V>?.any(vararg ks: K): V? {

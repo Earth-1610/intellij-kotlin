@@ -3,6 +3,7 @@ package com.itangcent.intellij.config.rule
 import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.itangcent.common.logger.traceError
+import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.config.ConfigReader
 import com.itangcent.intellij.extend.guice.PostConstruct
 import com.itangcent.intellij.logger.Logger
@@ -37,7 +38,7 @@ open class DefaultRuleLookUp : RuleLookUp {
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : Rule<*>> lookUp(key: String, ruleType: KClass<T>): List<T> {
-        return ruleCaches.computeIfAbsent(key) {
+        return ruleCaches.safeComputeIfAbsent(key) {
             doLookUp(key, ruleType)
         } as List<T>
     }

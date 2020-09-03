@@ -4,10 +4,7 @@ import com.google.inject.Inject
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
-import com.itangcent.common.utils.KV
-import com.itangcent.common.utils.anyIsNullOrBlank
-import com.itangcent.common.utils.invokeMethod
-import com.itangcent.common.utils.trimToNull
+import com.itangcent.common.utils.*
 import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.PostConstruct
@@ -78,7 +75,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     open protected fun getCache(option: Int): HashMap<Any, Any?> {
-        return resolvedInfo.computeIfAbsent(option) { HashMap() }
+        return resolvedInfo.safeComputeIfAbsent(option) { HashMap() }!!
     }
 
     @Suppress("UNCHECKED_CAST")

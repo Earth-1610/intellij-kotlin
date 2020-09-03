@@ -3,6 +3,7 @@ package com.itangcent.intellij.config.rule
 import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
+import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.common.utils.toBool
 import com.itangcent.intellij.jvm.AnnotationHelper
 import com.itangcent.intellij.jvm.DocHelper
@@ -166,13 +167,13 @@ class SimpleRuleParser : RuleParser {
     private val regexParseCache: HashMap<String, (String?) -> Boolean> = HashMap()
 
     fun parseRegexOrConstant(str: String): (String?) -> Boolean {
-        return regexParseCache.computeIfAbsent(str) {
+        return regexParseCache.safeComputeIfAbsent(str) {
             if (str.isBlank()) {
-                return@computeIfAbsent { true }
+                return@safeComputeIfAbsent { true }
             }
             val tinyStr = str.trim()
             if (tinyStr == "*") {
-                return@computeIfAbsent { true }
+                return@safeComputeIfAbsent { true }
             }
 
             if (tinyStr.contains("*")) {
@@ -188,13 +189,13 @@ class SimpleRuleParser : RuleParser {
                     }$"
                 )
 
-                return@computeIfAbsent { s ->
+                return@safeComputeIfAbsent { s ->
                     pattern.matcher(s).matches()
                 }
             }
 
-            return@computeIfAbsent { s -> str == s }
-        }
+            return@safeComputeIfAbsent { s -> str == s }
+        }!!
     }
 
     override fun contextOf(target: Any, context: PsiElement?): RuleContext {
