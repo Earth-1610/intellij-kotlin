@@ -1,8 +1,8 @@
 package com.itangcent.common.utils
 
+import com.itangcent.common.threadpool.eager.EagerThreadPoolExecutor
 import org.apache.commons.lang3.concurrent.BasicThreadFactory
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -20,12 +20,12 @@ object ThreadPoolUtils {
     }
 
     fun createPool(poolSize: Int, name: String): ExecutorService {
-        return ThreadPoolExecutor(
+        return EagerThreadPoolExecutor(
             poolSize, poolSize,
             0L, TimeUnit.MILLISECONDS,
-            LinkedBlockingQueue(),
             BasicThreadFactory.Builder().daemon(true)
-                .namingPattern("$name-%d").build()
+                .namingPattern("$name-%d").build(),
+            ThreadPoolExecutor.AbortPolicy()
         )
     }
 
@@ -34,12 +34,12 @@ object ThreadPoolUtils {
     }
 
     fun createPool(poolSize: Int, maximumPoolSize: Int, name: String): ExecutorService {
-        return ThreadPoolExecutor(
+        return EagerThreadPoolExecutor(
             poolSize, maximumPoolSize,
             0L, TimeUnit.MILLISECONDS,
-            LinkedBlockingQueue(),
             BasicThreadFactory.Builder().daemon(true)
-                .namingPattern("$name-%d").build()
+                .namingPattern("$name-%d").build(),
+            ThreadPoolExecutor.AbortPolicy()
         )
     }
 
