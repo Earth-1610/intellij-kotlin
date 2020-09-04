@@ -35,6 +35,10 @@ abstract class RegexBooleanRule : BooleanRule {
         return BooleanRule.filterWith(this, booleanRule)
     }
 
+    fun filterWith(eventRule: EventRule): EventRule {
+        return BooleanRule.filterWith(this, eventRule)
+    }
+
     abstract fun renderVal(str: String?, second: Map<Int, String>?): String?
 
     companion object {

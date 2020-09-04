@@ -10,5 +10,7 @@ interface RuleParser {
 
     fun parseBooleanRule(rule: String): BooleanRule?
 
+    fun parseEventRule(rule: String): EventRule?
+
     fun contextOf(target: Any, context: PsiElement?): RuleContext
 }

@@ -15,6 +15,7 @@ import com.itangcent.intellij.jvm.element.ExplicitClass
 import com.itangcent.intellij.jvm.element.ExplicitElement
 import com.itangcent.intellij.jvm.element.ExplicitField
 import com.itangcent.intellij.jvm.element.ExplicitMethod
+import com.itangcent.intellij.logger.Logger
 import java.util.regex.Pattern
 
 @Singleton
@@ -27,9 +28,14 @@ class SimpleRuleParser : RuleParser {
     private val docHelper: DocHelper? = null
 
     @Inject
+    private val logger: Logger? = null
+
+    @Inject
     private val jvmClassHelper: JvmClassHelper? = null
 
     private val stringRuleParseCache: HashMap<String, StringRule> = HashMap()
+
+    private val booleanRuleParseCache: HashMap<String, BooleanRule> = HashMap()
 
     override fun parseStringRule(rule: String): StringRule? {
         if (rule.isBlank()) return null
@@ -69,10 +75,13 @@ class SimpleRuleParser : RuleParser {
         return srule
     }
 
-    private val booleanRuleParseCache: HashMap<String, BooleanRule> = HashMap()
-
     override fun parseBooleanRule(rule: String): BooleanRule? {
         return parseBooleanRule(rule, false)
+    }
+
+    override fun parseEventRule(rule: String): EventRule? {
+        logger?.warn("event rule not be supported for simple rule.")
+        return null
     }
 
     fun parseBooleanRule(rule: String, defaultValue: Boolean): BooleanRule? {
