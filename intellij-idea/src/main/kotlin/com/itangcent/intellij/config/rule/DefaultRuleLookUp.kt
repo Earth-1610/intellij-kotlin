@@ -59,13 +59,21 @@ open class DefaultRuleLookUp : RuleLookUp {
                     if (filterTxt.startsWith("#regex:")) {
                         val regexBooleanRule = RegexBooleanRule.compile(filterTxt, value)
 
-                        if (ruleType == StringRule::class) {
-                            ruleParser!!.parseStringRule(value)?.let {
-                                rules.add(regexBooleanRule.filterWith(it) as T)
+                        when (ruleType) {
+                            StringRule::class -> {
+                                ruleParser!!.parseStringRule(value)?.let {
+                                    rules.add(regexBooleanRule.filterWith(it) as T)
+                                }
                             }
-                        } else if (ruleType == BooleanRule::class) {
-                            ruleParser!!.parseBooleanRule(value)?.let {
-                                rules.add(regexBooleanRule.filterWith(it) as T)
+                            BooleanRule::class -> {
+                                ruleParser!!.parseBooleanRule(value)?.let {
+                                    rules.add(regexBooleanRule.filterWith(it) as T)
+                                }
+                            }
+                            EventRule::class -> {
+                                ruleParser!!.parseEventRule(value)?.let {
+                                    rules.add(regexBooleanRule.filterWith(it) as T)
+                                }
                             }
                         }
                         return@foreach
@@ -73,13 +81,21 @@ open class DefaultRuleLookUp : RuleLookUp {
 
                     val filter = ruleParser!!.parseBooleanRule(filterTxt)
                     if (filter != null) {
-                        if (ruleType == StringRule::class) {
-                            ruleParser.parseStringRule(value)?.let {
-                                rules.add(StringRule.filterWith(filter, it) as T)
+                        when (ruleType) {
+                            StringRule::class -> {
+                                ruleParser.parseStringRule(value)?.let {
+                                    rules.add(StringRule.filterWith(filter, it) as T)
+                                }
                             }
-                        } else if (ruleType == BooleanRule::class) {
-                            ruleParser.parseBooleanRule(value)?.let {
-                                rules.add(BooleanRule.filterWith(filter, it) as T)
+                            BooleanRule::class -> {
+                                ruleParser.parseBooleanRule(value)?.let {
+                                    rules.add(BooleanRule.filterWith(filter, it) as T)
+                                }
+                            }
+                            EventRule::class -> {
+                                ruleParser.parseEventRule(value)?.let {
+                                    rules.add(BooleanRule.filterWith(filter, it) as T)
+                                }
                             }
                         }
                         return@foreach
@@ -87,14 +103,21 @@ open class DefaultRuleLookUp : RuleLookUp {
                     logger!!.warn("error to parse $filterTxt")
                 }
 
-
-                if (ruleType == StringRule::class) {
-                    ruleParser!!.parseStringRule(value)?.let {
-                        rules.add(it as T)
+                when (ruleType) {
+                    StringRule::class -> {
+                        ruleParser!!.parseStringRule(value)?.let {
+                            rules.add(it as T)
+                        }
                     }
-                } else if (ruleType == BooleanRule::class) {
-                    ruleParser!!.parseBooleanRule(value)?.let {
-                        rules.add(it as T)
+                    BooleanRule::class -> {
+                        ruleParser!!.parseBooleanRule(value)?.let {
+                            rules.add(it as T)
+                        }
+                    }
+                    EventRule::class -> {
+                        ruleParser!!.parseEventRule(value)?.let {
+                            rules.add(it as T)
+                        }
                     }
                 }
 

@@ -42,6 +42,14 @@ class DefaultRuleComputer : RuleComputer {
                     contextHandle
                 ) as T?
             }
+            is EventRuleMode -> {
+                (rules as (List<EventRule>)).compute(
+                    target,
+                    context,
+                    ruleKey.mode() as EventRuleMode,
+                    contextHandle
+                ) as T?
+            }
             else -> null
         }) ?: ruleKey.defaultVal()
     }
@@ -99,4 +107,27 @@ class DefaultRuleComputer : RuleComputer {
         }
     }
 
+    private fun List<EventRule>?.compute(
+        target: Any,
+        context: PsiElement?,
+        mode: EventRuleMode = EventRuleMode.IGNORE_ERROR,
+        contextHandle: (RuleContext) -> Unit
+    ) {
+        if (this.isNullOrEmpty()) {
+            return
+        }
+        val psiElementContext = ruleParser!!.contextOf(target, context)
+        contextHandle(psiElementContext)
+        when (mode) {
+            EventRuleMode.IGNORE_ERROR -> this.forEach {
+                try {
+                    it.compute(psiElementContext)
+                } catch (ignore: Exception) {
+                }
+            }
+            EventRuleMode.THROW_IN_ERROR -> this.forEach {
+                it.compute(psiElementContext)
+            }
+        }
+    }
 }

@@ -37,6 +37,14 @@ interface BooleanRule : Rule<Boolean> {
                 }
             }
         }
+
+        fun filterWith(filter: BooleanRule, eventRule: EventRule): EventRule {
+            return EventRule.of { context ->
+                if (filter.compute(context) == true) {
+                    eventRule.compute(context)
+                }
+            }
+        }
     }
 }
 

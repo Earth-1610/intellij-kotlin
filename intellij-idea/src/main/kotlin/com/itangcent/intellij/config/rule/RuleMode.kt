@@ -13,3 +13,8 @@ enum class BooleanRuleMode : RuleMode {
     ANY,
     ALL
 }
+
+enum class EventRuleMode : RuleMode {
+    IGNORE_ERROR,
+    THROW_IN_ERROR,
+}
