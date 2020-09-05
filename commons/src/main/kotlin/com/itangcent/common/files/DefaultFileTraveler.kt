@@ -16,7 +16,7 @@ class DefaultFileTraveler(private val root: String) : FileTraveler {
     private var dirFilter = FileFilter.defaultHandle
 
     override fun exceptDir(vararg dirs: String): FileTraveler {
-        val exceptDir = HashSet(Arrays.asList(*dirs))
+        val exceptDir = setOf(*dirs)
         dirFilter = dirFilter.andThen { file ->
             exceptDir.contains(file.file.path)
         }

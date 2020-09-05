@@ -90,7 +90,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             }
             is Map<*, *> -> try {
                 val copyObj = obj::class.createInstance() as MutableMap<Any?, Any?>
-                obj.forEach { k, v ->
+                obj.forEach { (k, v) ->
                     copyObj[copy(k)] = copy(v)
                 }
                 return copyObj
