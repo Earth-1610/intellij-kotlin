@@ -180,7 +180,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                             val commentKV: KV<String, Any?> =
                                 kv.safeComputeIfAbsent("@comment") { KV.create<String, Any?>() } as KV<String, Any?>
                             resolveSeeDoc(
-                                fieldName, enumClass, Arrays.asList(
+                                fieldName, enumClass, listOf(
                                     PsiClassUtils.fullNameOfMember(
                                         classWithFieldOrMethod.first.asPsiClass(jvmClassHelper),
                                         convertFieldOrMethod

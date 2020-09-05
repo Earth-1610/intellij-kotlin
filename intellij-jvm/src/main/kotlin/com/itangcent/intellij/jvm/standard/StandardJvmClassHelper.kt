@@ -393,12 +393,11 @@ open class StandardJvmClassHelper : JvmClassHelper {
         const val KEY_OF_MAP = "K"
         const val VALUE_OF_MAP = "V"
 
-        var fieldModifiers: Set<String> = HashSet(Arrays.asList(PsiModifier.PRIVATE, PsiModifier.PROTECTED))
+        var fieldModifiers: Set<String> = setOf(PsiModifier.PRIVATE, PsiModifier.PROTECTED)
         var staticFinalFieldModifiers: Set<String> =
-            HashSet(Arrays.asList(PsiModifier.STATIC, PsiModifier.FINAL))
-        var publicStaticFinalFieldModifiers: Set<String> = HashSet(
-            Arrays.asList(PsiModifier.PUBLIC, PsiModifier.STATIC, PsiModifier.FINAL)
-        )
+            setOf(PsiModifier.STATIC, PsiModifier.FINAL)
+        var publicStaticFinalFieldModifiers: Set<String> =
+            setOf(PsiModifier.PUBLIC, PsiModifier.STATIC, PsiModifier.FINAL)
 
         val normalTypes: HashMap<String, Any?> = HashMap()
 

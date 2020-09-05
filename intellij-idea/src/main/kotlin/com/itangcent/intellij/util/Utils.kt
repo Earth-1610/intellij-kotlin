@@ -8,13 +8,12 @@ import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.itangcent.common.utils.SystemUtils
 import java.io.File
-import java.util.*
 
 
 object Utils {
 
     val mvnExecutableNames: List<String>
-        get() = if (SystemUtils.isWindows) Arrays.asList("mvn.bat", "mvn.cmd") else Arrays.asList("mvn")
+        get() = if (SystemUtils.isWindows) listOf("mvn.bat", "mvn.cmd") else listOf("mvn")
 
     fun newLine(): String {
         return SystemUtils.newLine()
