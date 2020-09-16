@@ -49,6 +49,18 @@ class KotlinJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper 
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
+    override fun isString(psiClass: PsiClass): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isString(psiType: PsiType): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isString(duckType: DuckType): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     override fun isPublicStaticFinal(field: PsiField): Boolean {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
@@ -300,6 +312,9 @@ class KotlinJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper 
             addClass(MutableMap::class, mapClasses)
             StandardJvmClassHelper.mapClasses = mapClasses.toTypedArray()
 
+            val stringClasses = Sets.newHashSet(*StandardJvmClassHelper.stringClasses!!)
+            addClass(String::class, stringClasses)
+            StandardJvmClassHelper.stringClasses = stringClasses.toTypedArray()
         }
 
         private fun addClass(cls: KClass<*>, classSet: HashSet<String>) {

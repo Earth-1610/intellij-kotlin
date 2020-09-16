@@ -9,6 +9,8 @@ import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.PostConstruct
 import com.itangcent.intellij.jvm.*
+import com.itangcent.intellij.jvm.adapt.maybeMethodPropertyName
+import com.itangcent.intellij.jvm.adapt.propertyName
 import com.itangcent.intellij.jvm.duck.ArrayDuckType
 import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.duck.SingleDuckType
@@ -493,7 +495,10 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 val method = explicitMethod.psi()
                 val methodName = method.name
                 if (jvmClassHelper!!.isBasicMethod(methodName)) continue
-                val propertyName = propertyNameOfGetter(methodName) ?: continue
+                if (!methodName.maybeMethodPropertyName()) {
+                    continue
+                }
+                val propertyName = methodName.propertyName()
                 if (readGetter && !fieldNames!!.add(propertyName)) continue
                 if (method.isConstructor) continue
                 if (method.parameters.isNotEmpty()) continue
@@ -504,14 +509,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             }
         }
         fieldNames?.clear()
-    }
-
-    protected fun propertyNameOfGetter(methodName: String): String? {
-        return when {
-            methodName.startsWith("get") -> methodName.removePrefix("get")
-            methodName.startsWith("is") -> methodName.removePrefix("is")
-            else -> null
-        }?.decapitalize()?.removeSuffix("()")
     }
 
     protected open fun tryCastTo(psiType: PsiType, context: PsiElement): PsiType {
@@ -541,6 +538,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             if (first != null) {
                 return if (classAndPropertyOrMethod.second != null) {
                     resolveEnumOrStatic(
+                        context,
                         first,
                         PsiClassUtils.nameOfMember(classAndPropertyOrMethod.second!!),
                         defaultPropertyName
@@ -551,6 +549,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                         .filterNot { "[]()".contains(it) }
                         .takeIf { it.isNotBlank() }
                     resolveEnumOrStatic(
+                        context,
                         first,
                         property,
                         defaultPropertyName
@@ -564,16 +563,16 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             property = classNameWithProperty
                 .substringAfter("#")
                 .trim()
-                .removeSuffix("()")
         } else {
-            clsName = classNameWithProperty.trim().removeSuffix("()")
+            clsName = classNameWithProperty.trim()
         }
         cls = duckTypeHelper!!.resolveClass(clsName, context)?.let { getResourceClass(it) }
-        return resolveEnumOrStatic(cls, property, defaultPropertyName)
+        return resolveEnumOrStatic(context, cls, property, defaultPropertyName)
     }
 
     @Suppress("UNCHECKED_CAST")
     override fun resolveEnumOrStatic(
+        context: PsiElement,
         cls: PsiClass?,
         property: String?,
         defaultPropertyName: String
@@ -586,46 +585,35 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             val enumConstants = parseEnumConstant(cls)
 
             var valProperty = property.trimToNull() ?: defaultPropertyName
-            if (!valProperty.isBlank()) {
-                val candidateProperty = propertyNameOfGetter(valProperty)
-                if (candidateProperty != null && valProperty != candidateProperty) {
-                    if (!jvmClassHelper.getAllFields(cls)
-                            .filter { it.name == valProperty }
-                            .any() && jvmClassHelper.getAllFields(cls)
-                            .filter { it.name == candidateProperty }
-                            .any()
+            if (valProperty.maybeMethodPropertyName()) {
+                val candidateProperty = valProperty.propertyName()
+                if (valProperty != candidateProperty) {
+                    val allFields = jvmClassHelper.getAllFields(cls)
+                    if (!allFields.any { it.name == valProperty }
+                        && allFields.any { it.name == candidateProperty }
                     ) {
                         valProperty = candidateProperty
                     }
                 }
             }
 
-            for (enumConstant in enumConstants) {
-                val mappedVal = (enumConstant["params"] as? HashMap<String, Any?>?)
-                    ?.get(valProperty) ?: continue
+            if (valProperty.isBlank()) {
+                return options
+            }
 
-                var desc = enumConstant["desc"]
-                if (desc == null) {
-                    desc = (enumConstant["params"] as HashMap<String, Any?>?)!!
-                        .filterKeys { k -> k != valProperty }
-                        .map { entry -> entry.value.toString() }
-                        .joinToString(" ")
-                        .trimToNull()
+            findConstantsByProperty(enumConstants, valProperty, options)
+            if (options.isEmpty() && property.isNullOrBlank()) {
+                if (ruleComputer!!.computer(ClassRuleKeys.ENUM_USE_NAME, context) == true) {
+                    findConstantsByProperty(enumConstants, "name()", options)
+                } else if (ruleComputer.computer(ClassRuleKeys.ENUM_USE_ORDINAL, context) == true) {
+                    findConstantsByProperty(enumConstants, "ordinal()", options)
                 }
-                if (desc.anyIsNullOrBlank()) {
-                    desc = enumConstant["name"]
-                }
-                options.add(
-                    KV.create<String, Any?>()
-                        .set("value", mappedVal)
-                        .set("desc", desc)
-                )
             }
 
         } else {
             val constants = parseStaticFields(cls)
 
-            if (!property.isNullOrBlank()) {
+            if (property.notNullOrBlank()) {
                 for (constant in constants) {
                     val name = constant["name"] as String
 
@@ -644,20 +632,53 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 if (options.isNotEmpty()) {
                     return options
                 }
-            }
-
-            for (constant in constants) {
-                val mappedVal = constant["value"]
-                val desc = constant["desc"] ?: constant["name"]
-                options.add(
-                    KV.create<String, Any?>()
-                        .set("value", mappedVal)
-                        .set("desc", desc)
-                )
+            } else {
+                for (constant in constants) {
+                    val mappedVal = constant["value"]
+                    val desc = constant["desc"] ?: constant["name"]
+                    options.add(
+                        KV.create<String, Any?>()
+                            .set("value", mappedVal)
+                            .set("desc", desc)
+                    )
+                }
             }
 
         }
         return options
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun findConstantsByProperty(
+        enumConstants: List<Map<String, Any?>>,
+        valProperty: String,
+        options: ArrayList<HashMap<String, Any?>>
+    ) {
+        loop@ for (enumConstant in enumConstants) {
+            val mappedVal: Any = when (valProperty) {
+                "name()" -> enumConstant["name"]!!
+                "ordinal()" -> enumConstant["ordinal"]!!
+                else -> (enumConstant["params"] as? HashMap<String, Any?>?)
+                    ?.get(valProperty) ?: continue@loop
+            }
+
+            var desc = enumConstant["desc"]
+            if (desc == null) {
+                desc = (enumConstant["params"] as HashMap<String, Any?>?)!!
+                    .filterKeys { k -> k != valProperty }
+                    .map { entry -> entry.value.toString() }
+                    .joinToString(" ")
+                    .trimToNull()
+            }
+            if (desc.anyIsNullOrBlank()) {
+                desc = enumConstant["name"]
+            }
+            options.add(
+                KV.create<String, Any?>()
+                    .set("value", mappedVal)
+                    .set("desc", desc)
+            )
+        }
     }
 
     protected open val staticResolvedInfo: HashMap<PsiClass, List<Map<String, Any?>>> = HashMap()

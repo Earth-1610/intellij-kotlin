@@ -200,30 +200,30 @@ open class StandardPsiResolver : PsiResolver {
         val parameters = construct?.parameterList?.parameters
         if (expressions != null && parameters != null && parameters.isNotEmpty()) {
             if (parameters.last().isVarArgs) {
-
-                for (index in 0 until parameters.size - 1) {
-                    params[parameters[index].name!!] = PsiUtils.resolveExpr(expressions[index])
+                for (i in 0 until parameters.size - 1) {
+                    params[parameters[i].name!!] = PsiUtils.resolveExpr(expressions[i])
                 }
                 try {
                     //resolve varArgs
                     val lastVarArgParam: ArrayList<Any?> = ArrayList(1)
                     params[parameters[parameters.size - 1].name!!] = lastVarArgParam
-                    for (index in parameters.size - 1..expressions.size) {
-                        lastVarArgParam.add(PsiUtils.resolveExpr(expressions[index]))
+                    for (i in parameters.size - 1..expressions.size) {
+                        lastVarArgParam.add(PsiUtils.resolveExpr(expressions[i]))
                     }
                 } catch (e: Throwable) {
                 }
-            }
-
-            for ((index, parameter) in parameters.withIndex()) {
-                try {
-                    params[parameter.name!!] = PsiUtils.resolveExpr(expressions[index])
-                } catch (e: Throwable) {
+            } else {
+                for ((i, parameter) in parameters.withIndex()) {
+                    try {
+                        params[parameter.name!!] = PsiUtils.resolveExpr(expressions[i])
+                    } catch (e: Throwable) {
+                    }
                 }
             }
         }
         constant["params"] = params
         constant["name"] = psiField.name
+        constant["ordinal"] = index
         constant["desc"] = docHelper!!.getAttrOfField(psiField)?.trim()
         return constant
     }

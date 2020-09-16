@@ -99,6 +99,18 @@ open class StandardJvmClassHelper : JvmClassHelper {
         return isInheritor(duckType, *mapClasses!!)
     }
 
+    override fun isString(psiClass: PsiClass): Boolean {
+        return stringClasses!!.contains(psiClass.qualifiedName)
+    }
+
+    override fun isString(psiType: PsiType): Boolean {
+        return stringClasses!!.contains(psiType.canonicalText)
+    }
+
+    override fun isString(duckType: DuckType): Boolean {
+        return stringClasses!!.contains(duckType.canonicalText())
+    }
+
     /**
      * Checks if the class is an enumeration.
      *
@@ -403,6 +415,7 @@ open class StandardJvmClassHelper : JvmClassHelper {
 
         var collectionClasses: Array<String>? = null
         var mapClasses: Array<String>? = null
+        var stringClasses: Array<String>? = null
 
         private val PRIMITIVE_TYPES = HashMap<String, PsiType>(9)
 
@@ -468,6 +481,9 @@ open class StandardJvmClassHelper : JvmClassHelper {
                 addClass(HashMap::class.java, mapClasses)
                 addClass(LinkedHashMap::class.java, mapClasses)
                 this.mapClasses = mapClasses.toTypedArray()
+            }
+            if (stringClasses == null) {
+                this.stringClasses = arrayOf("java.lang.String")
             }
 
             PRIMITIVE_TYPES[PsiType.VOID.canonicalText] = PsiType.VOID;

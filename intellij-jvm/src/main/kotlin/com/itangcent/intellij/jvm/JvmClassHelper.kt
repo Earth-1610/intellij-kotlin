@@ -24,6 +24,12 @@ interface JvmClassHelper {
 
     fun isCollection(duckType: DuckType): Boolean
 
+    fun isString(psiClass: PsiClass): Boolean
+
+    fun isString(psiType: PsiType): Boolean
+
+    fun isString(duckType: DuckType): Boolean
+
     fun isPublicStaticFinal(field: PsiField): Boolean
 
     fun isNormalType(typeName: String): Boolean

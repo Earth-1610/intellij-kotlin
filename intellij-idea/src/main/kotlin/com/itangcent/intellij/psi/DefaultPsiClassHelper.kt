@@ -6,6 +6,7 @@ import com.intellij.psi.*
 import com.intellij.util.containers.isNullOrEmpty
 import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.KV
+import com.itangcent.common.utils.notNullOrEmpty
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.config.rule.computer
 import com.itangcent.intellij.jvm.SourceHelper
@@ -29,10 +30,27 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
 
     @Suppress("UNCHECKED_CAST")
     protected open fun resolveSeeDoc(field: PsiField, comment: HashMap<String, Any?>) {
-        val sees = getSees(field)
-        if (sees.isNullOrEmpty()) return
+        val sees = getSees(field).takeIf { it.notNullOrEmpty() } ?: return
+        resolveSeeDoc(field, sees, comment)
+    }
 
-        resolveSeeDoc(field.name, field, sees!!, comment)
+    @Suppress("UNCHECKED_CAST")
+    protected open fun resolveSeeDoc(
+        field: PsiField,
+        sees: List<String>,
+        comment: HashMap<String, Any?>
+    ) {
+        val fieldName = field.name
+        val options: ArrayList<HashMap<String, Any?>> = ArrayList()
+        sees.forEach { see ->
+            resolveEnumOrStatic(see, field, fieldName)?.let {
+                options.addAll(it)
+            }
+        }
+
+        if (options.isNotEmpty()) {
+            comment["$fieldName@options"] = options
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -42,9 +60,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         sees: List<String>,
         comment: HashMap<String, Any?>
     ) {
-
         val options: ArrayList<HashMap<String, Any?>> = ArrayList()
-
         sees.forEach { see ->
             resolveEnumOrStatic(see, context, fieldName)?.let { options.addAll(it) }
         }
@@ -180,7 +196,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                             val commentKV: KV<String, Any?> =
                                 kv.safeComputeIfAbsent("@comment") { KV.create<String, Any?>() } as KV<String, Any?>
                             resolveSeeDoc(
-                                fieldName, enumClass, listOf(
+                                fieldName, fieldOrMethod.psi() as? PsiMember ?: enumClass, listOf(
                                     PsiClassUtils.fullNameOfMember(
                                         classWithFieldOrMethod.first.asPsiClass(jvmClassHelper),
                                         convertFieldOrMethod

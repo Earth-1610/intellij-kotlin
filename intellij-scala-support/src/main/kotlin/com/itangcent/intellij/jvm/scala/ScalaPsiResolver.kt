@@ -71,20 +71,21 @@ open class ScalaPsiResolver : StandardPsiResolver() {
                     if (exprs.size() == 2) {
                         var id: Int = index
                         var name: String? = null
-                        var index = 0
+                        var i = 0
                         for (ex in exprs) {
                             val value = ScPsiUtils.valueOf(ex)
-                            if (index == 0) {
+                            if (i == 0) {
                                 id = value.asInt() ?: 0
                             } else {
                                 name = value.toString()
                                 break
                             }
-                            index++
+                            i++
                         }
 
                         return KV.create<String, Any?>()
                             .set("name", name ?: psiField.name)
+                            .set("ordinal", index)
                             .set("desc", attrOfField)
                             .set(
                                 "params", KV.create<String, Any>()
@@ -97,6 +98,7 @@ open class ScalaPsiResolver : StandardPsiResolver() {
                         if (value is Int) {
                             return KV.create<String, Any?>()
                                 .set("name", psiField.name)
+                                .set("ordinal", index)
                                 .set("desc", attrOfField)
                                 .set(
                                     "params", KV.create<String, Any>()
@@ -106,6 +108,7 @@ open class ScalaPsiResolver : StandardPsiResolver() {
                         } else if (value is String) {
                             return KV.create<String, Any?>()
                                 .set("name", psiField.name)
+                                .set("ordinal", index)
                                 .set("desc", attrOfField)
                                 .set(
                                     "params", KV.create<String, Any>()

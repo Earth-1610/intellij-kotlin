@@ -14,7 +14,7 @@ plugins {
 }
 
 group 'com.itangcent'
-version '0.7.8-SNAPSHOT'
+version '0.7.9-SNAPSHOT'
 
 apply plugin: 'kotlin'
 apply plugin: 'org.jetbrains.intellij'
