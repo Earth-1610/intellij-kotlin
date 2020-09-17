@@ -17,6 +17,18 @@ object ClassRuleKeys {
             BooleanRule::class, BooleanRuleMode.ANY
         )
 
+    val ENUM_USE_NAME: RuleKey<Boolean> =
+        SimpleRuleKey(
+            "enum.use.name",
+            BooleanRule::class, BooleanRuleMode.ANY
+        )
+
+    val ENUM_USE_ORDINAL: RuleKey<Boolean> =
+        SimpleRuleKey(
+            "enum.use.ordinal",
+            BooleanRule::class, BooleanRuleMode.ANY
+        )
+
     val FIELD_DOC: RuleKey<String> = SimpleRuleKey(
         "field.doc",
         arrayOf("doc.field"),

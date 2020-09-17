@@ -49,13 +49,16 @@ interface PsiClassHelper {
 
     @Deprecated(
         "use [com.itangcent.intellij.jvm.PsiClassHelper.resolveEnumOrStatic(com.intellij.psi.PsiClass, java.lang.String, java.lang.String)]",
-        ReplaceWith("resolveEnumOrStatic(cls, property, property ?: \"\")")
+        ReplaceWith("resolveEnumOrStatic(cls, property, property)")
     )
-    fun resolveEnumOrStatic(cls: PsiClass?, property: String?): ArrayList<HashMap<String, Any?>>? {
-        return resolveEnumOrStatic(cls, property, property ?: "")
+    fun resolveEnumOrStatic(
+        context: PsiElement, cls: PsiClass?, property: String?
+    ): ArrayList<HashMap<String, Any?>>? {
+        return resolveEnumOrStatic(context, cls, property, "")
     }
 
     fun resolveEnumOrStatic(
+        context: PsiElement,
         cls: PsiClass?, property: String?,
         defaultPropertyName: String
     ): ArrayList<HashMap<String, Any?>>?

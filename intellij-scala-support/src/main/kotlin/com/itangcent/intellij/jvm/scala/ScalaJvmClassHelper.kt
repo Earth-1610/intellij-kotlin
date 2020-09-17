@@ -1,5 +1,6 @@
 package com.itangcent.intellij.jvm.scala
 
+import com.google.common.collect.Sets
 import com.intellij.lang.jvm.JvmParameter
 import com.intellij.psi.*
 import com.itangcent.common.utils.getPropertyValue
@@ -10,6 +11,7 @@ import com.itangcent.intellij.jvm.scala.adaptor.ScPatternDefinitionPsiFieldAdapt
 import com.itangcent.intellij.jvm.scala.adaptor.ScalaPsiFieldAdaptor
 import com.itangcent.intellij.jvm.scala.adaptor.ScalaTypeParameterType2PsiTypeParameterAdaptor
 import com.itangcent.intellij.jvm.scala.compatible.ScCompatiblePhysicalMethodSignature
+import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.normalTypes
 import org.jetbrains.plugins.scala.lang.psi.api.statements.ScPatternDefinition
 import org.jetbrains.plugins.scala.lang.psi.api.statements.ScVariable
@@ -50,6 +52,18 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
     }
 
     override fun isCollection(psiType: PsiType): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isString(psiClass: PsiClass): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isString(psiType: PsiType): Boolean {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isString(duckType: DuckType): Boolean {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
@@ -342,6 +356,10 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
             normalTypes["Null"] = null
             normalTypes["Unit"] = null
             normalTypes["_root_.scala.Predef.String"] = ""
+
+            val stringClasses = Sets.newHashSet(*StandardJvmClassHelper.stringClasses!!)
+            stringClasses.add("_root_.scala.Predef.String")
+            StandardJvmClassHelper.stringClasses = stringClasses.toTypedArray()
         }
     }
 

@@ -9,7 +9,8 @@ import com.itangcent.intellij.jvm.standard.StandardPsiResolver
 @ImplementedBy(StandardPsiResolver::class)
 interface PsiResolver {
 
-    @Deprecated(message = "will be removed next version",
+    @Deprecated(
+        message = "will be removed next version",
         replaceWith = ReplaceWith("com.itangcent.intellij.jvm.DuckTypeHelper.resolveClass")
     )
     fun resolveClass(className: String, psiElement: PsiElement): PsiClass?
@@ -38,6 +39,7 @@ interface PsiResolver {
      * {
      * params:{}
      * name:""
+     * ordinal:1
      * desc:""
      * }
      */
