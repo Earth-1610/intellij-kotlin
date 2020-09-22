@@ -71,6 +71,12 @@ open class StandardJvmClassHelper : JvmClassHelper {
                 return true
             }
         }
+        
+        for (inter in psiClass.interfaces) {
+            if (baseClass.contains(inter.qualifiedName)) {
+                return true
+            }
+        }
 
         return false
     }
