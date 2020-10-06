@@ -7,6 +7,7 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
 import com.itangcent.common.utils.safeComputeIfAbsent
+import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.duck.ArrayDuckType
 import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.duck.SingleDuckType
@@ -14,7 +15,6 @@ import com.itangcent.intellij.jvm.duck.SingleUnresolvedDuckType
 import com.itangcent.intellij.jvm.element.*
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 import com.itangcent.intellij.logger.Logger
-import com.siyeh.ig.psiutils.ClassUtils
 import org.apache.commons.lang3.StringUtils
 import java.util.*
 import kotlin.collections.LinkedHashMap
@@ -34,10 +34,6 @@ open class DuckTypeHelper {
     private val classCanonicalTextCache: HashMap<String, PsiClass?> = HashMap()
 
     private val duckTypeCanonicalTextCache: HashMap<String, DuckType?> = HashMap()
-
-    private val nameToClassCache: HashMap<String, PsiClass?> = LinkedHashMap()
-
-    private val nameToTypeCache: HashMap<String, PsiType?> = LinkedHashMap()
 
     fun explicit(psiClass: PsiClass): ExplicitClass {
         return ExplicitClassWithOutGenericInfo(this, psiClass)
@@ -283,6 +279,10 @@ open class DuckTypeHelper {
         }?.let { sourceHelper?.getSourceClass(it) }
     }
 
+    @Deprecated(
+        message = "will be removed next version",
+        replaceWith = ReplaceWith("com.itangcent.intellij.jvm.PsiResolver.getContainingClass")
+    )
     fun getContainingClass(psiElement: PsiElement): PsiClass? {
         if (psiElement is PsiClass) return psiElement
         if (psiElement is PsiMember) {
@@ -291,39 +291,12 @@ open class DuckTypeHelper {
         return null
     }
 
+    @Deprecated(
+        message = "will be removed next version",
+        replaceWith = ReplaceWith("com.itangcent.intellij.jvm.PsiResolver.findClass")
+    )
     fun findClass(fqClassName: String, context: PsiElement): PsiClass? {
-        if (fqClassName.isEmpty()) return null
-
-        if (nameToClassCache.contains(fqClassName)) {
-            return nameToClassCache[fqClassName]
-        }
-
-        if (fqClassName.contains("<")) {
-            return findClass(fqClassName.substringBefore('<'), context)
-        }
-
-        var cls: PsiClass? = null
-        try {
-            cls = ClassUtils.findClass(fqClassName, context)
-        } catch (e: Exception) {
-        }
-
-        if (cls == null) {
-            if (fqClassName.contains(".")) return null
-
-            try {
-                cls = ClassUtils.findClass("java.lang." + fqClassName.capitalize(), context)
-            } catch (e: Exception) {
-            }
-            if (cls == null) {
-                try {
-                    cls = ClassUtils.findClass("java.util." + fqClassName.capitalize(), context)
-                } catch (e: Exception) {
-                }
-            }
-        }
-        nameToClassCache[fqClassName] = cls
-        return cls
+        return ActionContext.instance(PsiResolver::class).findClass(fqClassName, context)
     }
 
     protected open fun resolveClassFromImport(psiClass: PsiClass, clsName: String): PsiClass? {
@@ -455,9 +428,7 @@ open class DuckTypeHelper {
     }
 
     fun findType(canonicalText: String, context: PsiElement): PsiType? {
-        return nameToTypeCache.safeComputeIfAbsent(canonicalText) {
-            return@safeComputeIfAbsent buildPsiType(canonicalText, context)
-        }
+        return ActionContext.instance(PsiResolver::class).findType(canonicalText, context)
     }
 
     //region isQualified--------------------------------------------------------

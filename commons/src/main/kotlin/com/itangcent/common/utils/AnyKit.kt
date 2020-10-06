@@ -146,6 +146,54 @@ fun Any?.asInt(): Int? {
     }
 }
 
+fun Any?.asLong(): Long? {
+    return when {
+        this == null -> null
+        this is Long -> this
+        this is Boolean -> {
+            return when {
+                this -> 1
+                else -> 0
+            }
+        }
+        this is Number -> this.toLong()
+        this is String -> this.toLongOrNull()
+        else -> null
+    }
+}
+
+fun Any?.asFloat(): Float? {
+    return when {
+        this == null -> null
+        this is Float -> this
+        this is Boolean -> {
+            return when {
+                this -> 1f
+                else -> 0f
+            }
+        }
+        this is Number -> this.toFloat()
+        this is String -> this.toFloatOrNull()
+        else -> null
+    }
+}
+
+fun Any?.asDouble(): Double? {
+    return when {
+        this == null -> null
+        this is Double -> this
+        this is Boolean -> {
+            return when {
+                this -> 1.0
+                else -> 0.0
+            }
+        }
+        this is Number -> this.toDouble()
+        this is String -> this.toDoubleOrNull()
+        else -> null
+    }
+}
+
 fun Any?.asBool(): Boolean? {
     return when {
         this == null -> null

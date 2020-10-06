@@ -2,6 +2,7 @@ package com.itangcent.intellij.jvm
 
 import com.google.inject.ImplementedBy
 import com.intellij.psi.*
+import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 
@@ -159,6 +160,17 @@ interface JvmClassHelper {
     fun defineOtherCode(psiElement: PsiElement): String
 }
 
+
+fun Any?.asPsiClass(): PsiClass? {
+    if (this == null) return null
+    if (this is PsiType) {
+        return ActionContext.instance(JvmClassHelper::class).resolveClassInType(this)
+    }
+    if (this is PsiClass) {
+        return this
+    }
+    return null
+}
 
 fun Any?.asPsiClass(jvmClassHelper: JvmClassHelper): PsiClass? {
     if (this == null) return null

@@ -4,15 +4,12 @@ import com.google.inject.ImplementedBy
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiField
+import com.intellij.psi.PsiType
 import com.itangcent.intellij.jvm.standard.StandardPsiResolver
 
 @ImplementedBy(StandardPsiResolver::class)
 interface PsiResolver {
 
-    @Deprecated(
-        message = "will be removed next version",
-        replaceWith = ReplaceWith("com.itangcent.intellij.jvm.DuckTypeHelper.resolveClass")
-    )
     fun resolveClass(className: String, psiElement: PsiElement): PsiClass?
 
     /**
@@ -44,4 +41,8 @@ interface PsiResolver {
      * }
      */
     fun resolveEnumFields(index: Int, psiField: PsiField): Map<String, Any?>?
+
+    fun findClass(fqClassName: String, context: PsiElement): PsiClass?
+
+    fun findType(canonicalText: String, context: PsiElement): PsiType?
 }

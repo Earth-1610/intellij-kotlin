@@ -2,20 +2,20 @@ package com.itangcent.intellij.jvm.kotlin
 
 import com.google.inject.Inject
 import com.google.inject.Singleton
-import com.intellij.psi.*
-import com.intellij.util.containers.stream
+import com.intellij.psi.PsiElement
 import com.itangcent.common.utils.GsonUtils
-import com.itangcent.common.utils.invokeMethod
 import com.itangcent.common.utils.longest
 import com.itangcent.intellij.jvm.AnnotationHelper
 import com.itangcent.intellij.jvm.DuckTypeHelper
 import com.itangcent.intellij.jvm.PsiClassHelper
+import com.itangcent.intellij.jvm.PsiExpressionResolver
 import org.jetbrains.kotlin.asJava.classes.KtLightClass
 import org.jetbrains.kotlin.asJava.classes.KtLightClassForSourceDeclaration
 import org.jetbrains.kotlin.asJava.elements.KtLightMember
 import org.jetbrains.kotlin.idea.util.findAnnotation
-import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.psi.psiUtil.plainContent
+import org.jetbrains.kotlin.psi.KtAnnotationEntry
+import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.ValueArgument
 
 /**
  * see https://kotlinlang.org/docs/reference/annotations.html
@@ -31,6 +31,9 @@ class KotlinAnnotationHelper : AnnotationHelper {
 
     @Inject(optional = true)
     private val duckTypeHelper: DuckTypeHelper? = null
+
+    @Inject
+    private val psiExpressionResolver: PsiExpressionResolver? = null
 
     override fun hasAnn(psiElement: PsiElement?, annName: String): Boolean {
 
@@ -52,15 +55,22 @@ class KotlinAnnotationHelper : AnnotationHelper {
                     val argumentName = getArgName(psiElement, annName, valueArgument, index)
                     if (index == 0 && argumentName == "value") {
                         allValue = 1
-                        ret[argumentName] = resolveValue(valueArgument.getArgumentExpression())
+                        ret[argumentName] =
+                            valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
                     } else if (argumentName != null) {
                         allValue = -1
-                        ret[argumentName] = resolveValue(valueArgument.getArgumentExpression())
+                        ret[argumentName] =
+                            valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
                     } else if (allValue == 1) {
                         ++allValue
-                        ret["value"] = arrayListOf(ret["value"], resolveValue(valueArgument.getArgumentExpression()))
+                        ret["value"] = arrayListOf(
+                            ret["value"],
+                            valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
+                        )
                     } else if (allValue > 1) {
-                        (ret["value"] as ArrayList<Any?>).add(resolveValue(valueArgument.getArgumentExpression()))
+                        (ret["value"] as ArrayList<Any?>).add(
+                            valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
+                        )
                     }
                 }
 //            annotationHelper.findAnnMap(psiElement, annName)?.forEach { k, v ->
@@ -93,17 +103,23 @@ class KotlinAnnotationHelper : AnnotationHelper {
                         val argumentName = getArgName(psiElement, annName, valueArgument, index)
                         if (index == 0 && argumentName == "value") {
                             allValue = 1
-                            values = resolveValue(valueArgument.getArgumentExpression())
+                            values = valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
                         } else if (argumentName != null) {
                             allValue = -1
                             if (attrs.contains(argumentName)) {
-                                return resolveValue(valueArgument.getArgumentExpression())
+                                return valueArgument.getArgumentExpression()
+                                    ?.let { psiExpressionResolver!!.process(it) }
                             }
                         } else if (allValue == 1) {
                             ++allValue
-                            values = arrayListOf(values, resolveValue(valueArgument.getArgumentExpression()))
+                            values = arrayListOf(
+                                values,
+                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
+                            )
                         } else if (allValue > 1) {
-                            (values as ArrayList<Any?>).add(resolveValue(valueArgument.getArgumentExpression()))
+                            (values as ArrayList<Any?>).add(
+                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
+                            )
                         }
                     }
                 return values
@@ -114,7 +130,8 @@ class KotlinAnnotationHelper : AnnotationHelper {
                             attrs.contains(name)
                         } == true
                     }
-                    .map { resolveValue(it.getArgumentExpression()) }
+                    .mapNotNull { it.getArgumentExpression() }
+                    .map { psiExpressionResolver!!.process(it) }
                     .firstOrNull()
             }
         }
@@ -136,7 +153,8 @@ class KotlinAnnotationHelper : AnnotationHelper {
                         attrs.contains(name)
                     } == true
                 }
-                .mapNotNull { resolveValue(it.getArgumentExpression()) }
+                .mapNotNull { it.getArgumentExpression() }
+                .mapNotNull { psiExpressionResolver!!.process(it) }
                 .mapNotNull { tinyAnnStr(it) }
                 .longest()
         }
@@ -204,81 +222,6 @@ class KotlinAnnotationHelper : AnnotationHelper {
         return null
     }
 
-    fun resolveValue(psiExpression: PsiElement?): Any? {
-        when {
-            psiExpression == null -> return null
-            CompatibleKtClass.isKtLightPsiLiteral(psiExpression) -> {
-                val value = psiExpression.invokeMethod("getValue")
-                if (value != null) {
-                    if (value is String || value::class.java.isPrimitive) {
-                        return value
-                    }
-                }
-                return psiExpression.text
-            }
-            psiExpression is PsiLiteralExpression -> return psiExpression.value?.toString()
-            psiExpression is KtCollectionLiteralExpression -> {
-                return psiExpression.getInnerExpressions().map { resolveValue(it) }.toTypedArray()
-            }
-            psiExpression is KtDotQualifiedExpression -> {
-                return resolveValue(psiExpression.selectorExpression)
-            }
-            psiExpression is PsiReferenceExpression -> {
-                val value = psiExpression.resolve()
-                if (value is PsiExpression) {
-                    return resolveValue(value)
-                }
-            }
-            psiExpression is PsiField -> {
-                val constantValue = psiExpression.computeConstantValue()
-                if (constantValue != null) {
-                    if (constantValue is PsiExpression) {
-                        return resolveValue(constantValue)
-                    }
-                    return constantValue
-                }
-            }
-            psiExpression is PsiAnnotation -> {
-                return annToMap(psiExpression)
-            }
-            psiExpression is PsiArrayInitializerMemberValue -> {
-                return psiExpression.initializers.map { resolveValue(it) }.toTypedArray()
-            }
-            psiExpression is KtStringTemplateExpression -> {
-                return psiExpression.plainContent
-            }
-            psiExpression is KtCallExpression -> {
-                return resolveValue(psiExpression.valueArgumentList)
-            }
-            psiExpression is KtValueArgumentList -> {
-                val map = LinkedHashMap<Any?, Any?>()
-                for (argument in psiExpression.arguments) {
-                    if (argument.isNamed()) {
-                        map[resolveValue(argument.getArgumentName())] = resolveValue(argument.getArgumentExpression())
-                    } else {
-                        map["value"] = resolveValue(argument.getArgumentExpression())
-                    }
-                }
-                return map
-            }
-            psiExpression is KtValueArgument -> {
-                return resolveValue(psiExpression.getArgumentExpression())
-            }
-            psiExpression is KtValueArgumentName -> {
-                val name = psiExpression.asName
-                if (name.isSpecial) {
-                    return name.identifier
-                }
-                return psiExpression.text
-            }
-            else -> {
-                return psiExpression.text
-            }
-        }
-
-        return psiExpression.text
-    }
-
     fun tinyAnnStr(annStr: Any?): String? {
         return when (annStr) {
             null -> null
@@ -287,15 +230,5 @@ class KotlinAnnotationHelper : AnnotationHelper {
             is String -> annStr
             else -> GsonUtils.toJson(annStr)
         }
-    }
-
-    protected fun annToMap(psiAnn: PsiAnnotation): LinkedHashMap<String, Any?> {
-        val map: LinkedHashMap<String, Any?> = LinkedHashMap()
-        psiAnn.parameterList.attributes.stream()
-            .forEach { attr ->
-                map[attr.name ?: "value"] = resolveValue(attr.value)
-            }
-
-        return map
     }
 }
