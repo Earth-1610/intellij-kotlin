@@ -27,15 +27,11 @@ class KotlinDocHelper : StandardDocHelper() {
             throw NotImplementedError()
         }
 
-
-        val text = psiElement.text
         //text maybe null
-        if (text == null) {
-            return null
-        }
+        val text = psiElement.text?.trim() ?: return null
 
-        if (text.contains("//")) {
-            return text.substringAfterLast("//")
+        if (text.startsWith("//")) {
+            return text.substringAfter("//")
         }
 
         return super.getSuffixComment(psiElement)
@@ -73,8 +69,7 @@ class KotlinDocHelper : StandardDocHelper() {
 
             return actionContext!!.callInReadUI {
                 kDoc.children
-                    .filter { it is KDocSection }
-                    .map { it as KDocSection }
+                    .filterIsInstance<KDocSection>()
                     .flatMap { it.findTagsByName(tag) }
                     .any()
             } ?: false
@@ -107,8 +102,7 @@ class KotlinDocHelper : StandardDocHelper() {
 
             return actionContext!!.callInReadUI {
                 kDoc.children
-                    .filter { it is KDocSection }
-                    .map { it as KDocSection }
+                    .filterIsInstance<KDocSection>()
                     .flatMap { it.findTagsByName(tag) }
                     .map { it.contentOrLink() }
                     .firstOrNull()
@@ -132,8 +126,7 @@ class KotlinDocHelper : StandardDocHelper() {
         if (kDoc != null) {
             return actionContext!!.callInReadUI {
                 kDoc.children
-                    .filter { it is KDocSection }
-                    .map { it as KDocSection }
+                    .filterIsInstance<KDocSection>()
                     .flatMap { it.findTagsByName(tag) }
                     .mapNotNull { it.contentOrLink() }
                     .toList()
@@ -168,8 +161,7 @@ class KotlinDocHelper : StandardDocHelper() {
 
             return actionContext!!.callInReadUI {
                 kDoc.children
-                    .filter { it is KDocSection }
-                    .map { it as KDocSection }
+                    .filterIsInstance<KDocSection>()
                     .flatMap { it.findTagsByName(tag) }
                     .filter { it.getSubjectName() == name }
                     .map { it.contentOrLink() }
@@ -216,8 +208,7 @@ class KotlinDocHelper : StandardDocHelper() {
             return actionContext!!.callInReadUI {
                 val tagMap: HashMap<String, String?> = HashMap()
                 kDoc.children
-                    .filter { it is KDocSection }
-                    .map { it as KDocSection }
+                    .filterIsInstance<KDocSection>()
                     .flatMap { it.findTagsByName(tag) }
                     .forEach { tagMap[it.getSubjectName() ?: ""] = it.contentOrLink() }
                 return@callInReadUI tagMap
@@ -243,11 +234,9 @@ class KotlinDocHelper : StandardDocHelper() {
             return actionContext!!.callInReadUI {
                 val tagMap: HashMap<String, String?> = HashMap()
                 kDoc.children
-                    .filter { it is KDocSection }
-                    .map { it as KDocSection }
+                    .filterIsInstance<KDocSection>()
                     .flatMap { it.children.toList() }
-                    .filter { it is KDocTag }
-                    .map { it as KDocTag }
+                    .filterIsInstance<KDocTag>()
                     .forEach {
                         tagMap[it.name ?: ""] = it.contentOrLink()
                     }

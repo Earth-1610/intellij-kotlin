@@ -6,7 +6,9 @@ import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
 import com.itangcent.common.utils.firstOrNull
 import com.itangcent.common.utils.mapNotNull
+import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.jvm.*
+import com.siyeh.ig.psiutils.ClassUtils
 
 
 /**
@@ -45,19 +47,63 @@ open class StandardPsiResolver : PsiResolver {
     @Inject
     protected val docHelper: DocHelper? = null
 
-    @Deprecated(message = "will be removed next version")
+    private val nameToClassCache: java.util.HashMap<String, PsiClass?> = LinkedHashMap()
+
+    private val nameToTypeCache: java.util.HashMap<String, PsiType?> = LinkedHashMap()
+
     override fun resolveClass(className: String, psiElement: PsiElement): PsiClass? {
         return when {
-            className.contains(".") -> duckTypeHelper!!.findClass(className, psiElement)
+            className.contains(".") -> findClass(className, psiElement)
             else -> getContainingClass(psiElement)?.let { resolveClassFromImport(it, className) }
-                ?: duckTypeHelper!!.findClass(className, psiElement)
+                ?: findClass(className, psiElement)
         }?.let { sourceHelper?.getSourceClass(it) }
     }
 
     override fun resolveClassOrType(className: String, psiElement: PsiElement): Any? {
         return when {
-            className.contains("<") -> duckTypeHelper!!.findType(className, psiElement)
-            else -> duckTypeHelper!!.resolveClass(className, psiElement)
+            className.contains("<") -> findType(className, psiElement)
+            else -> resolveClass(className, psiElement)
+        }
+    }
+
+    override fun findClass(fqClassName: String, context: PsiElement): PsiClass? {
+        if (fqClassName.isEmpty()) return null
+
+        if (nameToClassCache.contains(fqClassName)) {
+            return nameToClassCache[fqClassName]
+        }
+
+        if (fqClassName.contains("<")) {
+            return findClass(fqClassName.substringBefore('<'), context)
+        }
+
+        var cls: PsiClass? = null
+        try {
+            cls = ClassUtils.findClass(fqClassName, context)
+        } catch (e: Exception) {
+        }
+
+        if (cls == null) {
+            if (fqClassName.contains(".")) return null
+
+            try {
+                cls = ClassUtils.findClass("java.lang." + fqClassName.capitalize(), context)
+            } catch (e: Exception) {
+            }
+            if (cls == null) {
+                try {
+                    cls = ClassUtils.findClass("java.util." + fqClassName.capitalize(), context)
+                } catch (e: Exception) {
+                }
+            }
+        }
+        nameToClassCache[fqClassName] = cls
+        return cls
+    }
+
+    override fun findType(canonicalText: String, context: PsiElement): PsiType? {
+        return nameToTypeCache.safeComputeIfAbsent(canonicalText) {
+            return@safeComputeIfAbsent duckTypeHelper!!.buildPsiType(canonicalText, context)
         }
     }
 
@@ -68,13 +114,13 @@ open class StandardPsiResolver : PsiResolver {
         var cls = imports
             .mapNotNull { it.qualifiedName }
             .firstOrNull { it.endsWith(".$clsName") }
-            ?.let { duckTypeHelper!!.findClass(it, psiClass) }
+            ?.let { findClass(it, psiClass) }
         if (cls != null) {
             return cls
         }
 
         val defaultPackage = psiClass.qualifiedName!!.substringBeforeLast(".")
-        cls = duckTypeHelper!!.findClass("$defaultPackage.$clsName", psiClass)
+        cls = findClass("$defaultPackage.$clsName", psiClass)
         if (cls != null) {
             return cls
         }
@@ -83,7 +129,7 @@ open class StandardPsiResolver : PsiResolver {
             .mapNotNull { it.qualifiedName }
             .filter { it.endsWith(".*") }
             .map { it -> it.removeSuffix("*") + clsName }
-            .map { duckTypeHelper.findClass(it, psiClass) }
+            .map { findClass(it, psiClass) }
             .firstOrNull()
 
         return cls
@@ -109,10 +155,11 @@ open class StandardPsiResolver : PsiResolver {
         val linkClassName = classNameWithProperty.substringBefore("#")
         val linkMethodOrProperty = classNameWithProperty.substringAfter("#", "").trim()
         return if (linkMethodOrProperty.isBlank()) {
-            resolveClassOrType(linkClassName, psiElement) to null
+            resolveClassOrType(linkClassName, psiElement)
+                ?.let { it to null }
         } else {
-            duckTypeHelper!!.resolveClass(linkClassName, psiElement)
-                ?.let { it to resolvePropertyOrMethodOfClass(it, linkMethodOrProperty) }
+            resolveClassOrType(linkClassName, psiElement)
+                ?.let { it to resolvePropertyOrMethodOfClass(it.asPsiClass(jvmClassHelper!!)!!, linkMethodOrProperty) }
         }
     }
 

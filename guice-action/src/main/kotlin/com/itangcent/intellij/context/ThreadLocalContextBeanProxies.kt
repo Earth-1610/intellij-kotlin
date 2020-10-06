@@ -17,16 +17,19 @@ object ThreadLocalContextBeanProxies {
     fun <T : Any> instance(clazz: KClass<T>): T {
         val loader = clazz.java.classLoader
         val interfaces = arrayOf(clazz.java)
-        return clazz.cast(Proxy.newProxyInstance(loader, interfaces,
-            LazyInitInvocationHandler(clazz)
-        ))
+        return clazz.cast(
+            Proxy.newProxyInstance(
+                loader, interfaces,
+                LazyInitInvocationHandler(clazz)
+            )
+        )
     }
 
     class LazyInitInvocationHandler<T : Any>(private var clazz: KClass<T>) : InvocationHandler {
 
         private var localCache: ThreadLocal<WeakReference<T>> = ThreadLocal()
 
-        private var localBean: T? = null
+        private val localBean: T?
             get() {
                 var weakCacheBean = localCache.get()
                 var cacheBean: T?

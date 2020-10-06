@@ -45,6 +45,11 @@ class ScalaAutoInject : SetupAble {
                     PsiResolver::class,
                     "com.itangcent.intellij.jvm.scala.ScalaPsiResolver"
                 )
+                AutoInjectKit.tryLoadAndWrap(
+                    classLoader,
+                    PsiExpressionResolver::class,
+                    "com.itangcent.intellij.jvm.scala.ScalaPsiExpressionResolver"
+                )
             }
         } catch (e: Exception) {
             logger?.traceError("load scala injects failed", e)

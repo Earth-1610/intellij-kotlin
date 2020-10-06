@@ -2,16 +2,32 @@ package com.itangcent.intellij.jvm.standard
 
 import com.google.inject.Inject
 import com.google.inject.Singleton
-import com.intellij.psi.*
+import com.intellij.psi.PsiAnnotation
+import com.intellij.psi.PsiAnnotationOwner
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiModifierListOwner
 import com.itangcent.common.utils.*
 import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.extend.guice.PostConstruct
 import com.itangcent.intellij.jvm.AnnotationHelper
+import com.itangcent.intellij.jvm.PsiExpressionResolver
 
 @Singleton
 open class StandardAnnotationHelper : AnnotationHelper {
 
     @Inject
     private val actionContext: ActionContext? = null
+
+    @Inject
+    private val psiExpressionResolver: PsiExpressionResolver? = null
+
+    @PostConstruct
+    private fun init() {
+        psiExpressionResolver!!
+            .registerExpressionResolver(PsiAnnotation::class) {
+                return@registerExpressionResolver annToMap(it)
+            }
+    }
 
     override fun hasAnn(psiElement: PsiElement?, annName: String): Boolean {
         return findAnn(psiElement, annName) != null
@@ -31,7 +47,7 @@ open class StandardAnnotationHelper : AnnotationHelper {
         val map: LinkedHashMap<String, Any?> = LinkedHashMap()
         psiAnn.parameterList.attributes.stream()
             .forEach { attr ->
-                map[attr.name ?: "value"] = resolveValue(attr.value)
+                map[attr.name ?: "value"] = attr.value?.let { psiExpressionResolver!!.process(it) }
             }
 
         return map
@@ -45,7 +61,7 @@ open class StandardAnnotationHelper : AnnotationHelper {
         val ann = findAnn(psiElement, annName) ?: return null
         return attrs
             .mapNotNull { ann.findAttributeValue(it) }
-            .mapNotNull { resolveValue(it) }
+            .mapNotNull { psiExpressionResolver!!.process(it) }
             .firstOrNull()
     }
 
@@ -59,7 +75,7 @@ open class StandardAnnotationHelper : AnnotationHelper {
             return@callInReadUI attrs
                 .stream()
                 .mapNotNull { ann.findAttributeValue(it) }
-                .mapNotNull { resolveValue(it) }
+                .mapNotNull { psiExpressionResolver!!.process(it) }
                 .mapNotNull { tinyAnnStr(it) }
                 .longest()
         }
@@ -82,52 +98,6 @@ open class StandardAnnotationHelper : AnnotationHelper {
     private fun findAnnotations(psiElement: PsiElement?): Array<out PsiAnnotation>? {
         return psiElement.cast(PsiAnnotationOwner::class)?.annotations
             ?: psiElement.cast(PsiModifierListOwner::class)?.annotations
-    }
-
-    protected open fun resolveValue(psiExpression: PsiElement?): Any? {
-        when (psiExpression) {
-            null -> return null
-            is PsiLiteralExpression -> return psiExpression.value?.toString()
-            is PsiReferenceExpression -> {
-                val value = psiExpression.resolve()
-                if (value is PsiElement && psiExpression != value) {
-                    return resolveValue(value)
-                }
-            }
-            is PsiField -> {
-                val constantValue = psiExpression.computeConstantValue()
-                if (constantValue != null) {
-                    if (constantValue is PsiElement) {
-                        return if (psiExpression != constantValue) {
-                            resolveValue(constantValue)
-                        } else {
-                            constantValue.text
-                        }
-                    }
-                    return constantValue
-                }
-            }
-            is PsiAnnotation -> {
-                return annToMap(psiExpression)
-            }
-            is PsiArrayInitializerMemberValue -> {
-                return psiExpression.initializers.map { resolveValue(it) }.toTypedArray()
-            }
-            is PsiClassObjectAccessExpression -> {
-                val lastChild = psiExpression.lastChild
-                if (lastChild is PsiKeyword && lastChild.text == PsiKeyword.CLASS) {
-                    return resolveValue(psiExpression.firstChild)
-                }
-            }
-            is PsiTypeElement -> {
-                return psiExpression.type.canonicalText
-            }
-            else -> {
-                return psiExpression.text
-            }
-        }
-
-        return psiExpression.text
     }
 
     fun tinyAnnStr(annStr: Any?): String? {

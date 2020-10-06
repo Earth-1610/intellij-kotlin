@@ -2,7 +2,14 @@ package com.itangcent.intellij.jvm.kotlin
 
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiImportStatement
+import com.intellij.psi.util.PsiTreeUtil
+import com.itangcent.common.utils.firstOrNull
 import com.itangcent.intellij.jvm.standard.StandardPsiResolver
+import org.jetbrains.kotlin.asJava.classes.KtLightClass
+import org.jetbrains.kotlin.asJava.classes.KtLightClassImpl
+import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.psiUtil.containingClass
 
 
 /**
@@ -39,7 +46,7 @@ open class KotlinPsiResolver : StandardPsiResolver() {
         }
 
         //[kotlin.reflect.KClass]
-        var linkClass = duckTypeHelper!!.resolveClass(cwp, psiElement)
+        var linkClass = resolveClass(cwp, psiElement)
         if (linkClass != null) {
             return linkClass to null
         }
@@ -48,7 +55,7 @@ open class KotlinPsiResolver : StandardPsiResolver() {
         if (cwp.contains('.')) {
             val linkClassName = cwp.substringBeforeLast(".")
             val linkMethodOrProperty = cwp.substringAfterLast(".", "").trim()
-            linkClass = duckTypeHelper.resolveClass(linkClassName, psiElement) ?: return null
+            linkClass = resolveClass(linkClassName, psiElement) ?: return null
             return linkClass to resolvePropertyOrMethodOfClass(linkClass, linkMethodOrProperty)
         }
 
@@ -58,5 +65,44 @@ open class KotlinPsiResolver : StandardPsiResolver() {
             return linkClass to it
         }
         return null
+    }
+
+    override fun getContainingClass(psiElement: PsiElement): PsiClass? {
+        return (psiElement.originalElement as? KtElement)?.containingClass()?.let { KtLightClassImpl(it) }
+            ?: super.getContainingClass(psiElement)
+    }
+
+    override fun resolveClassFromImport(psiClass: PsiClass, clsName: String): PsiClass? {
+
+        val imports: Collection<String>?
+        imports = if (psiClass is KtLightClass) {
+            psiClass.kotlinOrigin?.containingKtFile?.importList?.imports?.mapNotNull {
+                it.importPath?.fqName?.toString()
+            }
+        } else {
+            PsiTreeUtil.findChildrenOfType(psiClass.context, PsiImportStatement::class.java)
+                .mapNotNull { it.qualifiedName }
+        } ?: return null
+
+        var cls = imports
+            .firstOrNull { it.endsWith(".$clsName") }
+            ?.let { findClass(it, psiClass) }
+        if (cls != null) {
+            return cls
+        }
+
+        val defaultPackage = psiClass.qualifiedName!!.substringBeforeLast(".")
+        cls = findClass("$defaultPackage.$clsName", psiClass)
+        if (cls != null) {
+            return cls
+        }
+        cls = imports
+            .stream()
+            .filter { it.endsWith(".*") }
+            .map { it -> it.removeSuffix("*") + clsName }
+            .map { findClass(it, psiClass) }
+            .firstOrNull()
+
+        return cls
     }
 }

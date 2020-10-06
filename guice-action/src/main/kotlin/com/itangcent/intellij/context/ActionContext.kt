@@ -676,7 +676,7 @@ class ActionContext {
                 moduleActions.clear()
             }
             val actionContext = ActionContext(*appendModules.toTypedArray())
-            ActionContext.setContext(actionContext)
+            setContext(actionContext)
             contextActions.forEach { it(actionContext) }
             actionContext.runAsync {
                 actionContext.onStart()

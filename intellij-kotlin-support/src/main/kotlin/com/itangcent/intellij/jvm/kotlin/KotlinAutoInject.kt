@@ -44,6 +44,11 @@ class KotlinAutoInject : SetupAble {
                     PsiResolver::class,
                     "com.itangcent.intellij.jvm.kotlin.KotlinPsiResolver"
                 )
+                AutoInjectKit.tryLoadAndWrap(
+                    classLoader,
+                    PsiExpressionResolver::class,
+                    "com.itangcent.intellij.jvm.kotlin.KotlinPsiExpressionResolver"
+                )
             }
         } catch (e: Throwable) {
             logger?.traceError("load kotlin injects failed", e)
