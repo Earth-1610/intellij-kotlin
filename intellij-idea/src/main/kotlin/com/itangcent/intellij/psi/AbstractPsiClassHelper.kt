@@ -325,12 +325,9 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                 cacheResolvedInfo(duckType, option, list)
 
-                if (!duckType.genericInfo.isNullOrEmpty()) {
-                    val realIterableType =
-                        duckType.genericInfo?.get(ELEMENT_OF_COLLECTION) ?: duckType.genericInfo!!.entries.first().value
-                    if (realIterableType != null) {
-                        getTypeObject(realIterableType, context, option)?.let { list.add(it) }
-                    }
+                val realIterableType = findRealIterableType(duckType)
+                if (realIterableType != null) {
+                    getTypeObject(realIterableType, context, option)?.let { list.add(it) }
                 }
 
                 return copy(list)
@@ -517,6 +514,41 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     protected open fun tryCastTo(duckType: DuckType, context: PsiElement): DuckType {
         return duckType
+    }
+
+    protected open fun findRealIterableType(duckType: SingleDuckType): DuckType? {
+        if (duckType.genericInfo.notNullOrEmpty()) {
+            val realIterableType =
+                duckType.genericInfo?.get(ELEMENT_OF_COLLECTION) ?: duckType.genericInfo!!.entries.first().value
+            if (realIterableType != null) {
+                return realIterableType
+            }
+        }
+
+        val psiClass = duckType.psiClass()
+        val superTypes = psiClass.superTypes
+        for (superType in superTypes) {
+            if (jvmClassHelper!!.isCollection(superType)) {
+                val parameters = superType.parameters
+                if (parameters.isNullOrEmpty()) {
+                    continue
+                }
+                val typeParameters = superType.resolve()?.typeParameters
+                if (typeParameters.isNullOrEmpty()) {
+                    continue
+                }
+                for ((index, typeParameter) in typeParameters.withIndex()) {
+                    if (typeParameter.name == ELEMENT_OF_COLLECTION) {
+                        if (index >= parameters.size) {
+                            return null
+                        }
+                        return duckTypeHelper!!.ensureType(parameters[index])
+                    }
+                }
+                return parameters.firstOrNull()?.let { duckTypeHelper!!.ensureType(it) }
+            }
+        }
+        return null
     }
 
     @Suppress("UNCHECKED_CAST")
