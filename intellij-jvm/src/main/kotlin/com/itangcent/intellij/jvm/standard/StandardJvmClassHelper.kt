@@ -13,10 +13,7 @@ import com.itangcent.intellij.jvm.JvmClassHelper
 import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.duck.SingleDuckType
 import com.itangcent.intellij.jvm.duck.SingleUnresolvedDuckType
-import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
-import kotlin.collections.HashMap
-import kotlin.collections.LinkedHashMap
 
 @Singleton
 open class StandardJvmClassHelper : JvmClassHelper {
@@ -71,7 +68,7 @@ open class StandardJvmClassHelper : JvmClassHelper {
                 return true
             }
         }
-        
+
         for (inter in psiClass.interfaces) {
             if (baseClass.contains(inter.qualifiedName)) {
                 return true
@@ -466,19 +463,23 @@ open class StandardJvmClassHelper : JvmClassHelper {
             }
             if (collectionClasses == null) {
                 val collectionClasses = HashSet<String>()
+                addClass(Iterable::class.java, collectionClasses)
+                addClass(java.lang.Iterable::class.java, collectionClasses)
                 addClass(Collection::class.java, collectionClasses)
+                addClass(java.util.Collection::class.java, collectionClasses)
                 addClass(List::class.java, collectionClasses)
                 addClass(ArrayList::class.java, collectionClasses)
-                addClass(LinkedList::class.java, collectionClasses)
+                addClass(java.util.ArrayList::class.java, collectionClasses)
+                addClass(java.util.LinkedList::class.java, collectionClasses)
                 addClass(Set::class.java, collectionClasses)
                 addClass(HashSet::class.java, collectionClasses)
-                addClass(TreeSet::class.java, collectionClasses)
-                addClass(SortedSet::class.java, collectionClasses)
-                addClass(Queue::class.java, collectionClasses)
-                addClass(Deque::class.java, collectionClasses)
+                addClass(java.util.TreeSet::class.java, collectionClasses)
+                addClass(java.util.SortedSet::class.java, collectionClasses)
+                addClass(java.util.Queue::class.java, collectionClasses)
+                addClass(java.util.Deque::class.java, collectionClasses)
                 collectionClasses.add("com.sun.jmx.remote.internal.ArrayQueue")
                 addClass(ArrayBlockingQueue::class.java, collectionClasses)
-                addClass(Stack::class.java, collectionClasses)
+                addClass(java.util.Stack::class.java, collectionClasses)
                 this.collectionClasses = collectionClasses.toTypedArray()
             }
             if (mapClasses == null) {
