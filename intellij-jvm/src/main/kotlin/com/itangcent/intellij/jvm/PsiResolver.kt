@@ -45,4 +45,6 @@ interface PsiResolver {
     fun findClass(fqClassName: String, context: PsiElement): PsiClass?
 
     fun findType(canonicalText: String, context: PsiElement): PsiType?
+
+    fun visit(psiElement: Any, visitor: (Any) -> Unit)
 }

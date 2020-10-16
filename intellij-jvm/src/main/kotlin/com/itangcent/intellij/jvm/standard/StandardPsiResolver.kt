@@ -8,6 +8,7 @@ import com.itangcent.common.utils.firstOrNull
 import com.itangcent.common.utils.mapNotNull
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.jvm.*
+import com.itangcent.intellij.logger.Logger
 import com.siyeh.ig.psiutils.ClassUtils
 
 
@@ -46,6 +47,9 @@ open class StandardPsiResolver : PsiResolver {
 
     @Inject
     protected val docHelper: DocHelper? = null
+
+    @Inject
+    protected val logger: Logger? = null
 
     private val nameToClassCache: java.util.HashMap<String, PsiClass?> = LinkedHashMap()
 
@@ -275,4 +279,16 @@ open class StandardPsiResolver : PsiResolver {
         return constant
     }
 
+    override fun visit(psiElement: Any, visitor: (Any) -> Unit) {
+        if (psiElement is PsiElement) {
+            psiElement.acceptChildren(object : PsiElementVisitor() {
+                override fun visitElement(element: PsiElement?) {
+                    if (element != null) {
+                        visitor(element)
+                    }
+                    super.visitElement(element)
+                }
+            })
+        }
+    }
 }

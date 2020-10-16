@@ -2,13 +2,16 @@ package com.itangcent.intellij.jvm.kotlin
 
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiElementVisitor
 import com.intellij.psi.PsiImportStatement
 import com.intellij.psi.util.PsiTreeUtil
 import com.itangcent.common.utils.firstOrNull
 import com.itangcent.intellij.jvm.standard.StandardPsiResolver
 import org.jetbrains.kotlin.asJava.classes.KtLightClass
 import org.jetbrains.kotlin.asJava.classes.KtLightClassImpl
+import org.jetbrains.kotlin.asJava.elements.KtLightElement
 import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.KtVisitor
 import org.jetbrains.kotlin.psi.psiUtil.containingClass
 
 
@@ -99,10 +102,42 @@ open class KotlinPsiResolver : StandardPsiResolver() {
         cls = imports
             .stream()
             .filter { it.endsWith(".*") }
-            .map { it -> it.removeSuffix("*") + clsName }
+            .map { it.removeSuffix("*") + clsName }
             .map { findClass(it, psiClass) }
             .firstOrNull()
 
         return cls
+    }
+
+    override fun visit(psiElement: Any, visitor: (Any) -> Unit) {
+        if (psiElement is KtLightElement<*, *>) {
+            psiElement.kotlinOrigin?.let {
+                visit(it, visitor)
+                return
+            }
+        }
+        if (psiElement is KtElement) {
+            psiElement.acceptChildren(object : KtVisitor<Void, Any>() {
+                override fun visitElement(element: PsiElement?) {
+                    element?.let {
+                        visitor(it)
+                        visit(it, visitor)
+                    }
+                    super.visitElement(element)
+                }
+            }, 1)
+
+            psiElement.acceptChildren(object : PsiElementVisitor() {
+                override fun visitElement(element: PsiElement?) {
+                    if (element != null) {
+                        visitor(element)
+                    }
+                    super.visitElement(element)
+                }
+            })
+
+            return
+        }
+        super.visit(psiElement, visitor)
     }
 }
