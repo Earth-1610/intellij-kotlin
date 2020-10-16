@@ -125,3 +125,7 @@ fun String?.notNullOrEmpty(): Boolean {
 fun String?.notNullOrBlank(): Boolean {
     return !this.isNullOrBlank()
 }
+
+fun String?.flatten(defaultValue: String = "null"): String {
+    return this?.replace("\n", "\\n") ?: defaultValue
+}

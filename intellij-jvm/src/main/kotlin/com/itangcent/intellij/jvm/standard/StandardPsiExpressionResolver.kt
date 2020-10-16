@@ -8,6 +8,8 @@ import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.JvmClassHelper
 import com.itangcent.intellij.jvm.PsiExpressionResolver
 import com.itangcent.intellij.jvm.PsiResolver
+import com.itangcent.intellij.jvm.dev.DevEnv
+import com.itangcent.intellij.logger.Logger
 import org.apache.commons.lang.StringUtils
 import java.util.*
 import kotlin.collections.ArrayList
@@ -21,6 +23,12 @@ class StandardPsiExpressionResolver : PsiExpressionResolver {
 
     @Inject
     private val jvmClassHelper: JvmClassHelper? = null
+
+    @Inject
+    private val devEnv: DevEnv? = null
+
+    @Inject
+    private val logger: Logger? = null
 
     private val psiExpressionResolver: PsiExpressionResolver = ActionContext.local()
 
@@ -40,6 +48,11 @@ class StandardPsiExpressionResolver : PsiExpressionResolver {
     }
 
     open override fun process(psiExpression: PsiExpression): Any? {
+
+        devEnv?.dev {
+            logger!!.debug("process PsiExpression: type:${psiExpression::class}, text:【${psiExpression.text.flatten()}】")
+        }
+
         registerTypedExpressionResolverHandler[psiExpression::class]
             ?.let { it(psiExpression) }
             ?.let { return it }
@@ -76,6 +89,10 @@ class StandardPsiExpressionResolver : PsiExpressionResolver {
     }
 
     open override fun process(psiElement: PsiElement): Any? {
+        devEnv?.dev {
+            logger!!.debug("process PsiElement: type:${psiElement::class}, text:【${psiElement.text.flatten()}】")
+        }
+
         registerTypedExpressionResolverHandler[psiElement::class]
             ?.let { it(psiElement) }
             ?.let { return it }

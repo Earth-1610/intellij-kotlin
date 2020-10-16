@@ -1,15 +1,20 @@
 package com.itangcent.intellij.jvm.kotlin
 
+import com.google.inject.Inject
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiExpression
 import com.intellij.psi.PsiField
 import com.intellij.psi.tree.IElementType
+import com.itangcent.common.utils.flatten
 import com.itangcent.common.utils.invokeMethod
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.PsiExpressionResolver
 import com.itangcent.intellij.jvm.PsiResolver
+import com.itangcent.intellij.jvm.adaptor.KtUltraLightFieldAdaptor
+import com.itangcent.intellij.jvm.dev.DevEnv
 import com.itangcent.intellij.jvm.standard.Operand
 import com.itangcent.intellij.jvm.standard.StandardOperand
+import com.itangcent.intellij.logger.Logger
 import org.jetbrains.kotlin.asJava.elements.KtLightFieldImpl
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
@@ -22,11 +27,20 @@ class KotlinPsiExpressionResolver : PsiExpressionResolver {
 
     private val psiResolver: PsiResolver = ActionContext.local()
 
+    @Inject
+    private val devEnv: DevEnv? = null
+
+    @Inject
+    private val logger: Logger? = null
+
     override fun process(psiElement: PsiElement): Any? {
         if (!KtPsiUtils.isKtPsiInst(psiElement)) {
             throw NotImplementedError()
         }
 
+        devEnv?.dev {
+            logger!!.debug("process ktElement: type:${psiElement::class}, text:【${psiElement.text.flatten()}】")
+        }
         when {
             CompatibleKtClass.isKtLightPsiLiteral(psiElement) -> {
                 val value = psiElement.invokeMethod("getValue")
@@ -42,6 +56,9 @@ class KotlinPsiExpressionResolver : PsiExpressionResolver {
             }
             psiElement is KtLightFieldImpl<*> -> {
                 return psiElement.computeConstantValue()
+            }
+            KtUltraLightFieldAdaptor.isKtUltraLightField(psiElement) -> {
+                return KtUltraLightFieldAdaptor.computeConstantValue(psiElement)
             }
             psiElement is KtCollectionLiteralExpression -> {
                 return psiElement.getInnerExpressions().map { psiExpressionResolver.process(it) }.toTypedArray()
@@ -124,6 +141,9 @@ class KotlinPsiExpressionResolver : PsiExpressionResolver {
             throw NotImplementedError()
         }
 
+        devEnv?.dev {
+            logger!!.debug("process ktPsiExpression: type:${psiExpression::class}, text:【${psiExpression.text.flatten()}】")
+        }
         when {
             CompatibleKtClass.isKtLightPsiLiteral(psiExpression) -> {
                 val value = psiExpression.invokeMethod("getValue")
