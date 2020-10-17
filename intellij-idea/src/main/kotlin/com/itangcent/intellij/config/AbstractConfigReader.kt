@@ -3,11 +3,9 @@ package com.itangcent.intellij.config
 import com.google.inject.Inject
 import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.*
-import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.logger.Logger
 import com.itangcent.intellij.tip.OnlyOnceInContextTip
 import com.itangcent.intellij.tip.TipsHelper
-import com.itangcent.intellij.util.ActionUtils
 import org.yaml.snakeyaml.Yaml
 import java.io.File
 import java.util.regex.Pattern
@@ -95,7 +93,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
                 return
             }
             if (name.contains("[") && value.contains("]")) {
-                val matcher = KEY_FILTER_EQULA_VALUE.matcher(line)
+                val matcher = KEY_FILTER_EQUAL_VALUE.matcher(line)
                 if (matcher.matches()) {
                     val pName = matcher.group(1)
                     val pValue = matcher.group(2)
@@ -334,7 +332,8 @@ abstract class AbstractConfigReader : MutableConfigReader {
                     "For Instance:###set resolveMulti = FIRST"
         )
 
-        val KEY_FILTER_EQULA_VALUE = Pattern.compile("(\\S*?\\[.*?])\\s*=\\s*(.*?)")
+        val KEY_FILTER_EQUAL_VALUE: Pattern =
+            Pattern.compile("(\\S*?\\[.*?])\\s*=\\s*(.*?)", Pattern.MULTILINE.or(Pattern.DOTALL))!!
 
     }
 }
