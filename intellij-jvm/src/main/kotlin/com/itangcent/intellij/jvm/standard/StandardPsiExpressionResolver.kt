@@ -58,10 +58,7 @@ class StandardPsiExpressionResolver : PsiExpressionResolver {
             ?.let { return it }
         when (psiExpression) {
             is PsiReferenceExpression -> {
-                psiExpression.qualifierExpression
-                    ?.let { return psiExpressionResolver.process(it) }
-                psiExpression.resolve()
-                    ?.let { return psiExpressionResolver.process(it) }
+                return processReferenceExpression(psiExpression)
             }
             is PsiLiteralExpression -> return psiExpression.value
             is PsiBinaryExpression -> return processBinaryExpression(psiExpression)
@@ -86,6 +83,16 @@ class StandardPsiExpressionResolver : PsiExpressionResolver {
             }
         }
         return psiExpression.text
+    }
+
+    private fun processReferenceExpression(psiExpression: PsiReferenceExpression): Any? {
+        val psiElement = psiExpression.resolve() ?: psiExpression.qualifierExpression
+        val resolvedValue = psiElement?.let { psiExpressionResolver.process(it) }
+            ?: return psiExpression.text
+        if (resolvedValue is Map<*, *> && resolvedValue.isEmpty()) {
+            return psiExpression.text
+        }
+        return resolvedValue
     }
 
     open override fun process(psiElement: PsiElement): Any? {
