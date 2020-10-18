@@ -5,6 +5,7 @@ import com.intellij.psi.PsiType
 import com.intellij.psi.PsiTypeElement
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.DuckTypeHelper
+import com.itangcent.intellij.jvm.scala.adaptor.ScTypeArgsAdaptor.args
 import com.itangcent.intellij.jvm.scala.castToTypedList
 import com.itangcent.intellij.jvm.scala.getOrNull
 import org.jetbrains.plugins.scala.lang.psi.api.base.types.ScParameterizedTypeElement
@@ -47,12 +48,13 @@ class ScalaPsiParameterAdaptor(private val psiParameter: PsiParameter) : ScAdapt
                 val type = typeElement.type().getOrNull<ScType>()
                 if (type != null) {
                     if (typeElement is ScParameterizedTypeElement) {
-                        val typeArgs = typeElement.typeArgList().typeArgs().castToTypedList<ScTypeElement>()
-                        if (typeArgs.isEmpty()) {
+                        val typeArgs = typeElement.typeArgList().args()?.castToTypedList<ScTypeElement>()
+                        if (typeArgs.isNullOrEmpty()) {
                             return ScalaPsiTypeAdaptor.build(type)
                         }
                         val args = typeArgs.map {
-                            it.type.getOrNull<ScType>()?.let { ScalaPsiTypeAdaptor.build(it) } ?: PsiType.VOID
+                            it.type.getOrNull<ScType>()?.let { scType -> ScalaPsiTypeAdaptor.build(scType) }
+                                ?: PsiType.VOID
                         }
                         val psiType = ActionContext.getContext()?.instance(DuckTypeHelper::class)
                             ?.createType(ScalaPsiTypeAdaptor.build(type), null, *(args.toTypedArray()))
