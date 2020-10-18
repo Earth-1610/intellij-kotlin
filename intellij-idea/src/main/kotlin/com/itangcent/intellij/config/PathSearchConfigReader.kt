@@ -1,6 +1,7 @@
 package com.itangcent.intellij.config
 
 import com.google.inject.Inject
+import com.itangcent.intellij.adaptor.ModuleAdaptor.filePath
 import com.itangcent.intellij.psi.ContextSwitchListener
 import com.itangcent.intellij.util.ActionUtils
 import java.io.File
@@ -14,7 +15,7 @@ abstract class PathSearchConfigReader : AbstractConfigReader() {
 
         val configFiles: ArrayList<String> = ArrayList()
 
-        var currentPath = contextSwitchListener?.getModule()?.moduleFilePath ?: ActionUtils.findCurrentPath()
+        var currentPath = contextSwitchListener?.getModule()?.filePath() ?: ActionUtils.findCurrentPath()
 
         while (!currentPath.isNullOrBlank()) {
             searchConfigFileInFolder(currentPath, configFileNames) { configFiles.add(it) }

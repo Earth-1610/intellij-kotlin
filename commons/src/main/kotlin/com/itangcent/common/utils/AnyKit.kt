@@ -43,6 +43,13 @@ fun Any.invokeMethod(methodName: String, vararg args: Any?): Any? {
 }
 
 /**
+ * invoke a static method through kclass by method name
+ */
+fun KClass<*>.invokeStaticMethod(methodName: String, vararg args: Any?): Any? {
+    return invokeStaticClassMethodByMethodName(this, methodName, *args)
+}
+
+/**
  * change current this property value
  */
 fun <R> KProperty<R>.changeValue(thisObj: Any, newValue: Any?) {

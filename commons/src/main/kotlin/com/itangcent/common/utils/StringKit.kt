@@ -58,7 +58,7 @@ object StringUtils {
  * ignoring case, and `false` otherwise.
  */
 fun String.toBool(defaultValue: Boolean = false): Boolean {
-    if (this.isNullOrBlank()) return defaultValue
+    if (this.isBlank()) return defaultValue
 
     return try {
         this.toBoolean() || this == "1"
@@ -73,6 +73,9 @@ fun StringBuilder.appendlnIfNotEmpty(): StringBuilder {
     }
     return this
 }
+
+/** Appends a line separator to this StringBuilder. */
+public fun StringBuilder.appendln(): StringBuilder = append(LINE_SEPARATOR)
 
 fun Any?.tinyString(): String? {
     return when {
@@ -109,13 +112,13 @@ fun String?.trimToNull(): String? {
 fun String?.appendln(): String? {
     return when {
         this.isNullOrBlank() -> this
-        this!!.endsWith('\n') -> this
+        this.endsWith('\n') -> this
         else -> "${this}\n"
     }
 }
 
 fun String?.appendln(str: String): String? {
-    return this.append(str, "\n")
+    return this.append(str, LINE_SEPARATOR)
 }
 
 fun String?.notNullOrEmpty(): Boolean {
@@ -129,3 +132,5 @@ fun String?.notNullOrBlank(): Boolean {
 fun String?.flatten(defaultValue: String = "null"): String {
     return this?.replace("\n", "\\n") ?: defaultValue
 }
+
+val LINE_SEPARATOR = System.getProperty("line.separator")

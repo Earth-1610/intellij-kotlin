@@ -8,7 +8,6 @@ import kotlin.jvm.internal.CallableReference
 import kotlin.jvm.internal.PropertyReference
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
-import kotlin.reflect.full.functions
 
 /**
  * change the property value with new value int the special KProperty in package level property ,not the property in class
@@ -305,9 +304,7 @@ fun invokeClassMethodByMethodName(classObj: Any, methodName: String, vararg meth
         tobeSearchMethodClass.declaredMethods.forEach { method ->
             if (method.name == methodName && method.parameterTypes.size == methodArgs.size) {
                 method.isAccessible = true
-                val modifyFiled = method.javaClass.getDeclaredField("modifiers")
-                modifyFiled.isAccessible = true
-                modifyFiled.setInt(method, modifyFiled.getInt(method) and Modifier.FINAL.inv())
+                removeFinalModifies(method)
 
                 try {
                     return if (methodArgs.isNotEmpty()) {
@@ -325,6 +322,43 @@ fun invokeClassMethodByMethodName(classObj: Any, methodName: String, vararg meth
     }
 
     throw IllegalArgumentException("Can't find the method named :$methodName with args ${methodArgs.toList()} in the classObj : $classObj")
+}
+
+/**
+ * invoke a static method by name from a kclass,no matter whether the property is public ,private or internal
+ */
+fun invokeStaticClassMethodByMethodName(kClass: KClass<*>, methodName: String, vararg methodArgs: Any?): Any? {
+    val containerClass: Class<*> = kClass.java
+
+    var tobeSearchMethodClass: Class<*>? = containerClass
+
+    while (tobeSearchMethodClass != null) {
+
+        tobeSearchMethodClass.declaredMethods.forEach { method ->
+            if (method.name == methodName
+                && method.parameterTypes.size == methodArgs.size
+                && Modifier.isStatic(method.modifiers)
+            ) {
+                method.isAccessible = true
+
+                removeFinalModifies(method)
+
+                try {
+                    return if (methodArgs.isNotEmpty()) {
+                        method.invoke(null, *methodArgs)
+                    } else {
+                        method.invoke(null)
+                    }
+                } catch (e: IllegalArgumentException) {
+                    return@forEach
+                }
+            }
+        }
+
+        tobeSearchMethodClass = tobeSearchMethodClass.superclass
+    }
+
+    throw IllegalArgumentException("Can't find the method named :$methodName with args ${methodArgs.toList()} in the classObj : $kClass")
 }
 
 /**
@@ -351,9 +385,7 @@ fun invokeTopMethodByMethodName(
         tobeSearchMethodClass.declaredMethods.forEach { method ->
             if (method.name == methodName && method.parameterTypes.size == methodArgs.size) {
                 method.isAccessible = true
-                val modifyFiled = method.javaClass.getDeclaredField("modifiers")
-                modifyFiled.isAccessible = true
-                modifyFiled.setInt(method, modifyFiled.getInt(method) and Modifier.FINAL.inv())
+                removeFinalModifies(method)
 
                 try {
                     if (methodArgs.isNotEmpty()) {
@@ -373,6 +405,14 @@ fun invokeTopMethodByMethodName(
             .toString()} in the same file with ${otherCallableReference.name}"
     )
 
+}
+
+private fun removeFinalModifies(method: Method) {
+    if (Modifier.isFinal(method.modifiers)) {
+        val modifyFiled = method.javaClass.getDeclaredField("modifiers")
+        modifyFiled.isAccessible = true
+        modifyFiled.setInt(method, modifyFiled.getInt(method) and Modifier.FINAL.inv())
+    }
 }
 
 fun <T : AccessibleObject, R> T.privileged(handle: (T) -> R): R {
