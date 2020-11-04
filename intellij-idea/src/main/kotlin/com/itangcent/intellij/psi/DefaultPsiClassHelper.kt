@@ -133,6 +133,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     }
 
     override fun beforeParseFieldOrMethod(
+        fieldName: String,
         fieldType: DuckType,
         fieldOrMethod: ExplicitElement<*>,
         resourcePsiClass: ExplicitClass,
@@ -145,7 +146,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
             return false
         }
 
-        return super.beforeParseFieldOrMethod(fieldType, fieldOrMethod, resourcePsiClass, option, kv)
+        return super.beforeParseFieldOrMethod(fieldName, fieldType, fieldOrMethod, resourcePsiClass, option, kv)
     }
 
     @Suppress("UNCHECKED_CAST")

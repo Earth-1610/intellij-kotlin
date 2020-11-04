@@ -388,10 +388,10 @@ fun invokeTopMethodByMethodName(
                 removeFinalModifies(method)
 
                 try {
-                    if (methodArgs.isNotEmpty()) {
-                        return method.invoke(null, *methodArgs)
+                    return if (methodArgs.isNotEmpty()) {
+                        method.invoke(null, *methodArgs)
                     } else {
-                        return method.invoke(null)
+                        method.invoke(null)
                     }
                 } catch (e: IllegalArgumentException) {
                     return@forEach
@@ -406,6 +406,19 @@ fun invokeTopMethodByMethodName(
     )
 
 }
+
+fun collectDeclaredMethod(kClass: KClass<*>, methodHandle: (Method) -> Unit) {
+    collectDeclaredMethod(kClass.java, methodHandle)
+}
+
+fun collectDeclaredMethod(cls: Class<*>, methodHandle: (Method) -> Unit) {
+    var tobeSearchMethodClass: Class<*>? = cls
+    while (tobeSearchMethodClass != null) {
+        tobeSearchMethodClass.declaredMethods.forEach(methodHandle)
+        tobeSearchMethodClass = tobeSearchMethodClass.superclass
+    }
+}
+
 
 private fun removeFinalModifies(method: Method) {
     if (Modifier.isFinal(method.modifiers)) {

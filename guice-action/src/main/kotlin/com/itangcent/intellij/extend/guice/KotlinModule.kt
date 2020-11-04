@@ -11,6 +11,7 @@ import com.google.inject.name.Names
 import com.google.inject.spi.InjectionListener
 import com.google.inject.spi.TypeEncounter
 import com.google.inject.spi.TypeListener
+import com.itangcent.common.utils.collectDeclaredMethod
 import com.itangcent.common.utils.privileged
 import com.itangcent.intellij.context.ActionContext
 import java.lang.reflect.Field
@@ -49,10 +50,9 @@ open class KotlinModule : AbstractModule() {
             override fun <I> hear(injectableType: TypeLiteral<I>, encounter: TypeEncounter<I>) {
                 // #todo:provider暂时无法完成PostConstruct
                 val type = injectableType.rawType
-                val methods = type.declaredMethods
-                for (method in methods) {
+                collectDeclaredMethod(type) { method ->
                     if (Modifier.isStatic(method.modifiers)) {
-                        continue
+                        return@collectDeclaredMethod
                     }
                     val annotation = method.getAnnotation(annotationType)
                     if (annotation != null) {

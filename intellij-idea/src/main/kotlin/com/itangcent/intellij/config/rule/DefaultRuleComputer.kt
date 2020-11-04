@@ -14,8 +14,27 @@ class DefaultRuleComputer : RuleComputer {
     @Inject
     protected val ruleParser: RuleParser? = null
 
-    @Suppress("UNCHECKED_CAST")
+    @Inject(optional = true)
+    protected val ruleComputeListener: RuleComputeListener? = null
+
+    @Suppress("UNCHECKED_CAST", "LABEL_NAME_CLASH")
     override fun <T> computer(
+        ruleKey: RuleKey<T>,
+        target: Any,
+        context: PsiElement?,
+        contextHandle: (RuleContext) -> Unit
+    ): T? {
+        return if (ruleComputeListener != null) {
+            ruleComputeListener.computer(
+                ruleKey, target, context, contextHandle
+            ) { rk, tg, ct, cth -> doComputer(rk, tg, ct, cth) } as? T
+        } else {
+            doComputer(ruleKey, target, context, contextHandle)
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun <T> doComputer(
         ruleKey: RuleKey<T>,
         target: Any,
         context: PsiElement?,
