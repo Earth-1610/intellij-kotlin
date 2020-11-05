@@ -14,6 +14,10 @@ interface PsiClassHelper {
 
     fun getTypeObject(duckType: DuckType?, context: PsiElement, option: Int): Any?
 
+    fun getFields(psiClass: PsiClass?, context: PsiElement?): KV<String, Any?>
+
+    fun getFields(psiClass: PsiClass?, context: PsiElement?, option: Int): KV<String, Any?>
+
     fun getFields(psiClass: PsiClass?): KV<String, Any?>
 
     fun getFields(psiClass: PsiClass?, option: Int): KV<String, Any?>

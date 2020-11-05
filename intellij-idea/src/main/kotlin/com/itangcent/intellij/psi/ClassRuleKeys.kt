@@ -47,4 +47,7 @@ object ClassRuleKeys {
     val CONSTANT_FIELD_IGNORE: RuleKey<Boolean> =
         SimpleRuleKey("constant.field.ignore", BooleanRule::class, BooleanRuleMode.ANY)
 
+    val JSON_GROUP: RuleKey<String> =
+        SimpleRuleKey("json.group", StringRule::class, StringRuleMode.MERGE)
+
 }

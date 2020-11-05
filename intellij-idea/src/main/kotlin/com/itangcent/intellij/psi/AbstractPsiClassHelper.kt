@@ -30,7 +30,7 @@ import kotlin.reflect.full.createInstance
 
 abstract class AbstractPsiClassHelper : PsiClassHelper {
 
-    private val resolvedInfo: HashMap<Int, HashMap<Any, Any?>> = HashMap()
+    protected val resolvedInfo: HashMap<String, Any?> = LinkedHashMap()
 
     @Inject
     protected val logger: Logger? = null
@@ -63,21 +63,21 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     @Suppress("UNCHECKED_CAST")
-    open protected fun <T> getResolvedInfo(key: Any?, option: Int): T? {
-        if (key == null) return null
-        val value = getCache(option)[key] ?: return null
-
-        return copy(value) as T?
+    open protected fun <T> getResolvedInfo(key: String): T? {
+        return resolvedInfo[key]?.let { copy(it) } as T?
     }
 
-    open protected fun cacheResolvedInfo(key: Any?, option: Int, value: Any?) {
-        if (key != null) {
-            getCache(option)[key] = value
+    open protected fun cacheResolvedInfo(key: String, value: Any?) {
+        resolvedInfo[key] = value
+    }
+
+    protected fun groupKey(context: PsiElement?, option: Int): String {
+        val group = context?.let { ruleComputer!!.computer(ClassRuleKeys.JSON_GROUP, context) }
+        return if (group.isNullOrBlank()) {
+            option.toString()
+        } else {
+            group + option.toString()
         }
-    }
-
-    open protected fun getCache(option: Int): HashMap<Any, Any?> {
-        return resolvedInfo.safeComputeIfAbsent(option) { HashMap() }!!
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -113,8 +113,9 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     override fun getTypeObject(psiType: PsiType?, context: PsiElement, option: Int): Any? {
         actionContext!!.checkStatus()
         if (psiType == null || psiType == PsiType.NULL) return null
+        val cacheKey = psiType.canonicalText + "@" + groupKey(context, option)
 
-        val resolvedInfo = getResolvedInfo<Any>(psiType, option)
+        val resolvedInfo = getResolvedInfo<Any>(cacheKey)
         if (resolvedInfo != null) {
             return resolvedInfo
         }
@@ -127,7 +128,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             castTo is PsiArrayType -> {   //array type
                 val deepType = castTo.getDeepComponentType()
                 val list = java.util.ArrayList<Any>()
-                cacheResolvedInfo(castTo, option, list)//cache
+                cacheResolvedInfo(cacheKey, list)//cache
                 when {
                     deepType is PsiPrimitiveType -> list.add(PsiTypesUtil.getDefaultValue(deepType))
                     isNormalType(deepType) -> list.add(getDefaultValue(deepType) ?: "")
@@ -138,7 +139,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             jvmClassHelper!!.isCollection(castTo) -> {   //list type
 
                 val list = java.util.ArrayList<Any>()
-                cacheResolvedInfo(castTo, option, list)//cache
+                cacheResolvedInfo(cacheKey, list)//cache
                 val iterableType = PsiUtil.extractIterableTypeParameter(castTo, false)
                 val iterableClass = PsiUtil.resolveClassInClassTypeOnly(iterableType)
                 val classTypeName: String? = iterableClass?.qualifiedName
@@ -154,7 +155,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             }
             jvmClassHelper.isMap(castTo) -> {   //list type
                 val map: HashMap<Any, Any?> = HashMap()
-                cacheResolvedInfo(castTo, option, map)//cache
+                cacheResolvedInfo(cacheKey, map)//cache
                 val keyType = PsiUtil.substituteTypeParameter(castTo, CommonClassNames.JAVA_UTIL_MAP, 0, false)
                 val valueType = PsiUtil.substituteTypeParameter(castTo, CommonClassNames.JAVA_UTIL_MAP, 1, false)
 
@@ -194,7 +195,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     return when {
                         tmType != null -> {
                             val result = getTypeObject(tmType, context, option)
-                            cacheResolvedInfo(castTo, option, result)
+                            cacheResolvedInfo(cacheKey, result)
                             copy(result)
                         }
                         else -> null
@@ -202,12 +203,12 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 } else {
                     val paramCls = PsiUtil.resolveClassInClassTypeOnly(castTo) ?: return null
                     if (ruleComputer!!.computer(ClassRuleKeys.TYPE_IS_FILE, paramCls) == true) {
-                        cacheResolvedInfo(castTo, option, Magics.FILE_STR)//cache
+                        cacheResolvedInfo(cacheKey, Magics.FILE_STR)//cache
                         return Magics.FILE_STR
                     }
                     return try {
                         val result = getFields(paramCls, option)
-                        cacheResolvedInfo(castTo, option, result)
+                        cacheResolvedInfo(cacheKey, result)
                         copy(result)
                     } catch (e: Throwable) {
                         logger!!.error("error to getTypeObject:$psiType")
@@ -223,9 +224,19 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         return getFields(psiClass, JsonOption.NONE)
     }
 
-    @Suppress("UNCHECKED_CAST")
+    override fun getFields(psiClass: PsiClass?, context: PsiElement?): KV<String, Any?> {
+        return getFields(psiClass, context, JsonOption.NONE)
+    }
+
     override fun getFields(psiClass: PsiClass?, option: Int): KV<String, Any?> {
+        return getFields(psiClass, null, option)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override fun getFields(psiClass: PsiClass?, context: PsiElement?, option: Int): KV<String, Any?> {
         actionContext!!.checkStatus()
+
+        val cacheKey = psiClass?.qualifiedName + "@" + groupKey(context, option)
 
         val resourcePsiClass = if (JsonOption.needComment(option)) {
             psiClass?.let { getResourceClass(it) }
@@ -234,7 +245,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         }
 
         if (resourcePsiClass != null) {
-            val resolvedInfo = getResolvedInfo<Any>(resourcePsiClass, option)
+            val resolvedInfo = getResolvedInfo<Any>(cacheKey)
             if (resolvedInfo != null) {
                 return resolvedInfo as KV<String, Any?>
             }
@@ -243,22 +254,23 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         val kv: KV<String, Any?> = KV.create()
 
         if (resourcePsiClass != null) {
-            cacheResolvedInfo(resourcePsiClass, option, kv)//cache
+            cacheResolvedInfo(cacheKey, kv)//cache
 
             beforeParseClass(resourcePsiClass, option, kv)
 
             val explicitClass = duckTypeHelper!!.explicit(resourcePsiClass)
             foreachField(explicitClass, option) { fieldName, fieldType, fieldOrMethod ->
 
-                if (!beforeParseFieldOrMethod(fieldType, fieldOrMethod, explicitClass, option, kv)) {
+                if (!beforeParseFieldOrMethod(fieldName, fieldType, fieldOrMethod, explicitClass, option, kv)) {
+                    onIgnoredParseFieldOrMethod(fieldName, fieldType, fieldOrMethod, explicitClass, option, kv)
                     return@foreachField
                 }
-                val name = fieldName()
-                if (!kv.contains(name)) {
 
-                    parseFieldOrMethod(name, fieldType, fieldOrMethod, explicitClass, option, kv)
+                if (!kv.contains(fieldName)) {
 
-                    afterParseFieldOrMethod(name, fieldType, fieldOrMethod, explicitClass, option, kv)
+                    parseFieldOrMethod(fieldName, fieldType, fieldOrMethod, explicitClass, option, kv)
+
+                    afterParseFieldOrMethod(fieldName, fieldType, fieldOrMethod, explicitClass, option, kv)
                 }
             }
 
@@ -267,6 +279,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
         return copy(kv) as KV<String, Any?>
     }
+
 
     override fun getTypeObject(duckType: DuckType?, context: PsiElement): Any? {
         return getTypeObject(duckType, context, JsonOption.NONE)
@@ -277,7 +290,9 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
         if (duckType == null) return null
 
-        val resolvedInfo = getResolvedInfo<Any>(duckType, option)
+        val cacheKey = duckType.canonicalText() + "@" + groupKey(context, option)
+
+        val resolvedInfo = getResolvedInfo<Any>(cacheKey)
         if (resolvedInfo != null) {
             return resolvedInfo
         }
@@ -286,7 +301,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
         if (type is ArrayDuckType) {
             val list = ArrayList<Any>()
-            cacheResolvedInfo(type, option, list)
+            cacheResolvedInfo(cacheKey, list)
             getTypeObject(type.componentType(), context, option)?.let { list.add(it) }
             return copy(list)
         }
@@ -306,7 +321,9 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         actionContext!!.checkStatus()
         if (duckType == null) return null
 
-        val resolvedInfo = getResolvedInfo<Any>(duckType, option)
+        val cacheKey = duckType.canonicalText() + "@" + groupKey(context, option)
+
+        val resolvedInfo = getResolvedInfo<Any>(cacheKey)
         if (resolvedInfo != null) {
             return resolvedInfo
         }
@@ -323,7 +340,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             jvmClassHelper!!.isCollection(duckType) -> {   //list type
                 val list = ArrayList<Any>()
 
-                cacheResolvedInfo(duckType, option, list)
+                cacheResolvedInfo(cacheKey, list)
 
                 val realIterableType = findRealIterableType(duckType)
                 if (realIterableType != null) {
@@ -338,7 +355,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                 //map type
                 val map: HashMap<Any, Any?> = HashMap()
-                cacheResolvedInfo(duckType, option, map)
+                cacheResolvedInfo(cacheKey, map)
                 val keyType = PsiUtil.substituteTypeParameter(typeOfCls, CommonClassNames.JAVA_UTIL_MAP, 0, false)
                 val valueType = PsiUtil.substituteTypeParameter(typeOfCls, CommonClassNames.JAVA_UTIL_MAP, 1, false)
 
@@ -403,16 +420,18 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 if (ruleComputer!!.computer(ClassRuleKeys.TYPE_IS_FILE, psiClass) == true) {
                     return Magics.FILE_STR
                 }
-                return getFields(duckType, option)
+                return getFields(duckType, context, option)
             }
         }
     }
 
     @Suppress("UNCHECKED_CAST")
-    protected open fun getFields(clsWithParam: SingleDuckType, option: Int): KV<String, Any?> {
+    protected open fun getFields(clsWithParam: SingleDuckType, context: PsiElement?, option: Int): KV<String, Any?> {
         actionContext!!.checkStatus()
 
-        val resolvedInfo = getResolvedInfo<Any>(clsWithParam, option)
+        val cacheKey = clsWithParam.canonicalText() + "@" + groupKey(context, option)
+
+        val resolvedInfo = getResolvedInfo<Any>(cacheKey)
         if (resolvedInfo != null) {
             return resolvedInfo as KV<String, Any?>
         }
@@ -423,13 +442,14 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             clsWithParam.psiClass()
         }
         val kv: KV<String, Any?> = KV.create()
-        cacheResolvedInfo(clsWithParam, option, kv)
+        cacheResolvedInfo(cacheKey, kv)
         beforeParseType(psiClass, clsWithParam, option, kv)
 
         val explicitClass = duckTypeHelper!!.explicit(getResourceType(clsWithParam))
         foreachField(explicitClass, option) { fieldName, fieldType, fieldOrMethod ->
 
             if (!beforeParseFieldOrMethod(
+                    fieldName,
                     fieldType,
                     fieldOrMethod,
                     explicitClass,
@@ -437,15 +457,15 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     kv
                 )
             ) {
+                onIgnoredParseFieldOrMethod(fieldName, fieldType, fieldOrMethod, explicitClass, option, kv)
                 return@foreachField
             }
 
-            val name = fieldName()
-            if (!kv.contains(name)) {
+            if (!kv.contains(fieldName)) {
 
-                parseFieldOrMethod(name, fieldType, fieldOrMethod, explicitClass, option, kv)
+                parseFieldOrMethod(fieldName, fieldType, fieldOrMethod, explicitClass, option, kv)
 
-                afterParseFieldOrMethod(name, fieldType, fieldOrMethod, explicitClass, option, kv)
+                afterParseFieldOrMethod(fieldName, fieldType, fieldOrMethod, explicitClass, option, kv)
             }
         }
 
@@ -458,7 +478,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         psiClass: ExplicitClass,
         option: Int,
         handle: (
-            name: () -> String,
+            name: String,
             type: DuckType,
             fieldOrMethod: ExplicitElement<*>
         ) -> Unit
@@ -483,7 +503,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 //            }
 
             if (!readGetter || fieldNames!!.add(explicitField.name())) {
-                handle({ getJsonFieldName(psiField) }, explicitField.getType(), explicitField)
+                handle(getJsonFieldName(psiField), explicitField.getType(), explicitField)
             }
         }
 
@@ -502,7 +522,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 if (method.hasModifierProperty(PsiModifier.STATIC)) continue
                 if (!method.hasModifierProperty(PsiModifier.PUBLIC)) continue
 
-                explicitMethod.getReturnType()?.let { handle({ propertyName }, it, explicitMethod) }
+                explicitMethod.getReturnType()?.let { handle(propertyName, it, explicitMethod) }
             }
         }
         fieldNames?.clear()
@@ -866,6 +886,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     //return false to ignore current fieldOrMethod
     open fun beforeParseFieldOrMethod(
+        fieldName: String,
         fieldType: DuckType,
         fieldOrMethod: ExplicitElement<*>,
         resourcePsiClass: ExplicitClass,
@@ -887,6 +908,17 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     open fun afterParseFieldOrMethod(
+        fieldName: String,
+        fieldType: DuckType,
+        fieldOrMethod: ExplicitElement<*>,
+        resourcePsiClass: ExplicitClass,
+        option: Int,
+        kv: KV<String, Any?>
+    ) {
+
+    }
+
+    open fun onIgnoredParseFieldOrMethod(
         fieldName: String,
         fieldType: DuckType,
         fieldOrMethod: ExplicitElement<*>,
