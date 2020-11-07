@@ -6,6 +6,7 @@ import com.intellij.psi.*
 import com.intellij.util.containers.isNullOrEmpty
 import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.KV
+import com.itangcent.common.utils.notNullOrBlank
 import com.itangcent.common.utils.notNullOrEmpty
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.config.rule.computer
@@ -132,6 +133,65 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         return sourceHelper?.getSourceClass(psiClass) ?: psiClass
     }
 
+    override fun getTypeObject(duckType: SingleDuckType?, context: PsiElement, option: Int): Any? {
+        if (duckType is SingleDuckType && jvmClassHelper!!.isEnum(duckType.psiClass())) {
+            val convertTo = ruleComputer!!.computer(ClassRuleKeys.ENUM_CONVERT, duckType, null)
+            val enumClass = duckType.psiClass()
+            if (convertTo.notNullOrBlank()) {
+                var typeObj: Any? = null
+                if (convertTo!!.contains("#")) {
+                    val classWithFieldOrMethod =
+                        psiResolver!!.resolveClassWithPropertyOrMethod(convertTo, enumClass)
+                    if (classWithFieldOrMethod == null) {
+                        logger!!.error("failed to resolve:$convertTo")
+                    } else {
+                        val convertFieldOrMethod = classWithFieldOrMethod.second!!
+                        if (convertFieldOrMethod is PsiField) {
+                            duckTypeHelper!!.ensureType(convertFieldOrMethod.type)?.let {
+                                typeObj = super.doGetTypeObject(it, context, option)
+                            }
+                        } else if (convertFieldOrMethod is PsiMethod) {
+                            duckTypeHelper!!.ensureType(convertFieldOrMethod.returnType!!)?.let {
+                                typeObj = super.doGetTypeObject(it, context, option)
+                            }
+                        }
+                    }
+                } else {
+                    val resolveClass = duckTypeHelper!!.resolve(convertTo, context)
+                    if (resolveClass == null) {
+                        logger!!.error("failed to resolve class:$convertTo")
+                    } else {
+                        typeObj = super.doGetTypeObject(resolveClass, context, option)
+                    }
+                }
+                if (typeObj == null) {
+                    typeObj = super.getTypeObject(duckType, context, option)
+                }
+                //doc comment
+                if (JsonOption.needComment(option)) {
+                    val options = resolveEnumOrStatic(convertTo, context, "")
+                    return typeObj.wrap().set("@comment@options", options)
+                }
+                return typeObj
+            }
+
+            val typeObj = super.doGetTypeObject(duckTypeHelper!!.resolve("java.lang.String", context)!!, context, option)
+
+            //doc comment
+            if (JsonOption.needComment(option)) {
+                val enumOptions = resolveEnumOrStatic(context, duckType.psiClass(), null, "")
+                return if (enumOptions.isNullOrEmpty()) {
+                    typeObj
+                } else {
+                    typeObj.wrap().set("@comment@options", enumOptions)
+                }
+            }
+            return typeObj
+        }
+
+        return super.getTypeObject(duckType, context, option)
+    }
+
     override fun beforeParseFieldOrMethod(
         fieldName: String,
         fieldType: DuckType,
@@ -161,8 +221,8 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         if (fieldType is SingleDuckType && jvmClassHelper!!.isEnum(fieldType.psiClass())) {
             val convertTo = ruleComputer!!.computer(ClassRuleKeys.ENUM_CONVERT, fieldType, null)
             val enumClass = fieldType.psiClass()
-            if (!convertTo.isNullOrBlank()) {
-                if (convertTo.contains("#")) {
+            if (convertTo.notNullOrBlank()) {
+                if (convertTo!!.contains("#")) {
                     val classWithFieldOrMethod =
                         psiResolver!!.resolveClassWithPropertyOrMethod(convertTo, enumClass)
                     if (classWithFieldOrMethod == null) {
@@ -255,6 +315,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
             }
             return
         }
+
         super.parseFieldOrMethod(fieldName, fieldType, fieldOrMethod, resourcePsiClass, option, kv)
     }
 

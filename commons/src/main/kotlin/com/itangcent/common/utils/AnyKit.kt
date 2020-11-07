@@ -210,3 +210,4 @@ fun Any?.asBool(): Boolean? {
         else -> null
     }
 }
+
