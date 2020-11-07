@@ -16,7 +16,7 @@ import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.reflect.KClass
 
-class StandardPsiExpressionResolver : PsiExpressionResolver {
+open class StandardPsiExpressionResolver : PsiExpressionResolver {
 
     @Inject
     private val psiResolver: PsiResolver? = null
