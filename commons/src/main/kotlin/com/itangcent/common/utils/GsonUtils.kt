@@ -163,7 +163,7 @@ object GsonUtils {
         fun add(one: Any?): Boolean {
             if (one == null) return true
             values.filter { it === one }
-                .forEach { return false }
+                .any { return false }
             values.add(one)
             return true
         }
