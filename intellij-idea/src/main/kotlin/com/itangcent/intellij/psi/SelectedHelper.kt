@@ -81,7 +81,14 @@ object SelectedHelper {
                         actionContext.instance(DataContext::class).getData(CommonDataKeys.PSI_FILE)
                     }
                     if (psiFile != null) {
-                        onFile(psiFile)
+                        try {
+                            if (fileFilter(psiFile)) {
+                                aqsCount.down()
+                                onFile(psiFile)
+                            }
+                        } finally {
+                            aqsCount.up()
+                        }
                         return@runInReadUI
                     }
                 } catch (e: Exception) {

@@ -36,12 +36,27 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     }
 
     @Suppress("UNCHECKED_CAST")
+    protected open fun resolveSeeDoc(field: PsiField, fieldName: String, comment: HashMap<String, Any?>) {
+        val sees = getSees(field).takeIf { it.notNullOrEmpty() } ?: return
+        resolveSeeDoc(field, fieldName, sees, comment)
+    }
+
+    @Suppress("UNCHECKED_CAST")
     protected open fun resolveSeeDoc(
         field: PsiField,
         sees: List<String>,
         comment: HashMap<String, Any?>
     ) {
-        val fieldName = field.name
+        resolveSeeDoc(field, field.name, sees, comment)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    protected open fun resolveSeeDoc(
+        field: PsiField,
+        fieldName: String,
+        sees: List<String>,
+        comment: HashMap<String, Any?>
+    ) {
         val options: ArrayList<HashMap<String, Any?>> = ArrayList()
         sees.forEach { see ->
             resolveEnumOrStatic(see, field, fieldName)?.let {
@@ -175,7 +190,8 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                 return typeObj
             }
 
-            val typeObj = super.doGetTypeObject(duckTypeHelper!!.resolve("java.lang.String", context)!!, context, option)
+            val typeObj =
+                super.doGetTypeObject(duckTypeHelper!!.resolve("java.lang.String", context)!!, context, option)
 
             //doc comment
             if (JsonOption.needComment(option)) {
@@ -339,7 +355,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
             if (psiFieldOrMethod is PsiField) {
                 val field: PsiField = psiFieldOrMethod
                 commentKV[fieldName] = docHelper!!.getAttrOfField(psiFieldOrMethod)?.trim()
-                resolveSeeDoc(field, commentKV)
+                resolveSeeDoc(field, fieldName, commentKV)
             } else if (psiFieldOrMethod is PsiMethod) {
                 val attrInDoc = docHelper!!.getAttrOfDocComment(psiFieldOrMethod)
                 if (StringUtils.isNotBlank(attrInDoc)) {
