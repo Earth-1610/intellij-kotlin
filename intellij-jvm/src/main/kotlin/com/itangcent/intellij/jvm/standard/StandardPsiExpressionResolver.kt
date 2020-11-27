@@ -13,8 +13,8 @@ import com.itangcent.intellij.logger.Logger
 import org.apache.commons.lang.StringUtils
 import java.util.*
 import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
 import kotlin.reflect.KClass
+import kotlin.reflect.full.isSubclassOf
 
 open class StandardPsiExpressionResolver : PsiExpressionResolver {
 
@@ -32,14 +32,12 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
 
     private val psiExpressionResolver: PsiExpressionResolver = ActionContext.local()
 
-    private val registerTypedExpressionResolverHandler: HashMap<KClass<*>, (Any) -> Any?> = HashMap()
-
     private val registerGenericExpressionResolverHandler: LinkedList<Pair<(Any) -> Boolean, (Any) -> Any?>> =
         LinkedList()
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : Any> registerExpressionResolver(cls: KClass<T>, handle: (T) -> Any?) {
-        registerTypedExpressionResolverHandler[cls] = handle as (Any) -> Any?
+        registerExpressionResolver({ it::class.isSubclassOf(cls) }, handle)
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -53,9 +51,11 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
             logger!!.debug("process PsiExpression: type:${psiExpression::class}, text:【${psiExpression.text.flatten()}】")
         }
 
-        registerTypedExpressionResolverHandler[psiExpression::class]
-            ?.let { it(psiExpression) }
-            ?.let { return it }
+        registerGenericExpressionResolverHandler
+            .filter {
+                it.first(psiExpression)
+            }.mapNotNull { it.second(psiExpression) }
+            .any { return it }
         when (psiExpression) {
             is PsiReferenceExpression -> {
                 return processReferenceExpression(psiExpression)
@@ -100,9 +100,11 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
             logger!!.debug("process PsiElement: type:${psiElement::class}, text:【${psiElement.text.flatten()}】")
         }
 
-        registerTypedExpressionResolverHandler[psiElement::class]
-            ?.let { it(psiElement) }
-            ?.let { return it }
+        registerGenericExpressionResolverHandler
+            .filter {
+                it.first(psiElement)
+            }.mapNotNull { it.second(psiElement) }
+            .any { return it }
         when (psiElement) {
             is PsiExpression -> return psiExpressionResolver.process(psiElement)
             is PsiLocalVariable -> {
@@ -159,9 +161,11 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
     }
 
     open override fun processStaticField(psiField: PsiField): Any? {
-        registerTypedExpressionResolverHandler[psiField::class]
-            ?.let { it(psiField) }
-            ?.let { return it }
+        registerGenericExpressionResolverHandler
+            .filter {
+                it.first(psiField)
+            }.mapNotNull { it.second(psiField) }
+            .any { return it }
         val constantVal = psiField.computeConstantValue()
         if (constantVal != null) return constantVal
         val initializer = psiField.initializer
