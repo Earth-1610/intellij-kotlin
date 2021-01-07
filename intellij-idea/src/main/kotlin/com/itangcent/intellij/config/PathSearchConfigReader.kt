@@ -32,7 +32,7 @@ abstract class PathSearchConfigReader : AbstractConfigReader() {
         for (configFileName in configFileNames) {
             val configFile = File("$path${File.separator}$configFileName")
             if (configFile.exists() && configFile.isFile) {
-                logger?.trace("find config file:$path")
+                logger?.trace("find config file:${configFile.path}")
                 handle(configFile.path);
             }
         }
