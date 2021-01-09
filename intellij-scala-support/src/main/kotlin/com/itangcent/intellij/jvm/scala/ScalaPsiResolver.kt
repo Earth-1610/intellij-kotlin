@@ -19,9 +19,9 @@ open class ScalaPsiResolver : StandardPsiResolver() {
 
     override fun resolveClassWithPropertyOrMethod(
         classNameWithProperty: String,
-        psiElement: PsiElement
+        context: PsiElement
     ): Pair<PsiClass?, PsiElement?>? {
-        if (!ScPsiUtils.isScPsiInst(psiElement)) {
+        if (!ScPsiUtils.isScPsiInst(context)) {
             throw NotImplementedError()
         }
 
@@ -32,7 +32,7 @@ open class ScalaPsiResolver : StandardPsiResolver() {
         }
 
         //[scala.xxxClass]
-        var linkClass = duckTypeHelper!!.resolveClass(cwp, psiElement)
+        var linkClass = duckTypeHelper!!.resolveClass(cwp, context)
         if (linkClass != null) {
             return linkClass to null
         }
@@ -41,12 +41,12 @@ open class ScalaPsiResolver : StandardPsiResolver() {
         if (cwp.contains('.')) {
             val linkClassName = cwp.substringBeforeLast(".")
             val linkMethodOrProperty = cwp.substringAfterLast(".", "").trim()
-            linkClass = duckTypeHelper.resolveClass(linkClassName, psiElement) ?: return null
+            linkClass = duckTypeHelper.resolveClass(linkClassName, context) ?: return null
             return linkClass to resolvePropertyOrMethodOfClass(linkClass, linkMethodOrProperty)
         }
 
         //[properties]
-        linkClass = getContainingClass(psiElement) ?: return null
+        linkClass = getContainingClass(context) ?: return null
         resolvePropertyOrMethodOfClass(linkClass, cwp)?.let {
             return linkClass to it
         }

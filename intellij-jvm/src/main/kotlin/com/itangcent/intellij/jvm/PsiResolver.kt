@@ -10,19 +10,19 @@ import com.itangcent.intellij.jvm.standard.StandardPsiResolver
 @ImplementedBy(StandardPsiResolver::class)
 interface PsiResolver {
 
-    fun resolveClass(className: String, psiElement: PsiElement): PsiClass?
+    fun resolveClass(className: String, context: PsiElement): PsiClass?
 
     /**
      * @return [PsiClass]|[com.intellij.psi.PsiType]
      */
-    fun resolveClassOrType(className: String, psiElement: PsiElement): Any?
+    fun resolveClassOrType(className: String, context: PsiElement): Any?
 
     /**
      * @return [Pair]<[PsiClass]|[com.intellij.psi.PsiType],[PsiElement]>
      */
     fun resolveClassWithPropertyOrMethod(
         classNameWithProperty: String,
-        psiElement: PsiElement
+        context: PsiElement
     ): Pair<Any?, PsiElement?>?
 
     fun resolvePropertyOrMethodOfClass(psiClass: PsiClass, propertyOrMethod: String): PsiElement?
