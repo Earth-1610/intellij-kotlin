@@ -55,18 +55,19 @@ open class StandardPsiResolver : PsiResolver {
 
     private val nameToTypeCache: java.util.HashMap<String, PsiType?> = LinkedHashMap()
 
-    override fun resolveClass(className: String, psiElement: PsiElement): PsiClass? {
+    override fun resolveClass(className: String, context: PsiElement): PsiClass? {
         return when {
-            className.contains(".") -> findClass(className, psiElement)
-            else -> getContainingClass(psiElement)?.let { resolveClassFromImport(it, className) }
-                ?: findClass(className, psiElement)
+            className.contains(".") -> findClass(className, context)
+            else -> getContainingClass(context)?.let {
+                resolveClassFromImport(it, className)
+            } ?: findClass(className, context)
         }?.let { sourceHelper?.getSourceClass(it) }
     }
 
-    override fun resolveClassOrType(className: String, psiElement: PsiElement): Any? {
+    override fun resolveClassOrType(className: String, context: PsiElement): Any? {
         return when {
-            className.contains("<") -> findType(className, psiElement)
-            else -> resolveClass(className, psiElement)
+            className.contains("<") -> findType(className, context)
+            else -> resolveClass(className, context)
         }
     }
 
@@ -113,6 +114,19 @@ open class StandardPsiResolver : PsiResolver {
 
     protected open fun resolveClassFromImport(psiClass: PsiClass, clsName: String): PsiClass? {
 
+        //maybe it is this class
+        if (clsName == psiClass.name || clsName == psiClass.qualifiedName) {
+            return psiClass
+        }
+
+        //maybe it is an inner class
+        for (innerClass in psiClass.allInnerClasses) {
+            if (clsName == innerClass.name || clsName == innerClass.qualifiedName) {
+                return innerClass
+            }
+        }
+
+        //try find imports
         val imports = PsiTreeUtil.findChildrenOfType(psiClass.context, PsiImportStatement::class.java)
 
         var cls = imports
@@ -123,11 +137,14 @@ open class StandardPsiResolver : PsiResolver {
             return cls
         }
 
+        //try find defaultPackage
         val defaultPackage = psiClass.qualifiedName!!.substringBeforeLast(".")
         cls = findClass("$defaultPackage.$clsName", psiClass)
         if (cls != null) {
             return cls
         }
+
+        //try find in import xxx.*
         cls = imports
             .stream()
             .mapNotNull { it.qualifiedName }
@@ -141,13 +158,13 @@ open class StandardPsiResolver : PsiResolver {
 
     override fun resolveClassWithPropertyOrMethod(
         classNameWithProperty: String,
-        psiElement: PsiElement
+        context: PsiElement
     ): Pair<Any?, PsiElement?>? {
 
         //{@link #method(args...)}
         //{@link #property}
         if (classNameWithProperty.startsWith("#")) {
-            val linkClass = getContainingClass(psiElement) ?: return null
+            val linkClass = getContainingClass(context) ?: return null
             resolvePropertyOrMethodOfClass(linkClass, classNameWithProperty.removePrefix("#"))?.let {
                 return linkClass to it
             }
@@ -159,10 +176,10 @@ open class StandardPsiResolver : PsiResolver {
         val linkClassName = classNameWithProperty.substringBefore("#")
         val linkMethodOrProperty = classNameWithProperty.substringAfter("#", "").trim()
         return if (linkMethodOrProperty.isBlank()) {
-            resolveClassOrType(linkClassName, psiElement)
+            resolveClassOrType(linkClassName, context)
                 ?.let { it to null }
         } else {
-            resolveClassOrType(linkClassName, psiElement)
+            resolveClassOrType(linkClassName, context)
                 ?.let { it to resolvePropertyOrMethodOfClass(it.asPsiClass(jvmClassHelper!!)!!, linkMethodOrProperty) }
         }
     }

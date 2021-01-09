@@ -36,9 +36,9 @@ open class KotlinPsiResolver : StandardPsiResolver() {
 
     override fun resolveClassWithPropertyOrMethod(
         classNameWithProperty: String,
-        psiElement: PsiElement
+        context: PsiElement
     ): Pair<PsiClass?, PsiElement?>? {
-        if (!KtPsiUtils.isKtPsiInst(psiElement)) {
+        if (!KtPsiUtils.isKtPsiInst(context)) {
             throw NotImplementedError()
         }
 
@@ -49,7 +49,7 @@ open class KotlinPsiResolver : StandardPsiResolver() {
         }
 
         //[kotlin.reflect.KClass]
-        var linkClass = resolveClass(cwp, psiElement)
+        var linkClass = resolveClass(cwp, context)
         if (linkClass != null) {
             return linkClass to null
         }
@@ -58,12 +58,12 @@ open class KotlinPsiResolver : StandardPsiResolver() {
         if (cwp.contains('.')) {
             val linkClassName = cwp.substringBeforeLast(".")
             val linkMethodOrProperty = cwp.substringAfterLast(".", "").trim()
-            linkClass = resolveClass(linkClassName, psiElement) ?: return null
+            linkClass = resolveClass(linkClassName, context) ?: return null
             return linkClass to resolvePropertyOrMethodOfClass(linkClass, linkMethodOrProperty)
         }
 
         //[properties]
-        linkClass = getContainingClass(psiElement) ?: return null
+        linkClass = getContainingClass(context) ?: return null
         resolvePropertyOrMethodOfClass(linkClass, cwp)?.let {
             return linkClass to it
         }
