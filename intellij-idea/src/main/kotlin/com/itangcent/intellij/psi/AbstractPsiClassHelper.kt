@@ -205,11 +205,11 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 val typeCanonicalText = castTo.canonicalText
                 if (typeCanonicalText.contains('<') && typeCanonicalText.endsWith('>')) {
 
-                    val tmType = duckTypeHelper!!.resolve(castTo, context)
+                    val duckType = duckTypeHelper!!.resolve(castTo, context)
 
                     return when {
-                        tmType != null -> {
-                            val result = doGetTypeObject(tmType, context, option)
+                        duckType != null -> {
+                            val result = doGetTypeObject(duckType, context, option)
                             cacheResolvedInfo(cacheKey, result)
                             copy(result)
                         }
