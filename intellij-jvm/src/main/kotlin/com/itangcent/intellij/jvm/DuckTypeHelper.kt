@@ -97,6 +97,10 @@ open class DuckTypeHelper {
             return SingleUnresolvedDuckType(type)
         }
 
+        if (type is PsiWildcardType) {
+            type.bound?.let { return ensureType(it) }
+        }
+
         if (type is PsiClass) {
             return ensureTypeToClass(type, null)
         }
@@ -142,6 +146,10 @@ open class DuckTypeHelper {
 
         if (psiType is PsiPrimitiveType) {
             return SingleUnresolvedDuckType(psiType)
+        }
+
+        if (psiType is PsiWildcardType) {
+            psiType.bound?.let { return ensureType(it, typeParams) }
         }
 
         if (psiType is PsiClass) {
