@@ -38,9 +38,8 @@ class KotlinPsiExpressionResolver : PsiExpressionResolver {
             throw NotImplementedError()
         }
 
-        devEnv?.dev {
-            logger!!.debug("process ktElement: type:${psiElement::class}, text:【${psiElement.text.flatten()}】")
-        }
+        LOG.debug("process ktElement: type:${psiElement::class}, text:【${psiElement.text.flatten()}】")
+
         when {
             CompatibleKtClass.isKtLightPsiLiteral(psiElement) -> {
                 val value = psiElement.invokeMethod("getValue")
@@ -141,9 +140,7 @@ class KotlinPsiExpressionResolver : PsiExpressionResolver {
             throw NotImplementedError()
         }
 
-        devEnv?.dev {
-            logger!!.debug("process ktPsiExpression: type:${psiExpression::class}, text:【${psiExpression.text.flatten()}】")
-        }
+        LOG.debug("process ktPsiExpression: type:${psiExpression::class}, text:【${psiExpression.text.flatten()}】")
         when {
             CompatibleKtClass.isKtLightPsiLiteral(psiExpression) -> {
                 val value = psiExpression.invokeMethod("getValue")
@@ -224,5 +221,8 @@ class KotlinPsiExpressionResolver : PsiExpressionResolver {
             }
         }
     }
-
 }
+
+
+//background idea log
+private val LOG = org.apache.log4j.Logger.getLogger(KotlinPsiExpressionResolver::class.java)

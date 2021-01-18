@@ -47,9 +47,7 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
 
     open override fun process(psiExpression: PsiExpression): Any? {
 
-        devEnv?.dev {
-            logger!!.debug("process PsiExpression: type:${psiExpression::class}, text:【${psiExpression.text.flatten()}】")
-        }
+        LOG.debug("process PsiExpression: type:${psiExpression::class}, text:【${psiExpression.text.flatten()}】")
 
         registerGenericExpressionResolverHandler
             .filter {
@@ -96,9 +94,7 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
     }
 
     open override fun process(psiElement: PsiElement): Any? {
-        devEnv?.dev {
-            logger!!.debug("process PsiElement: type:${psiElement::class}, text:【${psiElement.text.flatten()}】")
-        }
+        LOG.debug("process PsiElement: type:${psiElement::class}, text:【${psiElement.text.flatten()}】")
 
         registerGenericExpressionResolverHandler
             .filter {
@@ -933,3 +929,6 @@ interface Cast {
     fun getPriority(): Int
     fun cast(any: Any?): Any?
 }
+
+//background idea log
+private val LOG = org.apache.log4j.Logger.getLogger(StandardPsiExpressionResolver::class.java)

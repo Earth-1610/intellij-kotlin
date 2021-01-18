@@ -80,17 +80,20 @@ class ConsoleRunnerLogger : AbstractLogger() {
             val pipedProcess = checkProcess()
             val bytes = logData.toByteArray()
             if (bytes.size > 1024) {
+                //split?
                 pipedProcess.getOutForInputStream()!!.write(bytes)
-            } else {//split?
+            } else {
+                LOG.info(logData)
                 pipedProcess.getOutForInputStream()!!.write(bytes)
             }
         } catch (ex: IOException) {
-            log.warn("Error processLog:", ex)
+            LOG.warn("Error processLog:", ex)
         }
     }
 
     companion object {
 
-        private val log = com.intellij.openapi.diagnostic.Logger.getInstance("ConsoleRunnerLogger")
+        //background idea log
+        private val LOG = org.apache.log4j.Logger.getLogger(ConsoleRunnerLogger::class.java)
     }
 }
