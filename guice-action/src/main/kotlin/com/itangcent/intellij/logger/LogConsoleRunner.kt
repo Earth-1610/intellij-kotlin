@@ -10,6 +10,8 @@ import com.intellij.execution.runners.AbstractConsoleRunnerWithHistory
 import com.intellij.openapi.fileTypes.PlainTextLanguage
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
+import com.itangcent.common.spi.SpiUtils
+import com.itangcent.intellij.CustomInfo
 
 class LogConsoleRunner : AbstractConsoleRunnerWithHistory<LanguageConsoleView> {
 
@@ -45,7 +47,9 @@ class LogConsoleRunner : AbstractConsoleRunnerWithHistory<LanguageConsoleView> {
     }
 
     override fun createProcessHandler(process: Process): OSProcessHandler {
-        return ColoredProcessHandler(process, null)
+        return ColoredProcessHandler(
+            process, "log4" + (SpiUtils.loadService(CustomInfo::class)?.pluginName() ?: "intellij-plugin")
+        )
     }
 
     override fun createExecuteActionHandler(): ProcessBackedConsoleExecuteActionHandler {

@@ -1,5 +1,6 @@
 package com.itangcent.common.concurrent
 
+import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -9,7 +10,7 @@ interface Holder<T> {
 
     companion object {
 
-        private val nullHolder = NullHolder<Any>()
+        private val NULL_HOLDER = NullHolder<Any>()
 
         fun <T> of(data: T): Holder<T> {
             return DefaultHolder(data)
@@ -17,7 +18,7 @@ interface Holder<T> {
 
         @Suppress("UNCHECKED_CAST")
         fun <T> nil(): Holder<T> {
-            return nullHolder as Holder<T>
+            return NULL_HOLDER as Holder<T>
         }
     }
 }
@@ -40,7 +41,7 @@ abstract class AbstractHolder<T> : Holder<T> {
 
     protected val lock = ReentrantLock()
 
-    protected val condition = lock.newCondition()!!
+    protected val condition: Condition = lock.newCondition()
 
     protected var error: Throwable? = null
 

@@ -5,6 +5,7 @@ import com.google.inject.Singleton
 import com.intellij.psi.PsiElement
 import com.itangcent.common.utils.GsonUtils
 import com.itangcent.common.utils.longest
+import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.AnnotationHelper
 import com.itangcent.intellij.jvm.DuckTypeHelper
 import com.itangcent.intellij.jvm.PsiClassHelper
@@ -31,6 +32,9 @@ class KotlinAnnotationHelper : AnnotationHelper {
 
     @Inject(optional = true)
     private val duckTypeHelper: DuckTypeHelper? = null
+
+    @Inject
+    protected val actionContext: ActionContext? = null
 
     @Inject
     private val psiExpressionResolver: PsiExpressionResolver? = null
@@ -89,7 +93,6 @@ class KotlinAnnotationHelper : AnnotationHelper {
     override fun findAttr(psiElement: PsiElement?, annName: String): Any? {
         return findAttr(psiElement, annName, "value")
     }
-
 
     @Suppress("UNCHECKED_CAST")
     override fun findAttr(psiElement: PsiElement?, annName: String, vararg attrs: String): Any? {
@@ -206,19 +209,24 @@ class KotlinAnnotationHelper : AnnotationHelper {
         if (psiElement is KtLightMember<*>) {
             val kotlinOrigin = psiElement.kotlinOrigin
             if (kotlinOrigin != null) {
-                return kotlinOrigin.findAnnotation(fqNameHelper!!.of(annName))
+                return actionContext!!.callInReadUI {
+                    return@callInReadUI kotlinOrigin.findAnnotation(fqNameHelper!!.of(annName))
+                }
             }
         }
 
         if (psiElement is KtLightClassForSourceDeclaration) {
             val kotlinOrigin = psiElement.kotlinOrigin
-            return kotlinOrigin.findAnnotation(fqNameHelper!!.of(annName))
+            return actionContext!!.callInReadUI {
+                return@callInReadUI kotlinOrigin.findAnnotation(fqNameHelper!!.of(annName))
+            }
         }
 
         if (psiElement is KtDeclaration) {
-            return psiElement.findAnnotation(fqNameHelper!!.of(annName))
+            return actionContext!!.callInReadUI {
+                return@callInReadUI psiElement.findAnnotation(fqNameHelper!!.of(annName))
+            }
         }
-
         return null
     }
 

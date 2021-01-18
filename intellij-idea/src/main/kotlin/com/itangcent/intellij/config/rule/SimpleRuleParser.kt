@@ -93,56 +93,62 @@ class SimpleRuleParser : RuleParser {
 
         val tinyRuleStr = rule.trim()
 
-        var srule: BooleanRule? = null
-
-        if (tinyRuleStr.startsWith("!")) {
-            val inverseRuleStr = tinyRuleStr.substring(1)
-            val inverseRule: BooleanRule = parseBooleanRule(inverseRuleStr, !defaultValue) ?: return null
-            return inverseRule.inverse()
-        } else if (tinyRuleStr.startsWith("@")) {
-            val annStr = tinyRuleStr.substringAfter("@")
-            val annName = annStr.substringBefore("#").trim()
-            val annValue = annStr.substringAfter("#", "").trim()
-            srule = if (annValue.isBlank()) {
-                BooleanRule.of { context ->
-                    context.getResource()?.let { annotationHelper!!.hasAnn(it, annName) }
+        val srule: BooleanRule?
+        when {
+            tinyRuleStr.startsWith("!") -> {
+                val inverseRuleStr = tinyRuleStr.substring(1)
+                val inverseRule: BooleanRule = parseBooleanRule(inverseRuleStr, !defaultValue) ?: return null
+                return inverseRule.inverse()
+            }
+            tinyRuleStr.startsWith("@") -> {
+                val annStr = tinyRuleStr.substringAfter("@")
+                val annName = annStr.substringBefore("#").trim()
+                val annValue = annStr.substringAfter("#", "").trim()
+                srule = if (annValue.isBlank()) {
+                    BooleanRule.of { context ->
+                        context.getResource()?.let { annotationHelper!!.hasAnn(it, annName) }
+                    }
+                } else {
+                    BooleanRule.of { context ->
+                        context.getResource()?.let { annotationHelper!!.findAttrAsString(it, annName, annValue) }
+                            ?.toBool(defaultValue)
+                    }
                 }
-            } else {
-                BooleanRule.of { context ->
-                    context.getResource()?.let { annotationHelper!!.findAttrAsString(it, annName, annValue) }
-                        ?.toBool(defaultValue)
+            }
+            tinyRuleStr.startsWith("#") -> {
+                val tag = tinyRuleStr.substringAfter("#").trim()
+                srule = BooleanRule.of { context ->
+                    docHelper!!.hasTag(context.getResource(), tag)
                 }
             }
-        } else if (tinyRuleStr.startsWith("#")) {
-            val tag = tinyRuleStr.substringAfter("#").trim()
-            srule = BooleanRule.of { context ->
-                docHelper!!.hasTag(context.getResource(), tag)
-            }
-        } else if (tinyRuleStr.startsWith("\$class:")) {
-            val content = tinyRuleStr.removePrefix("\$class:")
-            if (content.isEmpty()) {
-                return null
-            }
-
-            srule = if (content.startsWith("? extend")) {
-                val extendClass = content.removePrefix("? extend").trim()
-                val extendClassRegex = parseRegexOrConstant(extendClass)
-                BooleanRule.of { context ->
-                    checkExtend(context.getResource()?.let { findClass(it) }, extendClassRegex)
+            tinyRuleStr.startsWith("\$class:") -> {
+                val content = tinyRuleStr.removePrefix("\$class:")
+                if (content.isEmpty()) {
+                    return null
                 }
 
-            } else {
-                val contentRegex = parseRegexOrConstant(content)
-                BooleanRule.of { context ->
-                    findClass(context.getResource())?.let { contentRegex(it.qualifiedName) } ?: false
+                srule = if (content.startsWith("? extend")) {
+                    val extendClass = content.removePrefix("? extend").trim()
+                    val extendClassRegex = parseRegexOrConstant(extendClass)
+                    BooleanRule.of { context ->
+                        checkExtend(context.getResource()?.let { findClass(it) }, extendClassRegex)
+                    }
+
+                } else {
+                    val contentRegex = parseRegexOrConstant(content)
+                    BooleanRule.of { context ->
+                        findClass(context.getResource())?.let { contentRegex(it.qualifiedName) } ?: false
+                    }
                 }
             }
-        } else if (TRUE_OR_FALSE.contains(tinyRuleStr)) {
-            srule = BooleanRule.of(tinyRuleStr.toBool())
-        } else {
-            //default =
-            srule = BooleanRule.of { context ->
-                context.toString() == rule
+            TRUE_OR_FALSE.contains(tinyRuleStr) -> {
+                srule = BooleanRule.of(tinyRuleStr.toBool())
+            }
+            else -> {
+                //default =
+                srule = BooleanRule.of { context ->
+                    context.toString() == rule
+                }
             }
         }
 

@@ -13,6 +13,9 @@ import com.itangcent.intellij.logger.Logger
 
 object ModuleAdaptor {
 
+    //background idea log
+    private val LOG = org.apache.log4j.Logger.getLogger(ActionContext::class.java)
+
     private val devEnv: DevEnv = ActionContext.local()
 
     private val logger: Logger = ActionContext.local()
@@ -24,9 +27,7 @@ object ModuleAdaptor {
                 return path
             }
         } catch (e: Exception) {
-            devEnv.dev {
-                logger.error("NoSuchMethod: com.intellij.openapi.module.Module.getModuleFilePath")
-            }
+            LOG.error("NoSuchMethod: com.intellij.openapi.module.Module.getModuleFilePath")
         }
         return this.file()?.path
     }
@@ -38,9 +39,7 @@ object ModuleAdaptor {
                 return file
             }
         } catch (e: Exception) {
-            devEnv.dev {
-                logger.error("NoSuchMethod: com.intellij.openapi.module.Module.getModuleFile")
-            }
+            LOG.error("NoSuchMethod: com.intellij.openapi.module.Module.getModuleFile")
         }
 
         try {
@@ -49,9 +48,7 @@ object ModuleAdaptor {
                 return file
             }
         } catch (e: Exception) {
-            devEnv.dev {
-                logger.error("NoSuchMethod: com.intellij.openapi.module.ModuleUtil.suggestBaseDirectory")
-            }
+            LOG.error("NoSuchMethod: com.intellij.openapi.module.ModuleUtil.suggestBaseDirectory")
         }
 
         try {
@@ -60,9 +57,7 @@ object ModuleAdaptor {
                 return file
             }
         } catch (e: Exception) {
-            devEnv.dev {
-                logger.error("NoSuchMethod: com.intellij.ide.impl.ProjectUtil.guessModuleDir")
-            }
+            LOG.error("NoSuchMethod: com.intellij.ide.impl.ProjectUtil.guessModuleDir")
         }
 
         return null

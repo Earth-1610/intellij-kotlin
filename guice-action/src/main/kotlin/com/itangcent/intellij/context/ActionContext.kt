@@ -13,9 +13,12 @@ import com.itangcent.common.concurrent.AQSCountLatch
 import com.itangcent.common.concurrent.CountLatch
 import com.itangcent.common.concurrent.ValueHolder
 import com.itangcent.common.exception.ProcessCanceledException
+import com.itangcent.common.logger.ILogger
 import com.itangcent.common.logger.traceError
+import com.itangcent.common.spi.SpiUtils
 import com.itangcent.common.utils.IDUtils
 import com.itangcent.common.utils.ThreadPoolUtils
+import com.itangcent.intellij.CustomInfo
 import com.itangcent.intellij.constant.EventKey
 import com.itangcent.intellij.extend.guice.KotlinModule
 import com.itangcent.intellij.extend.guice.instance
@@ -28,6 +31,7 @@ import java.util.*
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.collections.ArrayList
 import kotlin.concurrent.withLock
@@ -53,7 +57,8 @@ class ActionContext {
 
     private var countLatch: CountLatch = AQSCountLatch()
 
-    private var executorService: ExecutorService = ThreadPoolUtils.createPool(6, 6, ActionContext::class.java)
+    private var executorService: ExecutorService =
+        ThreadPoolUtils.createPool(4, 32, ActionContext::class.java)
 
     //Use guice to manage the current context instance lifecycle and dependencies
     private var injector: Injector
@@ -73,8 +78,12 @@ class ActionContext {
 
     //region cache--------------------------------------------------------------
     fun cache(name: String, bean: Any?) {
+        LOG.info("cache [$name]")
         checkStatus()
-        lock.writeLock().withLock { cache.put(cachePrefix + name, bean) }
+        lock.writeLock().withLock {
+            cache[cachePrefix + name] = bean
+            LOG.info("cache [$name] success")
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -85,6 +94,7 @@ class ActionContext {
 
     @Suppress("UNCHECKED_CAST")
     fun <T> cacheOrCompute(name: String, beanSupplier: () -> T?): T? {
+        LOG.info("compute cache [$name]")
         checkStatus()
         lock.readLock().withLock {
             if (cache.containsKey(cachePrefix + name)) {
@@ -100,6 +110,7 @@ class ActionContext {
     //region event--------------------------------------------------------------
     @Suppress("UNCHECKED_CAST")
     fun on(name: String, event: ((ActionContext) -> Unit)) {
+        LOG.info("register event [$name]")
         checkStatus()
         lock.writeLock().withLock {
             val key = eventPrefix + name
@@ -118,6 +129,7 @@ class ActionContext {
 
     @Suppress("UNCHECKED_CAST")
     fun call(name: String) {
+        LOG.info("call event [$name]")
         lock.readLock().withLock {
             val event = cache[eventPrefix + name] as ((ActionContext) -> Unit)?
             event?.invoke(this)
@@ -149,6 +161,8 @@ class ActionContext {
     }
 
     fun runAsync(runnable: Runnable): Future<*>? {
+        val index = INDEX.getAndIncrement()
+        LOG.info("callAsync[$index]")
         checkStatus()
         countLatch.down()
         return executorService.submit {
@@ -158,6 +172,7 @@ class ActionContext {
             } catch (e: Exception) {
                 this.instance(Logger::class).traceError("error in Async", e)
             } finally {
+                LOG.info("callAsync[$index] finished")
                 releaseContext()
                 countLatch.up()
             }
@@ -165,6 +180,8 @@ class ActionContext {
     }
 
     fun runAsync(runnable: () -> Unit): Future<*>? {
+        val index = INDEX.getAndIncrement()
+        LOG.info("callAsync[$index]")
         checkStatus()
         countLatch.down()
         return executorService.submit {
@@ -174,6 +191,7 @@ class ActionContext {
             } catch (e: Exception) {
                 this.instance(Logger::class).traceError("error in Async", e)
             } finally {
+                LOG.info("callAsync[$index] finished")
                 releaseContext()
                 countLatch.up()
             }
@@ -181,6 +199,8 @@ class ActionContext {
     }
 
     fun <T> callAsync(callable: () -> T): Future<T>? {
+        val index = INDEX.getAndIncrement()
+        LOG.info("callAsync[$index]")
         checkStatus()
         countLatch.down()
         val actionContext = this
@@ -189,6 +209,7 @@ class ActionContext {
                 setContext(actionContext, 0)
                 return@Callable callable()
             } finally {
+                LOG.info("callAsync[$index] finished")
                 releaseContext()
                 countLatch.up()
             }
@@ -196,6 +217,8 @@ class ActionContext {
     }
 
     fun runInSwingUI(runnable: () -> Unit) {
+        val index = INDEX.getAndIncrement()
+        LOG.info("runInSwingUI[$index]")
         checkStatus()
         when {
             getFlag() == swingThreadFlag -> runnable()
@@ -208,6 +231,7 @@ class ActionContext {
                     runnable()
                 } finally {
                     releaseContext()
+                    LOG.info("runInSwingUI[$index] finished after dispatch in current Thread")
                 }
             }
             else -> {
@@ -222,6 +246,7 @@ class ActionContext {
                     } catch (e: Exception) {
                         this.instance(Logger::class).traceError("error in SwingUI", e)
                     } finally {
+                        LOG.info("runInSwingUI[$index] finished after invokeLater")
                         releaseContext()
                         countLatch.up()
                     }
@@ -231,15 +256,22 @@ class ActionContext {
     }
 
     fun <T> callInSwingUI(callable: () -> T?): T? {
+        val index = INDEX.getAndIncrement()
+        LOG.info("callInSwingUI[$index]")
         checkStatus()
         when {
             getFlag() == swingThreadFlag -> return callable()
             EventQueue.isDispatchThread() -> {
-                setContext(
-                    this,
-                    swingThreadFlag
-                )
-                return callable()
+                try {
+                    setContext(
+                        this,
+                        swingThreadFlag
+                    )
+                    return callable()
+                } finally {
+                    releaseContext()
+                    LOG.info("callInSwingUI[$index] finished after dispatch in current Thread")
+                }
             }
             else -> {
                 countLatch.down()
@@ -252,6 +284,7 @@ class ActionContext {
                         )
                         valueHolder.compute { callable() }
                     } finally {
+                        LOG.info("callInSwingUI[$index] finished after invokeLater")
                         releaseContext()
                         countLatch.up()
                     }
@@ -262,30 +295,41 @@ class ActionContext {
     }
 
     fun runInWriteUI(runnable: () -> Unit) {
+        val index = INDEX.getAndIncrement()
+        LOG.info("runInWriteUI[$index]")
         checkStatus()
         if (getFlag() == writeThreadFlag) {
             runnable()
         } else {
             val project = this.instance(Project::class)
             countLatch.down()
-            WriteCommandAction.runWriteCommandAction(project, "callInWriteUI", "easy-api", Runnable {
-                try {
-                    setContext(
-                        this,
-                        writeThreadFlag
-                    )
-                    runnable()
-                } catch (e: Exception) {
-                    this.instance(Logger::class).traceError("error in WriteUI", e)
-                } finally {
-                    releaseContext()
-                    countLatch.up()
-                }
-            })
+            try {
+                WriteCommandAction.runWriteCommandAction(project, "callInWriteUI",
+                    SpiUtils.loadService(CustomInfo::class)?.pluginName() ?: "intellij-plugin", Runnable {
+                        try {
+                            setContext(
+                                this,
+                                writeThreadFlag
+                            )
+                            runnable()
+                        } catch (e: Exception) {
+                            this.instance(Logger::class).traceError("error in WriteUI", e)
+                        } finally {
+                            releaseContext()
+                            countLatch.up()
+                            LOG.info("runInWriteUI finished[$index]")
+                        }
+                    })
+            } catch (e: Throwable) {
+                releaseContext()
+                countLatch.up()
+            }
         }
     }
 
     fun <T> callInWriteUI(callable: () -> T?): T? {
+        val index = INDEX.getAndIncrement()
+        LOG.info("callInWriteUI[$index]")
         checkStatus()
         if (getFlag() == writeThreadFlag) {
             return callable()
@@ -293,23 +337,28 @@ class ActionContext {
             val project = this.instance(Project::class)
             countLatch.down()
             val valueHolder: ValueHolder<T> = ValueHolder()
-            WriteCommandAction.runWriteCommandAction(project, "callInWriteUI", "easy-api", Runnable {
-                try {
-                    setContext(
-                        this,
-                        writeThreadFlag
-                    )
-                    valueHolder.compute { callable() }
-                } finally {
-                    releaseContext()
-                    countLatch.up()
-                }
-            })
+            WriteCommandAction.runWriteCommandAction(project, "callInWriteUI",
+                SpiUtils.loadService(CustomInfo::class)?.pluginName() ?: "intellij-plugin",
+                Runnable {
+                    try {
+                        setContext(
+                            this,
+                            writeThreadFlag
+                        )
+                        valueHolder.compute { callable() }
+                    } finally {
+                        releaseContext()
+                        countLatch.up()
+                        LOG.info("callInWriteUI[$index] finished")
+                    }
+                })
             return valueHolder.value()
         }
     }
 
     fun runInReadUI(runnable: () -> Unit) {
+        val index = INDEX.getAndIncrement()
+        LOG.info("runInReadUI[$index]")
         checkStatus()
         if (getFlag() == readThreadFlag) {
             runnable()
@@ -327,12 +376,15 @@ class ActionContext {
                 } finally {
                     releaseContext()
                     countLatch.up()
+                    LOG.info("runInReadUI[$index] finished")
                 }
             }
         }
     }
 
     fun <T> callInReadUI(callable: () -> T?): T? {
+        val index = INDEX.getAndIncrement()
+        LOG.info("callInReadUI[$index]")
         checkStatus()
         if (getFlag() == readThreadFlag) {
             return callable()
@@ -349,6 +401,7 @@ class ActionContext {
                 } finally {
                     releaseContext()
                     countLatch.up()
+                    LOG.info("callInReadUI[$index] finished")
                 }
             }
             return valueHolder.value()
@@ -357,7 +410,7 @@ class ActionContext {
 
     /**
      * waits on the sub thread for the complete
-     * warning:call method as []waitComplete*] will clear ActionContext which bind on current Thread
+     * warning:call method as [waitComplete*] will clear ActionContext which bind on current Thread
      * @see ActionContext.waitCompleteAsync
      */
     fun waitComplete() {
@@ -373,7 +426,7 @@ class ActionContext {
 
     /**
      * waits on the sub thread for the complete
-     * warning:call method as []waitComplete*] will clear ActionContext which bind on current Thread
+     * warning:call method as [waitComplete*] will clear ActionContext which bind on current Thread
      * @see ActionContext.waitComplete
      */
     fun waitCompleteAsync() {
@@ -450,7 +503,7 @@ class ActionContext {
 
     fun checkStatus() {
         if (stopped) {
-            throw ProcessCanceledException("Action was stopped")
+            throw ProcessCanceledException("ActionContext was stopped")
         }
     }
 
@@ -469,6 +522,14 @@ class ActionContext {
     }
 
     companion object {
+
+        //plugin log
+        val logger: ILogger? = SpiUtils.loadService(ILogger::class)
+
+        //background idea log
+        private val LOG = org.apache.log4j.Logger.getLogger(ActionContext::class.java)
+
+        private val INDEX = AtomicLong()
 
         private const val readThreadFlag = 0b0001
         private const val writeThreadFlag = 0b0010
@@ -568,6 +629,7 @@ class ActionContext {
                 return --count
             }
         }
+
     }
 
     /**

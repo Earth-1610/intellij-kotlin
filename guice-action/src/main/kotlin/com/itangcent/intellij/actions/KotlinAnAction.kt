@@ -4,7 +4,6 @@ import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
-import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.itangcent.common.exception.ProcessCanceledException
 import com.itangcent.common.spi.Setup
@@ -22,7 +21,7 @@ abstract class KotlinAnAction : AnAction {
     constructor(text: String?) : super(text)
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
-    private val log: Logger = Logger.getInstance(this.javaClass.name)
+    private val log = org.apache.log4j.Logger.getLogger(this.javaClass)
 
     open protected fun onBuildActionContext(
         event: AnActionEvent,

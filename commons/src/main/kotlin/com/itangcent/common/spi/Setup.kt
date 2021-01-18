@@ -3,12 +3,13 @@ package com.itangcent.common.spi
 import com.itangcent.common.logger.ILogger
 import com.itangcent.common.logger.traceError
 import java.util.*
+import kotlin.collections.HashSet
 import kotlin.reflect.KClass
 import kotlin.reflect.full.createInstance
 
 object Setup {
 
-    private val setups: LinkedHashSet<String> = LinkedHashSet()
+    private val setups: HashSet<String> = HashSet()
 
     fun setup(key: String, setup: Runnable) {
 
@@ -31,8 +32,7 @@ object Setup {
             return
         }
         synchronized(this) {
-            if (!setups.contains(key)) {
-                setups.add(key)
+            if (setups.add(key)) {
                 setup()
             }
         }
