@@ -9,8 +9,7 @@ import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.PostConstruct
 import com.itangcent.intellij.jvm.*
-import com.itangcent.intellij.jvm.adapt.maybeMethodPropertyName
-import com.itangcent.intellij.jvm.adapt.propertyName
+import com.itangcent.intellij.jvm.adapt.*
 import com.itangcent.intellij.jvm.duck.ArrayDuckType
 import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.duck.SingleDuckType
@@ -20,6 +19,7 @@ import com.itangcent.intellij.jvm.element.ExplicitElement
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.ELEMENT_OF_COLLECTION
 import com.itangcent.intellij.logger.Logger
+import com.itangcent.intellij.psi.JsonOption.has
 import com.itangcent.intellij.util.Magics
 import org.apache.commons.lang3.exception.ExceptionUtils
 import java.util.*
@@ -289,7 +289,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
         val cacheKey = psiClass?.qualifiedName + "@" + groupKey(context, option)
 
-        val resourcePsiClass = if (JsonOption.needComment(option)) {
+        val resourcePsiClass = if (option.has(JsonOption.READ_COMMENT)) {
             psiClass?.let { getResourceClass(it) }
         } else {
             psiClass
@@ -346,7 +346,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             return resolvedInfo
         }
 
-        val psiClass = if (JsonOption.needComment(option)) {
+        val psiClass = if (option.has(JsonOption.READ_COMMENT)) {
             getResourceClass(duckType.psiClass())
         } else {
             duckType.psiClass()
@@ -458,7 +458,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             return resolvedInfo as KV<String, Any?>
         }
 
-        val psiClass = if (JsonOption.needComment(option)) {
+        val psiClass = if (option.has(JsonOption.READ_COMMENT)) {
             getResourceClass(clsWithParam.psiClass())
         } else {
             clsWithParam.psiClass()
@@ -507,9 +507,10 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     ) {
         actionContext!!.checkStatus()
 
-        val readGetter = JsonOption.readGetter(option)
+        val readMethod = option.has(JsonOption.READ_GETTER_OR_SETTER)
+
         var fieldNames: HashSet<String>? = null
-        if (readGetter) {
+        if (readMethod) {
             fieldNames = HashSet()
         }
 
@@ -524,12 +525,14 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 //                continue
 //            }
 
-            if (!readGetter || fieldNames!!.add(explicitField.name())) {
+            if (!readMethod || fieldNames!!.add(explicitField.name())) {
                 handle(getJsonFieldName(psiField), explicitField.getType(), explicitField)
             }
         }
 
-        if (JsonOption.readGetter(option)) {
+        if (readMethod) {
+            val readGetter = option.has(JsonOption.READ_GETTER)
+            val readSetter = option.has(JsonOption.READ_SETTER)
             for (explicitMethod in psiClass.methods()) {
                 val method = explicitMethod.psi()
                 val methodName = method.name
@@ -537,14 +540,25 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 if (!methodName.maybeMethodPropertyName()) {
                     continue
                 }
-                val propertyName = methodName.propertyName()
-                if (readGetter && !fieldNames!!.add(propertyName)) continue
                 if (method.isConstructor) continue
-                if (method.parameters.isNotEmpty()) continue
                 if (method.hasModifierProperty(PsiModifier.STATIC)) continue
                 if (!method.hasModifierProperty(PsiModifier.PUBLIC)) continue
 
-                explicitMethod.getReturnType()?.let { handle(propertyName, it, explicitMethod) }
+                if (readGetter && methodName.maybeGetterMethodPropertyName()) {
+                    val propertyName = methodName.getterPropertyName()
+                    if (readMethod && !fieldNames!!.add(propertyName)) continue
+                    if (method.parameters.isNotEmpty()) continue
+                    explicitMethod.getReturnType()?.let { handle(propertyName, it, explicitMethod) }
+                }
+
+                if (readSetter && methodName.maybeSetterMethodPropertyName()) {
+                    val propertyName = methodName.setterPropertyName()
+                    if (readMethod && !fieldNames!!.add(propertyName)) continue
+                    if (method.parameters.isEmpty()) continue
+                    explicitMethod.getParameters().firstOrNull()?.getType()?.let {
+                        handle(propertyName, it, explicitMethod)
+                    }
+                }
             }
         }
         fieldNames?.clear()
@@ -660,7 +674,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
             var valProperty = property.trimToNull() ?: defaultPropertyName
             if (valProperty.maybeMethodPropertyName()) {
-                val candidateProperty = valProperty.propertyName()
+                val candidateProperty = valProperty.getterPropertyName()
                 if (valProperty != candidateProperty) {
                     val allFields = jvmClassHelper.getAllFields(cls)
                     if (!allFields.any { it.name == valProperty }
@@ -1051,14 +1065,32 @@ object JsonOption {
     const val NONE = 0b0000//None additional options
     const val READ_COMMENT = 0b0001//try find comments
     const val READ_GETTER = 0b0010//Try to find the available getter method as property
-    const val ALL = READ_COMMENT or READ_GETTER//All additional options
+    const val READ_SETTER = 0b0100//Try to find the available setter method as property
+    const val ALL = READ_COMMENT or READ_GETTER or READ_SETTER//All additional options
+    const val READ_GETTER_OR_SETTER =
+        READ_GETTER or READ_SETTER//Try to find the available getter or setter method as property
 
+    @Deprecated(
+        message = "use #has",
+        replaceWith = ReplaceWith("has(JsonOption.READ_COMMENT)")
+    )
     fun needComment(flag: Int): Boolean {
         return (flag and READ_COMMENT) != 0
     }
 
+    @Deprecated(
+        message = "use #has",
+        replaceWith = ReplaceWith("has(JsonOption.READ_GETTER)")
+    )
     fun readGetter(flag: Int): Boolean {
         return (flag and READ_GETTER) != 0
     }
 
+    fun Int.has(flag: Int): Boolean {
+        return (this and flag) != 0
+    }
+
+    fun Int.hasAny(vararg flag: Int): Boolean {
+        return flag.any { (this and it) != 0 }
+    }
 }

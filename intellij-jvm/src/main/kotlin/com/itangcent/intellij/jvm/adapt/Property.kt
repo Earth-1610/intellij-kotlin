@@ -38,13 +38,15 @@ class FieldProperty(private val field: PsiField) : Property {
     }
 }
 
-class MethodProperty(private val method: PsiMethod) : Property {
+typealias MethodProperty = GetMethodProperty;
+
+class GetMethodProperty(private val method: PsiMethod) : Property {
     override fun pis(): PsiElement {
         return method
     }
 
     override fun name(): String {
-        return method.name.propertyName()
+        return method.name.getterPropertyName()
     }
 
     override fun type(): PsiType {
@@ -52,11 +54,41 @@ class MethodProperty(private val method: PsiMethod) : Property {
     }
 }
 
+class SetMethodProperty(private val method: PsiMethod) : Property {
+    override fun pis(): PsiElement {
+        return method
+    }
+
+    override fun name(): String {
+        return method.name.getterPropertyName()
+    }
+
+    override fun type(): PsiType {
+        val firstOrNull: PsiParameter? = method.parameterList.parameters.firstOrNull()
+        return firstOrNull?.type ?: PsiType.VOID
+    }
+}
 
 fun String.maybeMethodPropertyName(): Boolean {
     return when {
         this.startsWith("get") -> true
         this.startsWith("is") -> true
+        this.startsWith("set") -> true
+        else -> false
+    }
+}
+
+fun String.maybeGetterMethodPropertyName(): Boolean {
+    return when {
+        this.startsWith("get") -> true
+        this.startsWith("is") -> true
+        else -> false
+    }
+}
+
+fun String.maybeSetterMethodPropertyName(): Boolean {
+    return when {
+        this.startsWith("set") -> true
         else -> false
     }
 }
@@ -65,6 +97,22 @@ fun String.propertyName(): String {
     return when {
         this.startsWith("get") -> this.removePrefix("get")
         this.startsWith("is") -> this.removePrefix("is")
+        this.startsWith("set") -> this.removePrefix("set")
+        else -> this
+    }.decapitalize().removeSuffix("()")
+}
+
+fun String.getterPropertyName(): String {
+    return when {
+        this.startsWith("get") -> this.removePrefix("get")
+        this.startsWith("is") -> this.removePrefix("is")
+        else -> this
+    }.decapitalize().removeSuffix("()")
+}
+
+fun String.setterPropertyName(): String {
+    return when {
+        this.startsWith("set") -> this.removePrefix("set")
         else -> this
     }.decapitalize().removeSuffix("()")
 }
