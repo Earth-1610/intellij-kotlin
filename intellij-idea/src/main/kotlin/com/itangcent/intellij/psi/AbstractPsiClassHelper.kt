@@ -23,6 +23,7 @@ import com.itangcent.intellij.psi.JsonOption.has
 import com.itangcent.intellij.util.Magics
 import org.apache.commons.lang3.exception.ExceptionUtils
 import java.util.*
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
@@ -63,8 +64,8 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     @Suppress("UNCHECKED_CAST")
-    protected open fun <T> getResolvedInfo(key: String): T? {
-        return resolvedInfo[key]?.let { copy(it) } as T?
+    protected open fun <T> getResolvedInfo(key: String): Any? {
+        return resolvedInfo[key]
     }
 
     protected open fun cacheResolvedInfo(key: String, value: Any?) {
@@ -80,6 +81,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         }
     }
 
+    @Deprecated(message = "copy is deprecated and will likely be removed in a future release.")
     @Suppress("UNCHECKED_CAST")
     override fun copy(obj: Any?): Any? {
         if (obj == null) return null
@@ -150,7 +152,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     isNormalType(deepType) -> list.add(getDefaultValue(deepType) ?: "")
                     else -> doGetTypeObject(deepType, context, option)?.let { list.add(it) }
                 }
-                return copy(list)
+                return Delay(list)
             }
             jvmClassHelper!!.isCollection(castTo) -> {   //list type
                 val list = java.util.ArrayList<Any>()
@@ -166,7 +168,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     }
                     iterableType != null -> doGetTypeObject(iterableType, context, option)?.let { list.add(it) }
                 }
-                return copy(list)
+                return Delay(list)
             }
             jvmClassHelper.isMap(castTo) -> {   //list type
                 val map: HashMap<Any, Any?> = HashMap()
@@ -196,7 +198,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                 map[defaultKey] = defaultValue
 
-                return copy(map)
+                return Delay(map)
             }
             jvmClassHelper.isEnum(psiType) -> {
                 return parseEnum(psiType, context, option)
@@ -211,7 +213,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                         duckType != null -> {
                             val result = doGetTypeObject(duckType, context, option)
                             cacheResolvedInfo(cacheKey, result)
-                            copy(result)
+                            Delay(result)
                         }
                         else -> null
                     }
@@ -224,7 +226,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     return try {
                         val result = getFields(paramCls, option)
                         cacheResolvedInfo(cacheKey, result)
-                        copy(result)
+                        Delay(result)
                     } catch (e: Throwable) {
                         logger!!.error("error to getTypeObject:$psiType")
                         logger.trace(ExceptionUtils.getStackTrace(e))
@@ -257,7 +259,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             val list = ArrayList<Any>()
             cacheResolvedInfo(cacheKey, list)
             doGetTypeObject(type.componentType(), context, option)?.let { list.add(it) }
-            return copy(list)
+            return Delay(list)
         }
 
         if (type is SingleDuckType) {
@@ -272,19 +274,35 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     override fun getFields(psiClass: PsiClass?): KV<String, Any?> {
-        return getFields(psiClass, JsonOption.NONE)
+        return doGetFields(psiClass).unwrapped { } as KV<String, Any?>
+    }
+
+    private fun doGetFields(psiClass: PsiClass?): Any? {
+        return doGetFields(psiClass, JsonOption.NONE)
     }
 
     override fun getFields(psiClass: PsiClass?, context: PsiElement?): KV<String, Any?> {
-        return getFields(psiClass, context, JsonOption.NONE)
+        return doGetFields(psiClass, context).unwrapped { } as KV<String, Any?>
+    }
+
+    fun doGetFields(psiClass: PsiClass?, context: PsiElement?): Any? {
+        return doGetFields(psiClass, context, JsonOption.NONE)
     }
 
     override fun getFields(psiClass: PsiClass?, option: Int): KV<String, Any?> {
-        return getFields(psiClass, psiClass, option)
+        return doGetFields(psiClass, option).unwrapped { } as KV<String, Any?>
+    }
+
+    fun doGetFields(psiClass: PsiClass?, option: Int): Any? {
+        return doGetFields(psiClass, psiClass, option)
     }
 
     @Suppress("UNCHECKED_CAST")
     override fun getFields(psiClass: PsiClass?, context: PsiElement?, option: Int): KV<String, Any?> {
+        return doGetFields(psiClass, context, option).unwrapped { } as KV<String, Any?>
+    }
+
+    fun doGetFields(psiClass: PsiClass?, context: PsiElement?, option: Int): Any? {
         actionContext!!.checkStatus()
 
         val cacheKey = psiClass?.qualifiedName + "@" + groupKey(context, option)
@@ -328,7 +346,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             afterParseClass(resourcePsiClass, option, kv)
         }
 
-        return copy(kv) as KV<String, Any?>
+        return Delay(kv)
     }
 
     open fun parseEnum(psiType: PsiType?, context: PsiElement, option: Int): Any? {
@@ -365,7 +383,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     doGetTypeObject(realIterableType, context, option)?.let { list.add(it) }
                 }
 
-                return copy(list)
+                return Delay(list)
             }
             jvmClassHelper.isMap(duckType) -> {
 
@@ -418,7 +436,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     map[defaultKey] = defaultValue
                 }
 
-                return copy(map)
+                return Delay(map)
             }
             jvmClassHelper.isEnum(duckType) -> {
                 return parseEnum(duckType, context, option)
@@ -438,7 +456,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 if (ruleComputer!!.computer(ClassRuleKeys.TYPE_IS_FILE, psiClass) == true) {
                     return Magics.FILE_STR
                 }
-                return getFields(duckType, context, option)
+                return doGetFields(duckType, context, option)
             }
         }
     }
@@ -449,6 +467,11 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     @Suppress("UNCHECKED_CAST")
     protected open fun getFields(clsWithParam: SingleDuckType, context: PsiElement?, option: Int): KV<String, Any?> {
+        return doGetFields(clsWithParam, context, option).unwrapped { } as KV<String, Any?>
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    protected open fun doGetFields(clsWithParam: SingleDuckType, context: PsiElement?, option: Int): Any? {
         actionContext!!.checkStatus()
 
         val cacheKey = clsWithParam.canonicalText() + "@" + groupKey(context, option)
@@ -493,7 +516,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
         afterParseType(psiClass, clsWithParam, option, kv)
 
-        return copy(kv) as KV<String, Any?>
+        return Delay(kv)
     }
 
     protected open fun foreachField(
@@ -976,6 +999,12 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     //return false to ignore current fieldOrMethod
 }
 
+private val index = AtomicInteger()
+
+interface Wrapped {
+    fun get(): Any?
+}
+
 open class WrappedKV<K, V> : KV<K, V>() {
 
     @Suppress("UNCHECKED_CAST")
@@ -1004,15 +1033,88 @@ open class WrappedKV<K, V> : KV<K, V>() {
     }
 }
 
-class WrappedValue(private var value: Any?) : WrappedKV<String, Any?>() {
+class WrappedValue(private var value: Any?) : WrappedKV<String, Any?>(), Wrapped {
 
-    fun value(): Any? {
+    private val id = index.getAndIncrement()
+
+    override fun get(): Any? {
         return value
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as WrappedValue
+
+        if (id != other.id) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return id
+    }
+
 }
 
 fun Any?.wrap(): WrappedValue {
     return WrappedValue(this)
+}
+
+@Suppress("UNCHECKED_CAST")
+fun <T> T?.unwrapped(handle: (v: WrappedValue) -> Unit): T? {
+    return Unwrapper().unwrapped(this, handle) as T?
+}
+
+class Delay(private var raw: Any?) : Wrapped {
+
+    private val id = index.getAndIncrement()
+
+    override fun get(): Any? {
+        return copy(raw)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Delay
+
+        if (id != other.id) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return id
+    }
+}
+
+@Suppress("UNCHECKED_CAST")
+fun copy(obj: Any?): Any? {
+    if (obj == null) return null
+    when (obj) {
+        is Collection<*> -> try {
+            val copyObj = obj::class.createInstance() as MutableCollection<Any?>
+            obj.forEach { element -> copy(element)?.let { copyObj.add(it) } }
+            return copyObj
+        } catch (e: Exception) {
+        }
+        is Map<*, *> -> try {
+            val copyObj = obj::class.createInstance() as MutableMap<Any?, Any?>
+            obj.forEach { (k, v) ->
+                copyObj[copy(k)] = copy(v)
+            }
+            return copyObj
+        } catch (e: Exception) {
+        }
+        is Cloneable -> try {
+            return obj.invokeMethod("clone")
+        } catch (e: Exception) {
+        }
+    }
+    return obj
 }
 
 fun Any?.wrapped(deep: Int = 0): Boolean {
@@ -1020,7 +1122,7 @@ fun Any?.wrapped(deep: Int = 0): Boolean {
         this == null || deep > 10 -> {
             return false
         }
-        this is WrappedValue -> {
+        this is Wrapped -> {
             return true
         }
         this is Collection<*> -> {
@@ -1036,29 +1138,41 @@ fun Any?.wrapped(deep: Int = 0): Boolean {
     }
 }
 
-@Suppress("UNCHECKED_CAST")
-fun <T> T?.unwrapped(deep: Int = 0, handle: (v: WrappedValue) -> Unit): T? {
-    return when {
-        this == null || deep > 10 -> {
-            this
+class Unwrapper {
+
+    private val processing = HashSet<Any?>()
+
+    @Suppress("UNCHECKED_CAST")
+    fun unwrapped(any: Any?, handle: (v: WrappedValue) -> Unit): Any? {
+        return any.unwrapped(0, handle)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun Any?.unwrapped(deep: Int = 0, handle: (v: WrappedValue) -> Unit): Any? {
+        if (!processing.add(this)) {
+            return Any()
         }
-        this is WrappedValue -> {
-            handle(this)
-            this.value()
+        return when {
+            this == null || deep > 10 -> {
+                this
+            }
+            this is Wrapped -> {
+                this.get().unwrapped(deep, handle)
+            }
+            this.wrapped(deep) && this is Collection<*> -> {
+                this.map { it.unwrapped(deep + 1, handle) }
+            }
+            this.wrapped(deep) && this is Array<*> -> {
+                this.map { it.unwrapped(deep + 1, handle) }
+            }
+            this.wrapped(deep) && this is Map<*, *> -> {
+                this.mapValues { it.value.unwrapped(deep + 1, handle) }
+            }
+            else -> {
+                this
+            }
         }
-        this.wrapped(deep) && this is Collection<*> -> {
-            this.map { it.unwrapped(deep + 1, handle) }
-        }
-        this.wrapped(deep) && this is Array<*> -> {
-            this.map { it.unwrapped(deep + 1, handle) }
-        }
-        this.wrapped(deep) && this is Map<*, *> -> {
-            this.mapValues { it.value.unwrapped(deep + 1, handle) }
-        }
-        else -> {
-            this
-        }
-    } as T?
+    }
 }
 
 object JsonOption {
