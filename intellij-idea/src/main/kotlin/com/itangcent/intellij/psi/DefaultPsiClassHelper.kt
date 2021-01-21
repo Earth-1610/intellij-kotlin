@@ -17,6 +17,7 @@ import com.itangcent.intellij.jvm.duck.SingleDuckType
 import com.itangcent.intellij.jvm.element.ExplicitClass
 import com.itangcent.intellij.jvm.element.ExplicitElement
 import com.itangcent.intellij.jvm.element.ExplicitField
+import com.itangcent.intellij.psi.JsonOption.has
 import org.apache.commons.lang3.StringUtils
 import java.util.*
 
@@ -183,7 +184,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                     typeObj = super.getTypeObject(duckType, context, option)
                 }
                 //doc comment
-                if (JsonOption.needComment(option)) {
+                if (option.has(JsonOption.READ_COMMENT)) {
                     val options = resolveEnumOrStatic(convertTo, context, "")
                     return typeObj.wrap().set("@comment@options", options)
                 }
@@ -194,7 +195,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                 super.doGetTypeObject(duckTypeHelper!!.resolve("java.lang.String", context)!!, context, option)
 
             //doc comment
-            if (JsonOption.needComment(option)) {
+            if (option.has(JsonOption.READ_COMMENT)) {
                 val enumOptions = resolveEnumOrStatic(context, duckType.psiClass(), null, "")
                 return if (enumOptions.isNullOrEmpty()) {
                     typeObj
@@ -269,7 +270,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                             }
                         }
                         //doc comment
-                        if (JsonOption.needComment(option)) {
+                        if (option.has(JsonOption.READ_COMMENT)) {
                             val commentKV: KV<String, Any?> =
                                 kv.safeComputeIfAbsent("@comment") { KV.create<String, Any?>() } as KV<String, Any?>
                             resolveSeeDoc(
@@ -311,7 +312,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
             )
 
             //doc comment
-            if (JsonOption.needComment(option)) {
+            if (option.has(JsonOption.READ_COMMENT)) {
                 val commentKV: KV<String, Any?> =
                     kv.safeComputeIfAbsent("@comment") { KV.create<String, Any?>() } as KV<String, Any?>
 
@@ -345,7 +346,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         kv: KV<String, Any?>
     ) {
         //doc comment
-        if (JsonOption.needComment(option)) {
+        if (option.has(JsonOption.READ_COMMENT)) {
             var commentKV: KV<String, Any?>? = kv["@comment"] as KV<String, Any?>?
             if (commentKV == null) {
                 commentKV = KV.create()

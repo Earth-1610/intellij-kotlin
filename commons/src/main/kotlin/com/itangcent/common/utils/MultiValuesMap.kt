@@ -140,7 +140,7 @@ class MultiValuesMap<K, V>(private val myOrdered: Boolean = false) : Map<K, Coll
         val valCollection = myBaseMap[key]
         return when {
             valCollection.isNullOrEmpty() -> null
-            valCollection!!.size == 1 -> valCollection.first()
+            valCollection.size == 1 -> valCollection.first()
             else -> throw IllegalArgumentException("$key has more than one value")
         }
     }
