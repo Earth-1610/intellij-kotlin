@@ -26,6 +26,7 @@ interface PsiClassHelper {
 
     fun isNormalType(psiClass: PsiClass): Boolean
 
+    @Deprecated(message = "copy is deprecated and will likely be removed in a future release.")
     fun copy(obj: Any?): Any?
 
     fun unboxArrayOrList(psiType: PsiType): PsiType
