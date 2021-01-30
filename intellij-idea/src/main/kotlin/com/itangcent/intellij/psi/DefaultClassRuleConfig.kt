@@ -9,6 +9,7 @@ import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.jvm.DuckTypeHelper
 import com.itangcent.intellij.jvm.JvmClassHelper
+import com.itangcent.intellij.jvm.PsiResolver
 import com.itangcent.intellij.jvm.duck.DuckType
 import java.util.*
 
@@ -16,10 +17,15 @@ import java.util.*
 open class DefaultClassRuleConfig : ClassRuleConfig {
     @Inject
     protected val ruleComputer: RuleComputer? = null
+
     @Inject
     protected val jvmClassHelper: JvmClassHelper? = null
+
     @Inject
     protected val duckTypeHelper: DuckTypeHelper? = null
+
+    @Inject
+    protected val psiResolver: PsiResolver? = null
 
     private var convertRule: HashMap<Any, Any> = LinkedHashMap()
 
@@ -49,7 +55,7 @@ open class DefaultClassRuleConfig : ClassRuleConfig {
             val convert = ruleComputer!!.computer(
                 ClassRuleKeys.CLASS_CONVERT, psiClass, psiClass
             ) ?: return@safeComputeIfAbsent psiClass
-            return@safeComputeIfAbsent duckTypeHelper!!.findClass(convert, psiClass) ?: psiClass
+            return@safeComputeIfAbsent psiResolver!!.findClass(convert, psiClass) ?: psiClass
         } as PsiClass? ?: psiClass
     }
 

@@ -48,7 +48,7 @@ class LogConsoleRunner : AbstractConsoleRunnerWithHistory<LanguageConsoleView> {
 
     override fun createProcessHandler(process: Process): OSProcessHandler {
         return ColoredProcessHandler(
-            process, "log4" + (SpiUtils.loadService(CustomInfo::class)?.pluginName() ?: "intellij-plugin")
+            process, "run " + (SpiUtils.loadService(CustomInfo::class)?.pluginName() ?: "intellij-plugin")
         )
     }
 
