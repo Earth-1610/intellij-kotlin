@@ -29,6 +29,9 @@ open class DuckTypeHelper {
     private val jvmClassHelper: JvmClassHelper? = null
 
     @Inject
+    private val psiResolver: PsiResolver? = null
+
+    @Inject
     private val sourceHelper: SourceHelper? = null
 
     private val classCanonicalTextCache: HashMap<String, PsiClass?> = HashMap()
@@ -210,7 +213,7 @@ open class DuckTypeHelper {
         when {
             typeCanonicalText == "?" -> {
                 return SingleDuckType(
-                    findClass(
+                    psiResolver!!.findClass(
                         CommonClassNames.JAVA_LANG_OBJECT,
                         context
                     )!!
@@ -262,7 +265,7 @@ open class DuckTypeHelper {
                     null -> {
                         if (typeCanonicalText.length == 1) {//maybe generic
                             return SingleDuckType(
-                                findClass(
+                                psiResolver!!.findClass(
                                     CommonClassNames.JAVA_LANG_OBJECT,
                                     context
                                 )!!
@@ -281,54 +284,40 @@ open class DuckTypeHelper {
 
     fun resolveClass(fqClassName: String, context: PsiElement): PsiClass? {
         return when {
-            fqClassName.contains(".") -> findClass(fqClassName, context)
-            else -> getContainingClass(context)?.let { resolveClassFromImport(it, fqClassName) }
-                ?: findClass(fqClassName, context)
+            fqClassName.contains(".") -> psiResolver!!.findClass(fqClassName, context)
+            else -> psiResolver!!.getContainingClass(context)?.let { resolveClassFromImport(it, fqClassName) }
+                ?: psiResolver.findClass(fqClassName, context)
         }?.let { sourceHelper?.getSourceClass(it) }
-    }
-
-    @Deprecated(
-        message = "will be removed next version",
-        replaceWith = ReplaceWith("com.itangcent.intellij.jvm.PsiResolver.getContainingClass")
-    )
-    fun getContainingClass(psiElement: PsiElement): PsiClass? {
-        if (psiElement is PsiClass) return psiElement
-        if (psiElement is PsiMember) {
-            psiElement.containingClass?.let { return it }
-        }
-        return null
-    }
-
-    @Deprecated(
-        message = "will be removed next version",
-        replaceWith = ReplaceWith("com.itangcent.intellij.jvm.PsiResolver.findClass")
-    )
-    fun findClass(fqClassName: String, context: PsiElement): PsiClass? {
-        return ActionContext.instance(PsiResolver::class).findClass(fqClassName, context)
     }
 
     protected open fun resolveClassFromImport(psiClass: PsiClass, clsName: String): PsiClass? {
 
         val imports = PsiTreeUtil.findChildrenOfType(psiClass.context, PsiImportStatement::class.java)
 
+        //try find class by single element import
         var cls = imports
+            .filterNot { it.isOnDemand }
             .mapNotNull { it.qualifiedName }
             .firstOrNull { it.endsWith(".$clsName") }
-            ?.let { findClass(it, psiClass) }
+            ?.let { psiResolver!!.findClass(it, psiClass) }
         if (cls != null) {
             return cls
         }
 
+        //try find class by default package
         val defaultPackage = psiClass.qualifiedName!!.substringBeforeLast(".")
-        cls = findClass("$defaultPackage.$clsName", psiClass)
+        cls = psiResolver!!.findClass("$defaultPackage.$clsName", psiClass)
         if (cls != null) {
             return cls
         }
+
+        //try find class by on-demand import
         cls = imports
+            .asSequence()
+            .filter { it.isOnDemand }
             .mapNotNull { it.qualifiedName }
-            .filter { it.endsWith(".*") }
-            .map { it -> it.removeSuffix("*") + clsName }
-            .map { findClass(it, psiClass) }
+            .map { "$it.$clsName" }
+            .map { psiResolver.findClass(it, psiClass) }
             .firstOrNull()
 
         return cls
@@ -484,7 +473,7 @@ open class DuckTypeHelper {
 
     fun javaLangObjectType(context: PsiElement): SingleDuckType {
         return SingleDuckType(
-            findClass(
+            psiResolver!!.findClass(
                 CommonClassNames.JAVA_LANG_OBJECT,
                 context
             )!!
