@@ -82,8 +82,10 @@ open class StandardAnnotationHelper : AnnotationHelper {
     }
 
     private fun findAnn(psiElement: PsiElement?, annName: String): PsiAnnotation? {
-        return findAnnotations(psiElement)
-            ?.let { annotations -> annotations.firstOrNull { it.qualifiedName == annName } }
+        return actionContext!!.callInReadUI {
+            findAnnotations(psiElement)
+                ?.let { annotations -> annotations.firstOrNull { it.qualifiedName == annName } }
+        }
     }
 
     private fun findAnns(psiElement: PsiElement?, annName: String): List<PsiAnnotation>? {
@@ -96,8 +98,10 @@ open class StandardAnnotationHelper : AnnotationHelper {
     }
 
     private fun findAnnotations(psiElement: PsiElement?): Array<out PsiAnnotation>? {
-        return psiElement.cast(PsiAnnotationOwner::class)?.annotations
-            ?: psiElement.cast(PsiModifierListOwner::class)?.annotations
+        return actionContext!!.callInReadUI {
+            psiElement.cast(PsiAnnotationOwner::class)?.annotations
+                ?: psiElement.cast(PsiModifierListOwner::class)?.annotations
+        }
     }
 
     fun tinyAnnStr(annStr: Any?): String? {

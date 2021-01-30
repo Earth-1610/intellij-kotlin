@@ -43,15 +43,21 @@ open class DuckTypeHelper {
     }
 
     fun explicit(psiElement: PsiElement): ExplicitElement<*>? {
-        if (psiElement is PsiClass) {
-            return explicit(psiElement)
-        } else if (psiElement is PsiMethod) {
-            return ExplicitMethodWithOutGenericInfo(explicit(psiElement.containingClass!!), psiElement)
-        } else if (psiElement is PsiField) {
-            return ExplicitFieldWithOutGenericInfo(explicit(psiElement.containingClass!!), psiElement)
+        return when (psiElement) {
+            is PsiClass -> {
+                explicit(psiElement)
+            }
+            is PsiMethod -> {
+                ExplicitMethodWithOutGenericInfo(explicit(psiElement.containingClass!!), psiElement)
+            }
+            is PsiField -> {
+                ExplicitFieldWithOutGenericInfo(explicit(psiElement.containingClass!!), psiElement)
+            }
+            else -> {
+                logger!!.error("can not explicit PsiElement beyond class/method/field:$psiElement")
+                null
+            }
         }
-        logger!!.error("can not explicit PsiElement beyond class/method/field:$psiElement")
-        return null
     }
 
     fun explicit(singleDuckType: SingleDuckType): ExplicitClass {
