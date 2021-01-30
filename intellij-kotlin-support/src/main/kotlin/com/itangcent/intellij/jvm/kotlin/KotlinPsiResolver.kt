@@ -34,6 +34,41 @@ import org.jetbrains.kotlin.psi.psiUtil.containingClass
  */
 open class KotlinPsiResolver : StandardPsiResolver() {
 
+    /**
+     * ref: {@link https://kotlinlang.org/docs/reference/packages.html#default-imports}
+     * Default Imports
+     * A number of packages are imported into every Kotlin file by default:
+     * - kotlin.*
+     * - kotlin.annotation.*
+     * - kotlin.collections.*
+     * - kotlin.comparisons.* (since 1.1)
+     * - kotlin.io.*
+     * - kotlin.ranges.*
+     * - kotlin.sequences.*
+     * - kotlin.text.*
+     * Additional packages are imported depending on the target platform:
+     * JVM:
+     * - java.lang.*
+     * - kotlin.jvm.*
+     * JS:
+     * - kotlin.js.*
+     */
+    override fun defaultPackages(): Array<String> {
+        return arrayOf(
+            "kotlin.",
+            "kotlin.annotation.",
+            "kotlin.collections.",
+            "kotlin.comparisons.",
+            "kotlin.io.",
+            "kotlin.ranges.",
+            "kotlin.sequences.",
+            "kotlin.text.",
+            "java.lang.",
+            "kotlin.jvm.",
+            "kotlin.js."
+        )
+    }
+
     override fun resolveClassWithPropertyOrMethod(
         classNameWithProperty: String,
         context: PsiElement

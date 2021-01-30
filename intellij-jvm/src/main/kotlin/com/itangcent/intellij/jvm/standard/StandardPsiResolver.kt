@@ -84,6 +84,7 @@ open class StandardPsiResolver : PsiResolver {
 
         var cls: PsiClass? = null
         try {
+            LOG.info("find class:$fqClassName")
             cls = ClassUtils.findClass(fqClassName, context)
         } catch (e: Exception) {
         }
@@ -91,19 +92,23 @@ open class StandardPsiResolver : PsiResolver {
         if (cls == null) {
             if (fqClassName.contains(".")) return null
 
-            try {
-                cls = ClassUtils.findClass("java.lang." + fqClassName.capitalize(), context)
-            } catch (e: Exception) {
-            }
-            if (cls == null) {
+            for (defaultPackage in defaultPackages()) {
                 try {
-                    cls = ClassUtils.findClass("java.util." + fqClassName.capitalize(), context)
+                    LOG.info("find class:$defaultPackage${fqClassName.capitalize()}")
+                    cls = ClassUtils.findClass("$defaultPackage${fqClassName.capitalize()}", context)
+                    if (cls != null) {
+                        break
+                    }
                 } catch (e: Exception) {
                 }
             }
         }
         nameToClassCache[fqClassName] = cls
         return cls
+    }
+
+    protected open fun defaultPackages(): Array<String> {
+        return arrayOf("java.lang.", "java.util.")
     }
 
     override fun findType(canonicalText: String, context: PsiElement): PsiType? {
@@ -309,3 +314,6 @@ open class StandardPsiResolver : PsiResolver {
         }
     }
 }
+
+//background idea log
+private val LOG = org.apache.log4j.Logger.getLogger(StandardPsiResolver::class.java)

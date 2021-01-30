@@ -111,12 +111,11 @@ open class StandardDocHelper : DocHelper {
     }
 
     override fun getAttrOfDocComment(psiElement: PsiElement?): String? {
-        return psiElement.cast(PsiDocCommentOwner::class)?.docComment
-            ?.let { docComment ->
-                return@let ActionContext.getContext()!!.callInReadUI {
-                    return@callInReadUI getDocCommentContent(docComment)
-                }
-            }
+        val docCommentOwner = psiElement.cast(PsiDocCommentOwner::class)
+            ?: return null
+        return ActionContext.getContext()!!.callInReadUI {
+            docCommentOwner.docComment?.let { return@let getDocCommentContent(it) }
+        }
     }
 
     override fun getDocCommentContent(docComment: PsiDocComment): String? {

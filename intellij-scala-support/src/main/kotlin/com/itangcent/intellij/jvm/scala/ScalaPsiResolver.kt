@@ -17,6 +17,13 @@ import org.jetbrains.plugins.scala.lang.psi.api.expr.ScMethodCall
  */
 open class ScalaPsiResolver : StandardPsiResolver() {
 
+    /**
+     * ref: https://www.scala-lang.org/files/archive/spec/2.13/09-top-level-definitions.html
+     */
+    override fun defaultPackages(): Array<String> {
+        return arrayOf("java.lang.", "java.util.", "scala.")
+    }
+
     override fun resolveClassWithPropertyOrMethod(
         classNameWithProperty: String,
         context: PsiElement
