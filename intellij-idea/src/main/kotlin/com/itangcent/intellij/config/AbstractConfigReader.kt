@@ -3,11 +3,11 @@ package com.itangcent.intellij.config
 import com.google.inject.Inject
 import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.*
+import com.itangcent.intellij.config.resource.ResourceResolver
 import com.itangcent.intellij.logger.Logger
 import com.itangcent.intellij.tip.OnlyOnceInContextTip
 import com.itangcent.intellij.tip.TipsHelper
 import org.yaml.snakeyaml.Yaml
-import java.io.File
 import java.util.regex.Pattern
 
 abstract class AbstractConfigReader : MutableConfigReader {
@@ -16,10 +16,13 @@ abstract class AbstractConfigReader : MutableConfigReader {
         MultiValuesMap(true)
 
     @Inject
-    protected val logger: Logger? = null
+    protected lateinit var logger: Logger
 
     @Inject
-    protected val tipsHelper: TipsHelper? = null
+    protected lateinit var tipsHelper: TipsHelper
+
+    @Inject
+    protected lateinit var resourceResolver: ResourceResolver
 
     private var resolveProperty: Boolean = true
 
@@ -43,121 +46,44 @@ abstract class AbstractConfigReader : MutableConfigReader {
     }
 
     override fun loadConfigInfoContent(configInfoContent: String, type: String) {
-        //wow,resolve .yaml&.yml as yamlConfig
-        if (type == "yml" || type == "yaml") {
-            loadYamlConfig(configInfoContent)
-            return
+        val configResolver: ConfigResolver = when (type) {
+            "yml", "yaml" -> {//resolve .yaml&.yml as yamlConfig
+                YamlConfigResolver()
+            }
+            "json" -> {
+                //resolve .properties&.config as propertiesConfig
+                JsonConfigResolver()
+            }
+            "properties", "config" -> {
+                //resolve .properties&.config as propertiesConfig
+                PropertiesConfigResolver()
+            }
+            else -> {
+                PropertiesConfigResolver()
+            }
         }
-
-        //wow,resolve .properties&.config as propertiesConfig
-        if (type == "properties" || type == "config") {
-            loadPropertiesConfig(configInfoContent)
-            return
-        }
-
-        //default
-        loadPropertiesConfig(configInfoContent)
-    }
-
-    private fun loadPropertiesConfig(configInfoContent: String) {
-
-        LineReader(configInfoContent) { line ->
-            //ignore blank line
-            if (line.isBlank()) {
-                return@LineReader
-            }
-
-            //resolve comment setting
-            if (line.startsWith("###")) {
-                resolveSetting(line.removePrefix("###").trim())
-                return@LineReader
-            }
-
-            //ignore comment
-            if (line.startsWith("#")) {
-                return@LineReader
-            }
-
-            //resolve name&value
-            parseEqualLine(line)
-        }.lines()
-    }
-
-    private fun parseEqualLine(line: String) {
-
-        val name = resolveProperty(line.substringBefore("=")).trim()
-        if (!name.isBlank()) {
-            val value = resolveProperty(line.substringAfter("=", ""))
-            if (name == "properties.additional") {
-                loadConfigFile(value)
-                return
-            }
-            if (name.contains("[") && value.contains("]")) {
-                val matcher = KEY_FILTER_EQUAL_VALUE.matcher(line)
-                if (matcher.matches()) {
-                    val pName = matcher.group(1)
-                    val pValue = matcher.group(2)
-                    configInfo.put(resolveProperty(pName.trim()), resolveProperty(pValue.trim()))
-                    return
-                }
-                logger!!.warn("parse config maybe incorrect: $line")
-            }
-            configInfo.put(name.trim(), value.trim())
+        configResolver.resolveConfig(configInfoContent) { k, v ->
+            configInfo.put(k, v)
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
-    private fun loadYamlConfig(configInfoContent: String) {
-        val yaml = Yaml()
-        val yamlProperties: Iterable<Any>
+    protected open fun loadConfigFile(path: String) {
         try {
-            yamlProperties = yaml.loadAll(configInfoContent)
-
-            for (yamlProperty in yamlProperties) {
-                if (yamlProperty is Map<*, *>) {
-                    (yamlProperty as Map<Any?, Any?>).flat { k, v ->
-                        val name = resolveProperty(k)
-                        val value = resolveProperty(v)
-                        if (name == "properties.additional") {
-                            loadConfigFile(value)
-                        } else {
-                            configInfo.put(name.trim(), value.trim())
-                        }
+            val resource = resourceResolver.resolve(path)
+            val content = resource.content
+            if (content.isNullOrBlank()) {
+                if (!ignoreNotFoundFile) {
+                    if (content == null) {
+                        logger.debug("$path not be found.")
+                    } else if (content.isBlank()) {
+                        logger.debug("$path is an empty file")
                     }
-                }
-            }
-        } catch (e: Exception) {
-            logger!!.traceWarn("load yaml failed", e)
-            return
-        }
-
-    }
-
-    private fun loadConfigFile(path: String) {
-        val currPath = getPropertyStringValue("curr_path")
-        val configFile = SysFileResolve.adaptive().resolveFile(path, currPath)
-        if (configFile != null && configFile.exists() && configFile.isFile) {
-            val configInfoContent = FileUtils.read(configFile)
-            if (!configInfoContent.isNullOrEmpty()) {
-                configInfo.replace("curr_path", configFile.absolutePath.substringBeforeLast(File.separator))
-                try {
-                    loadConfigInfoContent(configInfoContent, path.substringAfterLast("."))
-                } finally {
-                    currPath?.let { configInfo.replace("curr_path", it) }
-                }
-                return
-            } else if (!ignoreNotFoundFile) {
-                logger!!.debug("$path is an empty file")
-            }
-        } else if (!ignoreNotFoundFile) {
-            if (configFile != null) {
-                val absolutePath = configFile.absolutePath
-                if (absolutePath != path) {
-                    logger!!.debug("$path not be found. It be resolved as $absolutePath")
                     return
                 }
             }
-            logger!!.debug("$path not be found")
+            loadConfigInfoContent(content!!, path.substringAfterLast("."))
+        } catch (e: Exception) {
+            LOG.error("failed load config:$path")
         }
     }
 
@@ -185,7 +111,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
         } else if (setting.startsWith("if")) {
             //todo:resolve  condition
         }
-        logger?.warn("unknown comment setting:$setting")
+        logger.warn("unknown comment setting:$setting")
 
     }
 
@@ -213,15 +139,15 @@ abstract class AbstractConfigReader : MutableConfigReader {
                     val value = getPropertyValue(key)
                     if (value == null || value == MULTI_UNRESOLVED) {
                         if (!ignoreUnresolved && value != MULTI_UNRESOLVED) {
-                            logger!!.error("unable to resolve property:$key")
-                            tipsHelper!!.showTips(UNRESOLVED_TIP)
+                            logger.error("unable to resolve property:$key")
+                            tipsHelper.showTips(UNRESOLVED_TIP)
                         }
                         match.appendReplacement(sb, "")
                         continue
                     }
                     match.appendReplacement(sb, value.toString())
                 } catch (e: Exception) {
-                    logger!!.error("unable to resolve $key")
+                    logger.error("unable to resolve $key")
                 }
             }
         }
@@ -247,8 +173,8 @@ abstract class AbstractConfigReader : MutableConfigReader {
                         return value
                     }
                 } catch (e: IllegalArgumentException) {
-                    logger!!.error("error resolve property [$key] because [$key] has more than one value!")
-                    tipsHelper!!.showTips(MULTI_UNRESOLVED_TIP)
+                    logger.error("error resolve property [$key] because [$key] has more than one value!")
+                    tipsHelper.showTips(MULTI_UNRESOLVED_TIP)
                     return MULTI_UNRESOLVED
                 }
             }
@@ -336,89 +262,104 @@ abstract class AbstractConfigReader : MutableConfigReader {
             Pattern.compile("(\\S*?\\[.*?])\\s*=\\s*(.*?)", Pattern.MULTILINE.or(Pattern.DOTALL))!!
 
     }
+
+    private abstract inner class MapConfigResolver : ConfigResolver {
+
+        @Suppress("UNCHECKED_CAST")
+        override fun resolveConfig(content: String, kvHandle: (String, String) -> Unit) {
+            parseAsMaps(content) { loadConfigInMap(it) }
+        }
+
+        protected abstract fun parseAsMaps(content: String, handle: (Map<*, *>) -> Unit)
+
+        @Suppress("UNCHECKED_CAST")
+        private fun loadConfigInMap(map: Map<*, *>) {
+            (map as Map<Any?, Any?>).flat { k, v ->
+                val name = resolveProperty(k)
+                val value = resolveProperty(v)
+                if (name == "properties.additional") {
+                    loadConfigFile(value)
+                } else {
+                    configInfo.put(name.trim(), value.trim())
+                }
+            }
+        }
+    }
+
+    private inner class JsonConfigResolver : MapConfigResolver() {
+        override fun parseAsMaps(content: String, handle: (Map<*, *>) -> Unit) {
+            handle(GsonUtils.fromJson(content, HashMap::class))
+        }
+    }
+
+    private inner class YamlConfigResolver : MapConfigResolver() {
+
+        @Suppress("UNCHECKED_CAST")
+        override fun parseAsMaps(content: String, handle: (Map<*, *>) -> Unit) {
+            val yaml = Yaml()
+            try {
+                val yamlProperties = yaml.loadAll(content)
+                for (yamlProperty in yamlProperties) {
+                    if (yamlProperty is Map<*, *>) {
+                        handle(yamlProperty as Map<*, *>)
+                    }
+                }
+            } catch (e: Exception) {
+                logger.traceWarn("load yaml failed", e)
+            }
+        }
+    }
+
+    private inner class PropertiesConfigResolver : ConfigResolver {
+        override fun resolveConfig(content: String, kvHandle: (String, String) -> Unit) {
+            LineReader(content) { line ->
+                //ignore blank line
+                if (line.isBlank()) {
+                    return@LineReader
+                }
+
+                //resolve comment setting
+                if (line.startsWith("###")) {
+                    resolveSetting(line.removePrefix("###").trim())
+                    return@LineReader
+                }
+
+                //ignore comment
+                if (line.startsWith("#")) {
+                    return@LineReader
+                }
+
+                //resolve name&value
+                parseEqualLine(line, kvHandle)
+            }.lines()
+        }
+
+        private fun parseEqualLine(line: String, kvHandle: (String, String) -> Unit) {
+            val name = resolveProperty(line.substringBefore("=")).trim()
+            if (!name.isBlank()) {
+                val value = resolveProperty(line.substringAfter("=", ""))
+                if (name == "properties.additional") {
+                    loadConfigFile(value)
+                    return
+                }
+                if (name.contains("[") && value.contains("]")) {
+                    val matcher = KEY_FILTER_EQUAL_VALUE.matcher(line)
+                    if (matcher.matches()) {
+                        val pName = matcher.group(1)
+                        val pValue = matcher.group(2)
+                        kvHandle(resolveProperty(pName.trim()), resolveProperty(pValue.trim()))
+                        return
+                    }
+                    logger.warn("parse config maybe incorrect: $line")
+                }
+                kvHandle(name.trim(), value.trim())
+            }
+        }
+    }
 }
 
-private enum class SysFileResolve {
-    OS_SYS_FILE_RESOLVE {
-
-        override fun separator(): String {
-            return "/"
-        }
-
-        override fun isAbsolute(path: String): Boolean {
-            return path.startsWith("/")
-        }
-
-        override fun asFile(path: String): File {
-            return super.asFile(path).takeIf { it.exists() }
-                ?: super.asFile(path.replace('\\', '/'))
-        }
-    },
-
-    WIN_SYS_FILE_RESOLVE {
-
-        override fun separator(): String {
-            return "\\"
-        }
-
-        override fun isAbsolute(path: String): Boolean {
-            return Pattern.matches("[a-zA-Z]+:.*?", path)
-        }
-
-        override fun asFile(path: String): File {
-            return super.asFile(path).takeIf { it.exists() }
-                ?: super.asFile(path.replace('/', '\\'))
-        }
-    };
-
-    abstract fun isAbsolute(path: String): Boolean
-
-    open fun separator(): String {
-        return File.separator
-    }
-
-    fun resolveFile(path: String, currPath: String?): File? {
-        if (isAbsolute(path)) {
-            return asFile(path)
-        }
-
-        if (path.startsWith('~')) {
-            val home = SystemUtils.userHome
-            return asFile(home.removeSuffix(separator()) + separator() + path.substring(1))
-        }
-
-        var p = path
-        var cp = currPath ?: ""
-        while (true) {
-            if (p.startsWith("../")) {//goto parent directory
-                cp = cp.substringBeforeLast(separator())
-                p = p.substring("../".length)
-            } else if (p.startsWith("./")) {//current directory
-                if (cp.isBlank()) return File(p).takeIf { it.exists() }
-                p = p.substring("./".length)
-            }
-            break
-        }
-
-        return asFile(cp.removeSuffix(separator()) + separator() + p.removePrefix(separator()))
-    }
-
-    open fun asFile(path: String): File {
-        return File(path)
-    }
-
-    companion object {
-
-        private var adaptiveSysFileResolve: SysFileResolve? = null
-
-        fun adaptive(): SysFileResolve {
-            if (adaptiveSysFileResolve == null) {
-                val separator = File.separator
-                adaptiveSysFileResolve = values().firstOrNull { it.separator() == separator } ?: OS_SYS_FILE_RESOLVE
-            }
-            return adaptiveSysFileResolve!!
-        }
-    }
+private interface ConfigResolver {
+    fun resolveConfig(content: String, kvHandle: (String, String) -> Unit)
 }
 
 enum class ResolveMultiType {
@@ -448,3 +389,6 @@ enum class ResolveMultiType {
      */
     SHORTEST
 }
+
+//background idea log
+private val LOG = org.apache.log4j.Logger.getLogger(AbstractConfigReader::class.java)

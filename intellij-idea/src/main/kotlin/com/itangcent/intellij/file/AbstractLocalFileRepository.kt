@@ -2,8 +2,9 @@ package com.itangcent.intellij.file
 
 import com.google.inject.Inject
 import com.google.inject.name.Named
+import com.itangcent.common.utils.forceDelete
+import com.itangcent.common.utils.forceMkdirParent
 import com.itangcent.intellij.logger.Logger
-import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.exception.ExceptionUtils
 import java.io.File
 
@@ -36,7 +37,7 @@ abstract class AbstractLocalFileRepository : LocalFileRepository {
 
         if (!file.exists()) {
             try {
-                FileUtils.forceMkdirParent(file)
+                file.forceMkdirParent()
                 if (!file.createNewFile()) {
                     logger!!.error("error to create new file:${file.path}")
                 }
@@ -53,7 +54,7 @@ abstract class AbstractLocalFileRepository : LocalFileRepository {
         val file = fileOf(path)
 
         if (file.exists()) {
-            FileUtils.forceDelete(file)
+            file.forceDelete()
         }
     }
 }

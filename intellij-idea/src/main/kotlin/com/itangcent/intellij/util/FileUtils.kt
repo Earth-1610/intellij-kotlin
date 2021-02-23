@@ -3,6 +3,7 @@ package com.itangcent.intellij.util
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDirectory
 import com.intellij.psi.PsiFile
+import com.itangcent.common.utils.forceMkdirParent
 import java.io.File
 import java.util.*
 
@@ -26,10 +27,10 @@ object FileUtils {
     fun forceSave(filePath: String, content: ByteArray) {
         val localFile = File(filePath)
         if (!localFile.exists()) {
-            org.apache.commons.io.FileUtils.forceMkdirParent(localFile)
+            localFile.forceMkdirParent()
             localFile.createNewFile()
         }
-        org.apache.commons.io.FileUtils.writeByteArrayToFile(localFile, content)
+        localFile.writeBytes(content)
     }
 
     fun traversal(

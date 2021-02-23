@@ -5,10 +5,11 @@ import com.itangcent.common.files.FileHandle
 import com.itangcent.common.files.FileTraveler
 import org.apache.commons.lang3.StringUtils
 import java.io.File
-import java.io.FileInputStream
+import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
 import java.nio.charset.Charset
+import java.nio.file.Files
 import java.util.*
 import java.util.function.Consumer
 import java.util.regex.Pattern
@@ -65,12 +66,10 @@ object FileUtils {
     }
 
     fun read(file: File, charSet: Charset): String? {
-        try {
-            FileInputStream(file).use { `in` ->
-                return org.apache.commons.io.IOUtils.toString(`in`, charSet)
-            }
+        return try {
+            file.inputStream().use { it.readString(charSet) }
         } catch (e: Exception) {
-            return null
+            null
         }
     }
 
@@ -189,4 +188,190 @@ object FileUtils {
             return false
 
     }
+    //-----------------------------------------------------------------------
+    /**
+     * Deletes a file. If file is a directory, delete it and all sub-directories.
+     *
+     *
+     * The difference between File.delete() and this method are:
+     *
+     *  * A directory to be deleted does not have to be empty.
+     *  * You get exceptions when a file or directory cannot be deleted.
+     * (java.io.File methods returns a boolean)
+     *
+     *
+     * @param file file or directory to delete, must not be `null`
+     * @throws NullPointerException  if the directory is `null`
+     * @throws FileNotFoundException if the file was not found
+     * @throws IOException           in case deletion is unsuccessful
+     */
+    @Throws(IOException::class)
+    fun forceDelete(file: File) {
+        if (file.isDirectory) {
+            deleteDirectory(file)
+        } else {
+            val filePresent = file.exists()
+            if (!file.delete()) {
+                if (!filePresent) {
+                    throw FileNotFoundException("File does not exist: $file")
+                }
+                val message = "Unable to delete file: $file"
+                throw IOException(message)
+            }
+        }
+    }
+    //-----------------------------------------------------------------------
+    /**
+     * Deletes a directory recursively.
+     *
+     * @param directory directory to delete
+     * @throws IOException              in case deletion is unsuccessful
+     * @throws IllegalArgumentException if `directory` does not exist or is not a directory
+     */
+    @Throws(IOException::class)
+    fun deleteDirectory(directory: File) {
+        if (!directory.exists()) {
+            return
+        }
+        if (!isSymlink(directory)) {
+            cleanDirectory(directory)
+        }
+        if (!directory.delete()) {
+            val message = "Unable to delete directory $directory."
+            throw IOException(message)
+        }
+    }
+
+    /**
+     * Determines whether the specified file is a Symbolic Link rather than an actual file.
+     *
+     *
+     * Will not return true if there is a Symbolic Link anywhere in the path,
+     * only if the specific file is.
+     *
+     *
+     * When using jdk1.7, this method delegates to `boolean java.nio.file.Files.isSymbolicLink(Path path)`
+     *
+     * **Note:** the current implementation always returns `false` if running on
+     * jkd1.6 and the system is detected as Windows using [FilenameUtils.isSystemWindows]
+     *
+     *
+     * For code that runs on Java 1.7 or later, use the following method instead:
+     * <br></br>
+     * `boolean java.nio.file.Files.isSymbolicLink(Path path)`
+     * @param file the file to check
+     * @return true if the file is a Symbolic Link
+     * @throws IOException if an IO error occurs while checking the file
+     * @since 2.0
+     */
+    @Throws(IOException::class)
+    fun isSymlink(file: File?): Boolean {
+        if (file == null) {
+            throw NullPointerException("File must not be null")
+        }
+        return Files.isSymbolicLink(file.toPath())
+    }
+
+    /**
+     * Cleans a directory without deleting it.
+     *
+     * @param directory directory to clean
+     * @throws IOException              in case cleaning is unsuccessful
+     * @throws IllegalArgumentException if `directory` does not exist or is not a directory
+     */
+    @Throws(IOException::class)
+    fun cleanDirectory(directory: File) {
+        val files: Array<File> = verifiedListFiles(directory)
+        var exception: IOException? = null
+        for (file in files) {
+            try {
+                forceDelete(file)
+            } catch (ioe: IOException) {
+                exception = ioe
+            }
+        }
+        if (null != exception) {
+            throw exception
+        }
+    }
+
+    /**
+     * Lists files in a directory, asserting that the supplied directory satisfies exists and is a directory
+     * @param directory The directory to list
+     * @return The files in the directory, never null.
+     * @throws IOException if an I/O error occurs
+     */
+    @Throws(IOException::class)
+    private fun verifiedListFiles(directory: File): Array<File> {
+        if (!directory.exists()) {
+            val message = "$directory does not exist"
+            throw IllegalArgumentException(message)
+        }
+        if (!directory.isDirectory) {
+            val message = "$directory is not a directory"
+            throw IllegalArgumentException(message)
+        }
+        return directory.listFiles()
+            ?: // null if security restricted
+            throw IOException("Failed to list contents of $directory")
+    }
+
+    /**
+     * Makes a directory, including any necessary but nonexistent parent
+     * directories. If a file already exists with specified name but it is
+     * not a directory then an IOException is thrown.
+     * If the directory cannot be created (or does not already exist)
+     * then an IOException is thrown.
+     *
+     * @param directory directory to create, must not be `null`
+     * @throws NullPointerException if the directory is `null`
+     * @throws IOException          if the directory cannot be created or the file already exists but is not a directory
+     */
+    fun forceMkdir(directory: File) {
+        if (directory.exists()) {
+            if (!directory.isDirectory) {
+                val message = ("File "
+                        + directory
+                        + " exists and is "
+                        + "not a directory. Unable to create directory.")
+                throw IOException(message)
+            }
+        } else {
+            if (!directory.mkdirs()) {
+                // Double-check that some other thread or process hasn't made
+                // the directory in the background
+                if (!directory.isDirectory) {
+                    val message = "Unable to create directory $directory"
+                    throw IOException(message)
+                }
+            }
+        }
+    }
+
+    /**
+     * Makes any necessary but nonexistent parent directories for a given File. If the parent directory cannot be
+     * created then an IOException is thrown.
+     *
+     * @param file file with parent to create, must not be `null`
+     * @throws NullPointerException if the file is `null`
+     * @throws IOException          if the parent directory cannot be created
+     * @since 2.5
+     */
+    fun forceMkdirParent(file: File) {
+        val parent = file.parentFile ?: return
+        forceMkdir(parent)
+    }
 }
+
+fun File.forceMkdirParent() {
+    return FileUtils.forceMkdirParent(this)
+}
+
+fun File.forceMkdir() {
+    return FileUtils.forceMkdir(this)
+}
+
+fun File.forceDelete() {
+    return FileUtils.forceDelete(this)
+}
+
