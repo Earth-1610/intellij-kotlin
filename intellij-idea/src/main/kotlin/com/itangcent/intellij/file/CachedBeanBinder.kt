@@ -5,7 +5,7 @@ import com.itangcent.intellij.context.ActionContext
 /**
  * bind a file which content present a bean
  */
-class CachedBeanBinder<T : Any> : BeanBinder<T> {
+open class CachedBeanBinder<T : Any> : BeanBinder<T> {
 
     private var delegate: BeanBinder<T>
 

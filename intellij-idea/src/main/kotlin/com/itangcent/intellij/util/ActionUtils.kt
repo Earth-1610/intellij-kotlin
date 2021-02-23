@@ -110,9 +110,13 @@ object ActionUtils {
     fun doAction(anActionEvent: AnActionEvent, action: String) {
         try {
             anActionEvent.actionManager.getAction(action).actionPerformed(anActionEvent)
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            LOG.error("faield doAction:$action", e)
         }
 
     }
 
 }
+
+//background idea log
+private val LOG = org.apache.log4j.Logger.getLogger(ActionUtils::class.java)
