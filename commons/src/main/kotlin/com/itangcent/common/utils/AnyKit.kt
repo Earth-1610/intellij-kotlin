@@ -1,5 +1,6 @@
 package com.itangcent.common.utils
 
+import java.util.*
 import kotlin.jvm.internal.CallableReference
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
@@ -211,3 +212,113 @@ fun Any?.asBool(): Boolean? {
     }
 }
 
+fun Any?.resolveCycle(): Any? {
+    when (this) {
+        null -> return null
+        is Map<*, *>, is Collection<*> -> {
+            if (!this.collectValues()) {
+                return this.copy()
+            }
+            return this
+        }
+        else -> return this
+    }
+}
+
+fun Any?.copy(): Any? {
+    return when (this) {
+        null -> null
+        is Map<*, *> -> this.copy(ValuePresence())
+        is Collection<*> -> this.copy(ValuePresence())
+        is Cloneable -> try {
+            return this.invokeMethod("clone")
+        } catch (e: Exception) {
+        }
+        else -> this
+    }
+}
+
+private fun Any?.copy(values: ValuePresence): Any? {
+
+    when (this) {
+        null -> return null
+        is Map<*, *> -> {
+            if (!values.add(this)) return emptyMap<Any?, Any?>()
+            val newCopy: HashMap<Any?, Any?> = HashMap()
+            this.forEach { (key, value) ->
+                newCopy[key] = value.copy(values)
+            }
+            values.pop()
+            return newCopy
+        }
+        is Collection<*> -> {
+            if (!values.add(this)) return ArrayList<Any?>()
+            val newCopy: ArrayList<Any?> = ArrayList()
+            this.forEach { value ->
+                value.copy(values)?.let { newCopy.add(it) }
+            }
+            values.pop()
+            return newCopy
+        }
+        else -> return this
+    }
+}
+
+private fun Any?.collectValues(): Boolean {
+    return when (this) {
+        null -> true
+        is Map<*, *> -> this.collectValues(ValuePresence())
+        is Collection<*> -> this.collectValues(ValuePresence())
+        else -> true
+    }
+}
+
+private fun Any?.collectValues(values: ValuePresence): Boolean {
+
+    if (this == null) return true
+
+    if (this is Map<*, *>) {
+        if (!values.add(this)) return false
+
+        for (value in this.values) {
+            if (!value.collectValues(values)) {
+                return false
+            }
+        }
+        values.pop()
+
+        return true
+    }
+
+    if (this is Collection<*>) {
+        if (!values.add(this)) return false
+        for (value in this) {
+            if (!value.collectValues(values))
+                return false
+        }
+
+        values.pop()
+    }
+    return true
+}
+
+private class ValuePresence {
+
+    private val values: Stack<Any> = Stack()
+
+    fun add(one: Any?): Boolean {
+        if (one == null) return true
+        values.filter { it === one }
+            .any { return false }
+        values.add(one)
+        return true
+    }
+
+    fun pop() {
+        values.pop()
+    }
+
+    fun clear() {
+        values.clear()
+    }
+}
