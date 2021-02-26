@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
-import kotlin.reflect.full.createInstance
 
 abstract class AbstractPsiClassHelper : PsiClassHelper {
 
@@ -83,30 +82,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     @Deprecated(message = "copy is deprecated and will likely be removed in a future release.")
     @Suppress("UNCHECKED_CAST")
-    override fun copy(obj: Any?): Any? {
-        if (obj == null) return null
-        when (obj) {
-            is Collection<*> -> try {
-                val copyObj = obj::class.createInstance() as MutableCollection<Any?>
-                obj.forEach { element -> copy(element)?.let { copyObj.add(it) } }
-                return copyObj
-            } catch (e: Exception) {
-            }
-            is Map<*, *> -> try {
-                val copyObj = obj::class.createInstance() as MutableMap<Any?, Any?>
-                obj.forEach { (k, v) ->
-                    copyObj[copy(k)] = copy(v)
-                }
-                return copyObj
-            } catch (e: Exception) {
-            }
-            is Cloneable -> try {
-                return obj.invokeMethod("clone")
-            } catch (e: Exception) {
-            }
-        }
-        return obj
-    }
+    override fun copy(obj: Any?): Any? = obj.copy()
 
     override fun getTypeObject(psiType: PsiType?, context: PsiElement): Any? {
         return doGetTypeObject(psiType, context).unwrapped { }
@@ -1072,7 +1048,7 @@ class Delay(private var raw: Any?) : Wrapped {
     private val id = index.getAndIncrement()
 
     override fun get(): Any? {
-        return copy(raw)
+        return GsonUtils.copy(raw)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -1089,32 +1065,6 @@ class Delay(private var raw: Any?) : Wrapped {
     override fun hashCode(): Int {
         return id
     }
-}
-
-@Suppress("UNCHECKED_CAST")
-fun copy(obj: Any?): Any? {
-    if (obj == null) return null
-    when (obj) {
-        is Collection<*> -> try {
-            val copyObj = obj::class.createInstance() as MutableCollection<Any?>
-            obj.forEach { element -> copy(element)?.let { copyObj.add(it) } }
-            return copyObj
-        } catch (e: Exception) {
-        }
-        is Map<*, *> -> try {
-            val copyObj = obj::class.createInstance() as MutableMap<Any?, Any?>
-            obj.forEach { (k, v) ->
-                copyObj[copy(k)] = copy(v)
-            }
-            return copyObj
-        } catch (e: Exception) {
-        }
-        is Cloneable -> try {
-            return obj.invokeMethod("clone")
-        } catch (e: Exception) {
-        }
-    }
-    return obj
 }
 
 fun Any?.wrapped(deep: Int = 0): Boolean {

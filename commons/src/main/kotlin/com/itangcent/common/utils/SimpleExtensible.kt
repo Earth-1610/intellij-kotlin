@@ -41,7 +41,7 @@ abstract class AbstractExtensible : Extensible {
         if (map == null) {
             map = initMap()
         }
-        map!![attr] = value
+        map[attr] = value
     }
 
     //no copy,please don't modify this map.

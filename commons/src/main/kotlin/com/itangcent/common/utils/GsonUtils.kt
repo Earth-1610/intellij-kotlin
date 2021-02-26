@@ -3,7 +3,6 @@ package com.itangcent.common.utils
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
-import java.util.*
 import kotlin.reflect.KClass
 
 /**
@@ -71,110 +70,9 @@ object GsonUtils {
         return pretty_gson_with_nulls.toJson(any)
     }
 
-    fun resolveCycle(any: Any?): Any? {
-        when (any) {
-            null -> return null
-            is Map<*, *>, is Collection<*> -> {
-                if (!collectValues(any)) {
-                    return copy(any)
-                }
-                return any
-            }
-            else -> return any
-        }
-    }
+    fun resolveCycle(any: Any?): Any? = any.resolveCycle()
 
-    fun copy(any: Any?): Any? {
-        return when (any) {
-            null -> null
-            is Map<*, *> -> copy(any, ValuePresence())
-            is Collection<*> -> copy(any, ValuePresence())
-            else -> any
-        }
-    }
+    fun copy(any: Any?): Any? = any.copy()
 
-    private fun copy(any: Any?, values: ValuePresence): Any? {
-
-        when (any) {
-            null -> return null
-            is Map<*, *> -> {
-                if (!values.add(any)) return emptyMap<Any?, Any?>()
-                val newCopy: HashMap<Any?, Any?> = HashMap()
-                any.forEach { (key, value) ->
-                    newCopy[key] = copy(value, values)
-                }
-                values.pop()
-                return newCopy
-            }
-            is Collection<*> -> {
-                if (!values.add(any)) return ArrayList<Any?>()
-                val newCopy: ArrayList<Any?> = ArrayList()
-                any.forEach { value ->
-                    copy(value, values)?.let { newCopy.add(it) }
-                }
-                values.pop()
-                return newCopy
-            }
-            else -> return any
-        }
-    }
-
-    private fun collectValues(any: Any?): Boolean {
-        return when (any) {
-            null -> true
-            is Map<*, *> -> collectValues(any, ValuePresence())
-            is Collection<*> -> collectValues(any, ValuePresence())
-            else -> true
-        }
-    }
-
-    private fun collectValues(any: Any?, values: ValuePresence): Boolean {
-
-        if (any == null) return true
-
-        if (any is Map<*, *>) {
-            if (!values.add(any)) return false
-
-            for (value in any.values) {
-                if (!collectValues(value, values))
-                    return false
-            }
-            values.pop()
-
-            return true
-        }
-
-        if (any is Collection<*>) {
-            if (!values.add(any)) return false
-            for (value in any) {
-                if (!collectValues(value, values))
-                    return false
-            }
-
-            values.pop()
-        }
-        return true
-    }
-
-    private class ValuePresence {
-
-        private val values: Stack<Any> = Stack()
-
-        fun add(one: Any?): Boolean {
-            if (one == null) return true
-            values.filter { it === one }
-                .any { return false }
-            values.add(one)
-            return true
-        }
-
-        fun pop() {
-            values.pop()
-        }
-
-        fun clear() {
-            values.clear()
-        }
-    }
 
 }
