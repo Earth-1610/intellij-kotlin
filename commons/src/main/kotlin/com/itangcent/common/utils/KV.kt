@@ -77,7 +77,7 @@ fun <T> Map<*, *>.getAs(key: Any?, subKey: Any?, grandKey: Any?): T? {
 
 @Suppress("UNCHECKED_CAST")
 fun KV<*, *>.getAsKv(key: String): KV<String, Any?>? {
-    return this[key] as KV<String, Any?>?
+    return this[key]?.asKV()
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -108,7 +108,7 @@ fun Any?.asKV(): KV<String, Any?> {
         return this as KV<String, Any?>
     }
     if (this is Map<*, *>) {
-        return KV.create<String, Any?>().set(this as Map<String, Any?>)
+        return KV<String, Any?>().set(this as Map<String, Any?>)
     }
     return KV.create()
 }
