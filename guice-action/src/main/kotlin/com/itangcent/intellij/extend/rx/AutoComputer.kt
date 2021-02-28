@@ -1093,9 +1093,11 @@ class JTextComponentWrap : ASetter<String?>, AGetter<String?> {
     override fun set(value: String?) {
         cache = value
         EventQueue.invokeLater {
-            manual = true
-            this.component.text = value
-            manual = false
+            if (this.component.text != value) {
+                manual = true
+                this.component.text = value
+                manual = false
+            }
         }
     }
 

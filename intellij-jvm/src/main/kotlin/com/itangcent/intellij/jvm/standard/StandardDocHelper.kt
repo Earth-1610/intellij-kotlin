@@ -17,104 +17,99 @@ open class StandardDocHelper : DocHelper {
     @Inject(optional = true)
     private val extendProvider: ExtendProvider? = null
 
+    private fun <T> PsiElement?.docComment(action: ((PsiDocComment) -> T?)): T? {
+        return this.cast(PsiDocCommentOwner::class)?.let { docCommentOwner ->
+            ActionContext.getContext()!!.callInReadUI {
+                docCommentOwner.docComment?.let { it -> action(it) }
+            }
+        }
+    }
+
     override fun hasTag(psiElement: PsiElement?, tag: String?): Boolean {
-        return psiElement.cast(PsiDocCommentOwner::class)?.docComment
-            ?.let { docComment ->
-                val tags = ActionContext.getContext()!!.callInReadUI { docComment.findTagByName(tag) }
-                return@let tags != null
-            } ?: false
+        return psiElement.docComment { docComment ->
+            val tags = docComment.findTagByName(tag)
+            return@docComment tags != null
+        } ?: false
     }
 
     override fun findDocByTag(psiElement: PsiElement?, tag: String?): String? {
-        return psiElement.cast(PsiDocCommentOwner::class)?.docComment
-            ?.let { docComment ->
-                return@let ActionContext.getContext()!!.callInReadUI {
-                    val tags = docComment.findTagsByName(tag)
-                    if (tags.isEmpty()) return@callInReadUI null
-                    for (paramDocTag in tags) {
-                        var result: String? = null
-                        for (dataElement in paramDocTag.dataElements) {
-                            val txt = dataElement.text?.trim()
-                            if (txt.isNullOrBlank()) break
-                            if (result == null) {
-                                result = txt
-                            } else {
-                                result += txt
-                            }
-                        }
-                        if (result != null) return@callInReadUI result
+        return psiElement.docComment { docComment ->
+            val tags = docComment.findTagsByName(tag)
+            if (tags.isEmpty()) return@docComment null
+            for (paramDocTag in tags) {
+                var result: String? = null
+                for (dataElement in paramDocTag.dataElements) {
+                    val txt = dataElement.text?.trim()
+                    if (txt.isNullOrBlank()) break
+                    if (result == null) {
+                        result = txt
+                    } else {
+                        result += txt
                     }
-                    return@callInReadUI null
                 }
+                if (result != null) return@docComment result
             }
+            return@docComment null
+        }
     }
 
     override fun findDocsByTag(psiElement: PsiElement?, tag: String?): List<String>? {
-        return psiElement.cast(PsiDocCommentOwner::class)?.docComment
-            ?.let { docComment ->
-                return@let ActionContext.getContext()!!.callInReadUI {
-
-                    val tags = docComment.findTagsByName(tag)
-                    if (tags.isEmpty()) return@callInReadUI null
-                    val res: LinkedList<String> = LinkedList()
-                    for (paramDocTag in tags) {
-                        val data = paramDocTag.dataElements
-                            .stream()
-                            .map { it?.text }
-                            .filter { it.notNullOrEmpty() }
-                            .map { it!! }
-                            .map { it.trim() }
-                            .reduceSafely { s1, s2 -> "$s1 $s2" }
-                        if (data.notNullOrEmpty()) {
-                            res.add(data!!)
-                        }
-                    }
-                    return@callInReadUI res
+        return psiElement.docComment { docComment ->
+            val tags = docComment.findTagsByName(tag)
+            if (tags.isEmpty()) return@docComment null
+            val res: LinkedList<String> = LinkedList()
+            for (paramDocTag in tags) {
+                val data = paramDocTag.dataElements
+                    .stream()
+                    .map { it?.text }
+                    .filter { it.notNullOrEmpty() }
+                    .map { it!! }
+                    .map { it.trim() }
+                    .reduceSafely { s1, s2 -> "$s1 $s2" }
+                if (data.notNullOrEmpty()) {
+                    res.add(data!!)
                 }
             }
+            return@docComment res
+        }
     }
 
     override fun findDocsByTagAndName(psiElement: PsiElement?, tag: String, name: String): String? {
-        return psiElement.cast(PsiDocCommentOwner::class)?.docComment
-            ?.let { docComment ->
-                return@let ActionContext.getContext()!!.callInReadUI {
-                    loopTags@ for (paramDocTag in docComment.findTagsByName(tag)) {
+        return psiElement.docComment { docComment ->
+            loopTags@ for (paramDocTag in docComment.findTagsByName(tag)) {
 
-                        var matched = false
-                        var value: String? = null
+                var matched = false
+                var value: String? = null
 
-                        val elements = paramDocTag.dataElements
-                            .map { it?.text }
-                            .filter { it.notNullOrEmpty() }
+                val elements = paramDocTag.dataElements
+                    .map { it?.text }
+                    .filter { it.notNullOrEmpty() }
 
-                        for (element in elements) {
-                            when {
-                                !matched -> if (element.notNullOrBlank()) {
-                                    if (element != name) {
-                                        continue@loopTags
-                                    } else {
-                                        matched = true
-                                    }
-                                }
-                                value == null -> value = element
-                                else -> value += element
+                for (element in elements) {
+                    when {
+                        !matched -> if (element.notNullOrBlank()) {
+                            if (element != name) {
+                                continue@loopTags
+                            } else {
+                                matched = true
                             }
                         }
-
-                        if (matched) {
-                            return@callInReadUI value
-                        }
+                        value == null -> value = element
+                        else -> value += element
                     }
-                    return@callInReadUI null
+                }
+
+                if (matched) {
+                    return@docComment value
                 }
             }
+            return@docComment null
+        }
     }
 
     override fun getAttrOfDocComment(psiElement: PsiElement?): String? {
-        val docCommentOwner = psiElement.cast(PsiDocCommentOwner::class)
-            ?: return null
-        return ActionContext.getContext()!!.callInReadUI {
-            docCommentOwner.docComment?.let { return@let getDocCommentContent(it) }
+        return psiElement.docComment { docComment ->
+            getDocCommentContent(docComment)
         }
     }
 
@@ -122,56 +117,50 @@ open class StandardDocHelper : DocHelper {
         val descriptions = docComment.descriptionElements
         return descriptions.stream()
             .map { desc -> desc.text }
-            ?.reduce { s1, s2 -> s1 + s2 }
-            ?.map { it.trim() }
-            ?.orElse(null)
+            .filter { it.notNullOrBlank() }
+            ?.joinToString(separator = " ")
+            ?.trim()
     }
 
     override fun getSubTagMapOfDocComment(psiElement: PsiElement?, tag: String): Map<String, String?> {
-        return psiElement.cast(PsiDocCommentOwner::class)?.docComment
-            ?.let { docComment ->
-                return@let ActionContext.getContext()!!.callInReadUI {
-                    val subTagMap: HashMap<String, String?> = HashMap()
-                    for (paramDocTag in docComment.findTagsByName(tag)) {
+        return psiElement.docComment { docComment ->
+            val subTagMap: HashMap<String, String?> = HashMap()
+            for (paramDocTag in docComment.findTagsByName(tag)) {
 
-                        var name: String? = null
-                        var value: String? = null
+                var name: String? = null
+                var value: String? = null
 
-                        val elements = paramDocTag.dataElements
-                            .stream()
-                            .mapNotNull { it.text }
+                val elements = paramDocTag.dataElements
+                    .stream()
+                    .mapNotNull { it.text }
 
-                        for (element in elements) {
-                            when {
-                                name == null -> name = element
-                                value == null -> value = element
-                                else -> value += element
-                            }
-                        }
-
-                        if (name != null) {
-                            subTagMap[name] = value
-                        }
+                for (element in elements) {
+                    when {
+                        name == null -> name = element
+                        value == null -> value = element
+                        else -> value += element
                     }
-                    return@callInReadUI subTagMap
                 }
-            } ?: Collections.emptyMap()
+
+                if (name != null) {
+                    subTagMap[name] = value
+                }
+            }
+            return@docComment subTagMap
+        } ?: Collections.emptyMap()
     }
 
     override fun getTagMapOfDocComment(psiElement: PsiElement?): Map<String, String?> {
-        return psiElement.cast(PsiDocCommentOwner::class)?.docComment
-            ?.let { docComment ->
-                return@let ActionContext.getContext()!!.callInReadUI {
-                    val tagMap: HashMap<String, String?> = HashMap()
-                    docComment.tags.forEach { tag ->
-                        tagMap[tag.name] = tag.dataElements
-                            .stream()
-                            .mapNotNull { it.text }
-                            .joinToString(separator = "") { it.trim() }
-                    }
-                    return@callInReadUI tagMap
-                }
-            } ?: Collections.emptyMap()
+        return psiElement.docComment { docComment ->
+            val tagMap: HashMap<String, String?> = HashMap()
+            docComment.tags.forEach { tag ->
+                tagMap[tag.name] = tag.dataElements
+                    .stream()
+                    .mapNotNull { it.text }
+                    .joinToString(separator = "") { it.trim() }
+            }
+            return@docComment tagMap
+        } ?: Collections.emptyMap()
     }
 
     override fun getSuffixComment(psiElement: PsiElement): String? {
