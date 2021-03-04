@@ -70,6 +70,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
     protected open fun loadConfigFile(path: String) {
         try {
             val resource = resourceResolver.resolve(path)
+            LOG.info("load config:$resource")
             val content = resource.content
             if (content.isNullOrBlank()) {
                 if (!ignoreNotFoundFile) {
