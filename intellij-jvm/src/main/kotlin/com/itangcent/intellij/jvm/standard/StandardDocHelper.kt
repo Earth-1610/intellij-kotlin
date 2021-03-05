@@ -118,7 +118,7 @@ open class StandardDocHelper : DocHelper {
         return descriptions.stream()
             .map { desc -> desc.text }
             .filter { it.notNullOrBlank() }
-            ?.joinToString(separator = " ")
+            ?.joinToString(separator = "\n")
             ?.trim()
     }
 
