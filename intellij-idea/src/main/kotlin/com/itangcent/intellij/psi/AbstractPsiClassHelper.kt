@@ -250,7 +250,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     override fun getFields(psiClass: PsiClass?): KV<String, Any?> {
-        return doGetFields(psiClass).unwrapped { } as KV<String, Any?>
+        return doGetFields(psiClass).unwrapped { }.asKV()
     }
 
     private fun doGetFields(psiClass: PsiClass?): Any? {
@@ -258,7 +258,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     override fun getFields(psiClass: PsiClass?, context: PsiElement?): KV<String, Any?> {
-        return doGetFields(psiClass, context).unwrapped { } as KV<String, Any?>
+        return doGetFields(psiClass, context).unwrapped { }.asKV()
     }
 
     fun doGetFields(psiClass: PsiClass?, context: PsiElement?): Any? {
@@ -266,7 +266,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     override fun getFields(psiClass: PsiClass?, option: Int): KV<String, Any?> {
-        return doGetFields(psiClass, option).unwrapped { } as KV<String, Any?>
+        return doGetFields(psiClass, option).unwrapped { }.asKV()
     }
 
     fun doGetFields(psiClass: PsiClass?, option: Int): Any? {
@@ -275,7 +275,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     @Suppress("UNCHECKED_CAST")
     override fun getFields(psiClass: PsiClass?, context: PsiElement?, option: Int): KV<String, Any?> {
-        return doGetFields(psiClass, context, option).unwrapped { } as KV<String, Any?>
+        return doGetFields(psiClass, context, option).unwrapped { }.asKV()
     }
 
     fun doGetFields(psiClass: PsiClass?, context: PsiElement?, option: Int): Any? {
@@ -292,7 +292,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         if (resourcePsiClass != null) {
             val resolvedInfo = getResolvedInfo<Any>(cacheKey)
             if (resolvedInfo != null) {
-                return resolvedInfo as KV<String, Any?>
+                return resolvedInfo.asKV()
             }
         }
 
@@ -443,7 +443,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     @Suppress("UNCHECKED_CAST")
     protected open fun getFields(clsWithParam: SingleDuckType, context: PsiElement?, option: Int): KV<String, Any?> {
-        return doGetFields(clsWithParam, context, option).unwrapped { } as KV<String, Any?>
+        return doGetFields(clsWithParam, context, option).unwrapped { }.asKV()
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -454,7 +454,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
         val resolvedInfo = getResolvedInfo<Any>(cacheKey)
         if (resolvedInfo != null) {
-            return resolvedInfo as KV<String, Any?>
+            return resolvedInfo.asKV()
         }
 
         val psiClass = if (option.has(JsonOption.READ_COMMENT)) {

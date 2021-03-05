@@ -13,7 +13,6 @@ import com.itangcent.common.concurrent.AQSCountLatch
 import com.itangcent.common.concurrent.CountLatch
 import com.itangcent.common.concurrent.ValueHolder
 import com.itangcent.common.exception.ProcessCanceledException
-import com.itangcent.common.logger.ILogger
 import com.itangcent.common.logger.traceError
 import com.itangcent.common.spi.SpiUtils
 import com.itangcent.common.utils.IDUtils
@@ -492,9 +491,6 @@ class ActionContext {
     }
 
     companion object {
-
-        //plugin log
-        val logger: ILogger? = SpiUtils.loadService(ILogger::class)
 
         private const val readThreadFlag = 0b0001
         private const val writeThreadFlag = 0b0010

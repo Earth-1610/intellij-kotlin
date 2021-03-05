@@ -1,6 +1,7 @@
 package com.itangcent.common.spi
 
 import com.itangcent.common.logger.ILogger
+import com.itangcent.common.logger.ILoggerProvider
 import com.itangcent.common.logger.traceError
 import java.util.*
 import kotlin.collections.HashSet
@@ -25,10 +26,9 @@ object Setup {
     }
 
     fun setup(key: String, setup: () -> Unit) {
-        val logger: ILogger? = SpiUtils.loadService(ILogger::class)
-        logger?.debug("try setup key:$key")
+        LOG?.debug("try setup key:$key")
         if (setups.contains(key)) {
-            logger?.debug("key:$key has already setup")
+            LOG?.debug("key:$key has already setup")
             return
         }
         synchronized(this) {
@@ -58,17 +58,16 @@ object Setup {
     }
 
     fun load(classLoader: ClassLoader) {
-        val logger: ILogger? = SpiUtils.loadService(ILogger::class)
         val setupAbles = ServiceLoader.load(
             SetupAble::class.java, classLoader
         )
         for (setupAble in setupAbles) {
-            logger?.debug("try setup:$setupAble")
+            LOG?.debug("try setup:$setupAble")
             try {
                 setup(setupAble)
-                logger?.debug("setup:$setupAble success")
+                LOG?.debug("setup:$setupAble success")
             } catch (e: Throwable) {
-                logger?.traceError("setup:$setupAble failed", e)
+                LOG?.traceError("setup:$setupAble failed", e)
             }
         }
     }
@@ -79,3 +78,6 @@ object Setup {
         }
     }
 }
+
+
+private val LOG: ILogger? = SpiUtils.loadService(ILoggerProvider::class)?.getLogger(Setup::class)

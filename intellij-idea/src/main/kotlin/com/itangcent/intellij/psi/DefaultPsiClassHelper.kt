@@ -8,7 +8,7 @@ import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.KV
 import com.itangcent.common.utils.notNullOrBlank
 import com.itangcent.common.utils.notNullOrEmpty
-import com.itangcent.common.utils.safeComputeIfAbsent
+import com.itangcent.common.utils.sub
 import com.itangcent.intellij.config.rule.computer
 import com.itangcent.intellij.jvm.SourceHelper
 import com.itangcent.intellij.jvm.asPsiClass
@@ -271,8 +271,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                         }
                         //doc comment
                         if (option.has(JsonOption.READ_COMMENT)) {
-                            val commentKV: KV<String, Any?> =
-                                kv.safeComputeIfAbsent("@comment") { KV.create<String, Any?>() } as KV<String, Any?>
+                            val commentKV: KV<String, Any?> = kv.sub("@comment")
                             resolveSeeDoc(
                                 fieldName, fieldOrMethod.psi() as? PsiMember ?: enumClass, listOf(
                                     PsiClassUtils.fullNameOfMember(
@@ -313,8 +312,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
 
             //doc comment
             if (option.has(JsonOption.READ_COMMENT)) {
-                val commentKV: KV<String, Any?> =
-                    kv.safeComputeIfAbsent("@comment") { KV.create<String, Any?>() } as KV<String, Any?>
+                val commentKV: KV<String, Any?> = kv.sub("@comment")
 
                 val options: ArrayList<HashMap<String, Any?>> = ArrayList()
 
@@ -347,11 +345,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     ) {
         //doc comment
         if (option.has(JsonOption.READ_COMMENT)) {
-            var commentKV: KV<String, Any?>? = kv["@comment"] as KV<String, Any?>?
-            if (commentKV == null) {
-                commentKV = KV.create()
-                kv["@comment"] = commentKV
-            }
+            var commentKV: KV<String, Any?> = kv.sub("@comment")
             val psiFieldOrMethod = fieldOrMethod.psi()
             if (psiFieldOrMethod is PsiField) {
                 val field: PsiField = psiFieldOrMethod

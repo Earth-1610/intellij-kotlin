@@ -1,6 +1,9 @@
 package com.itangcent.common.utils
 
 
+import com.itangcent.common.logger.ILogger
+import com.itangcent.common.logger.ILoggerProvider
+import com.itangcent.common.spi.SpiUtils
 import java.util.*
 
 open class KV<K, V> : LinkedHashMap<K, V>() {
@@ -59,7 +62,6 @@ open class KV<K, V> : LinkedHashMap<K, V>() {
     }
 }
 
-
 @Suppress("UNCHECKED_CAST")
 fun <T> Map<*, *>.getAs(key: Any?): T? {
     return this[key] as? T
@@ -82,12 +84,9 @@ fun KV<*, *>.getAsKv(key: String): KV<String, Any?>? {
 
 @Suppress("UNCHECKED_CAST")
 fun KV<*, *>.sub(key: String): KV<String, Any?> {
-    var subKV: KV<String, Any?>? = this[key] as KV<String, Any?>?
-    if (subKV == null) {
-        subKV = KV.create()
-        (this as KV<String, Any?>)[key] = subKV
+    return this[key].asKV {
+        (this as KV<String, Any?>)[key] = it
     }
-    return subKV
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -100,9 +99,11 @@ fun <K, V> Map<out K, V>.mutable(copy: Boolean = false): MutableMap<K, V> {
 }
 
 @Suppress("UNCHECKED_CAST")
-fun Any?.asKV(): KV<String, Any?> {
+fun Any?.asKV(onCastFailed: (KV<String, Any?>) -> Unit = {}): KV<String, Any?> {
     if (this == null) {
-        return KV.create()
+        val ret = KV.create<String, Any?>()
+        onCastFailed(ret)
+        return ret
     }
     if (this is KV<*, *>) {
         return this as KV<String, Any?>
@@ -110,5 +111,10 @@ fun Any?.asKV(): KV<String, Any?> {
     if (this is Map<*, *>) {
         return KV<String, Any?>().set(this as Map<String, Any?>)
     }
-    return KV.create()
+    LOG?.warn("can not cast ${GsonUtils.toJson(this)} as KV")
+    val ret = KV.create<String, Any?>()
+    onCastFailed(ret)
+    return ret
 }
+
+private val LOG: ILogger? = SpiUtils.loadService(ILoggerProvider::class)?.getLogger(KV::class)
