@@ -30,4 +30,4 @@ jobs:
           java-version: 1.8
       # Runs a single command using the runners shell
       - name: package
-        run: ./script/package.sh
+        run: ./script/build.sh
