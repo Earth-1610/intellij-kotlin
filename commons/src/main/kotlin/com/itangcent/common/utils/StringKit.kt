@@ -6,7 +6,7 @@ package com.itangcent.common.utils
 object StringUtils {
 
     fun firstCharacterIndex(charSequence: CharSequence): Int {
-        return (0 until charSequence.length).firstOrNull { charSequence[it] > ' ' } ?: -1
+        return (charSequence.indices).firstOrNull { charSequence[it] > ' ' } ?: -1
     }
 
     fun camelToUnderline(param: String?): String {
@@ -75,7 +75,7 @@ fun StringBuilder.appendlnIfNotEmpty(): StringBuilder {
 }
 
 /** Appends a line separator to this StringBuilder. */
-public fun StringBuilder.appendln(): StringBuilder = append(LINE_SEPARATOR)
+fun StringBuilder.appendln(): StringBuilder = append(LINE_SEPARATOR)
 
 fun Any?.tinyString(): String? {
     return when {
