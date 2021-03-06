@@ -1,6 +1,7 @@
 # intellij-kotlin
 
 [![Build Status](https://travis-ci.com/Earth-1610/intellij-kotlin.svg?branch=master)](https://travis-ci.com/Earth-1610/intellij-kotlin)
+[![CI](https://github.com/Earth-1610/intellij-kotlin/actions/workflows/ci.yml/badge.svg)](https://github.com/Earth-1610/intellij-kotlin/actions/workflows/ci.yml)
 
 ## sub modules
 
