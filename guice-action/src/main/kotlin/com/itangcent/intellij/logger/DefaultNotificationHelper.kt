@@ -8,6 +8,7 @@ import com.intellij.notification.NotificationDisplayType
 import com.intellij.notification.NotificationGroup
 import com.intellij.notification.Notifications
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.wm.ToolWindowId
 
 @Singleton
 class DefaultNotificationHelper : NotificationHelper {
@@ -28,7 +29,15 @@ class DefaultNotificationHelper : NotificationHelper {
     @Synchronized
     fun getNotificationGroup(): NotificationGroup {
         if (notificationGroup == null) {
-            notificationGroup = NotificationGroup("${pluginName}_NotificationGroup", notificationDisplayType, true)
+            val notificationId = "${pluginName}_Notification"
+            notificationGroup = when (notificationDisplayType) {
+                NotificationDisplayType.BALLOON ->
+                    NotificationGroup.balloonGroup(notificationId)
+                NotificationDisplayType.TOOL_WINDOW ->
+                    NotificationGroup.toolWindowGroup(notificationId, ToolWindowId.RUN, true)
+                else ->
+                    NotificationGroup.logOnlyGroup(notificationId)
+            }
         }
         return notificationGroup!!
     }
