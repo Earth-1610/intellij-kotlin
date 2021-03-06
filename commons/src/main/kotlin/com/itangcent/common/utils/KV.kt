@@ -63,17 +63,17 @@ open class KV<K, V> : LinkedHashMap<K, V>() {
 }
 
 @Suppress("UNCHECKED_CAST")
-fun <T> Map<*, *>.getAs(key: Any?): T? {
+inline fun <reified T> Map<*, *>.getAs(key: Any?): T? {
     return this[key] as? T
 }
 
 @Suppress("UNCHECKED_CAST")
-fun <T> Map<*, *>.getAs(key: Any?, subKey: Any?): T? {
+inline fun <reified T> Map<*, *>.getAs(key: Any?, subKey: Any?): T? {
     return this.getAs<Map<*, *>>(key)?.getAs(subKey)
 }
 
 @Suppress("UNCHECKED_CAST")
-fun <T> Map<*, *>.getAs(key: Any?, subKey: Any?, grandKey: Any?): T? {
+inline fun <reified T> Map<*, *>.getAs(key: Any?, subKey: Any?, grandKey: Any?): T? {
     return this.getAs<Map<*, *>>(key)?.getAs<Map<*, *>>(subKey)?.getAs(grandKey)
 }
 
