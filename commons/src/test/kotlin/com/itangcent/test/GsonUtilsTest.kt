@@ -4,13 +4,11 @@ import com.itangcent.common.utils.GsonUtils
 import com.itangcent.common.utils.KV
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+
 
 /**
  * Test case for [GsonUtils]
  */
-@RunWith(JUnit4::class)
 class GsonUtilsTest {
 
     @Test
@@ -22,8 +20,8 @@ class GsonUtilsTest {
 
     @Test
     fun testFromJson() {
-        assertEquals("{\"x\":1,\"y\":2}", GsonUtils.toJson(GsonTestData(1, 2)))
-        assertEquals(GsonTestData(1, 2), GsonUtils.fromJson("{\"x\":1,\"y\":2}", GsonTestData::class))
+        assertEquals("{\"x\":1,\"y\":2}", GsonUtils.toJson(Point(1, 2)))
+        assertEquals(Point(1, 2), GsonUtils.fromJson("{\"x\":1,\"y\":2}", Point::class))
     }
 
     @Test
@@ -48,7 +46,7 @@ class GsonUtilsTest {
             "{\n" +
                     "  \"x\": 1,\n" +
                     "  \"y\": 2\n" +
-                    "}", GsonUtils.prettyJson(GsonTestData(1, 2))
+                    "}", GsonUtils.prettyJson(Point(1, 2))
         )
         assertEquals(
             "{\n" +
@@ -89,4 +87,4 @@ class GsonUtilsTest {
     }
 }
 
-data class GsonTestData(var x: Int, var y: Int)
+data class Point(var x: Int, var y: Int)

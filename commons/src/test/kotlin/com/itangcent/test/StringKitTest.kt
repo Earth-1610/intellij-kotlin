@@ -3,13 +3,11 @@ package com.itangcent.test
 import com.itangcent.common.utils.*
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+
 
 /**
  * Test case for [KV]
  */
-@RunWith(JUnit4::class)
 class StringKitTest {
 
     @Test

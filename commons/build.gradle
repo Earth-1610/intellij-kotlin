@@ -14,7 +14,7 @@ plugins {
 }
 
 group 'com.itangcent'
-version '0.9.3-SNAPSHOT'
+version project_version
 
 apply plugin: 'java'
 apply plugin: 'kotlin'
@@ -45,15 +45,10 @@ dependencies {
     // https://mvnrepository.com/artifact/com.google.guava/guava
     compileOnly group: 'com.google.guava', name: 'guava', version: '28.1-jre'
 
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-
     // https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
-    testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.6.2'
-
-    // https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-engine
-    testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.6.2'
-
-
+    testCompile "org.junit.jupiter:junit-jupiter-api:${junit_version}"
+    testCompile "org.junit.jupiter:junit-jupiter-engine:${junit_version}"
+    testCompile "org.junit.jupiter:junit-jupiter-params:${junit_version}"
 }
 
 compileKotlin {
