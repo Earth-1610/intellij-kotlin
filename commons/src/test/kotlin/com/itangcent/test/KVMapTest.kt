@@ -6,13 +6,11 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+
 
 /**
  * Test case for [KV.getAs]
  */
-@RunWith(JUnit4::class)
 class KVMapTest {
 
     private var map = HashMap<Any?, Any?>()

@@ -5,13 +5,11 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+
 
 /**
  * Test case for [IDUtils]
  */
-@RunWith(JUnit4::class)
 class IDUtilsTest {
 
     private val ids = HashSet<String>()
