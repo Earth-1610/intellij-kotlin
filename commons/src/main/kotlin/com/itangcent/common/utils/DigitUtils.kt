@@ -34,11 +34,9 @@ object DigitUtils {
      * reversal and take the mean
      */
     fun reversalMean(x: Long, y: Long): Long {
-        var x = x
-        var y = y
-        x = (x shr 16) + (x shl 48)
-        y = (y shr 48) + (y shl 16)
-        return (x and y) + (x xor y shr 1)
+        val xSh = (x shr 16) + (x shl 48)
+        val ySh = (y shr 48) + (y shl 16)
+        return (xSh and ySh) + (xSh xor ySh shr 1)
     }
 
     /**

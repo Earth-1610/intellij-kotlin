@@ -16,33 +16,34 @@ import java.util.regex.Pattern
 
 object FileUtils {
 
-    @Throws(IOException::class)
     fun search(localPath: String, filePattern: String): List<File> {
-        var localPath = localPath
-        var filePattern = filePattern
-        if (StringUtils.endsWith(localPath, File.separator)) {
-            localPath = localPath.substring(0, localPath.length - 1)
-        }
-        val fileTraveler: FileTraveler = DefaultFileTraveler(localPath)
+        val tinyLocalPath = localPath.removeSuffix(File.separator)
+        val fileTraveler: FileTraveler = DefaultFileTraveler(tinyLocalPath)
 
         if (StringUtils.isNotEmpty(filePattern)) {
-            if (StringUtils.startsWith(filePattern, ".${File.separator}")) {
-                filePattern = "$localPath${filePattern.substring(1)}"
-            } else if (StringUtils.startsWith(filePattern, "~${File.separator}")) {
-                val userHome = System.getProperty("user.home")
-                filePattern = "$userHome${filePattern.substring(1)}"
-            }
-            filePattern = formatPattern(filePattern)
-            val pattern = Pattern.compile("^$filePattern$")
+            var fp = resolveFilePattern(filePattern, tinyLocalPath)
+            fp = formatPattern(fp)
+            val pattern = Pattern.compile("^$fp$")
 
             fileTraveler.filter(com.itangcent.common.files.FileFilter.filterFile {
-                pattern.matcher(it.path()).matches()
+                pattern.matcher(it.name()).matches()
             })
         }
         val files = ArrayList<File>()
         fileTraveler.onFile(FileHandle.collectFiles(files) { it.file })
         fileTraveler.travel()
         return files
+    }
+
+    private fun resolveFilePattern(filePattern: String, tinyLocalPath: String): String {
+        var filePattern1 = filePattern
+        if (StringUtils.startsWith(filePattern1, ".${File.separator}")) {
+            filePattern1 = "$tinyLocalPath${filePattern1.substring(1)}"
+        } else if (StringUtils.startsWith(filePattern1, "~${File.separator}")) {
+            val userHome = System.getProperty("user.home")
+            filePattern1 = "$userHome${filePattern1.substring(1)}"
+        }
+        return filePattern1
     }
 
     /**
@@ -73,15 +74,22 @@ object FileUtils {
         }
     }
 
-    @Throws(IOException::class)
-    fun write(file: File, content: String) {
-        val out = FileOutputStream(file)
-        out.use {
-            out.write(content.toByteArray())
+    fun readBytes(file: File): ByteArray? {
+        return try {
+            file.inputStream().use { it.readBytes() }
+        } catch (e: Exception) {
+            null
         }
     }
 
-    @Throws(IOException::class)
+    fun write(file: File, content: String) {
+        write(file, content, Charsets.UTF_8)
+    }
+
+    fun write(file: File, content: String, charSet: Charset) {
+        write(file, content.toByteArray(charSet))
+    }
+
     fun write(file: File, content: ByteArray) {
         val out = FileOutputStream(file)
         out.use {
@@ -119,10 +127,8 @@ object FileUtils {
     }
 
     fun move(file: File, newPath: String) {
-        var newPath = newPath
         if (file.parent != newPath) {
-            newPath = newPath + File.separator + file.name
-            doRenameFile(file, newPath)
+            doRenameFile(file, "$newPath${File.separator}${file.name}")
         }
     }
 
@@ -205,7 +211,7 @@ object FileUtils {
      * @throws FileNotFoundException if the file was not found
      * @throws IOException           in case deletion is unsuccessful
      */
-    @Throws(IOException::class)
+
     fun forceDelete(file: File) {
         if (file.isDirectory) {
             deleteDirectory(file)
@@ -228,7 +234,7 @@ object FileUtils {
      * @throws IOException              in case deletion is unsuccessful
      * @throws IllegalArgumentException if `directory` does not exist or is not a directory
      */
-    @Throws(IOException::class)
+
     fun deleteDirectory(directory: File) {
         if (!directory.exists()) {
             return
@@ -264,7 +270,7 @@ object FileUtils {
      * @throws IOException if an IO error occurs while checking the file
      * @since 2.0
      */
-    @Throws(IOException::class)
+
     fun isSymlink(file: File?): Boolean {
         if (file == null) {
             throw NullPointerException("File must not be null")
@@ -279,7 +285,6 @@ object FileUtils {
      * @throws IOException              in case cleaning is unsuccessful
      * @throws IllegalArgumentException if `directory` does not exist or is not a directory
      */
-    @Throws(IOException::class)
     fun cleanDirectory(directory: File) {
         val files: Array<File> = verifiedListFiles(directory)
         var exception: IOException? = null
@@ -301,7 +306,6 @@ object FileUtils {
      * @return The files in the directory, never null.
      * @throws IOException if an I/O error occurs
      */
-    @Throws(IOException::class)
     private fun verifiedListFiles(directory: File): Array<File> {
         if (!directory.exists()) {
             val message = "$directory does not exist"

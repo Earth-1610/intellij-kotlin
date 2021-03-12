@@ -1,7 +1,7 @@
 package com.itangcent.common.utils
 
 import com.itangcent.common.concurrent.MutableHolder
-import org.apache.commons.lang3.ArrayUtils
+import java.math.RoundingMode
 import java.util.concurrent.TimeUnit
 import java.util.function.BiConsumer
 import java.util.regex.Pattern
@@ -11,21 +11,8 @@ import java.util.regex.Pattern
  */
 object TimeSpanUtils {
 
-    private val unitMaps = HashMap<String, TimeUnit>()
-    private val units = arrayOf(
-        TimeUnit.NANOSECONDS,
-        TimeUnit.MICROSECONDS,
-        TimeUnit.MILLISECONDS,
-        TimeUnit.SECONDS,
-        TimeUnit.MINUTES,
-        TimeUnit.HOURS,
-        TimeUnit.DAYS
-    )
-    private val unitStrs = arrayOf("ns", "us", "ms", "s", "m", "h", "d")
-    private val carries = longArrayOf(1000L, 1000L, 1000L, 60L, 60L, 24L)
-
     fun parse(timeSpan: String): Long? {
-        if (timeSpan.isNullOrBlank()) {
+        if (timeSpan.isBlank()) {
             return 0L
         }
         val holder = MutableHolder.of(0L)
@@ -70,16 +57,16 @@ object TimeSpanUtils {
     fun pretty(duration: Long, unit: TimeUnit): String {
         var _duration = duration
 
-        var index = ArrayUtils.indexOf(units, unit)
+        var index = unit.asSpanUnit().ordinal
         val stringBuilder = StringBuilder()
         var carry: Long
         var rest: Long
-        while (index < units.size - 1) {
-            carry = _duration / carries[index]
-            rest = _duration - carry * carries[index]
+        while (index < unitMaps.size - 1) {
+            val spanUnit = TimeSpanUnit.values()[index]
+            carry = _duration / spanUnit.carries
+            rest = _duration - carry * spanUnit.carries
             if (rest > 0) {
-                stringBuilder.insert(0, unitStrs[index])
-                    .insert(0, rest)
+                stringBuilder.insert(0, "$rest${spanUnit.shortName}")
             }
             if (carry == 0L) {
                 break
@@ -87,12 +74,12 @@ object TimeSpanUtils {
             _duration = carry
             index++
         }
-        if (index == units.size - 1) {
-            stringBuilder.insert(0, unitStrs[index])
-                .insert(0, _duration)
+        if (index == unitMaps.size - 1) {
+            val spanUnit = TimeSpanUnit.values()[index]
+            stringBuilder.insert(0, "$_duration${spanUnit.shortName}")
         }
         return if (stringBuilder.isEmpty()) {
-            "0" + unitStrs[ArrayUtils.indexOf(units, unit)]
+            "0" + unit.asSpanUnit().shortName
         } else stringBuilder.toString()
 
     }
@@ -109,24 +96,9 @@ object TimeSpanUtils {
         }
     }
 
-    init {
-        unitMaps["ns"] = TimeUnit.NANOSECONDS
-        unitMaps["us"] = TimeUnit.MICROSECONDS
-        unitMaps["ms"] = TimeUnit.MILLISECONDS
-        unitMaps["s"] = TimeUnit.SECONDS
-        unitMaps["m"] = TimeUnit.MINUTES
-        unitMaps["h"] = TimeUnit.HOURS
-        unitMaps["d"] = TimeUnit.DAYS
-    }
-
     fun convert(sourceDuration: Double, sourceUnit: TimeUnit, targetUnit: TimeUnit): Double {
-        var rate = targetUnit.convert(1, sourceUnit)
-        if (rate > 0) {
-            return sourceDuration * rate
-        } else {
-            rate = sourceUnit.convert(1, targetUnit)
-            return sourceDuration / rate
-        }
+        val rate = sourceUnit.asSpanUnit().ns.toDouble() / targetUnit.asSpanUnit().ns.toDouble()
+        return (sourceDuration.toBigDecimal() * rate.toBigDecimal()).setScale(6, RoundingMode.HALF_UP).toDouble()
     }
 
     @JvmStatic
@@ -146,4 +118,27 @@ object TimeSpanUtils {
             }
         }
     }
+}
+
+
+private enum class TimeSpanUnit(val shortName: String, val carries: Long) {
+    NANOSECONDS("ns", 1000L),
+    MICROSECONDS("us", 1000L),
+    MILLISECONDS("ms", 1000L),
+    SECONDS("s", 60L),
+    MINUTES("m", 60L),
+    HOURS("h", 24L),
+    DAYS("d", 9999),
+    ;
+
+    val timeUnit: TimeUnit = TimeUnit.valueOf(this.name)
+    val ns: Long = this.timeUnit.toNanos(1)
+}
+
+private val unitMaps = TimeSpanUnit.values()
+    .mapToTypedArray { it.shortName to it.timeUnit }
+    .let { mapOf(*it) }
+
+private fun TimeUnit.asSpanUnit(): TimeSpanUnit {
+    return TimeSpanUnit.valueOf(this.name)
 }

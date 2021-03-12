@@ -26,7 +26,7 @@ private val TRUST_ALL_CERTS = arrayOf<TrustManager>(object : X509TrustManager {
 /**
  * Never authenticate the host
  */
-private val DO_NOT_VERIFY: HostnameVerifier = HostnameVerifier { hostname, session -> true }
+private val DO_NOT_VERIFY: HostnameVerifier = HostnameVerifier { _, _ -> true }
 
 fun HttpsURLConnection.trustAllHosts(): HttpsURLConnection {
     try {

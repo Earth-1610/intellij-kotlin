@@ -16,7 +16,7 @@ class DateKitTest {
 
     @Test
     fun testFormat() {
-        val time = DateUtils.parseYMD_HMS("2020-01-01 01:01:01")!!.time
+        val time = DateUtils.parseYMD_HMS("2020-01-01 01:01:01").time
         val date = time.asDate()
 
         assertEquals("2020-01-01", date.formatYMD())
