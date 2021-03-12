@@ -10,7 +10,7 @@ abstract class AutoSearchConfigReader : PathSearchConfigReader() {
     override fun findConfigFiles(): List<String>? {
         val configFiles = searchConfigFiles(configFileNames())
         if (configFiles.isNullOrEmpty()) {
-            logger?.trace("No config be found")
+            logger.trace("No config be found")
         } else {
             return configFiles
         }

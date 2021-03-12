@@ -6,8 +6,8 @@ import java.util.function.Predicate
 
 object Functions {
 
-    fun <T> from(predicate: Predicate<T>): java.util.function.Function<T, Boolean> {
-        return Function { it -> predicate.test(it) }
+    fun <T> from(predicate: Predicate<T>): Function<T, Boolean> {
+        return Function { predicate.test(it) }
     }
 
     /**
