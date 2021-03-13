@@ -3,7 +3,7 @@ package com.itangcent.common.utils
 /**
  * Accumulates value starting with the first element and applying [operation] from left to right to current accumulator value and each element.
  */
-public inline fun <S, T : S> Iterable<T>.reduceSafely(operation: (acc: S, T) -> S): S? {
+inline fun <S, T : S> Iterable<T>.reduceSafely(operation: (acc: S, T) -> S): S? {
     val iterator = this.iterator()
     if (!iterator.hasNext()) return null
     var accumulator: S = iterator.next()

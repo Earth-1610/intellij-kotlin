@@ -30,11 +30,16 @@ class ArrayUtilsTest {
 
         assertEquals(-1, ArrayUtils.indexOf(arrayOf("a", "b"), ""))
         assertEquals(-1, ArrayUtils.indexOf(arrayOf("a", "b"), null))
+        assertEquals(2, ArrayUtils.indexOf(arrayOf("a", "b", null), null))
         assertEquals(0, ArrayUtils.indexOf(arrayOf("a", "b"), "a"))
         assertEquals(-1, ArrayUtils.indexOf(arrayOf("a", "b"), "c"))
 
         assertEquals(-1, ArrayUtils.indexOf(arrayOf("a", "b", "c"), "a", 1))
         assertEquals(1, ArrayUtils.indexOf(arrayOf("a", "b", "c"), "b", 1))
+        assertEquals(1, ArrayUtils.indexOf(arrayOf("a", "b", "c"), "b", -1))
+        assertEquals(-1, ArrayUtils.indexOf(arrayOf("a", "b", "c"), "b", 10))
+        assertEquals(-1, ArrayUtils.indexOf(null, "b", 1))
+        assertEquals(-1, ArrayUtils.indexOf(null, "b", -10))
     }
 
 }
