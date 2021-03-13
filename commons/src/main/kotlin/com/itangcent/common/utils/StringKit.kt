@@ -112,8 +112,8 @@ fun String?.trimToNull(): String? {
 fun String?.appendln(): String? {
     return when {
         this.isNullOrBlank() -> this
-        this.endsWith('\n') -> this
-        else -> "${this}\n"
+        this.endsWith(LINE_SEPARATOR) -> this
+        else -> "${this}${LINE_SEPARATOR}"
     }
 }
 
@@ -130,7 +130,7 @@ fun String?.notNullOrBlank(): Boolean {
 }
 
 fun String?.flatten(defaultValue: String = "null"): String {
-    return this?.replace("\n", "\\n") ?: defaultValue
+    return this?.replace(LINE_SEPARATOR, "\\n") ?: defaultValue
 }
 
 val LINE_SEPARATOR = System.getProperty("line.separator")
