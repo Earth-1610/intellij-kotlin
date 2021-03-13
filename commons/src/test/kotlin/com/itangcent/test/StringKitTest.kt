@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 
 
 /**
- * Test case for [KV]
+ * Test case for [StringKit]
  */
 class StringKitTest {
 
@@ -59,20 +59,21 @@ class StringKitTest {
     @Test
     fun testFlatten() {
         Assertions.assertEquals("1", "1".flatten())
-        Assertions.assertEquals("1\\n2", "1\n2".flatten())
-        Assertions.assertEquals("1\\n2\\n3", "1\n2\n3".flatten())
+        Assertions.assertEquals("1\\n2", "1${n}2".flatten())
+        Assertions.assertEquals("1\\n2\\n3", "1${n}2${n}3".flatten())
     }
 
     @Test
     fun testAppendln() {
         Assertions.assertEquals(null, null.appendln())
         Assertions.assertEquals("", "".appendln())
-        Assertions.assertEquals("1\n", "1".appendln())
-        Assertions.assertEquals("1\n", "1\n".appendln())
+        Assertions.assertEquals("1$n", "1".appendln())
+        Assertions.assertEquals("1$n", "1${n}".appendln())
         Assertions.assertEquals("new-line", null.appendln("new-line"))
         Assertions.assertEquals("new-line", "".appendln("new-line"))
-        Assertions.assertEquals("1\nnew-line", "1".appendln("new-line"))
-        Assertions.assertEquals("1\n\nnew-line", "1\n".appendln("new-line"))
+        Assertions.assertEquals("1${n}new-line", "1".appendln("new-line"))
+        Assertions.assertEquals("1$n${n}new-line", "1${n}".appendln("new-line"))
     }
 
+    private val n = System.getProperty("line.separator")
 }
