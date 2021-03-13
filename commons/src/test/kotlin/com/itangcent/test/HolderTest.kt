@@ -45,7 +45,7 @@ class HolderTest {
             holder2.compute { 99 }
         }.start()
         assertEquals(holder.value(), "x")
-        assertTimeout(Duration.ofMillis(200)) { holder2.value() }
+        assertTimeout(Duration.ofMillis(1000)) { holder2.value() }
         assertEquals(holder2.value(), 99)
     }
 

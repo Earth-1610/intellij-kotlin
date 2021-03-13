@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.com/Earth-1610/intellij-kotlin.svg?branch=master)](https://travis-ci.com/Earth-1610/intellij-kotlin)
 [![CI](https://github.com/Earth-1610/intellij-kotlin/actions/workflows/ci.yml/badge.svg)](https://github.com/Earth-1610/intellij-kotlin/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/Earth-1610/intellij-kotlin/branch/master/graph/badge.svg?token=UAW8KECMLW)](https://codecov.io/gh/Earth-1610/intellij-kotlin)
 
 ## sub modules
 
