@@ -1,5 +1,7 @@
 package com.itangcent.common.concurrent
 
+import kotlin.jvm.Throws
+
 interface CountLatch {
 
     /**
