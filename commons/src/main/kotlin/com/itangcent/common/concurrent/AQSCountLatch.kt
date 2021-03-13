@@ -2,8 +2,9 @@ package com.itangcent.common.concurrent
 
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.AbstractQueuedSynchronizer
+import kotlin.jvm.Throws
 
-class AQSCountLatch : com.itangcent.common.concurrent.CountLatch {
+class AQSCountLatch : CountLatch {
 
     private class Sync : AbstractQueuedSynchronizer() {
 
@@ -78,10 +79,7 @@ class AQSCountLatch : com.itangcent.common.concurrent.CountLatch {
     // true if semaphore became free
     @Throws(InterruptedException::class)
     fun waitForUnsafe(msTimeout: Long): Boolean {
-        return when {
-            sync.tryAcquireShared(1) >= 0 -> true
-            else -> sync.tryAcquireSharedNanos(1, TimeUnit.MILLISECONDS.toNanos(msTimeout))
-        }
+        return sync.tryAcquireSharedNanos(1, TimeUnit.MILLISECONDS.toNanos(msTimeout))
     }
 
     fun isUp(): Boolean {
