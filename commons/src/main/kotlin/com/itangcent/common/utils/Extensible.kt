@@ -33,7 +33,7 @@ abstract class AbstractExtensible : Extensible {
 
     @Suppress("UNCHECKED_CAST")
     override fun <T> getExt(attr: String): T? {
-        return map()?.get(attr) as T?
+        return map()?.get(attr) as? T
     }
 
     override fun setExt(attr: String, value: Any?) {

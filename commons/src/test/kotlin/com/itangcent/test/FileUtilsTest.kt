@@ -84,7 +84,7 @@ class FileUtilsTest {
     @Test
     fun testWriteAndReadBytes() {
         FileUtils.write(tempDir!!.sub("A/a/1-2.txt"), byteArrayOf(1, 2, 3, 4))
-        assertTrue(byteArrayOf(1, 2, 3, 4).contentEquals(FileUtils.readBytes(tempDir!!.sub("A/a/1-2.txt"))))
+        assertTrue(byteArrayOf(1, 2, 3, 4).contentEquals(FileUtils.readBytes(tempDir!!.sub("A/a/1-2.txt"))!!))
     }
 
     @Test
