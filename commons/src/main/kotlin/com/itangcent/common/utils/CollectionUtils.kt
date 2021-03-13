@@ -114,8 +114,7 @@ object CollectionUtils {
      * @return true if empty or null
      * @since 3.2
      */
-    fun isEmpty(coll: Collection<*>?): Boolean {
-        return coll == null || coll.isEmpty()
-    }
+    @Deprecated(message = "deprecated", replaceWith = ReplaceWith("Collection.isNullOrEmpty"))
+    fun isEmpty(coll: Collection<*>?): Boolean = coll.isNullOrEmpty()
 
 }
