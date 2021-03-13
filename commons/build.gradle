@@ -41,7 +41,6 @@ dependencies {
 
     // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-reflect
     compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
-    compile "org.jetbrains.kotlin:kotlin-test-junit5:$kotlin_version"
 
     // https://mvnrepository.com/artifact/com.google.guava/guava
     compileOnly group: 'com.google.guava', name: 'guava', version: '28.1-jre'
@@ -50,6 +49,7 @@ dependencies {
     testCompile "org.junit.jupiter:junit-jupiter-api:${junit_version}"
     testCompile "org.junit.jupiter:junit-jupiter-engine:${junit_version}"
     testCompile "org.junit.jupiter:junit-jupiter-params:${junit_version}"
+    testCompile "org.jetbrains.kotlin:kotlin-test-junit5:$kotlin_version"
 
 }
 

@@ -2,14 +2,13 @@ package com.itangcent.common.utils
 
 import java.util.*
 import java.util.stream.Stream
-import kotlin.collections.isNullOrEmpty
 
 /**
  * Returns a [Array] containing all elements produced by this stream.
  */
 @SinceKotlin("1.2")
 inline fun <reified T> Stream<T>.toTypedArray(): Array<T> {
-    return this.toArray<T> { i -> arrayOfNulls(i) }
+    return this.toArray { i -> arrayOfNulls(i) }
 }
 
 /**
@@ -85,7 +84,7 @@ inline fun <T, R : Comparable<R>> Iterable<T>?.head(crossinline selector: (T) ->
         }
     }
     return this
-        .filter { it != null }
+        .filterNotNull()
         .sortedByDescending { selector(it!!) }
         .firstOrNull()
 }
@@ -104,7 +103,7 @@ inline fun <T, R : Comparable<R>> Iterable<T>?.tail(crossinline selector: (T) ->
         }
     }
     return this
-        .filter { it != null }
+        .filterNotNull()
         .sortedBy { selector(it!!) }
         .firstOrNull()
 }
@@ -117,7 +116,7 @@ inline fun <T, R : Comparable<R>> Array<T>?.head(crossinline selector: (T) -> R?
         this.isNullOrEmpty() -> null
         this.size == 1 -> this[0]
         else -> this
-            .filter { it != null }
+            .filterNotNull()
             .sortedByDescending { selector(it!!) }
             .firstOrNull()
     }
@@ -131,7 +130,7 @@ inline fun <T, R : Comparable<R>> Array<T>?.tail(crossinline selector: (T) -> R?
         this.isNullOrEmpty() -> null
         this.size == 1 -> this[0]
         else -> this
-            .filter { it != null }
+            .filterNotNull()
             .sortedBy { selector(it!!) }
             .firstOrNull()
     }
@@ -140,12 +139,12 @@ inline fun <T, R : Comparable<R>> Array<T>?.tail(crossinline selector: (T) -> R?
 /**
  * Returns the head element sorted by [selector], or `null` if the stream is null.
  */
-inline fun <T, R : Comparable<R>> Stream<T>?.head(crossinline selector: (T) -> R?): T? {
+inline fun <T, R : Comparable<R>> Stream<T>?.head(crossinline selector: (T) -> R): T? {
     return when {
         this == null -> null
         else -> this
             .filter { it != null }
-            .sorted(Comparator.comparing<T, R> { selector(it) }.reversed())
+            .sorted(Comparator.comparing<T, R?> { selector(it) }.reversed())
             .firstOrNull()
     }
 }
@@ -153,12 +152,12 @@ inline fun <T, R : Comparable<R>> Stream<T>?.head(crossinline selector: (T) -> R
 /**
  * Returns the tail element sorted by [selector], or `null` if the stream is null.
  */
-inline fun <T, R : Comparable<R>> Stream<T>?.tail(crossinline selector: (T) -> R?): T? {
+inline fun <T, R : Comparable<R>> Stream<T>?.tail(crossinline selector: (T) -> R): T? {
     return when {
         this == null -> null
         else -> this
             .filter { it != null }
-            .sorted(Comparator.comparing<T, R> { selector(it) })
+            .sorted(Comparator.comparing<T, R?> { selector(it) })
             .firstOrNull()
     }
 }

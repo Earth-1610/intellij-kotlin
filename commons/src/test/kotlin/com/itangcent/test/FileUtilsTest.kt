@@ -1,6 +1,7 @@
 package com.itangcent.test
 
 import com.itangcent.common.utils.FileUtils
+import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -84,7 +85,7 @@ class FileUtilsTest {
     @Test
     fun testWriteAndReadBytes() {
         FileUtils.write(tempDir!!.sub("A/a/1-2.txt"), byteArrayOf(1, 2, 3, 4))
-        assertTrue(byteArrayOf(1, 2, 3, 4).contentEquals(FileUtils.readBytes(tempDir!!.sub("A/a/1-2.txt"))!!))
+        assertArrayEquals(byteArrayOf(1, 2, 3, 4), FileUtils.readBytes(tempDir!!.sub("A/a/1-2.txt"))!!)
     }
 
     @Test

@@ -63,7 +63,7 @@ class AQSCountLatchTest {
             }
         }
         assertFalse(aqs!!.isUp())
-        assertTimeout(Duration.ofMillis(200)) {
+        assertTimeout(Duration.ofMillis(500)) {
             assertFalse(aqs!!.waitFor(100))
         }
     }

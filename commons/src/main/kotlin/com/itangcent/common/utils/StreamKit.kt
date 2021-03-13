@@ -9,7 +9,7 @@ import kotlin.reflect.KClass
  * If the collection could be huge, you can specify a non-negative value of [limit], in which case only the first [limit]
  * elements will be appended, followed by the [truncated] string (which defaults to "...").
  */
-public fun <T> Stream<T>.joinToString(
+fun <T> Stream<T>.joinToString(
     separator: CharSequence = ", ",
     prefix: CharSequence = "",
     postfix: CharSequence = "",
