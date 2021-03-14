@@ -36,7 +36,7 @@ object TimeSpanUtils {
 
     @JvmOverloads
     fun precisionParse(timeSpan: String, timeUnit: TimeUnit = TimeUnit.MILLISECONDS): Double? {
-        if (org.apache.commons.lang3.StringUtils.isBlank(timeSpan)) {
+        if (timeSpan.isBlank()) {
             return 0.0
         }
         val holder = MutableHolder.of<Double>(0.0)
@@ -99,24 +99,6 @@ object TimeSpanUtils {
     fun convert(sourceDuration: Double, sourceUnit: TimeUnit, targetUnit: TimeUnit): Double {
         val rate = sourceUnit.asSpanUnit().ns.toDouble() / targetUnit.asSpanUnit().ns.toDouble()
         return (sourceDuration.toBigDecimal() * rate.toBigDecimal()).setScale(6, RoundingMode.HALF_UP).toDouble()
-    }
-
-    @JvmStatic
-    fun main(args: Array<String>) {
-        val strings = arrayOf("10s", "1h10s", "0.2h", "200h", "20d20h", "700000s", "0.05d")
-
-
-        for (s in strings) {
-            for (unit in TimeUnit.values()) {
-                val spans = TimeSpanUtils.parse(s, unit)
-                System.out.printf(
-                    "[%s,%s]-> parse:%d\tprecision:%s\n",
-                    s, unit.name, spans,
-                    TimeSpanUtils.precisionParse(s, unit)
-                )
-                System.out.printf("[%d %s] -> %s\n", spans, unit.name, pretty(spans, unit))
-            }
-        }
     }
 }
 
