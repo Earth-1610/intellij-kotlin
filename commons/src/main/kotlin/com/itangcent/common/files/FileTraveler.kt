@@ -4,6 +4,7 @@ package com.itangcent.common.files
  * Created by tangcent on 2017/2/12.
  */
 interface FileTraveler {
+
     fun exceptDir(vararg dirs: String): FileTraveler
 
     fun onFile(fileHandle: FileHandle): FileTraveler

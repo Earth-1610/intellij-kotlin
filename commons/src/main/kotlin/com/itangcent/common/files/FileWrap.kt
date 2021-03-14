@@ -10,6 +10,10 @@ import java.io.IOException
  */
 class FileWrap(private val root: String, var file: File) {
 
+    fun root(): String {
+        return root
+    }
+
     fun content(): String {
         return FileUtils.read(file) ?: ""
     }
@@ -38,5 +42,27 @@ class FileWrap(private val root: String, var file: File) {
     fun rename(name: String): FileWrap {
         this.file = FileUtils.renameFile(file, name)
         return this
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as FileWrap
+
+        if (root != other.root) return false
+        if (file != other.file) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = root.hashCode()
+        result = 31 * result + file.hashCode()
+        return result
+    }
+
+    override fun toString(): String {
+        return "FileWrap(root='$root', file=$file)"
     }
 }

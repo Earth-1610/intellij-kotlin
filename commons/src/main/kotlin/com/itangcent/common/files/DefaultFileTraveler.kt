@@ -15,30 +15,30 @@ class DefaultFileTraveler(private val root: String) : FileTraveler {
     private var fileFilter = FileFilter.defaultHandle
     private var dirFilter = FileFilter.defaultHandle
 
-    override fun exceptDir(vararg dirs: String): FileTraveler {
+    override fun exceptDir(vararg dirs: String): DefaultFileTraveler {
         val exceptDir = setOf(*dirs)
         dirFilter = dirFilter.andThen { file ->
-            exceptDir.contains(file.file.path)
+            !exceptDir.contains(file.file.path)
         }
         return this
     }
 
-    override fun onFile(fileHandle: FileHandle): FileTraveler {
+    override fun onFile(fileHandle: FileHandle): DefaultFileTraveler {
         this.onFile = this.onFile.andThen(fileHandle)
         return this
     }
 
-    override fun onFolder(fileHandle: FileHandle): FileTraveler {
+    override fun onFolder(fileHandle: FileHandle): DefaultFileTraveler {
         this.onFolder = this.onFolder.andThen(fileHandle)
         return this
     }
 
-    override fun filter(fileFilter: FileFilter): FileTraveler {
+    override fun filter(fileFilter: FileFilter): DefaultFileTraveler {
         this.fileFilter = this.fileFilter.andThen(fileFilter)
         return this
     }
 
-    override fun onCompleted(fileCompleted: FileCompleted): FileTraveler {
+    override fun onCompleted(fileCompleted: FileCompleted): DefaultFileTraveler {
         this.onCompleted = this.onCompleted.andThen(fileCompleted)
         return this
     }
