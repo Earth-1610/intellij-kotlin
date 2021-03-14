@@ -8,7 +8,7 @@ import kotlin.test.assertTrue
 
 
 /**
- * Test case for [ArrayUtils]
+ * Test case of [ArrayUtils]
  */
 class ArrayUtilsTest {
 

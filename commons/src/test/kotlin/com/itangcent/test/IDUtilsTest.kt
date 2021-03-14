@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 
 
 /**
- * Test case for [IDUtils]
+ * Test case of [IDUtils]
  */
 class IDUtilsTest {
 

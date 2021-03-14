@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 
 
 /**
- * Test case for [IDUtils]
+ * Test case of [IDUtils]
  */
 class TimeSpanUtilsTest {
 

@@ -9,7 +9,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * Test case for [Streams]
+ * Test case of [Streams]
  */
 class StreamsTest {
 

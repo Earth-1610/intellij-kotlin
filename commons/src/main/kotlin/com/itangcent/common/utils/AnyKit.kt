@@ -24,13 +24,6 @@ fun Any.changePropertyValue(propertyName: String, newValue: Any?) {
 /**
  * change object property value by name
  */
-fun Any.changePropertyValueIgnoreItsType(propertyName: String, newValue: Any?) {
-    changeClassPropertyValueByNameIgnoreType(this, propertyName, newValue)
-}
-
-/**
- * change object property value by name
- */
 fun <R> Any.changePropertyValueByPropertyReference(kProperty: KProperty<R>, newValue: Any?) {
     changeClassPropertyValue(this, kProperty, newValue)
 }

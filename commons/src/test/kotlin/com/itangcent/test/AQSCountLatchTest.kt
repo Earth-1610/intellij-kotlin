@@ -1,10 +1,8 @@
 package com.itangcent.test
 
 import com.itangcent.common.concurrent.AQSCountLatch
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertTimeout
+import com.itangcent.common.exception.ProcessCanceledException
+import org.junit.jupiter.api.*
 import java.time.Duration
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -14,7 +12,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * Test case for [AQSCountLatch]
+ * Test case of [AQSCountLatch]
  */
 class AQSCountLatchTest {
 
@@ -65,6 +63,40 @@ class AQSCountLatchTest {
         assertFalse(aqs!!.isUp())
         assertTimeout(Duration.ofMillis(500)) {
             assertFalse(aqs!!.waitFor(100))
+        }
+    }
+
+    @Test
+    fun testWaitForInterrupted() {
+        aqs!!.down()
+        try {
+            val thread = Thread {
+                assertTimeout(Duration.ofMillis(1000)) {
+                    assertThrows<ProcessCanceledException> { aqs!!.waitFor() }
+                }
+            }
+            thread.start()
+            Thread.sleep(200)
+            thread.interrupt()
+        } finally {
+            aqs!!.up()
+        }
+    }
+
+    @Test
+    fun testWaitForTimeInterrupted() {
+        aqs!!.down()
+        try {
+            val thread = Thread {
+                assertTimeout(Duration.ofMillis(1000)) {
+                    assertThrows<ProcessCanceledException> { aqs!!.waitFor(2000) }
+                }
+            }
+            thread.start()
+            Thread.sleep(200)
+            thread.interrupt()
+        } finally {
+            aqs!!.up()
         }
     }
 

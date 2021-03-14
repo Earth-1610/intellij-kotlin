@@ -12,7 +12,7 @@ import kotlin.test.assertTrue
 
 
 /**
- * Test case for [CollectionKit]
+ * Test case of [CollectionKit]
  */
 class CollectionKitTest {
 

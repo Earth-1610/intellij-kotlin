@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 
 
 /**
- * Test case for [GsonUtils]
+ * Test case of [GsonUtils]
  */
 class GsonUtilsTest {
 
@@ -20,8 +20,8 @@ class GsonUtilsTest {
 
     @Test
     fun testFromJson() {
-        assertEquals("{\"x\":1,\"y\":2}", GsonUtils.toJson(Point(1, 2)))
-        assertEquals(Point(1, 2), GsonUtils.fromJson("{\"x\":1,\"y\":2}", Point::class))
+        assertEquals("{\"x\":1,\"y\":2}", GsonUtils.toJson(GsonUtilsTestPoint(1, 2)))
+        assertEquals(GsonUtilsTestPoint(1, 2), GsonUtils.fromJson("{\"x\":1,\"y\":2}", GsonUtilsTestPoint::class))
     }
 
     @Test
@@ -46,7 +46,7 @@ class GsonUtilsTest {
             "{\n" +
                     "  \"x\": 1,\n" +
                     "  \"y\": 2\n" +
-                    "}", GsonUtils.prettyJson(Point(1, 2))
+                    "}", GsonUtils.prettyJson(GsonUtilsTestPoint(1, 2))
         )
         assertEquals(
             "{\n" +
@@ -85,6 +85,7 @@ class GsonUtilsTest {
                     "}", GsonUtils.prettyJsonWithNulls(kv)
         )
     }
+
 }
 
-data class Point(var x: Int, var y: Int)
+data class GsonUtilsTestPoint(var x: Int, var y: Int)

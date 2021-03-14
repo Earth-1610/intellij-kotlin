@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test
 
 
 /**
- * Test case for [KV]
+ * Test case of [KV]
  */
 class KVTest {
 
