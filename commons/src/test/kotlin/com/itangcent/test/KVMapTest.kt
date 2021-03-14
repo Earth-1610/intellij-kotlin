@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 
 
 /**
- * Test case for [KV.getAs]
+ * Test case of [KV.getAs]
  */
 class KVMapTest {
 

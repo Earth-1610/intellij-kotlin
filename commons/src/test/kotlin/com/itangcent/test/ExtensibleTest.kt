@@ -14,7 +14,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * Test case for [Extensible]
+ * Test case of [Extensible]
  */
 class ExtensibleTest {
 

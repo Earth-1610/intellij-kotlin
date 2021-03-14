@@ -7,7 +7,7 @@ import kotlin.test.assertTrue
 
 
 /**
- * Test case for [CollectionUtils]
+ * Test case of [CollectionUtils]
  */
 class CollectionUtilsTest {
 

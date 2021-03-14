@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 
 
 /**
- * Test case for [StringKit]
+ * Test case of [StringKit]
  */
 class StringKitTest {
 
