@@ -35,11 +35,11 @@ interface FileFilter {
     }
 }
 
-public fun FileFilter.andThen(nextHandle: FileFilter): FileFilter = FileFilter.from { file ->
+fun FileFilter.andThen(nextHandle: FileFilter): FileFilter = FileFilter.from { file ->
     this.accept(file) && nextHandle.accept(file)
 }
 
-public fun FileFilter.andThen(nextHandle: (file: FileWrap) -> Boolean): FileFilter = FileFilter.from { file ->
+fun FileFilter.andThen(nextHandle: (file: FileWrap) -> Boolean): FileFilter = FileFilter.from { file ->
     this.accept(file) && nextHandle(file)
 }
 

@@ -26,7 +26,6 @@ interface FileHandle {
                 override fun handle(file: FileWrap) {
                     files.add(file)
                 }
-
             }
         }
 
