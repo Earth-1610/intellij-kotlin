@@ -29,18 +29,18 @@ object StringUtils {
         return sb.toString()
     }
 
-    fun underlineToCamel(param: String?): String {
-        if (param == null || "" == param.trim { it <= ' ' }) {
+    fun underlineToCamel(str: String?): String {
+        if (str == null || "" == str.trim { it <= ' ' }) {
             return ""
         }
-        val len = param.length
+        val len = str.length
         val sb = StringBuilder(len)
         var i = 0
         while (i < len) {
-            val c = param[i]
+            val c = str[i]
             if (c == UNDERLINE) {
                 if (++i < len) {
-                    sb.append(Character.toUpperCase(param[i]))
+                    sb.append(Character.toUpperCase(str[i]))
                 }
             } else {
                 sb.append(c)

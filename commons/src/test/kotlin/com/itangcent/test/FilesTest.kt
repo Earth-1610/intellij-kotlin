@@ -2,12 +2,14 @@ package com.itangcent.test
 
 import com.itangcent.common.files.*
 import com.itangcent.common.utils.FileUtils
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
 import java.nio.file.Path
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 /**
  * Test case of [com.itangcent.common.files]
@@ -99,7 +101,23 @@ class FilesTest {
             .travel()
 
         assertEquals(1, ktFiles.size)
-        assertEquals(FileWrap(tempDir.toString(), tempDir!!.sub("C/c/3.kt")), ktFiles[0])
+        ModelBaseTest.equal(FileWrap(tempDir.toString(), tempDir!!.sub("C/c/3.kt")), ktFiles[0])
+
+        //travel unexisted directory
+        DefaultFileTraveler(tempDir.toString() + "/Z")
+            .onFile(FileHandle.from { Assertions.fail() })
+            .travel()
+
+        traveler.copy()
+            .onFolder(FileHandle.from { folders.add(it.path()) })
+            .onFile(FileHandle.collectFiles(files) { it.path() })
+            .filter(FileFilter.filterFile { it.name().endsWith(".txt") })
+            .onCompleted(object : FileCompleted {
+                override fun onCompleted(fileCnt: Int, folderCnt: Int, time: Long) {
+                    assertEquals(2, fileCnt)
+                }
+            })
+            .travel()
     }
 
     @Test
@@ -114,6 +132,8 @@ class FilesTest {
         assertEquals("new", fileWrap.content())
         fileWrap.rename("2.txt")
         assertEquals("new", FileUtils.read(tempDir!!.sub("A/a/2.txt")))
+        assertEquals("", FileWrap(tempDir.toString(), tempDir!!.sub("A/a/999.txt")).content())
+        assertFalse(fileWrap.equals(""))
 
     }
 }
