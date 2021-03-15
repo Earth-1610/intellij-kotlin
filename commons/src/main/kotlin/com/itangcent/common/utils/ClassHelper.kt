@@ -65,8 +65,7 @@ object ClassHelper {
     fun isAssignable(params: Array<*>, paramTypes: Array<KClass<*>>): Boolean {
         if (params.size != paramTypes.size)
             return false
-        for (i in 0..params.size) {
-
+        for (i in params.indices) {
             if (!isAssignable(params[i], paramTypes[i])) {
                 return false
             }
@@ -89,7 +88,7 @@ object ClassHelper {
             } catch (_: NoSuchFieldException) {
                 null
             }
-        }.filterNotNull().first()
+        }.filterNotNull().firstOrNull()
     }
 
     internal inline fun <T> checkedReflection(block: () -> T, onReflectionException: (Exception) -> T): T {
@@ -106,5 +105,5 @@ object ClassHelper {
 }
 
 fun <T : Any> KClass<T>.newInstance(vararg params: Any): Any {
-    return ClassHelper.newInstance(this, params)
+    return ClassHelper.newInstance(this, *params)
 }

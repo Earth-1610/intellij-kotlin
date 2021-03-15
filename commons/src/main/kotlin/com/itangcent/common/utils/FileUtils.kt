@@ -11,7 +11,6 @@ import java.io.IOException
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.util.*
-import java.util.function.Consumer
 import java.util.regex.Pattern
 
 object FileUtils {
@@ -163,7 +162,7 @@ object FileUtils {
             return
         }
         val errorFiles = Stack<File>()
-        cleanEmptyDir(file, Consumer { errorFiles.push(it) })
+        cleanEmptyDir(file) { errorFiles.push(it) }
         while (!errorFiles.empty()) {
             errorFiles.pop().delete()
         }
@@ -173,7 +172,7 @@ object FileUtils {
         return cleanEmptyDir(file, null)
     }
 
-    fun cleanEmptyDir(file: File, onDeleteFailed: Consumer<File>?): Boolean {
+    fun cleanEmptyDir(file: File, onDeleteFailed: ((File) -> Unit)?): Boolean {
         var flag = true
         if (file.isDirectory) {
             val files = file.listFiles()
@@ -186,7 +185,7 @@ object FileUtils {
             }
             if (flag) {
                 if (!file.delete() && onDeleteFailed != null) {
-                    onDeleteFailed.accept(file)
+                    onDeleteFailed(file)
                 }
             }
             return flag

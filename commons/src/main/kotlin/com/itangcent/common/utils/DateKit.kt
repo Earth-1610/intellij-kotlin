@@ -38,8 +38,8 @@ fun Date.addMinute(interval: Int): Date {
     return DateUtils.addMinute(this, interval)
 }
 
-fun Date.dayStart(): Date? {
-    return DateUtils.dayStart(this)
+fun Date.dayStart(): Date {
+    return DateUtils.dayStart(this)!!
 }
 
 fun Date.dayEnd(): Date {

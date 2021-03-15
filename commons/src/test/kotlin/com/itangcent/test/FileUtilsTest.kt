@@ -1,15 +1,19 @@
 package com.itangcent.test
 
 import com.itangcent.common.utils.FileUtils
+import com.itangcent.common.utils.forceDelete
+import com.itangcent.common.utils.forceMkdir
+import com.itangcent.common.utils.forceMkdirParent
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
+import java.io.IOException
 import java.nio.charset.Charset
 import java.nio.file.Path
 import kotlin.test.assertEquals
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 
@@ -86,6 +90,7 @@ class FileUtilsTest {
     fun testWriteAndReadBytes() {
         FileUtils.write(tempDir!!.sub("A/a/1-2.txt"), byteArrayOf(1, 2, 3, 4))
         assertArrayEquals(byteArrayOf(1, 2, 3, 4), FileUtils.readBytes(tempDir!!.sub("A/a/1-2.txt"))!!)
+        assertDoesNotThrow { FileUtils.readBytes(tempDir!!.sub("A/a/999.txt")) }
     }
 
     @Test
@@ -93,6 +98,12 @@ class FileUtilsTest {
         val subDir = tempDir!!.sub("a/b/c")
         FileUtils.forceMkdir(subDir)
         assertTrue(subDir.exists())
+        val d = tempDir!!.sub("a/b/d")
+        d.forceMkdir()
+        assertTrue(d.exists())
+        assertThrows<IOException> {
+            tempDir!!.sub("A/a/1.txt").forceMkdir()
+        }
     }
 
     @Test
@@ -100,6 +111,20 @@ class FileUtilsTest {
         val subDir = tempDir!!.sub("a/b/c")
         FileUtils.forceMkdirParent(subDir)
         assertTrue(tempDir!!.sub("a/b").exists())
+        val d = tempDir!!.sub("a/b/c/d")
+        d.forceMkdirParent()
+        assertTrue(tempDir!!.sub("a/b/c").exists())
+    }
+
+    @Test
+    fun testForceDelete() {
+        val ONE = tempDir!!.sub("A/a/1.txt")
+        FileUtils.forceDelete(ONE)
+        assertFalse(ONE.exists())
+        val d = tempDir!!.sub("C")
+        d.forceDelete()
+        assertFalse(tempDir!!.sub("C").exists())
+        assertFalse(tempDir!!.sub("C/d/4.txt").exists())
     }
 
     @Test
@@ -109,6 +134,13 @@ class FileUtilsTest {
 
         FileUtils.renameFile("$tempDir/B/b".r(), "2.java", "2-1.txt")
         assertEquals("hello world", FileUtils.read(tempDir!!.sub("B/b/2-1.txt")))
+
+        FileUtils.renameFile(tempDir!!.sub("C/d/3.txt"), "4.txt")
+        assertFalse(tempDir!!.sub("C/d/3.txt").exists())
+
+        tempDir!!.sub("B/b/2.java").let {
+            assertSame(it, FileUtils.renameFile(it, "2.java"))
+        }
     }
 
     @Test
@@ -132,8 +164,30 @@ class FileUtilsTest {
     }
 
     @Test
+    fun testIsSymlink() {
+        assertThrows<NullPointerException> { FileUtils.isSymlink(null) }
+        assertFalse(FileUtils.isSymlink(tempDir!!.sub("A/a/1.txt")))
+    }
+
+    @Test
     fun testCleanDirectory() {
         FileUtils.cleanDirectory(tempDir!!.sub("C"))
+        assertTrue(tempDir!!.sub("C").exists())
         assertTrue(FileUtils.isEmptyDir(tempDir!!.sub("C")))
+    }
+
+    @Test
+    fun testCleanEmptyDir() {
+        assertFalse(FileUtils.cleanEmptyDir(tempDir!!.sub("C/c/3.kt")))
+        tempDir!!.sub("C/c/3.kt").forceDelete()
+
+        FileUtils.cleanEmptyDir(tempDir!!.sub("C"))
+        assertTrue(tempDir!!.sub("C").exists())
+        assertTrue(tempDir!!.sub("C/d").exists())
+        assertFalse(tempDir!!.sub("C/c").exists())
+
+        FileUtils.cleanEmptyDir(tempDir!!.sub("B")) {
+            Assertions.fail()
+        }
     }
 }
