@@ -12,7 +12,6 @@ object DateUtils {
 
     const val YMD = "yyyy-MM-dd"
 
-
     private val regPatternMap = ConcurrentHashMap<Pattern, String>()
 
     val currentDay: Date

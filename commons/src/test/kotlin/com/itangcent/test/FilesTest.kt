@@ -5,6 +5,7 @@ import com.itangcent.common.utils.FileUtils
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
 import java.nio.file.Path
@@ -133,6 +134,7 @@ class FilesTest {
         fileWrap.rename("2.txt")
         assertEquals("new", FileUtils.read(tempDir!!.sub("A/a/2.txt")))
         assertEquals("", FileWrap(tempDir.toString(), tempDir!!.sub("A/a/999.txt")).content())
+        assertDoesNotThrow { FileWrap(tempDir.toString(), tempDir!!.sub("A/a/999.txt")).write("some") }
         assertFalse(fileWrap.equals(""))
 
     }
