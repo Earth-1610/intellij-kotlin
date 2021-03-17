@@ -1,8 +1,6 @@
-package com.itangcent.test
+package com.itangcent.common.utils
 
-import com.itangcent.common.utils.ClassHelper
 import com.itangcent.common.utils.ClassHelper.getDeclaredFieldInHierarchy
-import com.itangcent.common.utils.newInstance
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.lang.reflect.InvocationTargetException
@@ -58,25 +56,25 @@ class ClassHelperTest {
 
     @Test
     fun testNewInstance() {
-        assertEquals("A", ClassHelper.newInstance(A::class).toString())
-        assertThrows<IllegalArgumentException> { ClassHelper.newInstance(B::class, 1) }
-        assertEquals("hello world", ClassHelper.newInstance(B::class, "hello world").toString())
-        assertEquals("empty", ClassHelper.newInstance(C::class).toString())
-        assertEquals("1", ClassHelper.newInstance(C::class, 1).toString())
-        assertEquals("1,2", ClassHelper.newInstance(C::class, 1, 2).toString())
-        assertThrows<IllegalArgumentException> { ClassHelper.newInstance(C::class, "x", 1) }
-        assertEquals("hello world", ClassHelper.newInstance(C::class, "hello world").toString())
-        assertEquals("hello world", C::class.newInstance("hello world").toString())
+        assertEquals("A", ClassHelper.newInstance(ClassHelperTestA::class).toString())
+        assertThrows<IllegalArgumentException> { ClassHelper.newInstance(ClassHelperTestB::class, 1) }
+        assertEquals("hello world", ClassHelper.newInstance(ClassHelperTestB::class, "hello world").toString())
+        assertEquals("empty", ClassHelper.newInstance(ClassHelperTestC::class).toString())
+        assertEquals("1", ClassHelper.newInstance(ClassHelperTestC::class, 1).toString())
+        assertEquals("1,2", ClassHelper.newInstance(ClassHelperTestC::class, 1, 2).toString())
+        assertThrows<IllegalArgumentException> { ClassHelper.newInstance(ClassHelperTestC::class, "x", 1) }
+        assertEquals("hello world", ClassHelper.newInstance(ClassHelperTestC::class, "hello world").toString())
+        assertEquals("hello world", ClassHelperTestC::class.newInstance("hello world").toString())
     }
 
     @Test
     fun testGetDeclaredFieldInHierarchy() {
         assertEquals(
-            C::class.java.getDeclaredFieldInHierarchy("str"),
-            D::class.java.getDeclaredFieldInHierarchy("str")
+            ClassHelperTestC::class.java.getDeclaredFieldInHierarchy("str"),
+            ClassHelperTestD::class.java.getDeclaredFieldInHierarchy("str")
         )
-        assertNull(C::class.java.getDeclaredFieldInHierarchy("aaa"))
-        assertNull(A::class.java.getDeclaredFieldInHierarchy("str"))
+        assertNull(ClassHelperTestC::class.java.getDeclaredFieldInHierarchy("aaa"))
+        assertNull(ClassHelperTestA::class.java.getDeclaredFieldInHierarchy("str"))
     }
 
     @Test
@@ -90,20 +88,20 @@ class ClassHelperTest {
     }
 }
 
-class A {
+class ClassHelperTestA {
     override fun toString(): String {
         return "A"
     }
 }
 
-class B(private val str: String) {
+class ClassHelperTestB(private val str: String) {
 
     override fun toString(): String {
         return str
     }
 }
 
-open class C {
+open class ClassHelperTestC {
     protected val str: String
 
     constructor() {
@@ -127,7 +125,7 @@ open class C {
     }
 }
 
-class D(val x: Long) : C() {
+class ClassHelperTestD(val x: Long) : ClassHelperTestC() {
     override fun toString(): String {
         return "$x-$str"
     }

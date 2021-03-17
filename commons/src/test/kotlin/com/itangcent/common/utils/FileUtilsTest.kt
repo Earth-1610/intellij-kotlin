@@ -1,9 +1,5 @@
-package com.itangcent.test
+package com.itangcent.common.utils
 
-import com.itangcent.common.utils.FileUtils
-import com.itangcent.common.utils.forceDelete
-import com.itangcent.common.utils.forceMkdir
-import com.itangcent.common.utils.forceMkdirParent
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertFalse

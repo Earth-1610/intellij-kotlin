@@ -7,8 +7,6 @@ import kotlin.reflect.KFunction
 
 object ClassHelper {
 
-    private val EMPTY_CLASS_ARRAY = arrayOfNulls<Class<*>>(0)
-
     fun isArrayOrCollection(bean: Any?): Boolean {
         return bean != null && (bean is Collection<*> || bean is Array<*>)
     }

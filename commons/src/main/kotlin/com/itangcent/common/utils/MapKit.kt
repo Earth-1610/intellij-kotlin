@@ -10,8 +10,6 @@ fun <K, V> MutableMap<K, V>.safeComputeIfAbsent(key: K, mappingFunction: (K) -> 
         mappingValue?.let { this.put(key, it) }
     } catch (e: NullPointerException) {
         return null
-    } catch (e: java.lang.NullPointerException) {
-        return null
     } catch (e: ConcurrentModificationException) {
         mappingValue?.let { this[key] = it }
     }
@@ -35,7 +33,7 @@ fun <K> MutableMap<K, String?>?.append(key: K, str: String?, split: String = " "
 }
 
 fun Map<Any?, Any?>.flat(consumer: (String, String) -> Unit) {
-    this.forEach { key, value ->
+    this.forEach { (key, value) ->
         if (key == null) return@forEach
         if (key is String) {
             flat(key, value, consumer)
@@ -51,7 +49,7 @@ private fun flat(path: String, value: Any?, consumer: (String, String) -> Unit) 
         is Collection<*> -> value.forEach { flat(path, it, consumer) }
         is Array<*> -> value.forEach { flat(path, it, consumer) }
         is Map<*, *> -> {
-            value.forEach { k, v ->
+            value.forEach { (k, v) ->
                 flat("$path.$k", v, consumer)
             }
         }

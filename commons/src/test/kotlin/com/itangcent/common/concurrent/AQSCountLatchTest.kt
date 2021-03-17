@@ -1,4 +1,4 @@
-package com.itangcent.test
+package com.itangcent.common.concurrent
 
 import com.itangcent.common.concurrent.AQSCountLatch
 import com.itangcent.common.exception.ProcessCanceledException

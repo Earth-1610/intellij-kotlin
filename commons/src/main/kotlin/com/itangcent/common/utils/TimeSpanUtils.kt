@@ -16,17 +16,15 @@ object TimeSpanUtils {
             return 0L
         }
         val holder = MutableHolder.of(0L)
-        match(
-            timeSpan,
-            BiConsumer { duration, unit ->
-                holder.updateData { span ->
-                    span!! + convert(
-                        duration,
-                        unit,
-                        TimeUnit.MILLISECONDS
-                    ).toLong()
-                }
-            })
+        match(timeSpan) { duration, unit ->
+            holder.updateData { span ->
+                span!! + convert(
+                    duration,
+                    unit,
+                    TimeUnit.MILLISECONDS
+                ).toLong()
+            }
+        }
         return holder.value()
     }
 
@@ -39,18 +37,16 @@ object TimeSpanUtils {
         if (timeSpan.isBlank()) {
             return 0.0
         }
-        val holder = MutableHolder.of<Double>(0.0)
-        match(
-            timeSpan,
-            BiConsumer { duration, unit ->
-                holder.updateData { span ->
-                    span!! + convert(
-                        duration,
-                        unit,
-                        timeUnit
-                    )
-                }
-            })
+        val holder = MutableHolder.of(0.0)
+        match(timeSpan) { duration, unit ->
+            holder.updateData { span ->
+                span!! + convert(
+                    duration,
+                    unit,
+                    timeUnit
+                )
+            }
+        }
         return holder.value()
     }
 

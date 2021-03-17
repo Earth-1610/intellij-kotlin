@@ -1,9 +1,5 @@
-package com.itangcent.test
+package com.itangcent.common.utils
 
-import com.itangcent.common.utils.asArrayList
-import com.itangcent.common.utils.asHashMap
-import com.itangcent.common.utils.notNullOrEmpty
-import com.itangcent.common.utils.reduceSafely
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -24,6 +20,7 @@ class CollectionKitTest {
         assertEquals("a,null", listOf("a", null).reduceSafely { s1, s2 -> "$s1,$s2" })
         assertEquals("null,a", listOf(null, "a").reduceSafely { s1, s2 -> "$s1,$s2" })
         assertEquals("a,b", listOf("a", "b").reduceSafely { s1, s2 -> "$s1,$s2" })
+        assertEquals("a,b,c", listOf("a", "b", "c").reduceSafely { s1, s2 -> "$s1,$s2" })
     }
 
     @Test
