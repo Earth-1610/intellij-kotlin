@@ -54,3 +54,9 @@ intellij-scala-support/build/
 intellij-idea/out/
 
 script/publish.gradle
+
+intellij-kotlin-support/out/
+
+intellij-scala-support/out/
+
+guice-action/out/

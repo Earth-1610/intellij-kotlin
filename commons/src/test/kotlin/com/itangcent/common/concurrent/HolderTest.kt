@@ -1,9 +1,5 @@
-package com.itangcent.test
+package com.itangcent.common.concurrent
 
-import com.itangcent.common.concurrent.Holder
-import com.itangcent.common.concurrent.MutableHolder
-import com.itangcent.common.concurrent.ValueHolder
-import com.itangcent.common.concurrent.VoidHolder
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
@@ -13,6 +9,9 @@ import java.time.Duration
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertNull
 
+/**
+ * Test case of [Holder]
+ */
 class HolderTest {
 
     @Test

@@ -1,7 +1,7 @@
-package com.itangcent.test
+package com.itangcent.common.files
 
-import com.itangcent.common.files.*
 import com.itangcent.common.utils.FileUtils
+import com.itangcent.common.ModelBaseTest
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

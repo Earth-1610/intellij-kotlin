@@ -91,11 +91,10 @@ fun KV<*, *>.sub(key: String): KV<String, Any?> {
 
 @Suppress("UNCHECKED_CAST")
 fun <K, V> Map<out K, V>.mutable(copy: Boolean = false): MutableMap<K, V> {
-    return when {
-        copy -> LinkedHashMap(this)
-        this is MutableMap -> this as MutableMap<K, V>
-        else -> LinkedHashMap(this)
+    if (!copy && this is MutableMap) {
+        return this as MutableMap<K, V>
     }
+    return LinkedHashMap(this)
 }
 
 @Suppress("UNCHECKED_CAST")

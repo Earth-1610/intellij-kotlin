@@ -2,7 +2,7 @@ package com.itangcent.common.utils
 
 object JavaClassHelper {
 
-    private val EMPTY_CLASS_ARRAY = arrayOfNulls<Class<*>>(0)
+//    private val EMPTY_CLASS_ARRAYCLASS_ARRAY = arrayOfNulls<Class<*>>(0)
 
     fun <T> newInstance(type: Class<out T>): T {
         try {

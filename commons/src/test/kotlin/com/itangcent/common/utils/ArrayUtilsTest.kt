@@ -1,6 +1,5 @@
-package com.itangcent.test
+package com.itangcent.common.utils
 
-import com.itangcent.common.utils.ArrayUtils
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

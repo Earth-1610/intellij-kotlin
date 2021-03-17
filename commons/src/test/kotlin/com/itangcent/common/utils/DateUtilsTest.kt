@@ -1,11 +1,12 @@
-package com.itangcent.test
+package com.itangcent.common.utils
 
-import com.itangcent.common.utils.*
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -73,6 +74,8 @@ class DateUtilsTest {
         assertEquals(time - 3661000L, DateUtils.parse("20200101").time)
         assertEquals(time - 3661000L, DateUtils.parse("2020-01-01").time)
         assertEquals(time - 3661000L, DateUtils.parse("2020/01/01").time)
+        assertThrows<IllegalArgumentException> { DateUtils.parse("abcd") }
+        assertNull(DateUtils.parse("abcd", "yyyy-MM-dd HH:mm"))
     }
 
     @Test

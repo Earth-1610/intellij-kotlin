@@ -1,4 +1,4 @@
-package com.itangcent.test
+package com.itangcent.common.utils
 
 import com.itangcent.common.utils.TimeSpanUtils
 import org.junit.jupiter.api.Assertions.assertEquals

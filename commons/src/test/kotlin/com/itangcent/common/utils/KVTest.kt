@@ -1,9 +1,5 @@
-package com.itangcent.test
+package com.itangcent.common.utils
 
-import com.itangcent.common.utils.KV
-import com.itangcent.common.utils.asKV
-import com.itangcent.common.utils.getAsKv
-import com.itangcent.common.utils.sub
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.*
@@ -16,7 +12,7 @@ import org.junit.jupiter.api.Test
  */
 class KVTest {
 
-    private var kv = KV<Any?, Any?>()
+    private var kv = KV.any()
 
     @BeforeEach
     fun before() {
@@ -41,6 +37,15 @@ class KVTest {
         assertEquals(2, kv.size)
         assertEquals(1, kv[1])
         assertEquals(2, kv[2])
+    }
+
+    @Test
+    fun testSet() {
+        kv.set(mapOf(3 to 3))
+        kv.set(KV.by(4, 4))
+        assertEquals(4, kv.size)
+        assertEquals(3, kv[3])
+        assertEquals(4, kv[4])
     }
 
     @Test
@@ -110,8 +115,29 @@ class KVTest {
         assertEquals(2, kvCreateCnt)
         "str".asKV { ++kvCreateCnt }
         assertEquals(3, kvCreateCnt)
+        null.asKV { ++kvCreateCnt }
+        assertEquals(4, kvCreateCnt)
         HashMap<Any?, Any?>().asKV { ++kvCreateCnt }
-        assertEquals(3, kvCreateCnt)
+        assertEquals(4, kvCreateCnt)
     }
 
+    @Test
+    fun testMutable() {
+        mapOf(1 to 1, 2 to 2).mutable().let {
+            assertEquals(1, kv[1])
+        }
+        hashMapOf(1 to 1, 2 to 2).let {
+            assertSame(it, it.mutable())
+            assertNotSame(it, it.mutable(true))
+            assertEquals(it, it.mutable(true))
+        }
+    }
+
+    @Test
+    fun testClone() {
+        kv.clone().let {
+            assertEquals(kv, it)
+            assertEquals(kv.hashCode(), it.hashCode())
+        }
+    }
 }

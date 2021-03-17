@@ -26,7 +26,7 @@ fun <T> Stream<T>.joinToString(
  * If the collection could be huge, you can specify a non-negative value of [limit], in which case only the first [limit]
  * elements will be appended, followed by the [truncated] string (which defaults to "...").
  */
-public fun <T, A : Appendable> Stream<T>.joinTo(
+fun <T, A : Appendable> Stream<T>.joinTo(
     buffer: A,
     separator: CharSequence = ", ",
     prefix: CharSequence = "",
@@ -43,7 +43,9 @@ public fun <T, A : Appendable> Stream<T>.joinTo(
             buffer.appendElement(element, transform)
         } else break
     }
-    if (limit in 0..(count - 1)) buffer.append(truncated)
+    if (limit in 0 until count) {
+        buffer.append(truncated)
+    }
     buffer.append(postfix)
     return buffer
 }
@@ -68,11 +70,11 @@ fun <T> Stream<T>.firstOrNull(predicate: (T) -> Boolean): T? {
 /**
  * Returns a sequential ordered stream whose elements are the specified array.
  */
-fun <T> kotlin.Array<T>?.stream(): java.util.stream.Stream<T> {
+fun <T> Array<T>?.stream(): Stream<T> {
     if (this.isNullOrEmpty()) {
         return Stream.empty()
     }
-    return Stream.of(*this!!)
+    return Stream.of(*this)
 }
 
 /**

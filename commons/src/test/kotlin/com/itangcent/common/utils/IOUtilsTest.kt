@@ -1,7 +1,5 @@
-package com.itangcent.test
+package com.itangcent.common.utils
 
-import com.itangcent.common.utils.IOUtils
-import com.itangcent.common.utils.readString
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import java.io.ByteArrayInputStream
@@ -17,7 +15,7 @@ class IOUtilsTest {
     @Test
     fun testCloseQuietly() {
         assertDoesNotThrow {
-            IOUtils.closeQuietly(object : Closeable {
+            IOUtils.closeQuietly(null, object : Closeable {
                 override fun close() {
                     throw IllegalStateException("failed close")
                 }

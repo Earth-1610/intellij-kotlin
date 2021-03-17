@@ -1,6 +1,5 @@
-package com.itangcent.test
+package com.itangcent.common.utils
 
-import com.itangcent.common.utils.CollectionUtils
 import org.junit.jupiter.api.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -23,6 +22,7 @@ class CollectionUtilsTest {
         assertTrue(CollectionUtils.containsAny(arrayOf("a", "b", null), listOf(null)))
         assertTrue(CollectionUtils.containsAny(arrayOf("a", "b"), listOf("a")))
         assertTrue(CollectionUtils.containsAny(arrayOf("a", "b"), listOf("c", "b")))
+        assertTrue(CollectionUtils.containsAny(arrayOf("a", "b"), listOf("d", "c", "b")))
 
         assertFalse(CollectionUtils.containsAny(listOf("a", "b"), ""))
         assertFalse(CollectionUtils.containsAny(listOf("a", "b"), null))
@@ -30,6 +30,7 @@ class CollectionUtilsTest {
         assertTrue(CollectionUtils.containsAny(listOf("a", "b"), "a"))
         assertFalse(CollectionUtils.containsAny(listOf("a", "b"), "c"))
         assertTrue(CollectionUtils.containsAny(listOf("a", "b"), "c", "b"))
+        assertTrue(CollectionUtils.containsAny(listOf("a", "b"), "d", "c", "b"))
 
         assertFalse(CollectionUtils.containsAny(listOf("a", "b"), emptyList<String>()))
         assertFalse(CollectionUtils.containsAny(listOf("a", "b"), listOf("")))
@@ -37,6 +38,7 @@ class CollectionUtilsTest {
         assertTrue(CollectionUtils.containsAny(listOf("a", "b", null), listOf(null)))
         assertTrue(CollectionUtils.containsAny(listOf("a", "b"), listOf("a")))
         assertTrue(CollectionUtils.containsAny(listOf("a", "b", "a"), listOf("c", "b")))
+        assertTrue(CollectionUtils.containsAny(listOf("c", "b"), listOf("a", "b", "a")))
     }
 
     @Test

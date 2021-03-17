@@ -145,4 +145,23 @@ class MultiValuesMap<K, V>(private val myOrdered: Boolean = false) : Map<K, Coll
         }
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as MultiValuesMap<*, *>
+
+        if (myBaseMap != other.myBaseMap) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return myBaseMap.hashCode()
+    }
 }
+
+fun <K, V> multiValuesMapOf(vararg pairs: Pair<K, V>): MultiValuesMap<K, V> =
+    MultiValuesMap<K, V>(true).also { map ->
+        pairs.forEach { (first, second) -> map.put(first, second) }
+    }

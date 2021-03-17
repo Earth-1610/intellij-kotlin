@@ -1,9 +1,6 @@
-package com.itangcent.test
+package com.itangcent.common.utils
 
 import com.itangcent.common.concurrent.AQSCountLatch
-import com.itangcent.common.utils.ConcurrentExtensible
-import com.itangcent.common.utils.Extensible
-import com.itangcent.common.utils.SimpleExtensible
 import org.apache.commons.lang3.RandomUtils
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
@@ -30,6 +27,8 @@ class ExtensibleTest {
         assertEquals(null, extensible.getExt("a"))
         assertEquals("1", extensible.getExt<Any>("b"))
         assertEquals(mapOf("b" to "1"), extensible.exts())
+        assertEquals("3", extensible.cache("c") { "3" })
+        assertEquals("3", extensible.cache("c") { "4" })
     }
 
     @Test

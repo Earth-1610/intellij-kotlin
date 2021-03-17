@@ -1,4 +1,4 @@
-package com.itangcent.test
+package com.itangcent.common
 
 import kotlin.test.assertEquals
 

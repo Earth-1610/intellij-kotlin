@@ -1,4 +1,4 @@
-package com.itangcent.test
+package com.itangcent.common.utils
 
 import com.itangcent.common.utils.*
 import org.apache.commons.lang3.StringUtils
@@ -217,9 +217,15 @@ class AnyKitTest {
         assertEquals(hashMapOf<String, String>(), mapOf<String, String>().copy())
         assertEquals(hashMapOf<String, String>(), hashMapOf<String, String>().copy())
         assertEquals(hashMapOf("a" to "b"), mapOf("a" to "b").copy())
-        assertEquals(hashMapOf("a" to "b"), mapOf("a" to "b").copy())
+        assertEquals(
+            hashMapOf("a" to "b", "c" to null, null to "d"),
+            mapOf("a" to "b", "c" to null, null to "d").copy()
+        )
         assertEquals(hashMapOf("a" to "b"), hashMapOf("a" to "b").copy())
-        assertEquals(hashMapOf("a" to "b"), hashMapOf("a" to "b").copy())
+        assertEquals(
+            hashMapOf("a" to "b", "c" to null, null to "d"),
+            hashMapOf("a" to "b", "c" to null, null to "d").copy()
+        )
     }
 
 

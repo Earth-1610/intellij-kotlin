@@ -1,4 +1,4 @@
-package com.itangcent.test
+package com.itangcent.common.utils
 
 import com.itangcent.common.utils.GsonUtils
 import com.itangcent.common.utils.KV
