@@ -5,14 +5,9 @@ coverage:
   precision: 3
   round: nearest
   range: "60...80"
-
-parsers:
-  gcov:
-    branch_detection:
-      conditional: yes
-      loop: yes
-      method: no
-      macro: no
+  status:
+    patch: off
+    project: off
 
 comment:
   layout: "reach,diff,flags,files,footer"

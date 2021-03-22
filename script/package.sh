@@ -11,7 +11,7 @@ basedir=${scriptDir%/*}
 echo "baseDir:"${basedir}
 cd ${basedir}
 
-./gradlew  clean build
+./gradlew clean build  -x test
 
 rm -r libs/*
 mv commons/build/libs/commons*.jar libs/commons.jar

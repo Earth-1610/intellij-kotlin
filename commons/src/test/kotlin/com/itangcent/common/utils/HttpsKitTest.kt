@@ -9,7 +9,7 @@ class HttpsKitTest {
     @Test
     fun testHttps() {
         try {
-            val url = URL("https://www.github.com")
+            val url = URL("https://www.apache.org/licenses/LICENSE-2.0")
             var connection = url.openConnection()
             if (connection is HttpsURLConnection) {//support https
                 connection = connection.unsafe()
