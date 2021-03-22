@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
+import kotlin.collections.LinkedHashMap
 
 abstract class AbstractPsiClassHelper : PsiClassHelper {
 
@@ -1116,7 +1117,11 @@ class Unwrapper {
                 this.map { it.unwrapped(deep + 1, handle) }
             }
             this.wrapped(deep) && this is Map<*, *> -> {
-                this.mapValues { it.value.unwrapped(deep + 1, handle) }
+                val copy = LinkedHashMap<Any?, Any?>()
+                this.forEach {
+                    copy[it.key.unwrapped(deep + 1, handle)] = it.value.unwrapped(deep + 1, handle)
+                }
+                copy
             }
             else -> {
                 this

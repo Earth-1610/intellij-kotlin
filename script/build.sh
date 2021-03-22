@@ -11,4 +11,4 @@ basedir=${scriptDir%/*}
 echo "baseDir:"${basedir}
 cd ${basedir}
 
-./gradlew clean build
+./gradlew clean build  -x test
