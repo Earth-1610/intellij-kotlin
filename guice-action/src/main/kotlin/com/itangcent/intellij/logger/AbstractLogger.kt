@@ -7,7 +7,7 @@ abstract class AbstractLogger : Logger {
 
     protected abstract fun processLog(logData: String?)
 
-    open protected fun processLog(level: Logger.Level, msg: String) {
+    protected open fun processLog(level: Logger.Level, msg: String) {
         try {
             val formatMsg: String? = if (StringUtils.isEmpty(level.getLevelStr())) {
                 msg + SystemUtils.newLine()

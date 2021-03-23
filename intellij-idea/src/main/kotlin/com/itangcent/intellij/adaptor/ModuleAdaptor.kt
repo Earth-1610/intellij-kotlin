@@ -8,17 +8,11 @@ import com.itangcent.common.utils.invokeMethod
 import com.itangcent.common.utils.invokeStaticMethod
 import com.itangcent.common.utils.notNullOrBlank
 import com.itangcent.intellij.context.ActionContext
-import com.itangcent.intellij.jvm.dev.DevEnv
-import com.itangcent.intellij.logger.Logger
 
 object ModuleAdaptor {
 
     //background idea log
     private val LOG = org.apache.log4j.Logger.getLogger(ActionContext::class.java)
-
-    private val devEnv: DevEnv = ActionContext.local()
-
-    private val logger: Logger = ActionContext.local()
 
     fun Module.filePath(): String? {
         try {

@@ -5,4 +5,5 @@ include 'intellij-idea'
 include 'intellij-jvm'
 include 'intellij-kotlin-support'
 include 'intellij-scala-support'
+include 'intellij-idea-test'
 
