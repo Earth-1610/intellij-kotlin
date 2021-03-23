@@ -38,6 +38,16 @@ intellij {
 }
 
 
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
 sourceCompatibility = 1.8
 
 repositories {
@@ -62,6 +72,8 @@ dependencies {
     testCompile "org.junit.jupiter:junit-jupiter-api:${junit_version}"
     testCompile "org.junit.jupiter:junit-jupiter-engine:${junit_version}"
     testCompile "org.junit.jupiter:junit-jupiter-params:${junit_version}"
+
+    testCompile project(":intellij-idea-test")
 }
 
 compileKotlin {
@@ -73,16 +85,6 @@ compileTestKotlin {
 
 test {
     useJUnitPlatform()
-}
-
-task javadocJar(type: Jar) {
-    classifier = 'javadoc'
-    from javadoc
-}
-
-task sourcesJar(type: Jar) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
 }
 
 def mvnDescription = '''
