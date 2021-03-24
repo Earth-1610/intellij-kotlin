@@ -8,6 +8,10 @@ buildscript {
     }
 }
 
+plugins {
+    id 'maven-publish'
+}
+
 
 group 'com.itangcent'
 version project_version
@@ -33,6 +37,15 @@ intellij {
     sameSinceUntilBuild false
 }
 
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
 
 sourceCompatibility = 1.8
 
@@ -48,13 +61,13 @@ dependencies {
     // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-reflect
     compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
 
-    compile project(":commons")
+    compileOnly project(":commons")
 
-    compile project(":guice-action")
+    compileOnly project(":guice-action")
 
-    compile project(":intellij-jvm")
+    compileOnly project(":intellij-jvm")
 
-    compile project(":intellij-idea")
+    compileOnly project(":intellij-idea")
 
     // https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
     compile "org.junit.jupiter:junit-jupiter-api:${junit_version}"
@@ -72,4 +85,58 @@ compileKotlin {
 }
 compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+def mvnDescription = '''
+Help for test intellij-idea
+'''
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+            pom {
+                name = 'Intellij Kotlin(intellij-idea)'
+                description = mvnDescription
+                url = 'https://github.com/Earth-1610/intellij-kotlin'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'tangcent'
+                        name = 'Tangcent'
+                        email = 'pentatengcent@gmail.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/Earth-1610/intellij-kotlin'
+                    developerConnection = 'scm:git:https://github.com/Earth-1610/intellij-kotlin'
+                    url = 'https://github.com/Earth-1610/intellij-kotlin'
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+            def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+
+            credentials {
+                username sonatypeUsername
+                password sonatypePassword
+            }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
 }

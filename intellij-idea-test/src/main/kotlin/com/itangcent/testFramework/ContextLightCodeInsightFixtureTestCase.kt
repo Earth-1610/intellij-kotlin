@@ -28,6 +28,7 @@ import com.itangcent.intellij.jvm.dev.DevEnv
 import com.itangcent.intellij.logger.Logger
 import com.itangcent.intellij.psi.DefaultPsiClassHelper
 import com.itangcent.mock.PrintLogger
+import org.junit.jupiter.api.condition.OS
 import org.mockito.Mockito
 import java.io.File
 import java.net.URL
@@ -58,6 +59,7 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightCodeInsightFixtureT
     override fun setUp() {
         super.setUp()
 
+        beforeBind()
         val builder = ActionContext.builder()
         builder.bind(Logger::class) { it.with(PrintLogger::class) }
         builder.bind(Project::class) { it.toInstance(this.project) }
@@ -83,6 +85,13 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightCodeInsightFixtureT
 
         bind(builder)
         builder.build().init(this)
+        afterBind()
+    }
+
+    protected open fun beforeBind() {
+    }
+
+    protected open fun afterBind() {
     }
 
     override fun tearDown() {
@@ -99,6 +108,10 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightCodeInsightFixtureT
     protected open fun bind(builder: ActionContext.ActionContextBuilder) {
 
     }
+
+//    override fun shouldRunTest(): Boolean {
+//        return !OS.WINDOWS.isCurrentOs
+//    }
 
     /**
      * create psiClass but not configure to project
@@ -139,7 +152,6 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightCodeInsightFixtureT
 
     protected fun loadSource(cls: Class<*>): PsiClass? {
         val readSourceFile = readSourceFile(cls)
-//        myFixture.configureFromExistingVirtualFile(readSourceFile)
         if (readSourceFile is PsiClassOwner) {
             return readSourceFile.classes.firstOrNull()
         }
@@ -149,8 +161,8 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightCodeInsightFixtureT
             if (path.startsWith("/src")) {
                 path = path.removePrefix("/src")
                 virtualFile = myFixture.tempDirFixture.getFile(path)
-            } else if (path.startsWith("${s}src")) {
-                path = path.removePrefix("${s}src")
+            } else if (path.startsWith("\\src")) {
+                path = path.removePrefix("\\src")
                 virtualFile = myFixture.tempDirFixture.getFile(path)
             }
         }
@@ -179,13 +191,19 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightCodeInsightFixtureT
             return readSourceFile(location, cls)
         }
 
-        val path = cls.name.replace(".", s) + ".java"
+        val path = cls.name.replace('.', '/') + ".java"
 
         //try load from resource/jdk
-        val content = ResourceUtils.readResource("jdk${s}${cls.simpleName}.java")
-        if (content.isNotBlank()) {
-            return myFixture.tempDirFixture.createFile(path, content)
-        }
+        ResourceUtils.readResource("jdk/${cls.simpleName}.fava")
+            .takeIf { it.isNotBlank() }
+            ?.let {
+                return myFixture.tempDirFixture.createFile(path, it)
+            }
+        ResourceUtils.readResource("jdk/${cls.simpleName}.java")
+            .takeIf { it.isNotBlank() }
+            ?.let {
+                return myFixture.tempDirFixture.createFile(path, it)
+            }
 
         //try load resource from openjdk
         val resource = testCachedResourceResolver.resolve("$JDK/src/share/classes/${cls.name.replace('.', '/')}.java")
@@ -201,7 +219,7 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightCodeInsightFixtureT
      * @return target source file path
      */
     private fun readSourceFile(location: URL, cls: Class<*>): VirtualFile {
-        val path = cls.name.replace(".", s)
+        val path = cls.name.replace('.', '/')
         try {
             URL("$location/$path.java").readBytes().also { content ->
                 return createVFile("$path.java", content)
@@ -215,23 +233,6 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightCodeInsightFixtureT
             }
         } catch (e: Exception) {
             //ignore
-        }
-        //maybe in windows
-        if (s != "/") {
-            try {
-                URL("$location$s$path.java").readBytes().also { content ->
-                    return createVFile("$path.java", content)
-                }
-            } catch (e: Exception) {
-                //ignore
-            }
-            try {
-                URL("$location$s$path.class").readBytes().also { content ->
-                    return createVFile("$path.class", content)
-                }
-            } catch (e: Exception) {
-                //ignore
-            }
         }
         throw IllegalAccessException("failed read source of $cls under $location")
     }

@@ -13,9 +13,8 @@ interface NotificationHelper {
     companion object {
 
         fun instance(): NotificationHelper {
-            val context: ActionContext? = ActionContext.getContext() ?: return DefaultNotificationHelper()
-
-            return context!!.instance(NotificationHelper::class)
+            return ActionContext.getContext()?.instance(NotificationHelper::class)
+                ?: DefaultNotificationHelper()
         }
     }
 }

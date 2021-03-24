@@ -3,6 +3,9 @@ package com.itangcent.common.utils
 import com.itangcent.common.files.DefaultFileTraveler
 import com.itangcent.common.files.FileHandle
 import com.itangcent.common.files.FileTraveler
+import com.itangcent.common.logger.ILogger
+import com.itangcent.common.logger.ILoggerProvider
+import com.itangcent.common.spi.SpiUtils
 import org.apache.commons.lang3.StringUtils
 import java.io.File
 import java.io.FileNotFoundException
@@ -218,10 +221,9 @@ object FileUtils {
             val filePresent = file.exists()
             if (!file.delete()) {
                 if (!filePresent) {
-                    throw FileNotFoundException("File does not exist: $file")
+                    return
                 }
-                val message = "Unable to delete file: $file"
-                throw IOException(message)
+                LOG?.error("Unable to delete file: $file")
             }
         }
     }
@@ -242,8 +244,7 @@ object FileUtils {
             cleanDirectory(directory)
         }
         if (!directory.delete()) {
-            val message = "Unable to delete directory $directory."
-            throw IOException(message)
+            LOG?.error("Unable to delete directory $directory.")
         }
     }
 
@@ -272,7 +273,8 @@ object FileUtils {
 
     fun isSymlink(file: File?): Boolean {
         if (file == null) {
-            throw NullPointerException("File must not be null")
+            LOG?.error("File must not be null")
+            return false
         }
         return Files.isSymbolicLink(file.toPath())
     }
@@ -286,16 +288,12 @@ object FileUtils {
      */
     fun cleanDirectory(directory: File) {
         val files: Array<File> = verifiedListFiles(directory)
-        var exception: IOException? = null
         for (file in files) {
             try {
                 forceDelete(file)
             } catch (ioe: IOException) {
-                exception = ioe
+                LOG?.error("File cleanDirectory:$file")
             }
-        }
-        if (null != exception) {
-            throw exception
         }
     }
 
@@ -308,15 +306,18 @@ object FileUtils {
     private fun verifiedListFiles(directory: File): Array<File> {
         if (!directory.exists()) {
             val message = "$directory does not exist"
-            throw IllegalArgumentException(message)
+            LOG?.error(message)
         }
         if (!directory.isDirectory) {
             val message = "$directory is not a directory"
-            throw IllegalArgumentException(message)
+            LOG?.error(message)
         }
-        return directory.listFiles()
-            ?: // null if security restricted
-            throw IOException("Failed to list contents of $directory")
+        val listFiles = directory.listFiles()
+        if (listFiles == null) {// null if security restricted
+            LOG?.error("Failed to list contents of $directory")
+            return emptyArray()
+        }
+        return listFiles
     }
 
     /**
@@ -344,8 +345,7 @@ object FileUtils {
                 // Double-check that some other thread or process hasn't made
                 // the directory in the background
                 if (!directory.isDirectory) {
-                    val message = "Unable to create directory $directory"
-                    throw IOException(message)
+                    LOG?.error("Unable to create directory $directory")
                 }
             }
         }
@@ -378,3 +378,6 @@ fun File.forceDelete() {
     return FileUtils.forceDelete(this)
 }
 
+
+//background idea log
+private val LOG: ILogger? = SpiUtils.loadService(ILoggerProvider::class)?.getLogger(FileUtils::class)

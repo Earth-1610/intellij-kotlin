@@ -60,3 +60,9 @@ intellij-kotlin-support/out/
 intellij-scala-support/out/
 
 guice-action/out/
+
+intellij-idea-test/idea-sandbox/
+
+intellij-idea-test/out/
+
+intellij-idea-test/build/

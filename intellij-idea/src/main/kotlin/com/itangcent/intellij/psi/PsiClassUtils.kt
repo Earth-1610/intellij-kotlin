@@ -2,6 +2,7 @@ package com.itangcent.intellij.psi
 
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTypesUtil
+import com.itangcent.intellij.psi.PsiClassUtils.findClassName
 import com.siyeh.ig.psiutils.ClassUtils
 
 object PsiClassUtils {
@@ -70,7 +71,7 @@ object PsiClassUtils {
 
     fun findMethodFromFullName(fullName: String, context: PsiElement): PsiMethod? {
 
-        val clsName = fullName.substringBefore("#")
+        val clsName = fullName.findClassName()
         val cls = ClassUtils.findClass(clsName, context) ?: return null
 
         val methodAndParams = fullName.substringAfter("#")
@@ -95,7 +96,7 @@ object PsiClassUtils {
     }
 
     fun findFieldFromFullName(fullName: String, context: PsiElement): PsiField? {
-        val clsName = fullName.substringBefore("#")
+        val clsName = fullName.findClassName()
         val cls = ClassUtils.findClass(clsName, context) ?: return null
 
         val fieldName = fullName.substringAfter("#")
@@ -145,11 +146,7 @@ object PsiClassUtils {
     }
 
     fun findMethodFromQualifiedName(qualifiedName: String, context: PsiElement): PsiMethod? {
-        val clsName = qualifiedName.substringBefore("#")
-            .takeIf { it != qualifiedName }
-            ?.let { qualifiedName.substringBeforeLast(".") }
-            .takeIf { it != qualifiedName }
-            ?: return null
+        val clsName = qualifiedName.findClassName()
         val cls = ClassUtils.findClass(clsName, context) ?: return null
 
         val methodAndParams = qualifiedName.substring(clsName.length + 1)
@@ -174,11 +171,7 @@ object PsiClassUtils {
     }
 
     fun findFieldFromQualifiedName(qualifiedName: String, context: PsiElement): PsiField? {
-        val clsName = qualifiedName.substringBefore("#")
-            .takeIf { it != qualifiedName }
-            ?.let { qualifiedName.substringBeforeLast(".") }
-            .takeIf { it != qualifiedName }
-            ?: return null
+        val clsName = qualifiedName.findClassName()
         val cls = ClassUtils.findClass(clsName, context) ?: return null
 
         val fieldName = qualifiedName.substring(clsName.length + 1)
@@ -219,5 +212,13 @@ object PsiClassUtils {
             return psiMember.name ?: "anonymous"
         }
         return "anonymous"
+    }
+
+    private fun String.findClassName(): String {
+        return if (this.contains('#')) {
+            this.substringBefore('#')
+        } else {
+            this.substringBefore('.')
+        }
     }
 }

@@ -14,7 +14,10 @@ import org.mockito.Mockito
 import java.io.File
 import kotlin.test.assertEquals
 
-class PathSearchConfigReaderTest : AdvancedContextTest() {
+/**
+ * Test case of [AutoSearchConfigReader]
+ */
+class AutoSearchConfigReaderTest : AdvancedContextTest() {
 
     @Inject
     protected lateinit var configReader: ConfigReader

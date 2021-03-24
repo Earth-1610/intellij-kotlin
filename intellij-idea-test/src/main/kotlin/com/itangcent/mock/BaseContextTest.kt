@@ -60,6 +60,10 @@ abstract class BaseContextTest {
     fun tearDown() {
         actionContext.waitComplete()
         actionContext.stop(true)
+        doTearDown()
+    }
+
+    protected open fun doTearDown() {
     }
 
     companion object {

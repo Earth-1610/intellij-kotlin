@@ -161,7 +161,7 @@ class FileUtilsTest {
 
     @Test
     fun testIsSymlink() {
-        assertThrows<NullPointerException> { FileUtils.isSymlink(null) }
+        assertFalse(FileUtils.isSymlink(null))
         assertFalse(FileUtils.isSymlink(tempDir!!.sub("A/a/1.txt")))
     }
 
