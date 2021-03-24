@@ -23,7 +23,7 @@ abstract class KotlinAnAction : AnAction {
 
     private val log = org.apache.log4j.Logger.getLogger(this.javaClass)
 
-    open protected fun onBuildActionContext(
+    protected open fun onBuildActionContext(
         event: AnActionEvent,
         builder: ActionContext.ActionContextBuilder
     ) {

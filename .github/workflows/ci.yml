@@ -24,4 +24,7 @@ jobs:
         with:
           java-version: 1.8
       - name: test
-        run: ./gradlew clean test
+        run: |
+          ./gradlew clean
+          ./gradlew :commons:test --stacktrace
+          ./gradlew :intellij-idea:test --stacktrace

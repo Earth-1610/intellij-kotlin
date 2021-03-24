@@ -1,5 +1,6 @@
 package com.itangcent.intellij.util
 
+import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDirectory
 import com.intellij.psi.PsiFile
@@ -21,7 +22,9 @@ object FileUtils {
     }
 
     fun forceSave(file: VirtualFile, content: ByteArray) {
-        forceSave(file.path, content)
+        WriteAction.run<Exception> {
+            file.setBinaryContent(content)
+        }
     }
 
     fun forceSave(filePath: String, content: ByteArray) {

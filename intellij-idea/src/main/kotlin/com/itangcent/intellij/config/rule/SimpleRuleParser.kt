@@ -84,7 +84,7 @@ class SimpleRuleParser : RuleParser {
         return null
     }
 
-    fun parseBooleanRule(rule: String, defaultValue: Boolean): BooleanRule? {
+    private fun parseBooleanRule(rule: String, defaultValue: Boolean): BooleanRule? {
         if (rule.isBlank()) return null
 
         if (booleanRuleParseCache.containsKey(rule + defaultValue)) {
@@ -163,6 +163,11 @@ class SimpleRuleParser : RuleParser {
         do {
             if (extendClassRegex(cls!!.qualifiedName)) {
                 return true
+            }
+            for (inter in cls.interfaces) {
+                if (extendClassRegex(inter!!.qualifiedName)) {
+                    return true
+                }
             }
             cls = cls.superClass
         } while (cls != null && cls.name != "Object")

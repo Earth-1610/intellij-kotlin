@@ -1,6 +1,7 @@
 package com.itangcent.common.utils
 
 import java.util.*
+import kotlin.collections.LinkedHashMap
 import kotlin.jvm.internal.CallableReference
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
@@ -237,7 +238,7 @@ private fun Any?.copy(values: ValuePresence): Any? {
         null -> return null
         is Map<*, *> -> {
             if (!values.add(this)) return emptyMap<Any?, Any?>()
-            val newCopy: HashMap<Any?, Any?> = HashMap()
+            val newCopy: HashMap<Any?, Any?> = LinkedHashMap()
             this.forEach { (key, value) ->
                 newCopy[key] = value.copy(values)
             }

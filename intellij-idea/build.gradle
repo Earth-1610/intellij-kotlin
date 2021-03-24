@@ -68,12 +68,9 @@ dependencies {
 
     compile project(":intellij-jvm")
 
-    // https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
-    testCompile "org.junit.jupiter:junit-jupiter-api:${junit_version}"
-    testCompile "org.junit.jupiter:junit-jupiter-engine:${junit_version}"
-    testCompile "org.junit.jupiter:junit-jupiter-params:${junit_version}"
-
     testCompile project(":intellij-idea-test")
+
+    testRuntime("org.junit.vintage:junit-vintage-engine:5.7.1")
 }
 
 compileKotlin {
