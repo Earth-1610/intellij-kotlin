@@ -56,7 +56,6 @@ internal class PsiClassUtilsTest : ContextLightCodeInsightFixtureTestCase() {
         assertFalse(PsiClassUtils.isInterface(PsiTypesUtil.getClassType(modelPsiClass)))
     }
 
-
     fun testHasImplement() {
         //true
         assertTrue(PsiClassUtils.hasImplement(objectPsiClass, objectPsiClass))
@@ -85,7 +84,6 @@ internal class PsiClassUtilsTest : ContextLightCodeInsightFixtureTestCase() {
         assertFalse(PsiClassUtils.hasImplement(listPsiClass, mapPsiClass))
         assertFalse(PsiClassUtils.hasImplement(hashMapPsiClass, linkedListPsiClass))
     }
-
 
     fun testFullNameOfMethod() {
         assertEquals("com.itangcent.model.Model#getStr()", PsiClassUtils.fullNameOfMethod(getStrPsiMethod))
@@ -132,7 +130,6 @@ internal class PsiClassUtilsTest : ContextLightCodeInsightFixtureTestCase() {
         )
         assertNull(PsiClassUtils.findFieldFromFullName("java.util.List#integer", modelPsiClass))
     }
-
 
     fun testFullNameOfMember() {
         assertEquals("com.itangcent.model.Model#getStr()", PsiClassUtils.fullNameOfMember(getStrPsiMethod))
@@ -185,7 +182,6 @@ internal class PsiClassUtilsTest : ContextLightCodeInsightFixtureTestCase() {
         assertNull(PsiClassUtils.findFieldFromQualifiedName("java.util.List#setStr", modelPsiClass))
     }
 
-
     fun testFindFieldFromQualifiedName() {
         assertEquals(
             strPsiField,
@@ -199,7 +195,6 @@ internal class PsiClassUtilsTest : ContextLightCodeInsightFixtureTestCase() {
         )
         assertNull(PsiClassUtils.findFieldFromQualifiedName("java.util.List#integer", modelPsiClass))
     }
-
 
     fun testQualifiedNameOfMember() {
         assertEquals("com.itangcent.model.Model#getStr", PsiClassUtils.qualifiedNameOfMember(getStrPsiMethod))
