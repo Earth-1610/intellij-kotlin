@@ -6,7 +6,6 @@ import com.intellij.psi.util.PsiTypesUtil
 import com.itangcent.common.utils.GsonUtils
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.with
-import com.itangcent.intellij.jvm.DuckTypeHelper
 import com.itangcent.intellij.jvm.PsiClassHelper
 import com.itangcent.intellij.jvm.duck.SingleDuckType
 import com.itangcent.testFramework.ContextLightCodeInsightFixtureTestCase
@@ -20,9 +19,6 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
 
     @Inject
     private lateinit var psiClassHelper: PsiClassHelper
-
-    @Inject
-    private lateinit var duckTypeHelper: DuckTypeHelper
 
     private lateinit var objectPsiClass: PsiClass
     private lateinit var integerPsiClass: PsiClass

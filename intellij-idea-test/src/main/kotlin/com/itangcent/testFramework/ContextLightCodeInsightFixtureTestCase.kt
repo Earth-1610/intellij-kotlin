@@ -66,7 +66,7 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightCodeInsightFixtureT
         builder.bind(DevEnv::class) { it.toInstance(mockDevEnv) }
         builder.bind(ConfigReader::class) { it.toInstance(mockConfigReader) }
 
-        builder.bindInstance("plugin.name", "easy_api")
+        builder.bindInstance("plugin.name", "intellij_kotlin")
         builder.bind(LocalFileRepository::class) {
             it.toInstance(TempFileRepository())
         }
