@@ -24,10 +24,6 @@ import com.itangcent.intellij.util.Magics
 import org.apache.commons.lang3.exception.ExceptionUtils
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
-import kotlin.collections.HashSet
-import kotlin.collections.LinkedHashMap
 
 abstract class AbstractPsiClassHelper : PsiClassHelper {
 
@@ -1091,7 +1087,7 @@ fun Any?.wrapped(deep: Int = 0): Boolean {
 
 class Unwrapper {
 
-    private val processing = HashSet<Any?>()
+    private val processing = SafeHashSet<Any?>()
 
     @Suppress("UNCHECKED_CAST")
     fun unwrapped(any: Any?, handle: (v: WrappedValue) -> Unit): Any? {
