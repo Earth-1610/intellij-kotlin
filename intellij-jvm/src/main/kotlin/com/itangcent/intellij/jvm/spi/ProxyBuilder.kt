@@ -56,7 +56,7 @@ class ProxyBuilder {
         private var logger: ILogger? = SpiUtils.loadService(ILogger::class)
     }
 
-    private fun buildProxy(): Any {
+    fun buildProxy(): Any {
         val delegates: Array<Any?> = kotlin.Array(delegateBuilders.size) { null }
         for ((index, delegateBuilder) in delegateBuilders.withIndex()) {
             delegates[index] = delegateBuilder.buildInstance(delegates)
