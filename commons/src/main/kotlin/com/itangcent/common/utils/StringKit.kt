@@ -117,7 +117,7 @@ fun String?.appendln(): String? {
     }
 }
 
-fun String?.appendln(str: String): String? {
+fun String?.appendln(str: String?): String? {
     return this.append(str, LINE_SEPARATOR)
 }
 
@@ -133,4 +133,4 @@ fun String?.flatten(defaultValue: String = "null"): String {
     return this?.replace(LINE_SEPARATOR, "\\n") ?: defaultValue
 }
 
-val LINE_SEPARATOR = System.getProperty("line.separator")
+private val LINE_SEPARATOR = "\n"
