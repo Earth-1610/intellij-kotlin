@@ -4,6 +4,7 @@ import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.psi.javadoc.PsiDocComment
+import com.intellij.psi.javadoc.PsiDocTag
 import com.intellij.util.containers.stream
 import com.itangcent.common.utils.*
 import com.itangcent.intellij.context.ActionContext
@@ -37,20 +38,37 @@ open class StandardDocHelper : DocHelper {
             val tags = docComment.findTagsByName(tag)
             if (tags.isEmpty()) return@docComment null
             for (paramDocTag in tags) {
-                var result: String? = null
-                for (dataElement in paramDocTag.dataElements) {
-                    val txt = dataElement.text?.trim()
-                    if (txt.isNullOrBlank()) break
-                    if (result == null) {
-                        result = txt
-                    } else {
-                        result += txt
-                    }
+                val text = paramDocTag.docValue()
+                if (text.isNotBlank()) {
+                    return@docComment text
                 }
-                if (result != null) return@docComment result
             }
-            return@docComment null
+            return@docComment ""
         }
+    }
+
+    private fun PsiDocTag.docValue(discardName: Boolean = false): String {
+        val lines = this.text.lines()
+        if (lines.isEmpty()) return ""
+        var ret = lines[0].removePrefix(this.nameElement.text).trimStart()
+        if (discardName) {
+            this.valueElement?.text?.let {
+                ret = ret.removePrefix(it).trimStart()
+            }
+        }
+        if (lines.size == 1) {
+            return ret
+        }
+        for (i in 1 until lines.size) {
+            lines[i].trim()
+                .removePrefix("*")
+                .takeIf { it.isNotBlank() }
+                ?.let {
+                    ret += '\n'
+                    ret += it
+                }
+        }
+        return ret
     }
 
     override fun findDocsByTag(psiElement: PsiElement?, tag: String?): List<String>? {
@@ -59,15 +77,9 @@ open class StandardDocHelper : DocHelper {
             if (tags.isEmpty()) return@docComment null
             val res: LinkedList<String> = LinkedList()
             for (paramDocTag in tags) {
-                val data = paramDocTag.dataElements
-                    .stream()
-                    .map { it?.text }
-                    .filter { it.notNullOrEmpty() }
-                    .map { it!! }
-                    .map { it.trim() }
-                    .reduceSafely { s1, s2 -> "$s1 $s2" }
-                if (data.notNullOrEmpty()) {
-                    res.add(data!!)
+                val data = paramDocTag.docValue()
+                if (data.isNotBlank()) {
+                    res.add(data)
                 }
             }
             return@docComment res
@@ -75,33 +87,17 @@ open class StandardDocHelper : DocHelper {
     }
 
     override fun findDocsByTagAndName(psiElement: PsiElement?, tag: String, name: String): String? {
+        val tagAttr = "@$tag"
         return psiElement.docComment { docComment ->
             loopTags@ for (paramDocTag in docComment.findTagsByName(tag)) {
-
-                var matched = false
-                var value: String? = null
-
-                val elements = paramDocTag.dataElements
-                    .map { it?.text }
-                    .filter { it.notNullOrEmpty() }
-
-                for (element in elements) {
-                    when {
-                        !matched -> if (element.notNullOrBlank()) {
-                            if (element != name) {
-                                continue@loopTags
-                            } else {
-                                matched = true
-                            }
-                        }
-                        value == null -> value = element
-                        else -> value += element
-                    }
+                if (paramDocTag.nameElement.text != tagAttr) {
+                    continue@loopTags
+                }
+                if (paramDocTag.valueElement?.text != name) {
+                    continue@loopTags
                 }
 
-                if (matched) {
-                    return@docComment value
-                }
+                return@docComment paramDocTag.docValue(true)
             }
             return@docComment null
         }
@@ -115,35 +111,35 @@ open class StandardDocHelper : DocHelper {
 
     override fun getDocCommentContent(docComment: PsiDocComment): String? {
         val descriptions = docComment.descriptionElements
-        return descriptions.stream()
-            .map { desc -> desc.text }
-            .filter { it.notNullOrBlank() }
-            ?.joinToString(separator = "\n")
-            ?.trim()
+        val text = descriptions.joinToString(separator = "") { desc -> desc.tinyText() }.trim()
+        val lines = text.lines()
+        if (lines.size > 1 && lines.stream().skip(1)
+                .filter { it.startsWith(" ") }.count() >= lines.size / 2
+        ) {
+            return lines[0] + "\n" + lines.stream().skip(1)
+                .map { it.removePrefix(" ") }
+                .joinToString(separator = "\n")
+        }
+        return text
+    }
+
+    private fun PsiElement.tinyText(): String {
+        val text = this.text
+        if (text.notNullOrBlank()) {
+            return text.trimEnd()
+        }
+        if (text.contains("\n")) {
+            return "\n"
+        }
+        return text
     }
 
     override fun getSubTagMapOfDocComment(psiElement: PsiElement?, tag: String): Map<String, String?> {
         return psiElement.docComment { docComment ->
             val subTagMap: HashMap<String, String?> = HashMap()
             for (paramDocTag in docComment.findTagsByName(tag)) {
-
-                var name: String? = null
-                var value: String? = null
-
-                val elements = paramDocTag.dataElements
-                    .stream()
-                    .mapNotNull { it.text }
-
-                for (element in elements) {
-                    when {
-                        name == null -> name = element
-                        value == null -> value = element
-                        else -> value += element
-                    }
-                }
-
-                if (name != null) {
-                    subTagMap[name] = value
+                paramDocTag.valueElement?.text?.let {
+                    subTagMap[it] = paramDocTag.docValue(true)
                 }
             }
             return@docComment subTagMap
@@ -154,10 +150,7 @@ open class StandardDocHelper : DocHelper {
         return psiElement.docComment { docComment ->
             val tagMap: HashMap<String, String?> = HashMap()
             docComment.tags.forEach { tag ->
-                tagMap[tag.name] = tag.dataElements
-                    .stream()
-                    .mapNotNull { it.text }
-                    .joinToString(separator = "") { it.trim() }
+                tagMap[tag.name] = tag.docValue()
             }
             return@docComment tagMap
         } ?: Collections.emptyMap()
@@ -199,6 +192,6 @@ open class StandardDocHelper : DocHelper {
         val suffixComment = getSuffixComment(field)
         val docByRule = extendProvider?.extraDoc(field)
 
-        return attrInDoc.append(suffixComment).append(docByRule)
+        return attrInDoc.appendln(suffixComment).appendln(docByRule)
     }
 }
