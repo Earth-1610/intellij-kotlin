@@ -33,7 +33,20 @@ interface JvmClassHelper {
 
     fun isPublicStaticFinal(field: PsiField): Boolean
 
+    /**
+     * Returns whether the given {@code type} is a primitive or primitive wrapper
+     */
     fun isNormalType(typeName: String): Boolean
+
+    /**
+     * Returns whether the given type is a primitive
+     */
+    fun isPrimitive(typeName: String): Boolean
+
+    /**
+     * Returns whether the given type is a primitive wrapper
+     */
+    fun isPrimitiveWrapper(typeName: String): Boolean
 
     fun getDefaultValue(typeName: String): Any?
 

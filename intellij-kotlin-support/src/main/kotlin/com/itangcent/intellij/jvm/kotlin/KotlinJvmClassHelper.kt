@@ -1,15 +1,11 @@
 package com.itangcent.intellij.jvm.kotlin
 
-import com.google.common.collect.Sets
 import com.intellij.lang.jvm.JvmParameter
 import com.intellij.psi.*
 import com.itangcent.common.utils.getPropertyValue
+import com.itangcent.intellij.jvm.ClassMateDataStorage
 import com.itangcent.intellij.jvm.JvmClassHelper
 import com.itangcent.intellij.jvm.duck.DuckType
-import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
-import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.normalTypes
-import java.util.*
-import kotlin.reflect.KClass
 
 class KotlinJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
 
@@ -67,6 +63,14 @@ class KotlinJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper 
 
     override fun isNormalType(typeName: String): Boolean {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isPrimitive(typeName: String): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override fun isPrimitiveWrapper(typeName: String): Boolean {
+        TODO("Not yet implemented")
     }
 
     override fun getDefaultValue(typeName: String): Any? {
@@ -277,49 +281,32 @@ class KotlinJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper 
     companion object {
 
         init {
+            ClassMateDataStorage.addTag(kotlin.Byte::class, "normal", "primitive")
+            ClassMateDataStorage.setDefaultValue(kotlin.Byte::class, 0.toByte())
 
-            normalTypes["Int"] = 0
-            normalTypes["kotlin.Int"] = 0
+            ClassMateDataStorage.addTag(kotlin.Int::class, "normal", "primitive")
+            ClassMateDataStorage.setDefaultValue(kotlin.Int::class, 0)
 
-            normalTypes["Byte"] = 0
-            normalTypes["kotlin.Byte"] = 0
+            ClassMateDataStorage.addTag(kotlin.Short::class, "normal", "primitive")
+            ClassMateDataStorage.setDefaultValue(kotlin.Short::class, 0.toShort())
 
-            normalTypes["Short"] = 0
-            normalTypes["kotlin.Short"] = 0
+            ClassMateDataStorage.addTag(kotlin.Float::class, "normal", "primitive")
+            ClassMateDataStorage.setDefaultValue(kotlin.Float::class, 0.0f)
 
-            normalTypes["Long"] = 0
-            normalTypes["kotlin.Long"] = 0
+            ClassMateDataStorage.addTag(kotlin.Double::class, "normal", "primitive")
+            ClassMateDataStorage.setDefaultValue(kotlin.Double::class, 0.0)
 
-            normalTypes["Float"] = 0.0
-            normalTypes["kotlin.Float"] = 0.0
+            ClassMateDataStorage.addTag(kotlin.collections.Collection::class, "collection")
+            ClassMateDataStorage.addTag(kotlin.collections.MutableCollection::class, "collection")
+            ClassMateDataStorage.addTag(kotlin.collections.Set::class, "collection")
+            ClassMateDataStorage.addTag(kotlin.collections.MutableSet::class, "collection")
+            ClassMateDataStorage.addTag(kotlin.collections.List::class, "collection")
+            ClassMateDataStorage.addTag(kotlin.collections.MutableList::class, "collection")
 
-            normalTypes["Double"] = 0.0
-            normalTypes["kotlin.Double"] = 0.0
+            ClassMateDataStorage.addTag(kotlin.collections.Map::class, "map")
+            ClassMateDataStorage.addTag(kotlin.collections.MutableMap::class, "map")
 
-            normalTypes["kotlin.String"] = ""
-
-            val collectionClasses = Sets.newHashSet(*StandardJvmClassHelper.collectionClasses!!)
-            addClass(kotlin.collections.Collection::class, collectionClasses)
-            addClass(MutableCollection::class, collectionClasses)
-            addClass(kotlin.collections.Set::class, collectionClasses)
-            addClass(MutableSet::class, collectionClasses)
-            addClass(kotlin.collections.List::class, collectionClasses)
-            addClass(MutableList::class, collectionClasses)
-            StandardJvmClassHelper.collectionClasses = collectionClasses.toTypedArray()
-
-            val mapClasses = Sets.newHashSet(*StandardJvmClassHelper.mapClasses!!)
-            addClass(kotlin.collections.Map::class, mapClasses)
-            addClass(MutableMap::class, mapClasses)
-            StandardJvmClassHelper.mapClasses = mapClasses.toTypedArray()
-
-            val stringClasses = Sets.newHashSet(*StandardJvmClassHelper.stringClasses!!)
-            addClass(String::class, stringClasses)
-            StandardJvmClassHelper.stringClasses = stringClasses.toTypedArray()
-        }
-
-        private fun addClass(cls: KClass<*>, classSet: HashSet<String>) {
-            classSet.add(cls.qualifiedName!!)
-            classSet.add(cls.simpleName!!)
+            ClassMateDataStorage.addTag(kotlin.String::class, "string")
         }
     }
 }

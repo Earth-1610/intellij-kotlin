@@ -9,11 +9,11 @@ import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
 import com.itangcent.common.utils.getPropertyValue
 import com.itangcent.common.utils.safeComputeIfAbsent
+import com.itangcent.intellij.jvm.ClassMateDataStorage
 import com.itangcent.intellij.jvm.JvmClassHelper
 import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.duck.SingleDuckType
 import com.itangcent.intellij.jvm.duck.SingleUnresolvedDuckType
-import java.util.concurrent.ArrayBlockingQueue
 
 @Singleton
 open class StandardJvmClassHelper : JvmClassHelper {
@@ -84,39 +84,39 @@ open class StandardJvmClassHelper : JvmClassHelper {
     }
 
     override fun isCollection(psiType: PsiType): Boolean {
-        return isInheritor(psiType, *collectionClasses!!)
+        return isInheritor(psiType, *ClassMateDataStorage.classWithTag("collection"))
     }
 
     override fun isCollection(psiClass: PsiClass): Boolean {
-        return isInheritor(psiClass, *collectionClasses!!)
+        return isInheritor(psiClass, *ClassMateDataStorage.classWithTag("collection"))
     }
 
     override fun isCollection(duckType: DuckType): Boolean {
-        return isInheritor(duckType, *collectionClasses!!)
+        return isInheritor(duckType, *ClassMateDataStorage.classWithTag("collection"))
     }
 
     override fun isMap(psiClass: PsiClass): Boolean {
-        return isInheritor(psiClass, *mapClasses!!)
+        return isInheritor(psiClass, *ClassMateDataStorage.classWithTag("map"))
     }
 
     override fun isMap(psiType: PsiType): Boolean {
-        return isInheritor(psiType, *mapClasses!!)
+        return isInheritor(psiType, *ClassMateDataStorage.classWithTag("map"))
     }
 
     override fun isMap(duckType: DuckType): Boolean {
-        return isInheritor(duckType, *mapClasses!!)
+        return isInheritor(duckType, *ClassMateDataStorage.classWithTag("map"))
     }
 
     override fun isString(psiClass: PsiClass): Boolean {
-        return stringClasses!!.contains(psiClass.qualifiedName)
+        return psiClass.qualifiedName?.let { ClassMateDataStorage.hasTag(it, "string") } ?: false
     }
 
     override fun isString(psiType: PsiType): Boolean {
-        return stringClasses!!.contains(psiType.canonicalText)
+        return ClassMateDataStorage.hasTag(psiType.canonicalText, "string")
     }
 
     override fun isString(duckType: DuckType): Boolean {
-        return stringClasses!!.contains(duckType.canonicalText())
+        return ClassMateDataStorage.hasTag(duckType.canonicalText(), "string")
     }
 
     /**
@@ -211,15 +211,23 @@ open class StandardJvmClassHelper : JvmClassHelper {
     }
 
     override fun isAccessibleField(field: PsiField): Boolean {
-        return hasAnyModify(field, fieldModifiers)
+        return hasAnyModify(field, setOf(PsiModifier.PUBLIC)) || (field.containingClass?.isInterface ?: false)
     }
 
     override fun isNormalType(typeName: String): Boolean {
-        return normalTypes.containsKey(typeName)
+        return ClassMateDataStorage.hasTag(typeName, "normal")
+    }
+
+    override fun isPrimitive(typeName: String): Boolean {
+        return ClassMateDataStorage.hasTag(typeName, "primitive")
+    }
+
+    override fun isPrimitiveWrapper(typeName: String): Boolean {
+        return ClassMateDataStorage.hasTag(typeName, "wrapper")
     }
 
     override fun getDefaultValue(typeName: String): Any? {
-        return normalTypes[typeName]
+        return ClassMateDataStorage.getDefaultValue(typeName)
     }
 
     override fun isBasicMethod(methodName: String): Boolean {
@@ -297,9 +305,11 @@ open class StandardJvmClassHelper : JvmClassHelper {
     override fun defineClassCode(psiClass: PsiClass): String {
         val sb = StringBuilder()
         //modifiers
-        extractModifiers(psiClass).forEach {
-            sb.append(it).append(" ")
-        }
+        extractModifiers(psiClass)
+            .filter { it != "abstract" || !psiClass.isInterface }
+            .forEach {
+                sb.append(it).append(" ")
+            }
         when {
             psiClass.isInterface -> sb.append("interface ")
             psiClass.isEnum -> sb.append("enum ")
@@ -310,16 +320,20 @@ open class StandardJvmClassHelper : JvmClassHelper {
         psiClass.extendsListTypes
             .takeIf { !it.isNullOrEmpty() }
             ?.let {
-                sb.append(" extends ")
-                    .append(it.joinToString(separator = " ,") { type -> type.canonicalText })
-                    .append(" ")
+                if (sb.last() != ' ') {
+                    sb.append(' ')
+                }
+                sb.append("extends ")
+                    .append(it.joinToString(separator = ", ") { type -> type.canonicalText })
             }
         psiClass.implementsListTypes
             .takeIf { !it.isNullOrEmpty() }
             ?.let {
-                sb.append(" implements ")
-                    .append(it.joinToString(separator = " ,") { type -> type.canonicalText })
-                    .append(" ")
+                if (sb.last() != ' ') {
+                    sb.append(' ')
+                }
+                sb.append("implements ")
+                    .append(it.joinToString(separator = ", ") { type -> type.canonicalText })
             }
         return sb.append(";").toString()
     }
@@ -327,9 +341,12 @@ open class StandardJvmClassHelper : JvmClassHelper {
     override fun defineMethodCode(psiMethod: PsiMethod): String {
         val sb = StringBuilder()
         //modifiers
-        extractModifiers(psiMethod).forEach {
-            sb.append(it).append(" ")
-        }
+        val notInterface = psiMethod.containingClass?.isInterface != true
+        extractModifiers(psiMethod)
+            .filter { it != "abstract" || notInterface }
+            .forEach {
+                sb.append(it).append(" ")
+            }
         if (!psiMethod.isConstructor) {
             psiMethod.returnType?.let {
                 sb.append(it.canonicalText).append(" ")
@@ -353,9 +370,12 @@ open class StandardJvmClassHelper : JvmClassHelper {
     override fun defineFieldCode(psiField: PsiField): String {
         val sb = StringBuilder()
         //modifiers
-        extractModifiers(psiField).forEach {
-            sb.append(it).append(" ")
-        }
+        val notInterface = psiField.containingClass?.isInterface != true
+        extractModifiers(psiField)
+            .filter { it != "static" || notInterface }
+            .forEach {
+                sb.append(it).append(" ")
+            }
         if (psiField is PsiEnumConstant) {
             sb.append(psiField.name)
             psiField.argumentList?.expressions
@@ -413,90 +433,102 @@ open class StandardJvmClassHelper : JvmClassHelper {
         const val KEY_OF_MAP = "K"
         const val VALUE_OF_MAP = "V"
 
-        var fieldModifiers: Set<String> = setOf(PsiModifier.PRIVATE, PsiModifier.PROTECTED)
         var staticFinalFieldModifiers: Set<String> =
             setOf(PsiModifier.STATIC, PsiModifier.FINAL)
         var publicStaticFinalFieldModifiers: Set<String> =
             setOf(PsiModifier.PUBLIC, PsiModifier.STATIC, PsiModifier.FINAL)
 
-        val normalTypes: HashMap<String, Any?> = HashMap()
-
-        var collectionClasses: Array<String>? = null
-        var mapClasses: Array<String>? = null
-        var stringClasses: Array<String>? = null
 
         private val PRIMITIVE_TYPES = HashMap<String, PsiType>(9)
 
         fun init() {
-            if (normalTypes.isEmpty()) {
-                normalTypes["boolean"] = false
-                normalTypes["Boolean"] = false
-                normalTypes["Void"] = null
-                normalTypes["void"] = null
-                normalTypes["char"] = 'a'
-                normalTypes["Character"] = 'a'
-                normalTypes["null"] = null
-                normalTypes["Byte"] = 0
-                normalTypes["byte"] = 0
-                normalTypes["Short"] = 0
-                normalTypes["short"] = 0
-                normalTypes["Integer"] = 0
-                normalTypes["int"] = 0
-                normalTypes["Long"] = 0L
-                normalTypes["long"] = 0L
-                normalTypes["Float"] = 0.0F
-                normalTypes["float"] = 0.0F
-                normalTypes["Double"] = 0.0
-                normalTypes["double"] = 0.0
-                normalTypes["String"] = ""
-                normalTypes["BigDecimal"] = 0.0
-                normalTypes["class"] = null
-                normalTypes["Class"] = null
-                normalTypes["java.lang.Boolean"] = false
-                normalTypes["java.lang.Object"] = emptyMap<Any, Any>()
-                normalTypes["java.lang.Character"] = 'a'
-                normalTypes["java.lang.Void"] = null
-                normalTypes["java.lang.Byte"] = 0
-                normalTypes["java.lang.Short"] = 0
-                normalTypes["java.lang.Integer"] = 0
-                normalTypes["java.lang.Long"] = 0L
-                normalTypes["java.lang.Float"] = 0.0F
-                normalTypes["java.lang.Double"] = 0.0
-                normalTypes["java.lang.String"] = ""
-                normalTypes["java.math.BigDecimal"] = 0.0
-                normalTypes["java.lang.Class"] = null
-            }
-            if (collectionClasses == null) {
-                val collectionClasses = HashSet<String>()
-                addClass(Iterable::class.java, collectionClasses)
-                addClass(java.lang.Iterable::class.java, collectionClasses)
-                addClass(Collection::class.java, collectionClasses)
-                addClass(java.util.Collection::class.java, collectionClasses)
-                addClass(List::class.java, collectionClasses)
-                addClass(ArrayList::class.java, collectionClasses)
-                addClass(java.util.ArrayList::class.java, collectionClasses)
-                addClass(java.util.LinkedList::class.java, collectionClasses)
-                addClass(Set::class.java, collectionClasses)
-                addClass(HashSet::class.java, collectionClasses)
-                addClass(java.util.TreeSet::class.java, collectionClasses)
-                addClass(java.util.SortedSet::class.java, collectionClasses)
-                addClass(java.util.Queue::class.java, collectionClasses)
-                addClass(java.util.Deque::class.java, collectionClasses)
-                collectionClasses.add("com.sun.jmx.remote.internal.ArrayQueue")
-                addClass(ArrayBlockingQueue::class.java, collectionClasses)
-                addClass(java.util.Stack::class.java, collectionClasses)
-                this.collectionClasses = collectionClasses.toTypedArray()
-            }
-            if (mapClasses == null) {
-                val mapClasses = HashSet<String>()
-                addClass(Map::class.java, mapClasses)
-                addClass(HashMap::class.java, mapClasses)
-                addClass(LinkedHashMap::class.java, mapClasses)
-                this.mapClasses = mapClasses.toTypedArray()
-            }
-            if (stringClasses == null) {
-                this.stringClasses = arrayOf("java.lang.String")
-            }
+
+            ClassMateDataStorage.addTag("boolean", "normal", "primitive")
+            ClassMateDataStorage.setDefaultValue("boolean", false)
+
+            ClassMateDataStorage.addTag(java.lang.Boolean::class.java, "normal", "wrapper")
+            ClassMateDataStorage.setDefaultValue(java.lang.Boolean::class.java, false)
+
+            ClassMateDataStorage.addTag(java.lang.Void::class.java, "normal", "primitive")
+            ClassMateDataStorage.addTag("void", "normal", "primitive")
+
+            ClassMateDataStorage.addTag("char", "normal", "primitive")
+            ClassMateDataStorage.setDefaultValue("char", 'a')
+
+            ClassMateDataStorage.addTag(java.lang.Character::class.java, "normal", "wrapper")
+            ClassMateDataStorage.setDefaultValue(java.lang.Character::class.java, 'a')
+
+            ClassMateDataStorage.addTag("null", "normal", "primitive")
+
+            ClassMateDataStorage.addTag("byte", "normal", "primitive")
+            ClassMateDataStorage.setDefaultValue("byte", 0.toByte())
+
+            ClassMateDataStorage.addTag(java.lang.Byte::class.java, "normal", "wrapper")
+            ClassMateDataStorage.setDefaultValue(java.lang.Byte::class.java, 0.toByte())
+
+            ClassMateDataStorage.addTag("short", "normal", "primitive")
+            ClassMateDataStorage.setDefaultValue("short", 0.toShort())
+
+            ClassMateDataStorage.addTag(java.lang.Short::class.java, "normal", "wrapper")
+            ClassMateDataStorage.setDefaultValue(java.lang.Short::class.java, 0.toShort())
+
+            ClassMateDataStorage.addTag("int", "normal", "primitive")
+            ClassMateDataStorage.setDefaultValue("int", 0)
+
+            ClassMateDataStorage.addTag(java.lang.Integer::class.java, "normal", "wrapper")
+            ClassMateDataStorage.setDefaultValue(java.lang.Integer::class.java, 0)
+
+            ClassMateDataStorage.addTag("long", "normal", "primitive")
+            ClassMateDataStorage.setDefaultValue("long", 0L)
+
+            ClassMateDataStorage.addTag(java.lang.Long::class.java, "normal", "wrapper")
+            ClassMateDataStorage.setDefaultValue(java.lang.Long::class.java, 0L)
+
+            ClassMateDataStorage.addTag("float", "normal", "primitive")
+            ClassMateDataStorage.setDefaultValue("float", 0.0F)
+
+            ClassMateDataStorage.addTag(java.lang.Float::class.java, "normal", "wrapper")
+            ClassMateDataStorage.setDefaultValue(java.lang.Float::class.java, 0.0F)
+
+            ClassMateDataStorage.addTag("double", "normal", "primitive")
+            ClassMateDataStorage.setDefaultValue("double", 0.0)
+
+            ClassMateDataStorage.addTag(java.lang.Double::class.java, "normal", "wrapper")
+            ClassMateDataStorage.setDefaultValue(java.lang.Double::class.java, 0.0)
+
+            ClassMateDataStorage.addTag(java.lang.Object::class.java, "normal")
+            ClassMateDataStorage.setDefaultValue(java.lang.Object::class.java, emptyMap<Any, Any>())
+
+            ClassMateDataStorage.addTag(java.lang.String::class.java, "normal", "string")
+            ClassMateDataStorage.setDefaultValue(java.lang.String::class.java, "")
+
+            ClassMateDataStorage.addTag(java.math.BigDecimal::class.java, "normal")
+            ClassMateDataStorage.setDefaultValue(java.math.BigDecimal::class.java, 0.0)
+
+            ClassMateDataStorage.addTag("class", "normal")
+            ClassMateDataStorage.addTag(java.lang.Class::class.java, "normal")
+
+            ClassMateDataStorage.addTag(java.lang.Iterable::class.java, "collection")
+            ClassMateDataStorage.addTag(java.util.Collection::class.java, "collection")
+            ClassMateDataStorage.addTag(java.util.List::class.java, "collection", "list")
+            ClassMateDataStorage.addTag(java.util.ArrayList::class.java, "collection", "list")
+            ClassMateDataStorage.addTag(java.util.LinkedList::class.java, "collection", "list")
+
+            ClassMateDataStorage.addTag(java.util.Set::class.java, "collection", "set")
+            ClassMateDataStorage.addTag(java.util.HashSet::class.java, "collection", "set")
+            ClassMateDataStorage.addTag(java.util.TreeSet::class.java, "collection", "set")
+            ClassMateDataStorage.addTag(java.util.SortedSet::class.java, "collection", "set")
+
+            ClassMateDataStorage.addTag(java.util.Queue::class.java, "collection", "queue")
+            ClassMateDataStorage.addTag(java.util.Deque::class.java, "collection", "queue")
+            ClassMateDataStorage.addTag("com.sun.jmx.remote.internal.ArrayQueue", "collection", "queue")
+            ClassMateDataStorage.addTag(java.util.concurrent.BlockingQueue::class.java, "collection", "queue")
+            ClassMateDataStorage.addTag(java.util.concurrent.ArrayBlockingQueue::class.java, "collection", "queue")
+            ClassMateDataStorage.addTag(java.util.Stack::class.java, "collection", "stack")
+
+            ClassMateDataStorage.addTag(java.util.Map::class.java, "map")
+            ClassMateDataStorage.addTag(java.util.HashMap::class.java, "map")
+            ClassMateDataStorage.addTag(java.util.LinkedHashMap::class.java, "map")
 
             PRIMITIVE_TYPES[PsiType.VOID.canonicalText] = PsiType.VOID;
             PRIMITIVE_TYPES[PsiType.BYTE.canonicalText] = PsiType.BYTE;

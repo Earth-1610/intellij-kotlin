@@ -7,9 +7,6 @@ import com.intellij.psi.PsiParameter
 import com.intellij.psi.util.PsiTypesUtil
 import com.itangcent.testFramework.ContextLightCodeInsightFixtureTestCase
 import java.util.*
-import java.util.Collection
-import java.util.List
-import java.util.Map
 
 /**
  * Test case of [PsiClassUtils]
@@ -33,11 +30,11 @@ internal class PsiClassUtilsTest : ContextLightCodeInsightFixtureTestCase() {
     override fun beforeBind() {
         super.beforeBind()
         objectPsiClass = loadSource(Object::class.java)!!
-        collectionPsiClass = loadSource(Collection::class.java)!!
-        mapPsiClass = loadSource(Map::class.java)!!
-        listPsiClass = loadSource(List::class.java)!!
-        hashMapPsiClass = loadSource(HashMap::class.java)!!
-        linkedListPsiClass = loadSource(LinkedList::class.java)!!
+        collectionPsiClass = loadSource(java.util.Collection::class.java)!!
+        mapPsiClass = loadSource(java.util.Map::class.java)!!
+        listPsiClass = loadSource(java.util.List::class.java)!!
+        hashMapPsiClass = loadSource(java.util.HashMap::class.java)!!
+        linkedListPsiClass = loadSource(java.util.LinkedList::class.java)!!
         modelPsiClass = loadClass("model/Model.java")!!
         getStrPsiMethod = modelPsiClass.methods[0]
         setStrPsiMethod = modelPsiClass.methods[1]
