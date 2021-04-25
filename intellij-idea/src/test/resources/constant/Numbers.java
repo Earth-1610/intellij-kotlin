@@ -10,16 +10,16 @@ public interface Numbers {
     /**
      * two
      */
-    int TWO = 2;
+    static final int TWO = 2;
 
     /**
      * three
      */
-    int THREE = 3;
+    static final int THREE = 3;
 
     /**
      * four
      */
-    int FOUR = 4;
+    static final int FOUR = 4;
 
 }

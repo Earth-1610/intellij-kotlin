@@ -1,18 +1,16 @@
 package com.itangcent.intellij.jvm.scala
 
-import com.google.common.collect.Sets
 import com.intellij.lang.jvm.JvmParameter
 import com.intellij.psi.*
 import com.itangcent.common.utils.getPropertyValue
 import com.itangcent.common.utils.invokeMethod
+import com.itangcent.intellij.jvm.ClassMateDataStorage
 import com.itangcent.intellij.jvm.JvmClassHelper
 import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.scala.adaptor.ScPatternDefinitionPsiFieldAdaptor
 import com.itangcent.intellij.jvm.scala.adaptor.ScalaPsiFieldAdaptor
 import com.itangcent.intellij.jvm.scala.adaptor.ScalaTypeParameterType2PsiTypeParameterAdaptor
 import com.itangcent.intellij.jvm.scala.compatible.ScCompatiblePhysicalMethodSignature
-import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
-import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.normalTypes
 import org.jetbrains.plugins.scala.lang.psi.api.statements.ScPatternDefinition
 import org.jetbrains.plugins.scala.lang.psi.api.statements.ScVariable
 import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.ScTemplateDefinition
@@ -73,6 +71,14 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
 
     override fun isNormalType(typeName: String): Boolean {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isPrimitive(typeName: String): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override fun isPrimitiveWrapper(typeName: String): Boolean {
+        TODO("Not yet implemented")
     }
 
     override fun getDefaultValue(typeName: String): Any? {
@@ -345,21 +351,29 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
     companion object {
 
         init {
-            normalTypes["Int"] = 0
-            normalTypes["Byte"] = 0
-            normalTypes["Short"] = 0
-            normalTypes["Long"] = 0
-            normalTypes["Float"] = 0.0
-            normalTypes["Double"] = 0.0
-            normalTypes["Any"] = Object()
-            normalTypes["AnyRef"] = Object()
-            normalTypes["Null"] = null
-            normalTypes["Unit"] = null
-            normalTypes["_root_.scala.Predef.String"] = ""
+            ClassMateDataStorage.addTag(scala.Byte::class, "normal", "primitive")
+            ClassMateDataStorage.setDefaultValue(scala.Byte::class, 0.toByte())
 
-            val stringClasses = Sets.newHashSet(*StandardJvmClassHelper.stringClasses!!)
-            stringClasses.add("_root_.scala.Predef.String")
-            StandardJvmClassHelper.stringClasses = stringClasses.toTypedArray()
+            ClassMateDataStorage.addTag(scala.Int::class, "normal", "primitive")
+            ClassMateDataStorage.setDefaultValue(scala.Int::class, 0)
+
+            ClassMateDataStorage.addTag(scala.Short::class, "normal", "primitive")
+            ClassMateDataStorage.setDefaultValue(scala.Short::class, 0.toShort())
+
+            ClassMateDataStorage.addTag(scala.Float::class, "normal", "primitive")
+            ClassMateDataStorage.setDefaultValue(scala.Float::class, 0.0f)
+
+            ClassMateDataStorage.addTag(scala.Double::class, "normal", "primitive")
+            ClassMateDataStorage.setDefaultValue(scala.Double::class, 0.0)
+
+
+            ClassMateDataStorage.addTag("_root_.scala.Predef.String", "string")
+            ClassMateDataStorage.setDefaultValue("_root_.scala.Predef.String", "")
+
+            ClassMateDataStorage.addTag("Any", "normal")
+            ClassMateDataStorage.addTag("AnyRef", "normal")
+            ClassMateDataStorage.addTag("Null", "normal")
+            ClassMateDataStorage.addTag("Unit", "normal")
         }
     }
 

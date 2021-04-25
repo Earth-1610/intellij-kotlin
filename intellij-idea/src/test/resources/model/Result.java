@@ -1,12 +1,14 @@
 package com.itangcent.model;
 
+import com.itangcent.model.IResult;
+
 public class Result<T> implements IResult {
 
-    private Integer code;//响应码
+    private Integer code;//The response code
 
-    private String msg;//响应消息
+    private String msg;//The response message
 
-    private T data;//响应数据
+    private T data;//The response data
 
     public Result() {
     }
