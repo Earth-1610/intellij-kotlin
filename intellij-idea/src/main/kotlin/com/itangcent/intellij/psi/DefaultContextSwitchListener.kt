@@ -37,8 +37,8 @@ open class DefaultContextSwitchListener : ContextSwitchListener {
         if (nextModule != null && module != nextModule) {
             synchronized(this) {
                 if (module != nextModule) {
-                    moduleChangeEvent?.invoke(nextModule)
                     module = nextModule
+                    moduleChangeEvent?.invoke(nextModule)
                 }
             }
         }
