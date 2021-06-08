@@ -3,6 +3,7 @@ package com.itangcent.intellij.config
 import com.google.inject.Inject
 import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.*
+import com.itangcent.intellij.config.resource.FileResource
 import com.itangcent.intellij.config.resource.ResourceResolver
 import com.itangcent.intellij.logger.Logger
 import com.itangcent.intellij.tip.OnlyOnceInContextTip
@@ -79,10 +80,25 @@ abstract class AbstractConfigReader : MutableConfigReader {
                     } else if (content.isBlank()) {
                         logger.debug("$path is an empty file")
                     }
-                    return
                 }
+                return
             }
-            loadConfigInfoContent(content!!, path.substringAfterLast("."))
+            configInfo.put("_configs", resource.url.toString())
+            if (resource is FileResource) {
+                val prePath = configInfo.getFirst("_curr_path")
+                try {
+                    resource.asFile()?.parent?.let { configInfo.replace("_curr_path", it) }
+                    loadConfigInfoContent(content, path.substringAfterLast("."))
+                } finally {
+                    if (prePath == null) {
+                        configInfo.removeAll("_curr_path")
+                    } else {
+                        configInfo.replace("_curr_path", prePath)
+                    }
+                }
+            } else {
+                loadConfigInfoContent(content, path.substringAfterLast("."))
+            }
         } catch (e: Exception) {
             LOG.error("failed load config:$path")
         }
@@ -96,18 +112,23 @@ abstract class AbstractConfigReader : MutableConfigReader {
             val propertyAndValue = setting.removePrefix("set").trim()
             val property = propertyAndValue.substringBefore('=').trim()
             val value = propertyAndValue.substringAfter('=', "").trim()
-            if (property == "resolveProperty") {
-                this.resolveProperty = value.toBool()
-                return
-            } else if (property == "ignoreUnresolved") {
-                this.ignoreUnresolved = value.toBool()
-                return
-            } else if (property == "ignoreNotFoundFile") {
-                this.ignoreNotFoundFile = value.toBool()
-                return
-            } else if (property == "resolveMulti") {
-                this.resolveMulti = ResolveMultiType.valueOf(value.toUpperCase())
-                return
+            when (property) {
+                "resolveProperty" -> {
+                    this.resolveProperty = value.toBool()
+                    return
+                }
+                "ignoreUnresolved" -> {
+                    this.ignoreUnresolved = value.toBool()
+                    return
+                }
+                "ignoreNotFoundFile" -> {
+                    this.ignoreNotFoundFile = value.toBool()
+                    return
+                }
+                "resolveMulti" -> {
+                    this.resolveMulti = ResolveMultiType.valueOf(value.toUpperCase())
+                    return
+                }
             }
         } else if (setting.startsWith("if")) {
             //todo:resolve  condition
@@ -337,7 +358,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
 
         private fun parseEqualLine(line: String, kvHandle: (String, String) -> Unit) {
             val name = resolveProperty(line.substringBefore("=")).trim()
-            if (!name.isBlank()) {
+            if (name.isNotBlank()) {
                 val value = resolveProperty(line.substringAfter("=", ""))
                 if (name == "properties.additional") {
                     loadConfigFile(value)

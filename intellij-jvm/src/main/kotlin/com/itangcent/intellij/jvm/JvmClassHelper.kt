@@ -35,6 +35,7 @@ interface JvmClassHelper {
 
     /**
      * Returns whether the given {@code type} is a primitive or primitive wrapper
+     * or {@code String}、{@code Object}
      */
     fun isNormalType(typeName: String): Boolean
 

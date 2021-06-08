@@ -9,15 +9,24 @@ import java.net.URL
 import java.util.regex.Pattern
 
 class FileResource(val path: String) : Resource() {
+
+    private val currPath: String? =
+        ActionContext.getContext()
+            ?.instance(ConfigReader::class)
+            ?.first("_curr_path")
+
+    private var resolveFile: File? = null
+
     override val reachable: Boolean
         get() = asFile()?.takeIf { it.exists() && it.isFile } != null
 
-    private fun asFile(): File? {
-        val currPath = ActionContext.getContext()?.instance(ConfigReader::class)
-            ?.first("curr_path")
-        val resolveFile = SysFileResolve.adaptive().resolveFile(path, currPath)
+    fun asFile(): File? {
+        if (resolveFile != null) {
+            return resolveFile
+        }
+        resolveFile = SysFileResolve.adaptive().resolveFile(path, currPath)
         LOG!!.debug("$path resolved as ${resolveFile?.path}")
-        return resolveFile?.takeIf { it.exists() }
+        return (resolveFile as? File)?.takeIf { it.exists() }
     }
 
     override val url: URL
