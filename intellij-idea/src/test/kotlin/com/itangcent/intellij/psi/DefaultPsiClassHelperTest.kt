@@ -29,6 +29,7 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
     private lateinit var hashMapPsiClass: PsiClass
     private lateinit var linkedListPsiClass: PsiClass
     private lateinit var modelPsiClass: PsiClass
+    private lateinit var nodePsiClass: PsiClass
     private lateinit var javaVersionPsiClass: PsiClass
     private lateinit var numbersPsiClass: PsiClass
 
@@ -44,6 +45,7 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
         hashMapPsiClass = loadSource(java.util.HashMap::class.java)!!
         linkedListPsiClass = loadSource(LinkedList::class.java)!!
         modelPsiClass = loadClass("model/Model.java")!!
+        nodePsiClass = loadClass("model/Node.java")!!
         javaVersionPsiClass = loadClass("constant/JavaVersion.java")!!
         numbersPsiClass = loadClass("constant/Numbers.java")!!
     }
@@ -102,6 +104,11 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
         assertEquals(
             "{\"s\":\"\",\"integer\":0,\"stringList\":[\"\"],\"integerArray\":[0]}",
             GsonUtils.toJson(psiClassHelper.getTypeObject(PsiTypesUtil.getClassType(modelPsiClass), modelPsiClass))
+        )
+
+        assertEquals(
+            "{\"id\":\"\",\"code\":\"\",\"sub\":[{\"id\":\"\",\"code\":\"\"}]}",
+            GsonUtils.toJson(psiClassHelper.getTypeObject(PsiTypesUtil.getClassType(nodePsiClass), nodePsiClass))
         )
 
         //getTypeObject from psiType  with option-------------------------------------------------
@@ -189,6 +196,15 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
             )
         )
         assertEquals(
+            "{\"id\":\"\",\"code\":\"\",\"sub\":[{\"id\":\"\",\"code\":\"\"}]}",
+            GsonUtils.toJson(
+                psiClassHelper.getTypeObject(
+                    PsiTypesUtil.getClassType(nodePsiClass), nodePsiClass,
+                    JsonOption.NONE
+                )
+            )
+        )
+        assertEquals(
             "{\"s\":\"\",\"integer\":0,\"stringList\":[\"\"],\"integerArray\":[0],\"onlyGet\":\"\"}",
             GsonUtils.toJson(
                 psiClassHelper.getTypeObject(
@@ -259,6 +275,11 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
         assertEquals(
             "{\"s\":\"\",\"integer\":0,\"stringList\":[\"\"],\"integerArray\":[0]}",
             GsonUtils.toJson(psiClassHelper.getTypeObject(SingleDuckType(modelPsiClass), modelPsiClass))
+        )
+
+        assertEquals(
+            "{\"id\":\"\",\"code\":\"\",\"sub\":[{\"id\":\"\",\"code\":\"\"}]}",
+            GsonUtils.toJson(psiClassHelper.getTypeObject(SingleDuckType(nodePsiClass), nodePsiClass))
         )
 
         //getTypeObject from duckType  with option-------------------------------------------------
@@ -372,6 +393,15 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
                 )
             )
         )
+        assertEquals(
+            "{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub orgs\"},\"code\":\"\",\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\"},\"code\":\"\"}]}",
+            GsonUtils.toJson(
+                psiClassHelper.getTypeObject(
+                    SingleDuckType(nodePsiClass), nodePsiClass,
+                    JsonOption.ALL
+                )
+            )
+        )
     }
 
     fun testGetFields() {
@@ -380,16 +410,32 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
             GsonUtils.toJson(psiClassHelper.getFields(modelPsiClass))
         )
         assertEquals(
+            "{\"id\":\"\",\"code\":\"\",\"sub\":[{\"id\":\"\",\"code\":\"\"}]}",
+            GsonUtils.toJson(psiClassHelper.getFields(nodePsiClass))
+        )
+        assertEquals(
             "{\"s\":\"\",\"integer\":0,\"stringList\":[\"\"],\"integerArray\":[0]}",
             GsonUtils.toJson(psiClassHelper.getFields(modelPsiClass, modelPsiClass))
+        )
+        assertEquals(
+            "{\"id\":\"\",\"code\":\"\",\"sub\":[{\"id\":\"\",\"code\":\"\"}]}",
+            GsonUtils.toJson(psiClassHelper.getFields(nodePsiClass, nodePsiClass))
         )
         assertEquals(
             "{\"s\":\"\",\"@comment\":{\"s\":\"string field\",\"integer\":\"integer field\",\"stringList\":\"stringList field\",\"integerArray\":\"integerArray field\"},\"integer\":0,\"stringList\":[\"\"],\"integerArray\":[0],\"onlySet\":\"\",\"onlyGet\":\"\"}",
             GsonUtils.toJson(psiClassHelper.getFields(modelPsiClass, JsonOption.ALL))
         )
         assertEquals(
+            "{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub orgs\"},\"code\":\"\",\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\"},\"code\":\"\"}]}",
+            GsonUtils.toJson(psiClassHelper.getFields(nodePsiClass, JsonOption.ALL))
+        )
+        assertEquals(
             "{\"s\":\"\",\"@comment\":{\"s\":\"string field\",\"integer\":\"integer field\",\"stringList\":\"stringList field\",\"integerArray\":\"integerArray field\"},\"integer\":0,\"stringList\":[\"\"],\"integerArray\":[0],\"onlySet\":\"\",\"onlyGet\":\"\"}",
             GsonUtils.toJson(psiClassHelper.getFields(modelPsiClass, modelPsiClass, JsonOption.ALL))
+        )
+        assertEquals(
+            "{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub orgs\"},\"code\":\"\",\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\"},\"code\":\"\"}]}",
+            GsonUtils.toJson(psiClassHelper.getFields(nodePsiClass, nodePsiClass, JsonOption.ALL))
         )
     }
 
@@ -436,6 +482,7 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
         assertEquals(null, psiClassHelper.getDefaultValue(hashMapPsiClass))
         assertEquals(null, psiClassHelper.getDefaultValue(linkedListPsiClass))
         assertEquals(null, psiClassHelper.getDefaultValue(modelPsiClass))
+        assertEquals(null, psiClassHelper.getDefaultValue(nodePsiClass))
 
         //check getDefaultValue of PsiType
         assertEquals(emptyMap<Any, Any>(), psiClassHelper.getDefaultValue(PsiTypesUtil.getClassType(objectPsiClass)))
@@ -446,7 +493,7 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
         assertEquals(null, psiClassHelper.getDefaultValue(PsiTypesUtil.getClassType(listPsiClass)))
         assertEquals(null, psiClassHelper.getDefaultValue(PsiTypesUtil.getClassType(hashMapPsiClass)))
         assertEquals(null, psiClassHelper.getDefaultValue(PsiTypesUtil.getClassType(linkedListPsiClass)))
-        assertEquals(null, psiClassHelper.getDefaultValue(PsiTypesUtil.getClassType(modelPsiClass)))
+        assertEquals(null, psiClassHelper.getDefaultValue(PsiTypesUtil.getClassType(nodePsiClass)))
     }
 
     fun testGetJsonFieldName() {

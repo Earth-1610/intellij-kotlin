@@ -7,7 +7,7 @@ import kotlin.test.assertTrue
 internal class SafeHashSetTest {
 
     @Test
-    fun testAdd() {
+    fun testSafeHashSet() {
         val set = SafeHashSet<Any>()
         assertTrue(set.add("1"))
         assertTrue(set.add(1))
@@ -16,6 +16,22 @@ internal class SafeHashSetTest {
         assertTrue(set.add(SafeHashSetTestModel(2)))
         assertFalse(set.add(SafeHashSetTestModel(1)))
         assertFalse(set.add(SafeHashSetTestModel(2)))
+    }
+
+    @Test
+    fun testReentrantSafeHashSet() {
+        val set = ReentrantSafeHashSet<Any>(2)
+        assertTrue(set.addElement("1"))
+        assertTrue(set.addElement("1"))
+        assertTrue(set.addElement(1))
+        assertTrue(set.addElement(1))
+        assertFalse(set.addElement(1))
+        assertTrue(set.addElement(SafeHashSetTestModel(1)))
+        assertTrue(set.addElement(SafeHashSetTestModel(1)))
+        assertTrue(set.addElement(SafeHashSetTestModel(2)))
+        assertTrue(set.addElement(SafeHashSetTestModel(2)))
+        assertFalse(set.addElement(SafeHashSetTestModel(1)))
+        assertFalse(set.addElement(SafeHashSetTestModel(2)))
     }
 }
 

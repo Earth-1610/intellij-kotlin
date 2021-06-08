@@ -1087,7 +1087,7 @@ fun Any?.wrapped(deep: Int = 0): Boolean {
 
 class Unwrapper {
 
-    private val processing = SafeHashSet<Any?>()
+    private val processing = ReentrantSafeHashSet<Any?>(2)
 
     @Suppress("UNCHECKED_CAST")
     fun unwrapped(any: Any?, handle: (v: WrappedValue) -> Unit): Any? {
@@ -1096,8 +1096,12 @@ class Unwrapper {
 
     @Suppress("UNCHECKED_CAST")
     fun Any?.unwrapped(deep: Int = 0, handle: (v: WrappedValue) -> Unit): Any? {
-        if (!processing.add(this)) {
-            return Any()
+        if (!processing.addElement(this)) {
+            return if (this.wrapped(deep)) {
+                Any()
+            } else {
+                this
+            }
         }
         return when {
             this == null || deep > 10 -> {
