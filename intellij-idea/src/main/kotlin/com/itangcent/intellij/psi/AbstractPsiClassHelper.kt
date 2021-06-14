@@ -290,7 +290,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         if (resourcePsiClass != null) {
             val resolvedInfo = getResolvedInfo<Any>(cacheKey)
             if (resolvedInfo != null) {
-                return resolvedInfo.asKV()
+                return resolvedInfo
             }
         }
 
@@ -455,7 +455,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
         val resolvedInfo = getResolvedInfo<Any>(cacheKey)
         if (resolvedInfo != null) {
-            return resolvedInfo.asKV()
+            return resolvedInfo
         }
 
         val psiClass = if (option.has(JsonOption.READ_COMMENT)) {
@@ -1084,7 +1084,7 @@ class Unwrapper {
             when {
                 stack.count { it == this } == 1 -> {
                     //can reentrant
-                    return doUnwrappedWithStack(deep, parent, key)
+                    return this.doUnwrappedWithStack(deep, parent, key)
                 }
                 this.wrapped(deep) -> {
                     val cache = unwrappedCache[this]
@@ -1099,7 +1099,7 @@ class Unwrapper {
                 }
             }
         } else {
-            return doUnwrappedWithStack(deep, parent, key)
+            return this.doUnwrappedWithStack(deep, parent, key)
         }
     }
 
