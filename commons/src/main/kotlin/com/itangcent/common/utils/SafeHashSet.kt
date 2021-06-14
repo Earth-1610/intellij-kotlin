@@ -23,6 +23,53 @@ open class SafeHashSet<E> : HashSet<E>() {
     }
 }
 
+open class SafeHashMap<K, V> : HashMap<K, V>() {
+
+    protected val failedElements = LinkedList<Pair<K, V>>()
+
+    override fun get(key: K): V? {
+        return try {
+            super.get(key)
+        } catch (e: Throwable) {
+            try {
+                failedElements.find { it.first == key }
+            } catch (e: Throwable) {
+                failedElements.find { it.first === key }
+            }?.second
+        }
+    }
+
+    override fun getOrDefault(key: K, defaultValue: V): V {
+        return try {
+            super.getOrDefault(key, defaultValue)
+        } catch (e: Exception) {
+            try {
+                failedElements.find { it.first == key }
+            } catch (e: Throwable) {
+                failedElements.find { it.first === key }
+            }?.second ?: defaultValue
+        }
+    }
+
+    override fun put(key: K, value: V): V? {
+        return try {
+            super.put(key, value)
+        } catch (e: Throwable) {
+            var ret: V? = null
+            val index: Int = try {
+                failedElements.indexOfFirst { it.first == key }
+            } catch (e: Throwable) {
+                failedElements.indexOfFirst { it.first === key }
+            }
+            if (index != -1) {
+                ret = failedElements.removeAt(index).second
+            }
+            failedElements.add(key to value)
+            ret
+        }
+    }
+}
+
 class ReentrantSafeHashSet<E>(private val reentrant: Int) : SafeHashSet<CntElement<E>>() {
 
     fun addElement(element: E): Boolean {

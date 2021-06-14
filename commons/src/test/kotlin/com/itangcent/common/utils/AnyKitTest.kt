@@ -193,11 +193,20 @@ class AnyKitTest {
 
         val list = arrayListOf<Any?>("a", "b")
         list.add(list)
-        assertEquals(arrayListOf<Any?>("a", "b", arrayListOf<Any?>()), list.resolveCycle())
+        assertEquals(
+            arrayListOf<Any?>("a", "b", arrayListOf<Any?>("a", "b", arrayListOf<Any?>())),
+            list.resolveCycle()
+        )
 
         val map = hashMapOf<Any?, Any?>("a" to 1, "b" to 2)
         map["c"] = map
-        assertEquals(hashMapOf<Any?, Any?>("a" to 1, "b" to 2, "c" to hashMapOf<Any?, Any?>()), map.resolveCycle())
+        assertEquals(
+            hashMapOf<Any?, Any?>(
+                "a" to 1,
+                "b" to 2,
+                "c" to hashMapOf<Any?, Any?>("a" to 1, "b" to 2, "c" to hashMapOf<Any?, Any?>())
+            ), map.resolveCycle()
+        )
     }
 
     @Test

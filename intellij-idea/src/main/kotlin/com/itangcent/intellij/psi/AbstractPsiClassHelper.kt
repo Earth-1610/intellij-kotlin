@@ -24,6 +24,7 @@ import com.itangcent.intellij.util.Magics
 import org.apache.commons.lang3.exception.ExceptionUtils
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.collections.ArrayDeque
 
 abstract class AbstractPsiClassHelper : PsiClassHelper {
 
@@ -82,19 +83,19 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     override fun copy(obj: Any?): Any? = obj.copy()
 
     override fun getTypeObject(psiType: PsiType?, context: PsiElement): Any? {
-        return doGetTypeObject(psiType, context).unwrapped { }
+        return doGetTypeObject(psiType, context).unwrapped()
     }
 
     override fun getTypeObject(psiType: PsiType?, context: PsiElement, option: Int): Any? {
-        return doGetTypeObject(psiType, context, option).unwrapped { }
+        return doGetTypeObject(psiType, context, option).unwrapped()
     }
 
     override fun getTypeObject(duckType: DuckType?, context: PsiElement): Any? {
-        return doGetTypeObject(duckType, context).unwrapped { }
+        return doGetTypeObject(duckType, context).unwrapped()
     }
 
     override fun getTypeObject(duckType: DuckType?, context: PsiElement, option: Int): Any? {
-        return doGetTypeObject(duckType, context, option).unwrapped { }
+        return doGetTypeObject(duckType, context, option).unwrapped()
     }
 
     fun doGetTypeObject(psiType: PsiType?, context: PsiElement): Any? {
@@ -125,7 +126,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     isNormalType(deepType) -> list.add(getDefaultValue(deepType) ?: "")
                     else -> doGetTypeObject(deepType, context, option)?.let { list.add(it) }
                 }
-                return Delay(list)
+                return list.delay()
             }
             jvmClassHelper!!.isCollection(castTo) -> {   //list type
                 val list = java.util.ArrayList<Any>()
@@ -141,7 +142,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     }
                     iterableType != null -> doGetTypeObject(iterableType, context, option)?.let { list.add(it) }
                 }
-                return Delay(list)
+                return list.delay()
             }
             jvmClassHelper.isMap(castTo) -> {   //list type
                 val map: HashMap<Any, Any?> = HashMap()
@@ -171,7 +172,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                 map[defaultKey] = defaultValue
 
-                return Delay(map)
+                return map.delay()
             }
             jvmClassHelper.isEnum(psiType) -> {
                 return parseEnum(psiType, context, option)
@@ -186,7 +187,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                         duckType != null -> {
                             val result = doGetTypeObject(duckType, context, option)
                             cacheResolvedInfo(cacheKey, result)
-                            Delay(result)
+                            result.delay()
                         }
                         else -> null
                     }
@@ -197,9 +198,9 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                         return Magics.FILE_STR
                     }
                     return try {
-                        val result = getFields(paramCls, option)
+                        val result = doGetFields(paramCls, option)
                         cacheResolvedInfo(cacheKey, result)
-                        Delay(result)
+                        result.delay()
                     } catch (e: Throwable) {
                         logger!!.error("error to getTypeObject:$psiType")
                         logger.trace(ExceptionUtils.getStackTrace(e))
@@ -232,7 +233,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             val list = ArrayList<Any>()
             cacheResolvedInfo(cacheKey, list)
             doGetTypeObject(type.componentType(), context, option)?.let { list.add(it) }
-            return Delay(list)
+            return list.delay()
         }
 
         if (type is SingleDuckType) {
@@ -247,7 +248,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     override fun getFields(psiClass: PsiClass?): KV<String, Any?> {
-        return doGetFields(psiClass).unwrapped { }.asKV()
+        return doGetFields(psiClass).unwrapped().asKV()
     }
 
     private fun doGetFields(psiClass: PsiClass?): Any? {
@@ -255,7 +256,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     override fun getFields(psiClass: PsiClass?, context: PsiElement?): KV<String, Any?> {
-        return doGetFields(psiClass, context).unwrapped { }.asKV()
+        return doGetFields(psiClass, context).unwrapped().asKV()
     }
 
     fun doGetFields(psiClass: PsiClass?, context: PsiElement?): Any? {
@@ -263,7 +264,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     override fun getFields(psiClass: PsiClass?, option: Int): KV<String, Any?> {
-        return doGetFields(psiClass, option).unwrapped { }.asKV()
+        return doGetFields(psiClass, option).unwrapped().asKV()
     }
 
     fun doGetFields(psiClass: PsiClass?, option: Int): Any? {
@@ -272,7 +273,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     @Suppress("UNCHECKED_CAST")
     override fun getFields(psiClass: PsiClass?, context: PsiElement?, option: Int): KV<String, Any?> {
-        return doGetFields(psiClass, context, option).unwrapped { }.asKV()
+        return doGetFields(psiClass, context, option).unwrapped().asKV()
     }
 
     fun doGetFields(psiClass: PsiClass?, context: PsiElement?, option: Int): Any? {
@@ -293,7 +294,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             }
         }
 
-        val kv: KV<String, Any?> = WrappedKV()
+        val kv: KV<String, Any?> = KV()
 
         if (resourcePsiClass != null) {
             cacheResolvedInfo(cacheKey, kv)//cache
@@ -319,13 +320,16 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             afterParseClass(resourcePsiClass, option, kv)
         }
 
-        return Delay(kv)
+        return kv.delay()
     }
 
     open fun parseEnum(psiType: PsiType?, context: PsiElement, option: Int): Any? {
         return ""//by default use enum name `String`
     }
 
+    /**
+     * Get typeObject of SingleDuckType
+     */
     protected open fun getTypeObject(duckType: SingleDuckType?, context: PsiElement, option: Int): Any? {
         actionContext!!.checkStatus()
         if (duckType == null) return null
@@ -356,7 +360,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     doGetTypeObject(realIterableType, context, option)?.let { list.add(it) }
                 }
 
-                return Delay(list)
+                return list.delay()
             }
             jvmClassHelper.isMap(duckType) -> {
 
@@ -409,7 +413,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     map[defaultKey] = defaultValue
                 }
 
-                return Delay(map)
+                return map.delay()
             }
             jvmClassHelper.isEnum(duckType) -> {
                 return parseEnum(duckType, context, option)
@@ -440,7 +444,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     @Suppress("UNCHECKED_CAST")
     protected open fun getFields(clsWithParam: SingleDuckType, context: PsiElement?, option: Int): KV<String, Any?> {
-        return doGetFields(clsWithParam, context, option).unwrapped { }.asKV()
+        return doGetFields(clsWithParam, context, option).unwrapped().asKV()
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -459,7 +463,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         } else {
             clsWithParam.psiClass()
         }
-        val kv: KV<String, Any?> = WrappedKV()
+        val kv: KV<String, Any?> = KV()
         cacheResolvedInfo(cacheKey, kv)
         beforeParseType(psiClass, clsWithParam, option, kv)
 
@@ -489,7 +493,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
         afterParseType(psiClass, clsWithParam, option, kv)
 
-        return Delay(kv)
+        return kv.delay()
     }
 
     protected open fun foreachField(
@@ -612,7 +616,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         actionContext!!.checkStatus()
         val clsName: String?
         var property: String? = null
-        val cls: PsiClass?
 
         val classAndPropertyOrMethod =
             psiResolver!!.resolveClassWithPropertyOrMethod(classNameWithProperty, context)
@@ -650,7 +653,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         } else {
             clsName = classNameWithProperty.trim()
         }
-        cls = duckTypeHelper!!.resolveClass(clsName, context)?.let { getResourceClass(it) }
+        val cls = duckTypeHelper!!.resolveClass(clsName, context)?.let { getResourceClass(it) }
         return resolveEnumOrStatic(context, cls, property, defaultPropertyName)
     }
 
@@ -681,11 +684,10 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 }
             }
 
-            if (valProperty.isBlank()) {
-                return options
+            if (valProperty.isNotBlank()) {
+                findConstantsByProperty(enumConstants, valProperty, options)
             }
 
-            findConstantsByProperty(enumConstants, valProperty, options)
             if (options.isEmpty() && property.isNullOrBlank()) {
                 if (ruleComputer!!.computer(ClassRuleKeys.ENUM_USE_NAME, context) == true) {
                     findConstantsByProperty(enumConstants, "name()", options)
@@ -978,35 +980,7 @@ interface Wrapped {
     fun get(): Any?
 }
 
-open class WrappedKV<K, V> : KV<K, V>() {
-
-    @Suppress("UNCHECKED_CAST")
-    override operator fun set(key: K, value: V): KV<K, V> {
-        if (value.wrapped()) {
-            super.put(key, value.unwrapped {
-                fillExtras(it, key)
-            } as V)
-        } else {
-            super.put(key, value)
-        }
-        return this
-    }
-
-    private fun fillExtras(value: WrappedValue, key: K) {
-        value.forEach { k, v ->
-            if ((k as? String)?.startsWith('@') == true) {
-                val index = k.indexOf('@', 1)
-                if (index == -1) {
-                    this.sub(k)[key as String] = v
-                } else {
-                    this.sub(k.substring(0, index))[(key as String) + "@" + k.substring(index + 1)] = v
-                }
-            }
-        }
-    }
-}
-
-class WrappedValue(private var value: Any?) : WrappedKV<String, Any?>(), Wrapped {
+class WrappedValue(private var value: Any?) : KV<String, Any?>(), Wrapped {
 
     private val id = index.getAndIncrement()
 
@@ -1028,7 +1002,6 @@ class WrappedValue(private var value: Any?) : WrappedKV<String, Any?>(), Wrapped
     override fun hashCode(): Int {
         return id
     }
-
 }
 
 fun Any?.wrap(): WrappedValue {
@@ -1036,8 +1009,15 @@ fun Any?.wrap(): WrappedValue {
 }
 
 @Suppress("UNCHECKED_CAST")
-fun <T> T?.unwrapped(handle: (v: WrappedValue) -> Unit): T? {
-    return Unwrapper().unwrapped(this, handle) as T?
+fun <T> T?.unwrapped(): T? {
+    return Unwrapper().unwrapped(this) as T?
+}
+
+fun Any?.delay(): Delay {
+    if (this is Delay) {
+        return this
+    }
+    return Delay(this)
 }
 
 class Delay(private var raw: Any?) : Wrapped {
@@ -1045,7 +1025,7 @@ class Delay(private var raw: Any?) : Wrapped {
     private val id = index.getAndIncrement()
 
     override fun get(): Any? {
-        return GsonUtils.copy(raw)
+        return raw
     }
 
     override fun equals(other: Any?): Boolean {
@@ -1087,44 +1067,98 @@ fun Any?.wrapped(deep: Int = 0): Boolean {
 
 class Unwrapper {
 
-    private val processing = ReentrantSafeHashSet<Any?>(2)
+    private val stack = ArrayDeque<Any>(5)
+    private val unwrappedCache = SafeHashMap<Any, Any?>()
 
     @Suppress("UNCHECKED_CAST")
-    fun unwrapped(any: Any?, handle: (v: WrappedValue) -> Unit): Any? {
-        return any.unwrapped(0, handle)
+    fun unwrapped(any: Any?, parent: Map<Any?, Any?>? = null, key: String? = null): Any? {
+        return any.unwrapped(0, parent, key)
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun Any?.unwrapped(deep: Int = 0, handle: (v: WrappedValue) -> Unit): Any? {
-        if (!processing.addElement(this)) {
-            return if (this.wrapped(deep)) {
-                Any()
-            } else {
-                this
-            }
+    fun Any?.unwrapped(deep: Int = 0, parent: Map<Any?, Any?>? = null, key: String? = null): Any? {
+        if (this == null) {
+            return null
         }
+        if (stack.contains(this)) {
+            when {
+                stack.count { it == this } == 1 -> {
+                    //can reentrant
+                    return doUnwrappedWithStack(deep, parent, key)
+                }
+                this.wrapped(deep) -> {
+                    val cache = unwrappedCache[this]
+                    if (cache == null) {
+                        return Any()
+                    } else {
+                        return cache.copy()
+                    }
+                }
+                else -> {
+                    return this.copy()
+                }
+            }
+        } else {
+            return doUnwrappedWithStack(deep, parent, key)
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun Any.doUnwrappedWithStack(deep: Int, parent: Map<Any?, Any?>?, key: String? = null): Any? {
+        stack.add(this)
+        try {
+            return this.doUnwrapped(deep, parent, key).also { unwrappedCache[this] = it }
+        } finally {
+            stack.removeLastOrNull()
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun Any.doUnwrapped(deep: Int, parent: Map<Any?, Any?>?, key: String? = null): Any? {
         return when {
-            this == null || deep > 10 -> {
-                this
+            deep > 10 -> {
+                this.copy()
+            }
+            this is WrappedValue -> {
+                fillExtras(this, parent, key)
+                this.get().unwrapped(deep, parent, key)
             }
             this is Wrapped -> {
-                this.get().unwrapped(deep, handle)
+                this.get().unwrapped(deep, parent, key)
             }
             this.wrapped(deep) && this is Collection<*> -> {
-                this.map { it.unwrapped(deep + 1, handle) }
+                this.map { it.unwrapped(deep + 1, parent, key) }
             }
             this.wrapped(deep) && this is Array<*> -> {
-                this.map { it.unwrapped(deep + 1, handle) }
+                this.map { it.unwrapped(deep + 1, parent, key) }
             }
             this.wrapped(deep) && this is Map<*, *> -> {
                 val copy = LinkedHashMap<Any?, Any?>()
                 this.forEach {
-                    copy[it.key.unwrapped(deep + 1, handle)] = it.value.unwrapped(deep + 1, handle)
+                    copy[it.key.unwrapped(deep + 1)] =
+                        it.value.unwrapped(deep + 1, copy, it.key as? String)
                 }
                 copy
             }
             else -> {
-                this
+                this.copy()
+            }
+        }
+    }
+
+
+    private fun fillExtras(value: WrappedValue, parent: Map<Any?, Any?>?, key: String? = null) {
+        if (parent == null || key == null) {
+            return
+        }
+        value.forEach { k, v ->
+            if ((k as? String)?.startsWith('@') == true) {
+                val index = k.indexOf('@', 1)
+                if (index == -1) {
+                    parent.sub(k).mutable()[key] = v
+                } else {
+                    parent.sub(k.substring(0, index)).mutable()[key + "@" + k.substring(index + 1)] = v
+                }
             }
         }
     }

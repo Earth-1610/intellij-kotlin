@@ -1,6 +1,7 @@
 package com.itangcent.common.utils
 
 import java.util.*
+import kotlin.collections.ArrayDeque
 import kotlin.collections.LinkedHashMap
 import kotlin.jvm.internal.CallableReference
 import kotlin.reflect.KClass
@@ -298,18 +299,23 @@ private fun Any?.collectValues(values: ValuePresence): Boolean {
 
 private class ValuePresence {
 
-    private val values: Stack<Any> = Stack()
+    private val values: ArrayDeque<Any?> = ArrayDeque()
 
     fun add(one: Any?): Boolean {
-        if (one == null) return true
-        values.filter { it === one }
-            .any { return false }
+        if (one == null) {
+            values.add(one)
+            return true
+        }
+
+        if (values.count { it === one } > 1) {
+            return false
+        }
         values.add(one)
         return true
     }
 
     fun pop() {
-        values.pop()
+        values.removeLastOrNull()
     }
 
     fun clear() {

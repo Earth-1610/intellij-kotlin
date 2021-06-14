@@ -5,6 +5,7 @@ import com.itangcent.common.logger.ILogger
 import com.itangcent.common.logger.ILoggerProvider
 import com.itangcent.common.spi.SpiUtils
 import java.util.*
+import kotlin.collections.HashMap
 
 open class KV<K, V> : LinkedHashMap<K, V>() {
 
@@ -78,6 +79,13 @@ inline fun <reified T> Map<*, *>.getAs(key: Any?, subKey: Any?, grandKey: Any?):
 }
 
 @Suppress("UNCHECKED_CAST")
+fun Map<*, *>.sub(key: String): Map<String, Any?> {
+    return this[key].asMap {
+        (this as? MutableMap<String, Any?>)?.set(key, it)
+    }
+}
+
+@Suppress("UNCHECKED_CAST")
 fun KV<*, *>.getAsKv(key: String): KV<String, Any?>? {
     return this[key]?.asKV()
 }
@@ -112,6 +120,22 @@ fun Any?.asKV(onCastFailed: (KV<String, Any?>) -> Unit = {}): KV<String, Any?> {
     }
     LOG?.warn("can not cast ${GsonUtils.toJson(this)} as KV")
     val ret = KV.create<String, Any?>()
+    onCastFailed(ret)
+    return ret
+}
+
+@Suppress("UNCHECKED_CAST")
+fun Any?.asMap(onCastFailed: (Map<String, Any?>) -> Unit = {}): Map<String, Any?> {
+    if (this == null) {
+        val ret = HashMap<String, Any?>()
+        onCastFailed(ret)
+        return ret
+    }
+    if (this is Map<*, *>) {
+        return this as Map<String, Any?>
+    }
+    LOG?.warn("can not cast ${GsonUtils.toJson(this)} as KV")
+    val ret = HashMap<String, Any?>()
     onCastFailed(ret)
     return ret
 }
