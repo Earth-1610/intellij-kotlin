@@ -63,6 +63,11 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
     }
 
     fun testGetTypeObject() {
+        doTestGetTypeObject()
+        doTestGetTypeObject()
+    }
+
+    fun doTestGetTypeObject() {
 
         //getTypeObject from psiType without option-------------------------------------------------
 
@@ -431,6 +436,11 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
     }
 
     fun testGetFields() {
+        doTestGetFields()
+        doTestGetFields()
+    }
+
+    fun doTestGetFields() {
         assertEquals(
             "{\"s\":\"\",\"integer\":0,\"stringList\":[\"\"],\"integerArray\":[0]}",
             GsonUtils.toJson(psiClassHelper.getFields(modelPsiClass))
@@ -546,6 +556,11 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
     }
 
     fun testParseStaticFields() {
+        doTestParseStaticFields()
+        doTestParseStaticFields()
+    }
+
+    fun doTestParseStaticFields() {
         assertEquals(
             "[{\"name\":\"ONE\",\"value\":\"1\",\"desc\":\"one\"},{\"name\":\"TWO\",\"value\":\"2\",\"desc\":\"two\"},{\"name\":\"THREE\",\"value\":\"3\",\"desc\":\"three\"},{\"name\":\"FOUR\",\"value\":\"4\",\"desc\":\"four\"}]",
             GsonUtils.toJson(psiClassHelper.parseStaticFields(numbersPsiClass))
@@ -553,6 +568,11 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
     }
 
     fun testParseEnumConstant() {
+        doTestParseEnumConstant()
+        doTestParseEnumConstant()
+    }
+
+    fun doTestParseEnumConstant() {
         assertEquals(
             "[{\"params\":{\"name\":\"0.9\",\"value\":1.5},\"name\":\"JAVA_0_9\",\"ordinal\":0,\"desc\":\"The Java version reported by Android. This is not an official Java version number.\"},{\"params\":{\"name\":\"1.1\",\"value\":1.1},\"name\":\"JAVA_1_1\",\"ordinal\":1,\"desc\":\"Java 1.1.\"},{\"params\":{\"name\":\"1.2\",\"value\":1.2},\"name\":\"JAVA_1_2\",\"ordinal\":2,\"desc\":\"Java 1.2.\"},{\"params\":{\"name\":\"1.3\",\"value\":1.3},\"name\":\"JAVA_1_3\",\"ordinal\":3,\"desc\":\"Java 1.3.\"},{\"params\":{\"name\":\"1.4\",\"value\":1.4},\"name\":\"JAVA_1_4\",\"ordinal\":4,\"desc\":\"Java 1.4.\"},{\"params\":{\"name\":\"1.5\",\"value\":1.5},\"name\":\"JAVA_1_5\",\"ordinal\":5,\"desc\":\"Java 1.5.\"},{\"params\":{\"name\":\"1.6\",\"value\":1.6},\"name\":\"JAVA_1_6\",\"ordinal\":6,\"desc\":\"Java 1.6.\"},{\"params\":{\"name\":\"1.7\",\"value\":1.7},\"name\":\"JAVA_1_7\",\"ordinal\":7,\"desc\":\"Java 1.7.\"},{\"params\":{\"name\":\"1.8\",\"value\":1.8},\"name\":\"JAVA_1_8\",\"ordinal\":8,\"desc\":\"Java 1.8.\"},{\"params\":{\"name\":\"9\",\"value\":9.0},\"name\":\"JAVA_1_9\",\"ordinal\":9,\"desc\":\"Java 1.9.\"},{\"params\":{\"name\":\"9\",\"value\":9.0},\"name\":\"JAVA_9\",\"ordinal\":10,\"desc\":\"Java 9\"},{\"params\":{\"name\":\"10\",\"value\":10.0},\"name\":\"JAVA_10\",\"ordinal\":11,\"desc\":\"Java 10\"},{\"params\":{\"name\":\"11\",\"value\":11.0},\"name\":\"JAVA_11\",\"ordinal\":12,\"desc\":\"Java 11\"},{\"params\":{\"name\":\"12\",\"value\":12.0},\"name\":\"JAVA_12\",\"ordinal\":13,\"desc\":\"Java 12\"},{\"params\":{\"name\":\"13\",\"value\":13.0},\"name\":\"JAVA_13\",\"ordinal\":14,\"desc\":\"Java 13\"}]",
             GsonUtils.toJson(psiClassHelper.parseEnumConstant(javaVersionPsiClass))
@@ -560,6 +580,11 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
     }
 
     fun testResolveEnumOrStatic() {
+        doTestResolveEnumOrStatic()
+        doTestResolveEnumOrStatic()
+    }
+
+    fun doTestResolveEnumOrStatic() {
         assertEquals(
             "[{\"value\":\"JAVA_0_9\",\"desc\":\"The Java version reported by Android. This is not an official Java version number.\"},{\"value\":\"JAVA_1_1\",\"desc\":\"Java 1.1.\"},{\"value\":\"JAVA_1_2\",\"desc\":\"Java 1.2.\"},{\"value\":\"JAVA_1_3\",\"desc\":\"Java 1.3.\"},{\"value\":\"JAVA_1_4\",\"desc\":\"Java 1.4.\"},{\"value\":\"JAVA_1_5\",\"desc\":\"Java 1.5.\"},{\"value\":\"JAVA_1_6\",\"desc\":\"Java 1.6.\"},{\"value\":\"JAVA_1_7\",\"desc\":\"Java 1.7.\"},{\"value\":\"JAVA_1_8\",\"desc\":\"Java 1.8.\"},{\"value\":\"JAVA_1_9\",\"desc\":\"Java 1.9.\"},{\"value\":\"JAVA_9\",\"desc\":\"Java 9\"},{\"value\":\"JAVA_10\",\"desc\":\"Java 10\"},{\"value\":\"JAVA_11\",\"desc\":\"Java 11\"},{\"value\":\"JAVA_12\",\"desc\":\"Java 12\"},{\"value\":\"JAVA_13\",\"desc\":\"Java 13\"}]",
             GsonUtils.toJson(
