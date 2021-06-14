@@ -1,7 +1,5 @@
 package com.itangcent.common.utils
 
-import com.itangcent.common.utils.GsonUtils
-import com.itangcent.common.utils.KV
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
@@ -30,7 +28,10 @@ class GsonUtilsTest {
         kv["recursion"] = kv
         assertThrows(StackOverflowError::class.java) { GsonUtils.toJson(kv) }
         assertDoesNotThrow { GsonUtils.toJsonSafely(kv) }
-        assertEquals("{\"1\":1,\"2\":\"2\",\"recursion\":{}}", GsonUtils.toJsonSafely(kv))
+        assertEquals(
+            "{\"1\":1,\"2\":\"2\",\"recursion\":{\"1\":1,\"2\":\"2\",\"recursion\":{}}}",
+            GsonUtils.toJsonSafely(kv)
+        )
     }
 
     @Test
@@ -65,7 +66,11 @@ class GsonUtilsTest {
             "{\n" +
                     "  \"1\": 1,\n" +
                     "  \"2\": \"2\",\n" +
-                    "  \"recursion\": {}\n" +
+                    "  \"recursion\": {\n" +
+                    "    \"1\": 1,\n" +
+                    "    \"2\": \"2\",\n" +
+                    "    \"recursion\": {}\n" +
+                    "  }\n" +
                     "}", GsonUtils.prettyJsonSafely(kv)
         )
     }

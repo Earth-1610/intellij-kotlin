@@ -13,37 +13,43 @@ internal class UnwrapperTest : AdvancedContextTest() {
 
     @Test
     fun testUnwrapped() {
-        assertNull(Unwrapper().unwrapped(null) {})
-        assertEquals(1, Unwrapper().unwrapped(1) {})
-        assertEquals("s", Unwrapper().unwrapped("s") {})
+        assertNull(Unwrapper().unwrapped(null))
+        assertEquals(1, Unwrapper().unwrapped(1))
+        assertEquals("s", Unwrapper().unwrapped("s"))
         val node = hashMapOf<String, Any?>("x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "msg" to "root")
         node["sub"] = Delay(node)
 
-        checkEqual(hashMapOf(
-            "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "msg" to "root",
-            "sub" to hashMapOf(
-                "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "msg" to "root",
-                "sub" to Any()
-            )
-        ), Unwrapper().unwrapped(node) {} as Map<*, *>)
-
-        checkEqual(hashMapOf(
-            "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "msg" to "root",
-            "sub" to hashMapOf(
-                "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "msg" to "root",
-                "sub" to Any()
-            )
-        ), Unwrapper().unwrapped(Delay(node)) {})
-
-        checkEqual(listOf(
+        checkEqual(
             hashMapOf(
                 "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "msg" to "root",
                 "sub" to hashMapOf(
                     "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "msg" to "root",
                     "sub" to Any()
                 )
-            )
-        ), Unwrapper().unwrapped(listOf(Delay(node))) {})
+            ), Unwrapper().unwrapped(node) as Map<*, *>
+        )
+
+        checkEqual(
+            hashMapOf(
+                "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "msg" to "root",
+                "sub" to hashMapOf(
+                    "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "msg" to "root",
+                    "sub" to Any()
+                )
+            ), Unwrapper().unwrapped(Delay(node))
+        )
+
+        checkEqual(
+            listOf(
+                hashMapOf(
+                    "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "msg" to "root",
+                    "sub" to hashMapOf(
+                        "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "msg" to "root",
+                        "sub" to Any()
+                    )
+                )
+            ), Unwrapper().unwrapped(listOf(Delay(node)))
+        )
     }
 
     private fun checkEqual(any: Any?, any2: Any?) {

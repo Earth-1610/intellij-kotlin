@@ -30,6 +30,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     @Inject(optional = true)
     protected val sourceHelper: SourceHelper? = null
 
+
     @Suppress("UNCHECKED_CAST")
     protected open fun resolveSeeDoc(field: PsiField, comment: HashMap<String, Any?>) {
         val sees = getSees(field).takeIf { it.notNullOrEmpty() } ?: return
@@ -300,37 +301,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                     }
                 }
             }
-
-            super.parseFieldOrMethod(
-                fieldName,
-                duckTypeHelper!!.resolve("java.lang.String", fieldOrMethod.psi())!!,
-                fieldOrMethod,
-                resourcePsiClass,
-                option,
-                kv
-            )
-
-            //doc comment
-            if (option.has(JsonOption.READ_COMMENT)) {
-                val commentKV: KV<String, Any?> = kv.sub("@comment")
-
-                val options: ArrayList<HashMap<String, Any?>> = ArrayList()
-
-                parseEnumConstant(enumClass).forEach { field ->
-                    options.add(
-                        KV.create<String, Any?>()
-                            .set("value", field["name"])
-                            .set("desc", field["desc"])
-                    )
-                }
-
-                if (options.isNotEmpty()) {
-                    commentKV["$fieldName@options"] = options
-                }
-            }
-            return
         }
-
         super.parseFieldOrMethod(fieldName, fieldType, fieldOrMethod, resourcePsiClass, option, kv)
     }
 

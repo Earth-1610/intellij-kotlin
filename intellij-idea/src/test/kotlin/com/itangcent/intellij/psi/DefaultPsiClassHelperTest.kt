@@ -30,6 +30,7 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
     private lateinit var linkedListPsiClass: PsiClass
     private lateinit var modelPsiClass: PsiClass
     private lateinit var nodePsiClass: PsiClass
+    private lateinit var hugeModelPsiClass: PsiClass
     private lateinit var javaVersionPsiClass: PsiClass
     private lateinit var numbersPsiClass: PsiClass
 
@@ -44,10 +45,11 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
         listPsiClass = loadSource(java.util.List::class.java)!!
         hashMapPsiClass = loadSource(java.util.HashMap::class.java)!!
         linkedListPsiClass = loadSource(LinkedList::class.java)!!
-        modelPsiClass = loadClass("model/Model.java")!!
-        nodePsiClass = loadClass("model/Node.java")!!
         javaVersionPsiClass = loadClass("constant/JavaVersion.java")!!
         numbersPsiClass = loadClass("constant/Numbers.java")!!
+        modelPsiClass = loadClass("model/Model.java")!!
+        nodePsiClass = loadClass("model/Node.java")!!
+        hugeModelPsiClass = loadClass("model/HugeModel.java")!!
     }
 
     override fun bind(builder: ActionContext.ActionContextBuilder) {
@@ -56,7 +58,8 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
     }
 
     override fun customConfig(): String {
-        return "json.rule.field.name=@com.fasterxml.jackson.annotation.JsonProperty#value"
+        return "json.rule.field.name=@com.fasterxml.jackson.annotation.JsonProperty#value\n" +
+                "enum.use.name=true"
     }
 
     fun testGetTypeObject() {
@@ -107,8 +110,17 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
         )
 
         assertEquals(
-            "{\"id\":\"\",\"code\":\"\",\"sub\":[{\"id\":\"\",\"code\":\"\"}]}",
+            "{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}]}]}",
             GsonUtils.toJson(psiClassHelper.getTypeObject(PsiTypesUtil.getClassType(nodePsiClass), nodePsiClass))
+        )
+        assertEquals(
+            "{\"a\":\"\",\"b\":\"\",\"c\":\"\",\"d\":\"\",\"e\":\"\",\"r\":\"\",\"candidates\":[\"\"],\"version\":\"\"}",
+            GsonUtils.toJson(
+                psiClassHelper.getTypeObject(
+                    PsiTypesUtil.getClassType(hugeModelPsiClass),
+                    hugeModelPsiClass
+                )
+            )
         )
 
         //getTypeObject from psiType  with option-------------------------------------------------
@@ -196,10 +208,19 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
             )
         )
         assertEquals(
-            "{\"id\":\"\",\"code\":\"\",\"sub\":[{\"id\":\"\",\"code\":\"\"}]}",
+            "{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}]}]}",
             GsonUtils.toJson(
                 psiClassHelper.getTypeObject(
                     PsiTypesUtil.getClassType(nodePsiClass), nodePsiClass,
+                    JsonOption.NONE
+                )
+            )
+        )
+        assertEquals(
+            "{\"a\":\"\",\"b\":\"\",\"c\":\"\",\"d\":\"\",\"e\":\"\",\"r\":\"\",\"candidates\":[\"\"],\"version\":\"\"}",
+            GsonUtils.toJson(
+                psiClassHelper.getTypeObject(
+                    PsiTypesUtil.getClassType(hugeModelPsiClass), hugeModelPsiClass,
                     JsonOption.NONE
                 )
             )
@@ -278,8 +299,13 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
         )
 
         assertEquals(
-            "{\"id\":\"\",\"code\":\"\",\"sub\":[{\"id\":\"\",\"code\":\"\"}]}",
+            "{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}]}]}",
             GsonUtils.toJson(psiClassHelper.getTypeObject(SingleDuckType(nodePsiClass), nodePsiClass))
+        )
+
+        assertEquals(
+            "{\"a\":\"\",\"b\":\"\",\"c\":\"\",\"d\":\"\",\"e\":\"\",\"r\":\"\",\"candidates\":[\"\"],\"version\":\"\"}",
+            GsonUtils.toJson(psiClassHelper.getTypeObject(SingleDuckType(hugeModelPsiClass), hugeModelPsiClass))
         )
 
         //getTypeObject from duckType  with option-------------------------------------------------
@@ -394,7 +420,7 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
             )
         )
         assertEquals(
-            "{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub orgs\"},\"code\":\"\",\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\"},\"code\":\"\"}]}",
+            "{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}],\"siblings\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]},\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}],\"siblings\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}]}]}",
             GsonUtils.toJson(
                 psiClassHelper.getTypeObject(
                     SingleDuckType(nodePsiClass), nodePsiClass,
@@ -410,32 +436,48 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
             GsonUtils.toJson(psiClassHelper.getFields(modelPsiClass))
         )
         assertEquals(
-            "{\"id\":\"\",\"code\":\"\",\"sub\":[{\"id\":\"\",\"code\":\"\"}]}",
+            "{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}]}]}",
             GsonUtils.toJson(psiClassHelper.getFields(nodePsiClass))
+        )
+        assertEquals(
+            "{\"a\":\"\",\"b\":\"\",\"c\":\"\",\"d\":\"\",\"e\":\"\",\"r\":\"\",\"candidates\":[\"\"],\"version\":\"\"}",
+            GsonUtils.toJson(psiClassHelper.getFields(hugeModelPsiClass))
         )
         assertEquals(
             "{\"s\":\"\",\"integer\":0,\"stringList\":[\"\"],\"integerArray\":[0]}",
             GsonUtils.toJson(psiClassHelper.getFields(modelPsiClass, modelPsiClass))
         )
         assertEquals(
-            "{\"id\":\"\",\"code\":\"\",\"sub\":[{\"id\":\"\",\"code\":\"\"}]}",
+            "{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}]}]}",
             GsonUtils.toJson(psiClassHelper.getFields(nodePsiClass, nodePsiClass))
+        )
+        assertEquals(
+            "{\"a\":\"\",\"b\":\"\",\"c\":\"\",\"d\":\"\",\"e\":\"\",\"r\":\"\",\"candidates\":[\"\"],\"version\":\"\"}",
+            GsonUtils.toJson(psiClassHelper.getFields(hugeModelPsiClass, hugeModelPsiClass))
         )
         assertEquals(
             "{\"s\":\"\",\"@comment\":{\"s\":\"string field\",\"integer\":\"integer field\",\"stringList\":\"stringList field\",\"integerArray\":\"integerArray field\"},\"integer\":0,\"stringList\":[\"\"],\"integerArray\":[0],\"onlySet\":\"\",\"onlyGet\":\"\"}",
             GsonUtils.toJson(psiClassHelper.getFields(modelPsiClass, JsonOption.ALL))
         )
         assertEquals(
-            "{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub orgs\"},\"code\":\"\",\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\"},\"code\":\"\"}]}",
+            "{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}],\"siblings\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]},\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}],\"siblings\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}]}]}",
             GsonUtils.toJson(psiClassHelper.getFields(nodePsiClass, JsonOption.ALL))
+        )
+        assertEquals(
+            "{\"a\":\"\",\"@comment\":{\"a\":\"single line\",\"b\":\"multi-line\\nsecond line\",\"c\":\"head line\\nsecond line\\n\\u003cpre\\u003e\\n    {\\n        \\\"a\\\":\\\"b\\\",\\n        \\\"c\\\":{\\n             \\\"x\\\":[\\\"y\\\"]\\n        }\\n    }\\n\\u003c/pre\\u003e\\nsee @{link somelink}\\ntail line\",\"d\":\"head line\\nsecond line\\n\\u003cpre\\u003e\\n\\n    {\\n        \\\"a\\\":\\\"b\\\",\\n        \\\"c\\\":{\\n             \\\"x\\\":[\\\"y\\\"]\\n        }\\n    }\\n\\n\\u003c/pre\\u003e\\n\\u003cp\\u003e\\nsee @{link somelink}\\ntail line\",\"e\":\"E is a mathematical constant approximately equal to 2.71828\",\"r\":\"R, or r, is the eighteenth letter of the modern English alphabet and the ISO basic Latin alphabet.\\nIt\\u0027s before s\",\"candidates\":\"candidates versions\",\"version\":\"primary version\",\"candidates@options\":[{\"value\":\"JAVA_0_9\",\"desc\":\"The Java version reported by Android. This is not an official Java version number.\"},{\"value\":\"JAVA_1_1\",\"desc\":\"Java 1.1.\"},{\"value\":\"JAVA_1_2\",\"desc\":\"Java 1.2.\"},{\"value\":\"JAVA_1_3\",\"desc\":\"Java 1.3.\"},{\"value\":\"JAVA_1_4\",\"desc\":\"Java 1.4.\"},{\"value\":\"JAVA_1_5\",\"desc\":\"Java 1.5.\"},{\"value\":\"JAVA_1_6\",\"desc\":\"Java 1.6.\"},{\"value\":\"JAVA_1_7\",\"desc\":\"Java 1.7.\"},{\"value\":\"JAVA_1_8\",\"desc\":\"Java 1.8.\"},{\"value\":\"JAVA_1_9\",\"desc\":\"Java 1.9.\"},{\"value\":\"JAVA_9\",\"desc\":\"Java 9\"},{\"value\":\"JAVA_10\",\"desc\":\"Java 10\"},{\"value\":\"JAVA_11\",\"desc\":\"Java 11\"},{\"value\":\"JAVA_12\",\"desc\":\"Java 12\"},{\"value\":\"JAVA_13\",\"desc\":\"Java 13\"}],\"version@options\":[{\"value\":\"JAVA_0_9\",\"desc\":\"The Java version reported by Android. This is not an official Java version number.\"},{\"value\":\"JAVA_1_1\",\"desc\":\"Java 1.1.\"},{\"value\":\"JAVA_1_2\",\"desc\":\"Java 1.2.\"},{\"value\":\"JAVA_1_3\",\"desc\":\"Java 1.3.\"},{\"value\":\"JAVA_1_4\",\"desc\":\"Java 1.4.\"},{\"value\":\"JAVA_1_5\",\"desc\":\"Java 1.5.\"},{\"value\":\"JAVA_1_6\",\"desc\":\"Java 1.6.\"},{\"value\":\"JAVA_1_7\",\"desc\":\"Java 1.7.\"},{\"value\":\"JAVA_1_8\",\"desc\":\"Java 1.8.\"},{\"value\":\"JAVA_1_9\",\"desc\":\"Java 1.9.\"},{\"value\":\"JAVA_9\",\"desc\":\"Java 9\"},{\"value\":\"JAVA_10\",\"desc\":\"Java 10\"},{\"value\":\"JAVA_11\",\"desc\":\"Java 11\"},{\"value\":\"JAVA_12\",\"desc\":\"Java 12\"},{\"value\":\"JAVA_13\",\"desc\":\"Java 13\"}]},\"b\":\"\",\"c\":\"\",\"d\":\"\",\"e\":\"\",\"r\":\"\",\"candidates\":[\"\"],\"version\":\"\"}",
+            GsonUtils.toJson(psiClassHelper.getFields(hugeModelPsiClass, JsonOption.ALL))
         )
         assertEquals(
             "{\"s\":\"\",\"@comment\":{\"s\":\"string field\",\"integer\":\"integer field\",\"stringList\":\"stringList field\",\"integerArray\":\"integerArray field\"},\"integer\":0,\"stringList\":[\"\"],\"integerArray\":[0],\"onlySet\":\"\",\"onlyGet\":\"\"}",
             GsonUtils.toJson(psiClassHelper.getFields(modelPsiClass, modelPsiClass, JsonOption.ALL))
         )
         assertEquals(
-            "{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub orgs\"},\"code\":\"\",\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\"},\"code\":\"\"}]}",
+            "{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}],\"siblings\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]},\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}],\"siblings\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]}]}]}",
             GsonUtils.toJson(psiClassHelper.getFields(nodePsiClass, nodePsiClass, JsonOption.ALL))
+        )
+        assertEquals(
+            "{\"a\":\"\",\"@comment\":{\"a\":\"single line\",\"b\":\"multi-line\\nsecond line\",\"c\":\"head line\\nsecond line\\n\\u003cpre\\u003e\\n    {\\n        \\\"a\\\":\\\"b\\\",\\n        \\\"c\\\":{\\n             \\\"x\\\":[\\\"y\\\"]\\n        }\\n    }\\n\\u003c/pre\\u003e\\nsee @{link somelink}\\ntail line\",\"d\":\"head line\\nsecond line\\n\\u003cpre\\u003e\\n\\n    {\\n        \\\"a\\\":\\\"b\\\",\\n        \\\"c\\\":{\\n             \\\"x\\\":[\\\"y\\\"]\\n        }\\n    }\\n\\n\\u003c/pre\\u003e\\n\\u003cp\\u003e\\nsee @{link somelink}\\ntail line\",\"e\":\"E is a mathematical constant approximately equal to 2.71828\",\"r\":\"R, or r, is the eighteenth letter of the modern English alphabet and the ISO basic Latin alphabet.\\nIt\\u0027s before s\",\"candidates\":\"candidates versions\",\"version\":\"primary version\",\"candidates@options\":[{\"value\":\"JAVA_0_9\",\"desc\":\"The Java version reported by Android. This is not an official Java version number.\"},{\"value\":\"JAVA_1_1\",\"desc\":\"Java 1.1.\"},{\"value\":\"JAVA_1_2\",\"desc\":\"Java 1.2.\"},{\"value\":\"JAVA_1_3\",\"desc\":\"Java 1.3.\"},{\"value\":\"JAVA_1_4\",\"desc\":\"Java 1.4.\"},{\"value\":\"JAVA_1_5\",\"desc\":\"Java 1.5.\"},{\"value\":\"JAVA_1_6\",\"desc\":\"Java 1.6.\"},{\"value\":\"JAVA_1_7\",\"desc\":\"Java 1.7.\"},{\"value\":\"JAVA_1_8\",\"desc\":\"Java 1.8.\"},{\"value\":\"JAVA_1_9\",\"desc\":\"Java 1.9.\"},{\"value\":\"JAVA_9\",\"desc\":\"Java 9\"},{\"value\":\"JAVA_10\",\"desc\":\"Java 10\"},{\"value\":\"JAVA_11\",\"desc\":\"Java 11\"},{\"value\":\"JAVA_12\",\"desc\":\"Java 12\"},{\"value\":\"JAVA_13\",\"desc\":\"Java 13\"}],\"version@options\":[{\"value\":\"JAVA_0_9\",\"desc\":\"The Java version reported by Android. This is not an official Java version number.\"},{\"value\":\"JAVA_1_1\",\"desc\":\"Java 1.1.\"},{\"value\":\"JAVA_1_2\",\"desc\":\"Java 1.2.\"},{\"value\":\"JAVA_1_3\",\"desc\":\"Java 1.3.\"},{\"value\":\"JAVA_1_4\",\"desc\":\"Java 1.4.\"},{\"value\":\"JAVA_1_5\",\"desc\":\"Java 1.5.\"},{\"value\":\"JAVA_1_6\",\"desc\":\"Java 1.6.\"},{\"value\":\"JAVA_1_7\",\"desc\":\"Java 1.7.\"},{\"value\":\"JAVA_1_8\",\"desc\":\"Java 1.8.\"},{\"value\":\"JAVA_1_9\",\"desc\":\"Java 1.9.\"},{\"value\":\"JAVA_9\",\"desc\":\"Java 9\"},{\"value\":\"JAVA_10\",\"desc\":\"Java 10\"},{\"value\":\"JAVA_11\",\"desc\":\"Java 11\"},{\"value\":\"JAVA_12\",\"desc\":\"Java 12\"},{\"value\":\"JAVA_13\",\"desc\":\"Java 13\"}]},\"b\":\"\",\"c\":\"\",\"d\":\"\",\"e\":\"\",\"r\":\"\",\"candidates\":[\"\"],\"version\":\"\"}",
+            GsonUtils.toJson(psiClassHelper.getFields(hugeModelPsiClass, hugeModelPsiClass, JsonOption.ALL))
         )
     }
 
@@ -483,6 +525,7 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
         assertEquals(null, psiClassHelper.getDefaultValue(linkedListPsiClass))
         assertEquals(null, psiClassHelper.getDefaultValue(modelPsiClass))
         assertEquals(null, psiClassHelper.getDefaultValue(nodePsiClass))
+        assertEquals(null, psiClassHelper.getDefaultValue(hugeModelPsiClass))
 
         //check getDefaultValue of PsiType
         assertEquals(emptyMap<Any, Any>(), psiClassHelper.getDefaultValue(PsiTypesUtil.getClassType(objectPsiClass)))
@@ -494,6 +537,7 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
         assertEquals(null, psiClassHelper.getDefaultValue(PsiTypesUtil.getClassType(hashMapPsiClass)))
         assertEquals(null, psiClassHelper.getDefaultValue(PsiTypesUtil.getClassType(linkedListPsiClass)))
         assertEquals(null, psiClassHelper.getDefaultValue(PsiTypesUtil.getClassType(nodePsiClass)))
+        assertEquals(null, psiClassHelper.getDefaultValue(PsiTypesUtil.getClassType(hugeModelPsiClass)))
     }
 
     fun testGetJsonFieldName() {
@@ -517,7 +561,7 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
 
     fun testResolveEnumOrStatic() {
         assertEquals(
-            "[]",
+            "[{\"value\":\"JAVA_0_9\",\"desc\":\"The Java version reported by Android. This is not an official Java version number.\"},{\"value\":\"JAVA_1_1\",\"desc\":\"Java 1.1.\"},{\"value\":\"JAVA_1_2\",\"desc\":\"Java 1.2.\"},{\"value\":\"JAVA_1_3\",\"desc\":\"Java 1.3.\"},{\"value\":\"JAVA_1_4\",\"desc\":\"Java 1.4.\"},{\"value\":\"JAVA_1_5\",\"desc\":\"Java 1.5.\"},{\"value\":\"JAVA_1_6\",\"desc\":\"Java 1.6.\"},{\"value\":\"JAVA_1_7\",\"desc\":\"Java 1.7.\"},{\"value\":\"JAVA_1_8\",\"desc\":\"Java 1.8.\"},{\"value\":\"JAVA_1_9\",\"desc\":\"Java 1.9.\"},{\"value\":\"JAVA_9\",\"desc\":\"Java 9\"},{\"value\":\"JAVA_10\",\"desc\":\"Java 10\"},{\"value\":\"JAVA_11\",\"desc\":\"Java 11\"},{\"value\":\"JAVA_12\",\"desc\":\"Java 12\"},{\"value\":\"JAVA_13\",\"desc\":\"Java 13\"}]",
             GsonUtils.toJson(
                 psiClassHelper.resolveEnumOrStatic(
                     "com.itangcent.constant.JavaVersion",
