@@ -148,6 +148,8 @@ class SimpleRuleParser : RuleParser {
                 //default =
                 srule = BooleanRule.of { context ->
                     context.toString() == rule
+                            || context.getName() == rule
+                            || context.getSimpleName() == rule
                 }
             }
         }
@@ -199,12 +201,12 @@ class SimpleRuleParser : RuleParser {
             if (tinyStr.contains("*")) {
                 val pattern = Pattern.compile(
                     "^${
-                    tinyStr.replace("*.", STAR_DOT)
-                        .replace("*", STAR)
-                        .replace(STAR_DOT, ".*?(?<=^|\\.)")
-                        .replace(STAR, ".*?")
-                        .replace("[", "\\[")
-                        .replace("]", "\\]")
+                        tinyStr.replace("*.", STAR_DOT)
+                            .replace("*", STAR)
+                            .replace(STAR_DOT, ".*?(?<=^|\\.)")
+                            .replace(STAR, ".*?")
+                            .replace("[", "\\[")
+                            .replace("]", "\\]")
 
                     }$"
                 )
