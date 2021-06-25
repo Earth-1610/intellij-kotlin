@@ -75,6 +75,21 @@ internal class SimpleRuleParserTest : ContextLightCodeInsightFixtureTestCase() {
 
 
     fun testParseBooleanRule() {
+
+        val ruleCheckSimpleName: BooleanRule = ruleParser.parseBooleanRule("greeting")!!
+        assertEquals(true, ruleCheckSimpleName.compute(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
+        assertEquals(
+            false,
+            ruleCheckSimpleName.compute(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
+        )
+
+        val ruleCheckQualifiedName: BooleanRule = ruleParser.parseBooleanRule("com.itangcent.api.UserCtrl#greeting")!!
+        assertEquals(true, ruleCheckQualifiedName.compute(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
+        assertEquals(
+            false,
+            ruleCheckQualifiedName.compute(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
+        )
+
         val ruleCheckPublic: BooleanRule = ruleParser.parseBooleanRule("@com.itangcent.common.annotation.Public")!!
         assertEquals(true, ruleCheckPublic.compute(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
         assertEquals(false, ruleCheckPublic.compute(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod)))
