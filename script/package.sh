@@ -13,7 +13,11 @@ cd ${basedir}
 
 ./gradlew clean build  -x test
 
-rm -r libs/*
+if [ ! -d libs ]; then
+        mkdir libs
+else
+        rm -r libs/*
+fi
 mv commons/build/libs/commons*.jar libs/commons.jar
 mv guice-action/build/libs/guice-action*.jar libs/guice-action.jar
 mv intellij-idea/build/libs/intellij-idea*.jar libs/intellij-idea.jar

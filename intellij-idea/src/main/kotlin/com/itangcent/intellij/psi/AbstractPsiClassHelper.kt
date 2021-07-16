@@ -40,7 +40,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     protected val actionContext: ActionContext? = null
 
     @Inject
-    protected val ruleComputer: RuleComputer? = null
+    protected lateinit var ruleComputer: RuleComputer
 
     @Inject
     protected val docHelper: DocHelper? = null
@@ -662,7 +662,8 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         context: PsiElement,
         cls: PsiClass?,
         property: String?,
-        defaultPropertyName: String
+        defaultPropertyName: String,
+        valueTypeHandle: ((DuckType) -> Unit)?
     ): ArrayList<HashMap<String, Any?>>? {
         if (cls == null) return null
 
@@ -689,10 +690,12 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             }
 
             if (options.isEmpty() && property.isNullOrBlank()) {
-                if (ruleComputer!!.computer(ClassRuleKeys.ENUM_USE_NAME, context) == true) {
-                    findConstantsByProperty(enumConstants, "name()", options)
-                } else if (ruleComputer.computer(ClassRuleKeys.ENUM_USE_ORDINAL, context) == true) {
+                if (ruleComputer.computer(ClassRuleKeys.ENUM_USE_ORDINAL, context) == true) {
                     findConstantsByProperty(enumConstants, "ordinal()", options)
+                    valueTypeHandle?.let { it(duckTypeHelper!!.resolve("java.lang.Integer", context)!!) }
+                } else if (ruleComputer.computer(ClassRuleKeys.ENUM_USE_NAME, context) != false) {
+                    findConstantsByProperty(enumConstants, "name()", options)
+                    valueTypeHandle?.let { it(duckTypeHelper!!.resolve("java.lang.String", context)!!) }
                 }
             }
 
@@ -1135,8 +1138,10 @@ class Unwrapper {
             this.wrapped(deep) && this is Map<*, *> -> {
                 val copy = LinkedHashMap<Any?, Any?>()
                 this.forEach {
-                    copy[it.key.unwrapped(deep + 1)] =
+                    copy.merge(
+                        it.key.unwrapped(deep + 1),
                         it.value.unwrapped(deep + 1, copy, it.key as? String)
+                    )
                 }
                 copy
             }

@@ -1,5 +1,9 @@
 package com.itangcent.intellij.config.resource
 
+import com.itangcent.common.logger.ILogger
+import com.itangcent.common.logger.ILoggerProvider
+import com.itangcent.common.logger.traceError
+import com.itangcent.common.spi.SpiUtils
 import com.itangcent.common.utils.unsafe
 import java.io.InputStream
 import java.net.URI
@@ -27,7 +31,12 @@ open class URLResource : Resource {
                 connection = connection.unsafe()
             }
             onConnection(connection)
-            return connection.inputStream
+            try {
+                return connection.inputStream
+            } catch (e: Exception) {
+                LOG?.traceError("failed fetch:[$url]", e)
+                throw e
+            }
         }
 
     protected open fun onConnection(connection: URLConnection) {
@@ -40,3 +49,5 @@ open class URLResource : Resource {
  * for opening the URLConnection.
  */
 var DEFAULT_TIME_OUT = TimeUnit.SECONDS.toMillis(30).toInt()
+
+private val LOG: ILogger? = SpiUtils.loadService(ILoggerProvider::class)?.getLogger(URLResource::class)

@@ -65,7 +65,8 @@ interface PsiClassHelper {
     fun resolveEnumOrStatic(
         context: PsiElement,
         cls: PsiClass?, property: String?,
-        defaultPropertyName: String
+        defaultPropertyName: String,
+        valueTypeHandle: ((DuckType) -> Unit)? = null
     ): ArrayList<HashMap<String, Any?>>?
 
     fun isNormalType(duckType: DuckType): Boolean

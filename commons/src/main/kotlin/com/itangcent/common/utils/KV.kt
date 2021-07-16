@@ -4,8 +4,6 @@ package com.itangcent.common.utils
 import com.itangcent.common.logger.ILogger
 import com.itangcent.common.logger.ILoggerProvider
 import com.itangcent.common.spi.SpiUtils
-import java.util.*
-import kotlin.collections.HashMap
 
 open class KV<K, V> : LinkedHashMap<K, V>() {
 
@@ -83,6 +81,88 @@ fun Map<*, *>.sub(key: String): Map<String, Any?> {
     return this[key].asMap {
         (this as? MutableMap<String, Any?>)?.set(key, it)
     }
+}
+
+@Suppress("UNCHECKED_CAST")
+fun MutableMap<*, *>.merge(map: Map<*, *>): MutableMap<*, *> {
+    map.forEach { this.merge(it.key, it.value) }
+    return this
+}
+
+@Suppress("UNCHECKED_CAST")
+fun MutableMap<*, *>.merge(key: Any?, value: Any?): MutableMap<*, *> {
+    val oldValue = this[key]
+    if (oldValue == null) {
+        (this as MutableMap<Any?, Any?>)[key] = value
+        return this
+    }
+
+    if (oldValue is Map<*, *> && value is Map<*, *>) {
+        when {
+            value.isEmpty() -> {
+                return this
+            }
+            oldValue.isEmpty() -> {
+                (this as MutableMap<Any?, Any?>)[key] = value
+                return this
+            }
+            oldValue is MutableMap<*, *> -> {
+                (oldValue as MutableMap<Any?, Any?>).merge(value as Map<Any?, Any?>)
+            }
+            value is MutableMap<*, *> -> {
+                (value as MutableMap<Any?, Any?>).merge(oldValue as Map<Any?, Any?>)
+                (this as MutableMap<Any?, Any?>)[key] = value
+            }
+            else -> {
+                val mergeMap = LinkedHashMap<Any?, Any?>()
+                mergeMap.putAll(oldValue as Map<Any?, Any?>)
+                mergeMap.putAll(value as Map<Any?, Any?>)
+                (this as MutableMap<Any?, Any?>)[key] = mergeMap
+            }
+        }
+        return this
+    }
+
+    if (oldValue is Collection<*> && value is Collection<*>) {
+        when {
+            value.isEmpty() -> {
+                return this
+            }
+            oldValue.isEmpty() -> {
+                (this as MutableMap<Any?, Any?>)[key] = value
+                return this
+            }
+            oldValue is MutableCollection<*> -> {
+                try {
+                    (oldValue as MutableCollection<Any?>).addAll(value as Collection<Any?>)
+                    return this
+                } catch (e: UnsupportedOperationException) {
+                    //ignore
+                }
+            }
+            value is MutableCollection<*> -> {
+                try {
+                    (value as MutableCollection<Any?>).addAll(oldValue as Collection<Any?>)
+                    (this as MutableMap<Any?, Any?>)[key] = value
+                    return this
+                } catch (e: UnsupportedOperationException) {
+                    //ignore
+                }
+            }
+        }
+        val mergeMap = if (oldValue is Set<*> || value is Set<*>) {
+            HashSet()
+        } else {
+            ArrayList<Any?>()
+        }
+        mergeMap.addAll(oldValue as Collection<Any?>)
+        mergeMap.addAll(value as Collection<Any?>)
+        (this as MutableMap<Any?, Any?>)[key] = mergeMap
+        return this
+    }
+
+    (this as MutableMap<Any?, Any?>)[key] = value
+    return this
 }
 
 @Suppress("UNCHECKED_CAST")
