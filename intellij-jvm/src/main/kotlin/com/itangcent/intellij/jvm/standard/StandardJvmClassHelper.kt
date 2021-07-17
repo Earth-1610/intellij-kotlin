@@ -402,6 +402,7 @@ open class StandardJvmClassHelper : JvmClassHelper {
         return sb.toString()
     }
 
+    @Suppress("UnstableApiUsage")
     private fun defineParamCode(psiParameter: JvmParameter): String {
         val sb = StringBuilder()
         sb.append(psiParameter.type.getPropertyValue("text"))

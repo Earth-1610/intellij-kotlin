@@ -192,19 +192,25 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                 return typeObj
             }
 
-            val typeObj =
-                super.doGetTypeObject(duckTypeHelper!!.resolve("java.lang.String", context)!!, context, option)
 
             //doc comment
-            if (option.has(JsonOption.READ_COMMENT)) {
-                val enumOptions = resolveEnumOrStatic(context, duckType.psiClass(), null, "")
-                return if (enumOptions.isNullOrEmpty()) {
-                    typeObj
-                } else {
-                    typeObj.wrap().set("@comment@options", enumOptions)
-                }
+            var typeObj: Any? = null
+
+            val enumOptions = resolveEnumOrStatic(context, duckType.psiClass(), null, "") {
+                typeObj = super.doGetTypeObject(it, context, option)
             }
-            return typeObj
+
+            if (typeObj == null) {
+                //use java.lang.String by default.
+                typeObj =
+                    super.doGetTypeObject(duckTypeHelper!!.resolve("java.lang.String", context)!!, context, option)
+            }
+
+            return if (!option.has(JsonOption.READ_COMMENT) || enumOptions.isNullOrEmpty()) {
+                typeObj
+            } else {
+                typeObj.wrap().set("@comment@options", enumOptions)
+            }
         }
 
         return super.getTypeObject(duckType, context, option)
