@@ -91,21 +91,21 @@ fun MutableMap<*, *>.merge(map: Map<*, *>): MutableMap<*, *> {
 
 @Suppress("UNCHECKED_CAST")
 fun MutableMap<*, *>.merge(key: Any?, value: Any?): MutableMap<*, *> {
+    if (!this.containsKey(key)) {
+        (this as MutableMap<Any?, Any?>)[key] = value
+        return this
+    }
+    if (value.isOriginal()) {
+        return this
+    }
     val oldValue = this[key]
-    if (oldValue == null) {
+    if (oldValue.isOriginal()) {
         (this as MutableMap<Any?, Any?>)[key] = value
         return this
     }
 
     if (oldValue is Map<*, *> && value is Map<*, *>) {
         when {
-            value.isEmpty() -> {
-                return this
-            }
-            oldValue.isEmpty() -> {
-                (this as MutableMap<Any?, Any?>)[key] = value
-                return this
-            }
             oldValue is MutableMap<*, *> -> {
                 (oldValue as MutableMap<Any?, Any?>).merge(value as Map<Any?, Any?>)
             }
@@ -116,7 +116,7 @@ fun MutableMap<*, *>.merge(key: Any?, value: Any?): MutableMap<*, *> {
             else -> {
                 val mergeMap = LinkedHashMap<Any?, Any?>()
                 mergeMap.putAll(oldValue as Map<Any?, Any?>)
-                mergeMap.putAll(value as Map<Any?, Any?>)
+                mergeMap.merge(value as Map<Any?, Any?>)
                 (this as MutableMap<Any?, Any?>)[key] = mergeMap
             }
         }
@@ -125,16 +125,9 @@ fun MutableMap<*, *>.merge(key: Any?, value: Any?): MutableMap<*, *> {
 
     if (oldValue is Collection<*> && value is Collection<*>) {
         when {
-            value.isEmpty() -> {
-                return this
-            }
-            oldValue.isEmpty() -> {
-                (this as MutableMap<Any?, Any?>)[key] = value
-                return this
-            }
             oldValue is MutableCollection<*> -> {
                 try {
-                    (oldValue as MutableCollection<Any?>).addAll(value as Collection<Any?>)
+                    (oldValue as MutableCollection<Any?>).merge(value as Collection<Any?>)
                     return this
                 } catch (e: UnsupportedOperationException) {
                     //ignore
@@ -142,7 +135,7 @@ fun MutableMap<*, *>.merge(key: Any?, value: Any?): MutableMap<*, *> {
             }
             value is MutableCollection<*> -> {
                 try {
-                    (value as MutableCollection<Any?>).addAll(oldValue as Collection<Any?>)
+                    (value as MutableCollection<Any?>).merge(oldValue as Collection<Any?>)
                     (this as MutableMap<Any?, Any?>)[key] = value
                     return this
                 } catch (e: UnsupportedOperationException) {
@@ -155,14 +148,68 @@ fun MutableMap<*, *>.merge(key: Any?, value: Any?): MutableMap<*, *> {
         } else {
             ArrayList<Any?>()
         }
-        mergeMap.addAll(oldValue as Collection<Any?>)
-        mergeMap.addAll(value as Collection<Any?>)
+        mergeMap.merge(oldValue as Collection<Any?>)
+        mergeMap.merge(value as Collection<Any?>)
         (this as MutableMap<Any?, Any?>)[key] = mergeMap
         return this
     }
 
-    (this as MutableMap<Any?, Any?>)[key] = value
+    if (oldValue.isOriginal() && !value.isOriginal()) {
+        (this as MutableMap<Any?, Any?>).let {
+            it[key] = value
+        }
+    }
     return this
+}
+
+@Suppress("UNCHECKED_CAST")
+fun MutableCollection<*>.merge(collection: Collection<*>): MutableCollection<*> {
+    this as MutableCollection<Any?>
+    for (ele in collection) {
+        if (ele.isOriginal()) {
+            continue
+        }
+        this.add(ele)
+    }
+    return this
+}
+
+/**
+ * check if the object is original
+ * like:
+ * default primary: 0, 0.0
+ * default blank string: ""
+ * array with original: [0],[0.0],[""]
+ * list with original: [0],[0.0],[""]
+ * map with original: {"key":0}
+ */
+fun Any?.isOriginal(): Boolean {
+    when (val obj = this) {
+        null -> {
+            return true
+        }
+        is Array<*> -> {
+            return obj.size == 0 || (obj.size == 1 && obj[0].isOriginal())
+        }
+        is Collection<*> -> {
+            return obj.size == 0 || (obj.size == 1 && obj.first().isOriginal())
+        }
+        is Map<*, *> -> {
+            return obj.size == 0 || (obj.size == 1 && obj.entries.first().let {
+                (it.key == "key" || it.key.isOriginal()) && it.value.isOriginal()
+            })
+        }
+        is Boolean -> {
+            return obj
+        }
+        is Number -> {
+            return obj.toDouble() == 0.0
+        }
+        is String -> {
+            return obj.isBlank()
+        }
+        else -> return false
+    }
 }
 
 @Suppress("UNCHECKED_CAST")
