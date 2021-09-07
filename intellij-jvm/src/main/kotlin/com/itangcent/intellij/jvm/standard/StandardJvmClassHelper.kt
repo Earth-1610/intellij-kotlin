@@ -203,15 +203,15 @@ open class StandardJvmClassHelper : JvmClassHelper {
     }
 
     override fun isStaticFinal(field: PsiField): Boolean {
-        return hasAnyModify(field, staticFinalFieldModifiers)
+        return hasAllModify(field, staticFinalFieldModifiers)
     }
 
     override fun isPublicStaticFinal(field: PsiField): Boolean {
-        return hasAnyModify(field, publicStaticFinalFieldModifiers)
+        return hasAllModify(field, publicStaticFinalFieldModifiers)
     }
 
     override fun isAccessibleField(field: PsiField): Boolean {
-        return hasAnyModify(field, setOf(PsiModifier.PUBLIC)) || (field.containingClass?.isInterface ?: false)
+        return hasModify(field, PsiModifier.PUBLIC) || (field.containingClass?.isInterface ?: false)
     }
 
     override fun isNormalType(typeName: String): Boolean {
@@ -554,9 +554,20 @@ open class StandardJvmClassHelper : JvmClassHelper {
             init()
         }
 
+        fun hasModify(modifierListOwner: PsiModifierListOwner, modify: String): Boolean {
+            val modifierList = modifierListOwner.modifierList ?: return false
+            return modifierList.hasModifierProperty(modify)
+        }
+
         fun hasAnyModify(modifierListOwner: PsiModifierListOwner, modifies: Set<String>): Boolean {
             val modifierList = modifierListOwner.modifierList ?: return false
             return modifies.any { modifierList.hasModifierProperty(it) }
+        }
+
+
+        fun hasAllModify(modifierListOwner: PsiModifierListOwner, modifies: Set<String>): Boolean {
+            val modifierList = modifierListOwner.modifierList ?: return false
+            return modifies.all { modifierList.hasModifierProperty(it) }
         }
 
         fun addClass(cls: Class<*>, classSet: HashSet<String>) {
