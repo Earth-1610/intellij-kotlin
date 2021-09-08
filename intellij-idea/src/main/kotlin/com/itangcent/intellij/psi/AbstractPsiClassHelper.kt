@@ -69,8 +69,8 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         resolvedInfo[key] = value
     }
 
-    protected fun groupKey(context: PsiElement?, option: Int): String {
-        val group = context?.let { ruleComputer!!.computer(ClassRuleKeys.JSON_GROUP, context) }
+    protected open fun groupKey(context: PsiElement?, option: Int): String {
+        val group = context?.let { ruleComputer.computer(ClassRuleKeys.JSON_GROUP, context) }
         return if (group.isNullOrBlank()) {
             option.toString()
         } else {
@@ -78,7 +78,10 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         }
     }
 
-    @Deprecated(message = "copy is deprecated and will likely be removed in a future release.")
+    @Deprecated(
+        message = "copy is deprecated and will likely be removed in a future release.",
+        replaceWith = ReplaceWith("obj.copy()", "com.itangcent.common.utils.copy")
+    )
     @Suppress("UNCHECKED_CAST")
     override fun copy(obj: Any?): Any? = obj.copy()
 
@@ -119,7 +122,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             isNormalType(castTo) -> return getDefaultValue(castTo)
             castTo is PsiArrayType -> {   //array type
                 val deepType = castTo.getDeepComponentType()
-                val list = java.util.ArrayList<Any>()
+                val list = ArrayList<Any>()
                 cacheResolvedInfo(cacheKey, list)//cache
                 when {
                     deepType is PsiPrimitiveType -> list.add(PsiTypesUtil.getDefaultValue(deepType))
@@ -129,7 +132,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 return list.delay()
             }
             jvmClassHelper!!.isCollection(castTo) -> {   //list type
-                val list = java.util.ArrayList<Any>()
+                val list = ArrayList<Any>()
                 cacheResolvedInfo(cacheKey, list)//cache
                 val iterableType = PsiUtil.extractIterableTypeParameter(castTo, false)
                 val iterableClass = PsiUtil.resolveClassInClassTypeOnly(iterableType)
@@ -193,7 +196,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     }
                 } else {
                     val paramCls = PsiUtil.resolveClassInClassTypeOnly(castTo) ?: return null
-                    if (ruleComputer!!.computer(ClassRuleKeys.TYPE_IS_FILE, paramCls) == true) {
+                    if (ruleComputer.computer(ClassRuleKeys.TYPE_IS_FILE, paramCls) == true) {
                         cacheResolvedInfo(cacheKey, Magics.FILE_STR)//cache
                         return Magics.FILE_STR
                     }
@@ -430,7 +433,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     }
                 }
 
-                if (ruleComputer!!.computer(ClassRuleKeys.TYPE_IS_FILE, psiClass) == true) {
+                if (ruleComputer.computer(ClassRuleKeys.TYPE_IS_FILE, psiClass) == true) {
                     return Magics.FILE_STR
                 }
                 return doGetFields(duckType, context, option)
@@ -516,7 +519,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
         for (explicitField in psiClass.fields()) {
             val psiField = explicitField.psi()
-            if (jvmClassHelper!!.isStaticFinal(psiField)) {
+            if (ignoreField(psiField)) {
                 continue
             }
 
@@ -790,7 +793,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 continue
             }
 
-            if (ruleComputer!!.computer(ClassRuleKeys.CONSTANT_FIELD_IGNORE, field) == true) {
+            if (ruleComputer.computer(ClassRuleKeys.CONSTANT_FIELD_IGNORE, field) == true) {
                 continue
             }
 
@@ -806,6 +809,8 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         staticResolvedInfo[resourceClass] = res
         return res
     }
+
+    protected open fun ignoreField(psiField: PsiField) = jvmClassHelper!!.isStaticFinal(psiField)
 
     override fun parseEnumConstant(psiClass: PsiClass): List<Map<String, Any?>> {
         actionContext!!.checkStatus()

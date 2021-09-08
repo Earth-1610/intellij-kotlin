@@ -122,7 +122,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
 
     override fun getJsonFieldName(psiField: PsiField): String {
         try {
-            val nameByRule = ruleComputer!!.computer(ClassRuleKeys.FIELD_NAME, psiField)
+            val nameByRule = ruleComputer.computer(ClassRuleKeys.FIELD_NAME, psiField)
             if (!nameByRule.isNullOrBlank()) {
                 return nameByRule
             }
@@ -135,7 +135,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
 
     override fun getJsonFieldName(psiMethod: PsiMethod): String {
         try {
-            val nameByRule = ruleComputer!!.computer(ClassRuleKeys.FIELD_NAME, psiMethod)
+            val nameByRule = ruleComputer.computer(ClassRuleKeys.FIELD_NAME, psiMethod)
             if (!nameByRule.isNullOrBlank()) {
                 return nameByRule
             }
@@ -152,7 +152,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
 
     override fun getTypeObject(duckType: SingleDuckType?, context: PsiElement, option: Int): Any? {
         if (duckType is SingleDuckType && jvmClassHelper!!.isEnum(duckType.psiClass())) {
-            val convertTo = ruleComputer!!.computer(ClassRuleKeys.ENUM_CONVERT, duckType, null)
+            val convertTo = ruleComputer.computer(ClassRuleKeys.ENUM_CONVERT, duckType, null)
             val enumClass = duckType.psiClass()
             if (convertTo.notNullOrBlank()) {
                 var typeObj: Any? = null
@@ -243,7 +243,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         kv: KV<String, Any?>
     ) {
         if (fieldType is SingleDuckType && jvmClassHelper!!.isEnum(fieldType.psiClass())) {
-            val convertTo = ruleComputer!!.computer(ClassRuleKeys.ENUM_CONVERT, fieldType, null)
+            val convertTo = ruleComputer.computer(ClassRuleKeys.ENUM_CONVERT, fieldType, null)
             val enumClass = fieldType.psiClass()
             if (convertTo.notNullOrBlank()) {
                 if (convertTo!!.contains("#")) {
