@@ -142,132 +142,132 @@ class KVTest {
     fun testMerge() {
         //simple
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3),
             hashMapOf(1 to 1, 2 to 2).merge(mapOf(1 to 2, 3 to 3))
         )
 
 
         //merge sub map
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 2, 2 to 2, 3 to 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 1, 2 to 2, 3 to 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 1, 2 to 2))
                 .merge(mapOf(1 to 2, 3 to 3, 4 to hashMapOf(1 to 2, 3 to 3)))
         )
 
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 2, 2 to 2, 3 to 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 1, 2 to 2, 3 to 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 1, 2 to 2))
                 .merge(mapOf(1 to 2, 3 to 3, 4 to mapOf(1 to 2, 3 to 3)))
         )
 
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 2, 2 to 2, 3 to 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 1, 2 to 2, 3 to 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to mapOf(1 to 1, 2 to 2))
                 .merge(mapOf(1 to 2, 3 to 3, 4 to hashMapOf(1 to 2, 3 to 3)))
         )
 
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 2, 2 to 2, 3 to 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 1, 2 to 2, 3 to 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to mapOf(1 to 1, 2 to 2))
                 .merge(mapOf(1 to 2, 3 to 3, 4 to mapOf(1 to 2, 3 to 3)))
         )
 
 
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 2, 3 to 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 2, 3 to 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to emptyMap<Int, Int>())
                 .merge(mapOf(1 to 2, 3 to 3, 4 to mapOf(1 to 2, 3 to 3)))
         )
 
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 2, 3 to 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 2, 3 to 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to mapOf(1 to 2, 3 to 3))
                 .merge(mapOf(1 to 2, 3 to 3, 4 to emptyMap<Int, Int>()))
         )
 
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to emptyMap<Int, Int>()),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to emptyMap<Int, Int>()),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to emptyMap<Int, Int>())
                 .merge(mapOf(1 to 2, 3 to 3, 4 to emptyMap<Int, Int>()))
         )
 
         //merge sub list
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to listOf(1, 2, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2, 2, 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to arrayListOf(1, 2))
                 .merge(mapOf(1 to 2, 3 to 3, 4 to arrayListOf(2, 3)))
         )
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to listOf(1, 2, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2, 2, 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to arrayListOf(1, 2))
                 .merge(mapOf(1 to 2, 3 to 3, 4 to listOf(2, 3)))
         )
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to listOf(1, 2, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2, 2, 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2))
                 .merge(mapOf(1 to 2, 3 to 3, 4 to arrayListOf(2, 3)))
         )
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to listOf(1, 2, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2, 2, 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2))
                 .merge(mapOf(1 to 2, 3 to 3, 4 to listOf(2, 3)))
         )
 
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to listOf(2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(2, 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to emptyList<Int>())
                 .merge(mapOf(1 to 2, 3 to 3, 4 to listOf(2, 3)))
         )
 
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to listOf(2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(2, 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(2, 3))
                 .merge(mapOf(1 to 2, 3 to 3, 4 to emptyList<Int>()))
         )
 
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to emptyList<Int>()),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to emptyList<Int>()),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to emptyList<Int>())
                 .merge(mapOf(1 to 2, 3 to 3, 4 to emptyList<Int>()))
         )
 
         //merge sub set
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to setOf(1, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to setOf(1, 2, 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashSetOf(1, 2))
                 .merge(mapOf(1 to 2, 3 to 3, 4 to hashSetOf(2, 3)))
         )
 
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to setOf(1, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to setOf(1, 2, 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashSetOf(1, 2))
                 .merge(mapOf(1 to 2, 3 to 3, 4 to setOf(2, 3)))
         )
 
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to setOf(1, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to setOf(1, 2, 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to setOf(1, 2))
                 .merge(mapOf(1 to 2, 3 to 3, 4 to hashSetOf(2, 3)))
         )
 
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to setOf(1, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to setOf(1, 2, 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to setOf(1, 2))
                 .merge(mapOf(1 to 2, 3 to 3, 4 to setOf(2, 3)))
         )
 
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to setOf(2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to setOf(2, 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to emptySet<Int>())
                 .merge(mapOf(1 to 2, 3 to 3, 4 to setOf(2, 3)))
         )
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to setOf(2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to setOf(2, 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to setOf(2, 3))
                 .merge(mapOf(1 to 2, 3 to 3, 4 to emptySet<Int>()))
         )
         assertEquals(
-            hashMapOf(1 to 2, 2 to 2, 3 to 3, 4 to emptySet<Int>()),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to emptySet<Int>()),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to emptySet<Int>())
                 .merge(mapOf(1 to 2, 3 to 3, 4 to emptySet<Int>()))
         )
