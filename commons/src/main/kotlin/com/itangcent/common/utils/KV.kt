@@ -154,7 +154,9 @@ fun MutableMap<*, *>.merge(key: Any?, value: Any?): MutableMap<*, *> {
         return this
     }
 
-    if (oldValue.isOriginal() && !value.isOriginal()) {
+    if ((oldValue == null && value != null) ||
+        (oldValue.isOriginal() && !value.isOriginal())
+    ) {
         (this as MutableMap<Any?, Any?>).let {
             it[key] = value
         }

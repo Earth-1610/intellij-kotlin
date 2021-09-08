@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils
 import java.awt.Component
 import java.awt.EventQueue
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import javax.swing.*
 import javax.swing.event.*
 import javax.swing.text.JTextComponent
@@ -23,9 +24,9 @@ class AutoComputer {
 
     private val throttleHelper: ThrottleHelper = ThrottleHelper()
 
-    private val listeners = HashMap<AGetter<Any?>, () -> Unit>()
+    private val listeners = ConcurrentHashMap<AGetter<Any?>, () -> Unit>()
 
-    private val passiveListeners = HashMap<ASetter<Any?>, () -> Unit>()
+    private val passiveListeners = ConcurrentHashMap<ASetter<Any?>, () -> Unit>()
 
     private val wrapCache: Cache<Any?, Any?> = CacheBuilder
         .newBuilder()
@@ -33,10 +34,28 @@ class AutoComputer {
 
     private var pool: (() -> Unit) -> Unit = { it() }
 
+    private var mode = Mode.ALL
+
+    fun mode(mode: Mode): AutoComputer {
+        this.mode = mode
+        return this
+    }
+
+    fun withMode(mode: Mode, action: () -> Unit): AutoComputer {
+        val olderMode = this.mode
+        this.mode = mode
+        try {
+            action()
+        } finally {
+            this.mode = olderMode
+        }
+        return this
+    }
+
     /**
      * set value,and compute
      */
-    public fun <T> value(property: KMutableProperty0<T>, value: T) {
+    fun <T> value(property: KMutableProperty0<T>, value: T) {
         property.safeSet(value)
         val getter: AGetter<Any?> = this.wrapGetter(property)
         call(getter)
@@ -46,7 +65,10 @@ class AutoComputer {
      * set value,and compute
      */
     @Suppress("UNCHECKED_CAST")
-    public fun <T : Any?> value(setter: ASetter<T>, value: T?) {
+    fun <T : Any?> value(setter: ASetter<T>, value: T?) {
+        if(!mode.allowed(setter)){
+            return
+        }
         setter.set(value)
         if (setter is AGetter<*>) {
             call(setter as AGetter<Any?>)
@@ -62,6 +84,9 @@ class AutoComputer {
 
     //region try compute---------------------------------------------------------------
     internal fun call(getter: AGetter<Any?>) {
+        if (!this.mode.allowed(getter)) {
+            return
+        }
         val action = listeners[getter as AGetter<*>]
         var doAction = false
         try {
@@ -429,12 +454,12 @@ class AutoComputer {
 
     @Suppress("UNCHECKED_CAST")
     internal fun <T> wrapGetter(property: KProperty0<T>): AGetter<T?> {
-        if (property is KMutableProperty0) {
-            return wrapCache.get(property) {
+        return if (property is KMutableProperty0) {
+            wrapCache.get(property) {
                 KMutableProperty0Wrap(property, parseProperty(property))
             } as AGetter<T?>
         } else {
-            return wrapCache.get(property) {
+            wrapCache.get(property) {
                 KProperty0Wrap(property, parseProperty(property))
             } as AGetter<T?>
         }
@@ -936,6 +961,53 @@ fun <T> KProperty<T>.safeGet(target: Any): T? {
 }
 
 //region define interface-------------------------------------------------------
+
+enum class Mode {
+    REPAINT_UI_ONLY {
+        /**
+         * allow change from data
+         */
+        override fun allowed(getter: AGetter<*>): Boolean {
+            return getter is DataListener
+        }
+
+        /**
+         * allow setter of ui
+         */
+        override fun allowed(setter: ASetter<*>): Boolean {
+            return setter is UIListener
+        }
+    },
+    UPDATE_DATA_ONLY {
+        /**
+         * allow change from ui
+         */
+        override fun allowed(getter: AGetter<*>): Boolean {
+            return getter is UIListener
+        }
+
+        /**
+         * allow setter of data
+         */
+        override fun allowed(setter: ASetter<*>): Boolean {
+            return setter is DataListener
+        }
+    },
+    ALL {
+        override fun allowed(getter: AGetter<*>): Boolean {
+            return true
+        }
+
+        override fun allowed(setter: ASetter<*>): Boolean {
+            return true
+        }
+    };
+
+    abstract fun allowed(getter: AGetter<*>): Boolean
+
+    abstract fun allowed(setter: ASetter<*>): Boolean
+}
+
 interface ASetter<T> {
     fun set(value: T?)
 }
@@ -1000,11 +1072,15 @@ class BeanProperty : AProperty {
         return "BeanProperty(target=$target, name=$name)"
     }
 }
+
+private interface UIListener
+private interface DataListener
+
 //endregion define interface-------------------------------------------------------
 
 //region wraps------------------------------------------------------------------
 
-class KMutableProperty0Wrap<T> : ASetter<T>, AGetter<T>, HasProperty<T> {
+class KMutableProperty0Wrap<T> : ASetter<T>, AGetter<T>, HasProperty<T>, DataListener {
     private val actualProperty: KMutableProperty0<T>
     private val aProperty: AProperty
 
@@ -1044,7 +1120,7 @@ class KMutableProperty0Wrap<T> : ASetter<T>, AGetter<T>, HasProperty<T> {
     }
 }
 
-class KProperty0Wrap<T> : AGetter<T>, HasProperty<T> {
+class KProperty0Wrap<T> : AGetter<T>, HasProperty<T>, DataListener {
 
     private val actualProperty: KProperty0<T>
     private val aProperty: AProperty
@@ -1077,7 +1153,7 @@ class KProperty0Wrap<T> : AGetter<T>, HasProperty<T> {
     }
 }
 
-class JTextComponentWrap : ASetter<String?>, AGetter<String?> {
+class JTextComponentWrap : ASetter<String?>, AGetter<String?>, UIListener {
     private val component: JTextComponent
 
     constructor(component: JTextComponent) {
@@ -1095,8 +1171,11 @@ class JTextComponentWrap : ASetter<String?>, AGetter<String?> {
         EventQueue.invokeLater {
             if (this.component.text != value) {
                 manual = true
-                this.component.text = value
-                manual = false
+                try {
+                    this.component.text = value
+                } finally {
+                    manual = false
+                }
             }
         }
     }
@@ -1161,7 +1240,7 @@ class JTextComponentWrap : ASetter<String?>, AGetter<String?> {
     }
 }
 
-class JButtonTextComponentWrap : ASetter<String?>, AGetter<String?> {
+class JButtonTextComponentWrap : ASetter<String?>, AGetter<String?>, UIListener {
     val component: AbstractButton
 
     constructor(component: AbstractButton) {
@@ -1177,9 +1256,14 @@ class JButtonTextComponentWrap : ASetter<String?>, AGetter<String?> {
     override fun set(value: String?) {
         cache = value
         EventQueue.invokeLater {
-            manual = true
-            this.component.text = value
-            manual = false
+            if (this.component.text != value) {
+                manual = true
+                try {
+                    this.component.text = value
+                } finally {
+                    manual = false
+                }
+            }
         }
     }
 
@@ -1227,8 +1311,8 @@ class JButtonTextComponentWrap : ASetter<String?>, AGetter<String?> {
     }
 }
 
-class JCheckBoxComponentWrap : ASetter<Boolean?>, AGetter<Boolean?> {
-    val component: JCheckBox
+class JCheckBoxComponentWrap : ASetter<Boolean?>, AGetter<Boolean?>, UIListener {
+    private val component: JCheckBox
 
     constructor(component: JCheckBox) {
         this.component = component
@@ -1243,9 +1327,15 @@ class JCheckBoxComponentWrap : ASetter<Boolean?>, AGetter<Boolean?> {
     override fun set(value: Boolean?) {
         cache = value
         EventQueue.invokeLater {
-            manual = true
-            this.component.isSelected = value ?: false
-            manual = false
+            val selected = value ?: false
+            if (this.component.isSelected != selected) {
+                manual = true
+                try {
+                    this.component.isSelected = selected
+                } finally {
+                    manual = false
+                }
+            }
         }
     }
 
@@ -1293,7 +1383,7 @@ class JCheckBoxComponentWrap : ASetter<Boolean?>, AGetter<Boolean?> {
     }
 }
 
-class JLabelWrap : ASetter<String?>, AGetter<String?> {
+class JLabelWrap : ASetter<String?>, AGetter<String?>, UIListener {
     private val component: JLabel
 
     constructor(component: JLabel) {
@@ -1309,9 +1399,14 @@ class JLabelWrap : ASetter<String?>, AGetter<String?> {
     override fun set(value: String?) {
         cache = value
         EventQueue.invokeLater {
-            manual = true
-            this.component.text = value
-            manual = false
+            if (this.component.text != value) {
+                manual = true
+                try {
+                    this.component.text = value
+                } finally {
+                    manual = false
+                }
+            }
         }
     }
 
@@ -1338,7 +1433,7 @@ class JLabelWrap : ASetter<String?>, AGetter<String?> {
     }
 }
 
-abstract class NoListenComponentWrap<T> : ASetter<T?>, AGetter<T?> {
+abstract class NoListenComponentWrap<T> : ASetter<T?>, AGetter<T?>, UIListener {
     private val component: Component
 
     constructor(component: Component) {
@@ -1347,8 +1442,10 @@ abstract class NoListenComponentWrap<T> : ASetter<T?>, AGetter<T?> {
 
     override fun set(value: T?) {
         if (value != null) {
-            if (get() != value) {
-                EventQueue.invokeLater { set(this.component, value) }
+            EventQueue.invokeLater {
+                if (get() != value) {
+                    set(this.component, value)
+                }
             }
         }
     }
@@ -1421,7 +1518,7 @@ class ComponentNameWrap(component: Component) : NoListenComponentWrap<String>(co
     }
 }
 
-class JListComponentIndexWrap : ASetter<Int?>, AGetter<Int?> {
+class JListComponentIndexWrap : ASetter<Int?>, AGetter<Int?>, UIListener {
     private val component: JList<*>
 
     constructor(component: JList<*>) {
@@ -1438,9 +1535,14 @@ class JListComponentIndexWrap : ASetter<Int?>, AGetter<Int?> {
         if (value != null) {
             cache = value
             EventQueue.invokeLater {
-                manual = true
-                this.component.selectedIndex = value
-                manual = false
+                if (this.component.selectedIndex != value) {
+                    manual = true
+                    try {
+                        this.component.selectedIndex = value
+                    } finally {
+                        manual = false
+                    }
+                }
             }
         }
     }
@@ -1489,7 +1591,7 @@ class JListComponentIndexWrap : ASetter<Int?>, AGetter<Int?> {
     }
 }
 
-class JListComponentWrap : ASetter<List<*>?>, AGetter<List<*>?> {
+class JListComponentWrap : ASetter<List<*>?>, AGetter<List<*>?>, UIListener {
     private val component: JList<*>
 
     constructor(component: JList<*>) {
@@ -1506,22 +1608,30 @@ class JListComponentWrap : ASetter<List<*>?>, AGetter<List<*>?> {
         if (value != null) {
             cache = value
             EventQueue.invokeLater {
-                manual = true
-                this.component.model = DefaultComboBoxModel(value.toTypedArray())
-                manual = false
+                if (getModelElements() != value) {
+                    manual = true
+                    try {
+                        this.component.model = DefaultComboBoxModel(value.toTypedArray())
+                    } finally {
+                        manual = false
+                    }
+                }
             }
         }
     }
 
     override fun get(): List<*>? {
-
         if (cache != null) return cache
+        return getModelElements()
+    }
+
+    private fun getModelElements(): List<Any?> {
         val model = this.component.model
         if (model is List<*>) {
             return model
         }
         val modelElements: ArrayList<Any?> = ArrayList()
-        (0..model.size).forEach { modelElements.add(model.getElementAt(it)) }
+        (0 until model.size).forEach { modelElements.add(model.getElementAt(it)) }
         cache = modelElements
         return modelElements
     }
@@ -1578,7 +1688,7 @@ class JListComponentWrap : ASetter<List<*>?>, AGetter<List<*>?> {
     }
 }
 
-class JComboBoxComponentIndexWrap : ASetter<Int?>, AGetter<Int?> {
+class JComboBoxComponentIndexWrap : ASetter<Int?>, AGetter<Int?>, UIListener {
     private val component: JComboBox<*>
 
     constructor(component: JComboBox<*>) {
@@ -1595,9 +1705,14 @@ class JComboBoxComponentIndexWrap : ASetter<Int?>, AGetter<Int?> {
         if (value != null) {
             cache = value
             EventQueue.invokeLater {
-                manual = true
-                this.component.selectedIndex = value
-                manual = false
+                if (this.component.selectedIndex != value) {
+                    manual = true
+                    try {
+                        this.component.selectedIndex = value
+                    } finally {
+                        manual = false
+                    }
+                }
             }
         }
     }
@@ -1608,7 +1723,6 @@ class JComboBoxComponentIndexWrap : ASetter<Int?>, AGetter<Int?> {
             else -> this.component.selectedIndex
         }
     }
-
 
     private var hasListen = false
 
@@ -1646,7 +1760,7 @@ class JComboBoxComponentIndexWrap : ASetter<Int?>, AGetter<Int?> {
     }
 }
 
-class JComboBoxComponentWrap<T> : ASetter<T?>, AGetter<T?> {
+class JComboBoxComponentWrap<T> : ASetter<T?>, AGetter<T?>, UIListener {
     private val component: JComboBox<T>
 
     constructor(component: JComboBox<T>) {
@@ -1662,9 +1776,14 @@ class JComboBoxComponentWrap<T> : ASetter<T?>, AGetter<T?> {
     override fun set(value: T?) {
         if (value != null) {
             EventQueue.invokeLater {
-                manual = true
-                this.component.selectedItem = value
-                manual = false
+                if (this.component.selectedItem != value) {
+                    manual = true
+                    try {
+                        this.component.selectedItem = value
+                    } finally {
+                        manual = false
+                    }
+                }
             }
         }
     }
@@ -1728,7 +1847,7 @@ class JComboBoxComponentWrap<T> : ASetter<T?>, AGetter<T?> {
     }
 }
 
-class BeanPropertyWrap<T> : ASetter<T?>, AGetter<T?>, HasProperty<T> {
+class BeanPropertyWrap<T> : ASetter<T?>, AGetter<T?>, HasProperty<T>, DataListener {
     private val targetGetter: (() -> Any?)
 
     private val propertySetter: ((Any, T?) -> Unit)
