@@ -5,7 +5,11 @@ import com.itangcent.intellij.jvm.duck.DuckType
 
 
 interface ExplicitParameter : DuckExplicitElement<PsiParameter> {
-
+    /**
+     * Returns the type of the variable.
+     *
+     * @return the variable type.
+     */
     fun getType(): DuckType?
 
     /**
@@ -43,12 +47,16 @@ class ExplicitParameterWithGenericInfo : ExplicitElementWithGenericInfo<PsiParam
         return containMethod.containClass()
     }
 
+    override fun defineClass(): ExplicitClass {
+        return containClass().defineClass()
+    }
+
     override fun name(): String {
         return psiParameter.name ?: ""
     }
 
     override fun toString(): String {
-        return name()
+        return containMethod().toString() + "." + name()
     }
 }
 
@@ -80,11 +88,15 @@ class ExplicitParameterWithOutGenericInfo : ExplicitElementWithOutGenericInfo<Ps
         return containMethod.containClass()
     }
 
+    override fun defineClass(): ExplicitClass {
+        return containClass().defineClass()
+    }
+
     override fun name(): String {
         return psiParameter.name ?: ""
     }
 
     override fun toString(): String {
-        return name()
+        return containMethod().toString() + "." + name()
     }
 }

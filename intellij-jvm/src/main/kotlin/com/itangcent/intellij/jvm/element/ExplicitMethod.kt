@@ -48,7 +48,11 @@ class ExplicitMethodWithGenericInfo : ExplicitElementWithGenericInfo<PsiMethod>,
     }
 
     override fun containClass(): ExplicitClass {
-        return containClass
+        return containClass.containClass()
+    }
+
+    override fun defineClass(): ExplicitClass {
+        return containClass.defineClass()
     }
 
     override fun name(): String {
@@ -56,7 +60,7 @@ class ExplicitMethodWithGenericInfo : ExplicitElementWithGenericInfo<PsiMethod>,
     }
 
     override fun toString(): String {
-        return name()
+        return containClass().toString() + "#" + name()
     }
 }
 
@@ -87,7 +91,11 @@ class ExplicitMethodWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiMe
     }
 
     override fun containClass(): ExplicitClass {
-        return containClass
+        return containClass.containClass()
+    }
+
+    override fun defineClass(): ExplicitClass {
+        return containClass.defineClass()
     }
 
     override fun name(): String {
@@ -95,6 +103,6 @@ class ExplicitMethodWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiMe
     }
 
     override fun toString(): String {
-        return name()
+        return containClass().toString() + "#" + name()
     }
 }

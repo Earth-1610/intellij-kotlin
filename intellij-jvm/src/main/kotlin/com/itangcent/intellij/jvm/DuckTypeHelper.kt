@@ -218,12 +218,7 @@ open class DuckTypeHelper {
 
         when {
             typeCanonicalText == "?" -> {
-                return SingleDuckType(
-                    psiResolver!!.findClass(
-                        CommonClassNames.JAVA_LANG_OBJECT,
-                        context
-                    )!!
-                )
+                return javaLangObjectType(context)
             }
             typeCanonicalText.endsWith("[]") -> {
                 val componentTypeCanonicalText = typeCanonicalText.removeSuffix(ARRAY_SUFFIX)
@@ -270,12 +265,7 @@ open class DuckTypeHelper {
                 return when (paramCls) {
                     null -> {
                         if (typeCanonicalText.length == 1) {//maybe generic
-                            return SingleDuckType(
-                                psiResolver!!.findClass(
-                                    CommonClassNames.JAVA_LANG_OBJECT,
-                                    context
-                                )!!
-                            )
+                            return javaLangObjectType(context)
                         }
                         logger!!.warn("error to resolve class:$typeCanonicalText")
                         null

@@ -64,11 +64,23 @@ class ExplicitClassWithGenericInfo : ExplicitElementWithGenericInfo<PsiClass>, E
         this.psiClass = psiClass
     }
 
+    constructor(
+        parent: DuckExplicitElement<*>,
+        genericInfo: Map<String, DuckType?>?,
+        psiClass: PsiClass
+    ) : super(parent, genericInfo) {
+        this.psiClass = psiClass
+    }
+
     override fun name(): String {
         return psiClass.name ?: ""
     }
 
     override fun containClass(): ExplicitClass {
+        return parent as? ExplicitClass ?: this
+    }
+
+    override fun defineClass(): ExplicitClass {
         return this
     }
 
@@ -141,7 +153,7 @@ class ExplicitClassWithGenericInfo : ExplicitElementWithGenericInfo<PsiClass>, E
             for ((index, typeParameter) in psiClass.typeParameters.withIndex()) {
                 subGenericInfo[typeParameter.name ?: ""] = ensureType(parameters[index])
             }
-            ExplicitClassWithGenericInfo(duckTypeHelper, subGenericInfo, psiClass)
+            ExplicitClassWithGenericInfo(this, subGenericInfo, psiClass)
         } else {
             ExplicitClassWithOutGenericInfo(this, psiClass)
         }
@@ -156,7 +168,7 @@ class ExplicitClassWithGenericInfo : ExplicitElementWithGenericInfo<PsiClass>, E
     }
 
     override fun toString(): String {
-        return name()
+        return psiClass.qualifiedName ?: ""
     }
 }
 
@@ -176,6 +188,10 @@ class ExplicitClassWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiCla
     }
 
     override fun containClass(): ExplicitClass {
+        return parent as? ExplicitClass ?: this
+    }
+
+    override fun defineClass(): ExplicitClass {
         return this
     }
 
@@ -250,7 +266,7 @@ class ExplicitClassWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiCla
                 for ((index, typeParameter) in psiClass.typeParameters.withIndex()) {
                     subGenericInfo[typeParameter.name ?: ""] = ensureType(parameters[index])
                 }
-                ExplicitClassWithGenericInfo(this.duckTypeHelper(), subGenericInfo, psiClass)
+                ExplicitClassWithGenericInfo(this, subGenericInfo, psiClass)
             }
             else -> ExplicitClassWithOutGenericInfo(this, psiClass)
         }
@@ -262,5 +278,9 @@ class ExplicitClassWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiCla
 
     override fun psi(): PsiClass {
         return psiClass
+    }
+
+    override fun toString(): String {
+        return psiClass.qualifiedName ?: ""
     }
 }

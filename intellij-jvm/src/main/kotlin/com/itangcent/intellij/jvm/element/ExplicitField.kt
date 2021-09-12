@@ -28,7 +28,11 @@ class ExplicitFieldWithGenericInfo : ExplicitElementWithGenericInfo<PsiField>, E
     }
 
     override fun containClass(): ExplicitClass {
-        return containClass
+        return containClass.containClass()
+    }
+
+    override fun defineClass(): ExplicitClass {
+        return containClass.defineClass()
     }
 
     override fun psi(): PsiField {
@@ -36,7 +40,7 @@ class ExplicitFieldWithGenericInfo : ExplicitElementWithGenericInfo<PsiField>, E
     }
 
     override fun toString(): String {
-        return name()
+        return containClass().toString() + "#" + name()
     }
 }
 
@@ -61,10 +65,18 @@ class ExplicitFieldWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiFie
     }
 
     override fun containClass(): ExplicitClass {
-        return containClass
+        return containClass.containClass()
+    }
+
+    override fun defineClass(): ExplicitClass {
+        return containClass.defineClass()
     }
 
     override fun psi(): PsiField {
         return psiField
+    }
+
+    override fun toString(): String {
+        return containClass().toString() + "#" + name()
     }
 }
