@@ -33,6 +33,13 @@ interface ExplicitElement<E : PsiElement> {
     fun containClass(): ExplicitClass
 
     /**
+     * Returns the class define the member.
+     *
+     * @return the defining class.
+     */
+    fun defineClass(): ExplicitClass
+
+    /**
      * Returns the name of the element.
      *
      * @return the element name.
@@ -50,6 +57,7 @@ interface DuckExplicitElement<E : PsiElement> : ExplicitElement<E> {
 abstract class ExplicitElementWithGenericInfo<E : PsiElement> : DuckExplicitElement<E> {
     protected val duckTypeHelper: DuckTypeHelper
     private val genericInfo: Map<String, DuckType?>?//generic type info
+    protected val parent: DuckExplicitElement<*>?
 
     constructor(
         duckTypeHelper: DuckTypeHelper,
@@ -57,11 +65,22 @@ abstract class ExplicitElementWithGenericInfo<E : PsiElement> : DuckExplicitElem
     ) {
         this.genericInfo = genericInfo
         this.duckTypeHelper = duckTypeHelper
+        this.parent = null
     }
 
     constructor(parent: DuckExplicitElement<*>) {
         this.duckTypeHelper = parent.duckTypeHelper()
         this.genericInfo = parent.genericInfo()
+        this.parent = parent
+    }
+
+    constructor(
+        parent: DuckExplicitElement<*>,
+        genericInfo: Map<String, DuckType?>?
+    ) {
+        this.duckTypeHelper = parent.duckTypeHelper()
+        this.genericInfo = genericInfo
+        this.parent = parent
     }
 
     fun ensureType(psiType: PsiType): DuckType? {
@@ -79,15 +98,18 @@ abstract class ExplicitElementWithGenericInfo<E : PsiElement> : DuckExplicitElem
 
 abstract class ExplicitElementWithOutGenericInfo<E : PsiElement> : DuckExplicitElement<E> {
     protected val duckTypeHelper: DuckTypeHelper
+    protected val parent: DuckExplicitElement<*>?
 
     constructor(
         duckTypeHelper: DuckTypeHelper
     ) {
         this.duckTypeHelper = duckTypeHelper
+        this.parent = null
     }
 
     constructor(parent: DuckExplicitElement<*>) {
         this.duckTypeHelper = parent.duckTypeHelper()
+        this.parent = parent
     }
 
     fun ensureType(psiType: PsiType): DuckType? {

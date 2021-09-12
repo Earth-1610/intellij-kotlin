@@ -28,7 +28,6 @@ import com.itangcent.intellij.jvm.dev.DevEnv
 import com.itangcent.intellij.logger.Logger
 import com.itangcent.intellij.psi.DefaultPsiClassHelper
 import com.itangcent.mock.PrintLogger
-import org.junit.jupiter.api.condition.OS
 import org.mockito.Mockito
 import java.io.File
 import java.net.URL
@@ -146,6 +145,9 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightCodeInsightFixtureT
         return myFixture.configureFromTempProjectFile(file)
     }
 
+    /**
+     * load source of the class to current project
+     */
     protected fun loadSource(cls: KClass<*>): PsiClass? {
         return loadSource(cls.java)
     }
@@ -191,7 +193,11 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightCodeInsightFixtureT
             return readSourceFile(location, cls)
         }
 
-        val path = cls.name.replace('.', '/') + ".java"
+        val qualifiedName = cls.name
+        if (!qualifiedName.contains('.')) {
+            LOG.warn("Load [$qualifiedName] may be not meet expectation")
+        }
+        val path = qualifiedName.replace('.', '/') + ".java"
 
         //try load from resource/jdk
         ResourceUtils.readResource("jdk/${cls.simpleName}.fava")
@@ -284,3 +290,6 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightCodeInsightFixtureT
     protected open val JDK
         get() = "https://raw.githubusercontent.com/openjdk/jdk/jdk8-b120/jdk"
 }
+
+//background idea log
+private val LOG = org.apache.log4j.Logger.getLogger(ContextLightCodeInsightFixtureTestCase::class.java)
