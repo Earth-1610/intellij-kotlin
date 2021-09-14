@@ -317,7 +317,7 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
 
         //test methods
         val methods = userInfoDetailResultExplicitClass.methods()
-        assertEquals(9, methods.size)
+        assertEquals(11, methods.size)
 
         run {
             val dataGetterExplicitMethod = methods[7]
