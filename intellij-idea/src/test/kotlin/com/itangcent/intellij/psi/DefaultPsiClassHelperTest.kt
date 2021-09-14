@@ -33,6 +33,7 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
     private lateinit var hugeModelPsiClass: PsiClass
     private lateinit var javaVersionPsiClass: PsiClass
     private lateinit var numbersPsiClass: PsiClass
+    private lateinit var resultPsiClass: PsiClass
 
     override fun beforeBind() {
         super.beforeBind()
@@ -50,6 +51,7 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
         modelPsiClass = loadClass("model/Model.java")!!
         nodePsiClass = loadClass("model/Node.java")!!
         hugeModelPsiClass = loadClass("model/HugeModel.java")!!
+        resultPsiClass = loadClass("model/Result.java")!!
     }
 
     override fun bind(builder: ActionContext.ActionContextBuilder) {
@@ -124,6 +126,15 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
                 psiClassHelper.getTypeObject(
                     PsiTypesUtil.getClassType(hugeModelPsiClass),
                     hugeModelPsiClass
+                )
+            )
+        )
+        assertEquals(
+            "{\"code\":0,\"msg\":\"\",\"data\":{},\"extra\":{}}",
+            GsonUtils.toJson(
+                psiClassHelper.getTypeObject(
+                    PsiTypesUtil.getClassType(resultPsiClass),
+                    resultPsiClass
                 )
             )
         )
@@ -313,6 +324,16 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
             GsonUtils.toJson(psiClassHelper.getTypeObject(SingleDuckType(hugeModelPsiClass), hugeModelPsiClass))
         )
 
+        assertEquals(
+            "{\"code\":0,\"msg\":\"\",\"data\":{\"s\":\"\",\"integer\":0,\"stringList\":[\"\"],\"integerArray\":[0]},\"extra\":{\"{}\":{}}}",
+            GsonUtils.toJson(
+                psiClassHelper.getTypeObject(
+                    SingleDuckType(resultPsiClass, mapOf("T" to SingleDuckType(modelPsiClass))),
+                    resultPsiClass
+                )
+            )
+        )
+
         //getTypeObject from duckType  with option-------------------------------------------------
 
         assertEquals(
@@ -433,6 +454,7 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
                 )
             )
         )
+
     }
 
     fun testGetFields() {

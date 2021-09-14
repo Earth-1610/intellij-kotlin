@@ -1067,7 +1067,7 @@ fun Any?.wrapped(deep: Int = 0): Boolean {
             return this.any { it.wrapped(deep + 1) }
         }
         this is Map<*, *> -> {
-            return this.values.any { it.wrapped(deep + 1) }
+            return this.keys.any { it.wrapped(deep + 1) }||this.values.any { it.wrapped(deep + 1) }
         }
         else -> return false
     }

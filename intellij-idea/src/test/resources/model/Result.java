@@ -2,6 +2,8 @@ package com.itangcent.model;
 
 import com.itangcent.model.IResult;
 
+import java.util.Map;
+
 public class Result<T> implements IResult {
 
     private Integer code;//The response code
@@ -9,6 +11,8 @@ public class Result<T> implements IResult {
     private String msg;//The response message
 
     private T data;//The response data
+
+    private Map extra;
 
     public Result() {
     }
@@ -47,5 +51,13 @@ public class Result<T> implements IResult {
 
     public void setData(T data) {
         this.data = data;
+    }
+
+    public Map getExtra() {
+        return extra;
+    }
+
+    public void setExtra(Map extra) {
+        this.extra = extra;
     }
 }
