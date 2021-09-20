@@ -11,6 +11,16 @@ interface BooleanRule : Rule<Boolean> {
         }
     }
 
+    override fun filterWith(filter: Rule<Boolean>): Rule<Boolean> {
+        return of { context ->
+            if (filter.compute(context) == true) {
+                return@of this.compute(context)
+            } else {
+                return@of null
+            }
+        }
+    }
+
     companion object {
         fun of(result: Boolean): BooleanRule {
             return object : BooleanRule {

@@ -3,7 +3,8 @@ package com.itangcent.intellij.config.rule
 import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.PsiElement
-import com.itangcent.common.utils.reduceSafely
+import com.itangcent.common.utils.Iterables
+import kotlin.reflect.KClass
 
 @Singleton
 class DefaultRuleComputer : RuleComputer {
@@ -18,7 +19,7 @@ class DefaultRuleComputer : RuleComputer {
     protected val ruleComputeListener: RuleComputeListener? = null
 
     @Suppress("UNCHECKED_CAST", "LABEL_NAME_CLASH")
-    override fun <T> computer(
+    override fun <T : Any> computer(
         ruleKey: RuleKey<T>,
         target: Any,
         context: PsiElement?,
@@ -34,119 +35,56 @@ class DefaultRuleComputer : RuleComputer {
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun <T> doComputer(
+    fun <T : Any> doComputer(
         ruleKey: RuleKey<T>,
         target: Any,
         context: PsiElement?,
         contextHandle: (RuleContext) -> Unit
     ): T? {
-        val rules = ruleLookUp!!.lookUp(ruleKey.nameAndAlias(), ruleKey.ruleType())
+        val rules: List<Rule<Any>> =
+            ruleLookUp!!.doLookUp(
+                ruleKey.nameAndAlias(),
+                ruleKey.mode().targetType() as KClass<Any>
+            )
 
         if (rules.isNullOrEmpty()) return ruleKey.defaultVal()
 
-        return (when (ruleKey.mode()) {
-            is StringRuleMode -> {
-                (rules as (List<StringRule>)).compute(
-                    target,
-                    context,
-                    ruleKey.mode() as StringRuleMode,
-                    contextHandle
-                ) as T?
-            }
-            is BooleanRuleMode -> {
-                (rules as (List<BooleanRule>)).compute(
-                    target,
-                    context,
-                    ruleKey.mode() as BooleanRuleMode,
-                    contextHandle
-                ) as T?
-            }
-            is EventRuleMode -> {
-                (rules as (List<EventRule>)).compute(
-                    target,
-                    context,
-                    ruleKey.mode() as EventRuleMode,
-                    contextHandle
-                ) as T?
-            }
-            else -> null
-        }) ?: ruleKey.defaultVal()
+        val ruleContext: RuleContext = ruleParser!!.contextOf(target, context)
+        contextHandle(ruleContext)
+
+        return (ruleKey.mode() as RuleMode<Any>).compute(RuleChainImpl(rules, ruleContext)) as? T
+            ?: ruleKey.defaultVal()
     }
 
 
-    private fun List<StringRule>?.compute(
-        target: Any,
-        context: PsiElement?,
-        mode: StringRuleMode = StringRuleMode.MERGE,
-        contextHandle: (RuleContext) -> Unit
-    ): String? {
-        if (this.isNullOrEmpty()) {
-            return null
-        }
-        val psiElementContext = ruleParser!!.contextOf(target, context)
-        contextHandle(psiElementContext)
-        return when (mode) {
-            StringRuleMode.SINGLE -> this
-                .stream()
-                .map { it.compute(psiElementContext) }
-                .filter { !it.isNullOrEmpty() }
-                .findFirst()
-                .orElse(null)
-            StringRuleMode.MERGE -> this
-                .map { it.compute(psiElementContext) }
-                .filter { !it.isNullOrEmpty() }
-                .reduceSafely { s1, s2 -> "$s1\n$s2" }
-            StringRuleMode.MERGE_DISTINCT -> this.map { it.compute(psiElementContext) }
-                .filter { !it.isNullOrEmpty() }
-                .distinct()
-                .reduceSafely { s1, s2 -> "$s1\n$s2" }
-        }
-    }
+    private class RuleChainImpl<T>(
+        private val rules: List<Rule<T>>,
+        private val ruleContext: RuleContext,
+        private val index: Int = 0
+    ) : RuleChain<T> {
 
-    private fun List<BooleanRule>?.compute(
-        target: Any,
-        context: PsiElement?,
-        mode: BooleanRuleMode = BooleanRuleMode.ANY,
-        contextHandle: (RuleContext) -> Unit
-    ): Boolean? {
-        if (this.isNullOrEmpty()) {
-            return null
+        override fun nextChain(): RuleChain<T>? {
+            val nextIndex = index + 1
+            return if (nextIndex < rules.size)
+                RuleChainImpl(rules, ruleContext, nextIndex)
+            else null
         }
-        val psiElementContext = ruleParser!!.contextOf(target, context)
-        contextHandle(psiElementContext)
-        return when (mode) {
-            BooleanRuleMode.ANY -> this
-                .stream()
-                .map { it.compute(psiElementContext) }
-                .anyMatch { it == true }
-            BooleanRuleMode.ALL -> this
-                .stream()
-                .map { it.compute(psiElementContext) }
-                .allMatch { it == true }
-        }
-    }
 
-    private fun List<EventRule>?.compute(
-        target: Any,
-        context: PsiElement?,
-        mode: EventRuleMode = EventRuleMode.IGNORE_ERROR,
-        contextHandle: (RuleContext) -> Unit
-    ) {
-        if (this.isNullOrEmpty()) {
-            return
+        override fun compute(): T? {
+            return rules[index].compute(ruleContext)
         }
-        val psiElementContext = ruleParser!!.contextOf(target, context)
-        contextHandle(psiElementContext)
-        when (mode) {
-            EventRuleMode.IGNORE_ERROR -> this.forEach {
-                try {
-                    it.compute(psiElementContext)
-                } catch (ignore: Exception) {
+
+        override fun iterator(): Iterator<RuleChain<T>> {
+            var ruleChain: RuleChain<T>? = this
+            return Iterables.asIterable {
+                if (ruleChain == null) {
+                    null
+                } else {
+                    val ret = ruleChain
+                    ruleChain = ruleChain?.nextChain()
+                    ret
                 }
-            }
-            EventRuleMode.THROW_IN_ERROR -> this.forEach {
-                it.compute(psiElementContext)
-            }
+            }.iterator()
         }
     }
 }

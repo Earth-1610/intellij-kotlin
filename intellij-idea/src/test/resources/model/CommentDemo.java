@@ -7,6 +7,7 @@ class CommentDemo {
      *
      * @single
      * @desc low case of A
+     * @tag public
      */
     private String a;
 

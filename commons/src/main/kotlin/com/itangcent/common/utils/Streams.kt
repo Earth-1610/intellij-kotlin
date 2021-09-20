@@ -2,6 +2,14 @@ package com.itangcent.common.utils
 
 import java.util.*
 import java.util.stream.Stream
+import java.util.stream.StreamSupport
+
+object Streams {
+
+    fun <T> fromGenerate(generator: () -> T?): Stream<T> {
+        return StreamSupport.stream(Iterables.asIterable(generator).spliterator(), false)
+    }
+}
 
 /**
  * Returns a [Array] containing all elements produced by this stream.

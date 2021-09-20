@@ -21,7 +21,7 @@ open class DefaultRuleLookUp : RuleLookUp {
     protected val configReader: ConfigReader? = null
 
     @Inject
-    protected val ruleParser: RuleParser? = null
+    protected lateinit var ruleParser: RuleParser
 
     @Inject
     protected val contextSwitchListener: ContextSwitchListener? = null
@@ -37,15 +37,15 @@ open class DefaultRuleLookUp : RuleLookUp {
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T : Rule<*>> lookUp(key: String, ruleType: KClass<T>): List<T> {
+    override fun <T : Any> lookUp(key: String, ruleType: KClass<T>): List<Rule<T>> {
         return ruleCaches.safeComputeIfAbsent(key) {
             doLookUp(key, ruleType)
-        } as List<T>
+        } as List<Rule<T>>
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T : Rule<*>> doLookUp(lookUpKey: String, ruleType: KClass<T>): List<T> {
-        val rules: ArrayList<T> = ArrayList()
+    private fun <T : Any> doLookUp(lookUpKey: String, ruleType: KClass<T>): List<Rule<T>> {
+        val rules: ArrayList<Any> = ArrayList()
         val filteredKey = "$lookUpKey["
         configReader!!.foreach({ key ->
             key == lookUpKey
@@ -58,74 +58,30 @@ open class DefaultRuleLookUp : RuleLookUp {
 
                     if (filterTxt.startsWith("#regex:")) {
                         val regexBooleanRule = RegexBooleanRule.compile(filterTxt, value)
-
-                        when (ruleType) {
-                            StringRule::class -> {
-                                ruleParser!!.parseStringRule(value)?.let {
-                                    rules.add(regexBooleanRule.filterWith(it) as T)
-                                }
-                            }
-                            BooleanRule::class -> {
-                                ruleParser!!.parseBooleanRule(value)?.let {
-                                    rules.add(regexBooleanRule.filterWith(it) as T)
-                                }
-                            }
-                            EventRule::class -> {
-                                ruleParser!!.parseEventRule(value)?.let {
-                                    rules.add(regexBooleanRule.filterWith(it) as T)
-                                }
-                            }
+                        ruleParser.parseRule(value, ruleType)?.let {
+                            rules.add(it.filterWith(regexBooleanRule))
                         }
                         return@foreach
                     }
 
-                    val filter = ruleParser!!.parseBooleanRule(filterTxt)
+                    val filter = ruleParser.parseBooleanRule(filterTxt)
                     if (filter != null) {
-                        when (ruleType) {
-                            StringRule::class -> {
-                                ruleParser.parseStringRule(value)?.let {
-                                    rules.add(StringRule.filterWith(filter, it) as T)
-                                }
-                            }
-                            BooleanRule::class -> {
-                                ruleParser.parseBooleanRule(value)?.let {
-                                    rules.add(BooleanRule.filterWith(filter, it) as T)
-                                }
-                            }
-                            EventRule::class -> {
-                                ruleParser.parseEventRule(value)?.let {
-                                    rules.add(BooleanRule.filterWith(filter, it) as T)
-                                }
-                            }
+                        ruleParser.parseRule(value, ruleType)?.let {
+                            rules.add(it.filterWith(filter))
                         }
                         return@foreach
                     }
                     logger!!.warn("error to parse $filterTxt")
                 }
 
-                when (ruleType) {
-                    StringRule::class -> {
-                        ruleParser!!.parseStringRule(value)?.let {
-                            rules.add(it as T)
-                        }
-                    }
-                    BooleanRule::class -> {
-                        ruleParser!!.parseBooleanRule(value)?.let {
-                            rules.add(it as T)
-                        }
-                    }
-                    EventRule::class -> {
-                        ruleParser!!.parseEventRule(value)?.let {
-                            rules.add(it as T)
-                        }
-                    }
+                ruleParser.parseRule(value, ruleType)?.let {
+                    rules.add(it)
                 }
-
             } catch (e: Exception) {
                 logger!!.traceError("error to parse module rule:$key=$value", e)
             }
         }
-        return rules.takeIf { it.isNotEmpty() } ?: emptyList()
+        return (rules.takeIf { it.isNotEmpty() } ?: emptyList()) as List<Rule<T>>
     }
 
 }
