@@ -5,9 +5,9 @@ import kotlin.reflect.KClass
 
 @ImplementedBy(DefaultRuleLookUp::class)
 interface RuleLookUp {
-    fun <T : Rule<*>> lookUp(key: String, ruleType: KClass<T>): List<T>
+    fun <T : Any> lookUp(key: String, ruleType: KClass<T>): List<Rule<T>>
 }
 
-fun <T : Rule<*>> RuleLookUp.lookUp(keys: Array<String>, ruleType: KClass<T>): List<T> {
+fun <T : Any> RuleLookUp.doLookUp(keys: Array<String>, ruleType: KClass<T>): List<Rule<T>> {
     return keys.flatMap { this.lookUp(it, ruleType) }
 }

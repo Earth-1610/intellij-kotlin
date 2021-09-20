@@ -157,7 +157,7 @@ internal class StandardDocHelperTest : ContextLightCodeInsightFixtureTestCase() 
 
     fun testGetTagMapOfDocComment() {
         assertEquals(
-            mapOf("single" to "", "desc" to "low case of A"),
+            mapOf("single" to "", "tag" to "public", "desc" to "low case of A"),
             standardDocHelper.getTagMapOfDocComment(commentDemoPsiClass.fields[0])
         )
         assertEquals(

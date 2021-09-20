@@ -19,7 +19,7 @@ import com.itangcent.intellij.logger.Logger
 import java.util.regex.Pattern
 
 @Singleton
-class SimpleRuleParser : RuleParser {
+open class SimpleRuleParser : RuleParser {
 
     @Inject
     private val annotationHelper: AnnotationHelper? = null

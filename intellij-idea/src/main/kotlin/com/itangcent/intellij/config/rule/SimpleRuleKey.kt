@@ -2,46 +2,78 @@ package com.itangcent.intellij.config.rule
 
 import kotlin.reflect.KClass
 
-class SimpleRuleKey<T> : RuleKey<T> {
+class SimpleRuleKey<T : Any> : RuleKey<T> {
 
     private val name: String
     private val alias: Array<String>?
-    private val ruleType: KClass<Rule<T>>
-    private val mode: RuleMode
+    private val mode: RuleMode<*>
     private val defaultVal: T?
 
     @Suppress("UNCHECKED_CAST")
-    constructor(name: String, ruleType: KClass<*>, mode: RuleMode) {
+    constructor(name: String, mode: RuleMode<*>) {
         this.name = name
-        this.ruleType = ruleType as KClass<Rule<T>>
         this.mode = mode
         this.defaultVal = null
         this.alias = null
     }
 
     @Suppress("UNCHECKED_CAST")
-    constructor(name: String, alias: Array<String>?, ruleType: KClass<*>, mode: RuleMode) {
+    constructor(name: String, alias: Array<String>?, mode: RuleMode<*>) {
         this.name = name
         this.alias = alias
-        this.ruleType = ruleType as KClass<Rule<T>>
         this.mode = mode
         this.defaultVal = null
     }
 
     @Suppress("UNCHECKED_CAST")
-    constructor(name: String, ruleType: KClass<*>, mode: RuleMode, defaultVal: T?) {
+    constructor(name: String, mode: RuleMode<*>, defaultVal: T?) {
         this.name = name
         this.alias = null
-        this.ruleType = ruleType as KClass<Rule<T>>
         this.mode = mode
         this.defaultVal = defaultVal
     }
 
     @Suppress("UNCHECKED_CAST")
-    constructor(name: String, alias: Array<String>, ruleType: KClass<*>, mode: RuleMode, defaultVal: T?) {
+    constructor(name: String, alias: Array<String>, mode: RuleMode<*>, defaultVal: T?) {
         this.name = name
         this.alias = alias
-        this.ruleType = ruleType as KClass<Rule<T>>
+        this.mode = mode
+        this.defaultVal = defaultVal
+    }
+
+
+    @Deprecated(message = "ruleType is unnecessary")
+    @Suppress("UNCHECKED_CAST")
+    constructor(name: String, ruleType: KClass<*>, mode: RuleMode<*>) {
+        this.name = name
+        this.mode = mode
+        this.defaultVal = null
+        this.alias = null
+    }
+
+    @Deprecated(message = "ruleType is unnecessary")
+    @Suppress("UNCHECKED_CAST")
+    constructor(name: String, alias: Array<String>?, ruleType: KClass<*>, mode: RuleMode<*>) {
+        this.name = name
+        this.alias = alias
+        this.mode = mode
+        this.defaultVal = null
+    }
+
+    @Deprecated(message = "ruleType is unnecessary")
+    @Suppress("UNCHECKED_CAST")
+    constructor(name: String, ruleType: KClass<*>, mode: RuleMode<*>, defaultVal: T?) {
+        this.name = name
+        this.alias = null
+        this.mode = mode
+        this.defaultVal = defaultVal
+    }
+
+    @Deprecated(message = "ruleType is unnecessary")
+    @Suppress("UNCHECKED_CAST")
+    constructor(name: String, alias: Array<String>, ruleType: KClass<*>, mode: RuleMode<*>, defaultVal: T?) {
+        this.name = name
+        this.alias = alias
         this.mode = mode
         this.defaultVal = defaultVal
     }
@@ -52,10 +84,10 @@ class SimpleRuleKey<T> : RuleKey<T> {
     }
 
     override fun ruleType(): KClass<Rule<T>> {
-        return ruleType
+        throw NotImplementedError("ruleType is not implemented")
     }
 
-    override fun mode(): RuleMode {
+    override fun mode(): RuleMode<*> {
         return mode
     }
 
