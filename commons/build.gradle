@@ -45,12 +45,17 @@ dependencies {
     // https://mvnrepository.com/artifact/com.google.guava/guava
     compileOnly group: 'com.google.guava', name: 'guava', version: '28.1-jre'
 
+    // https://mvnrepository.com/artifact/org.codehaus.groovy/groovy-jsr223
+    compileOnly group: 'org.codehaus.groovy', name: 'groovy-jsr223', version: '3.0.9'
+
     // https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
     testCompile "org.junit.jupiter:junit-jupiter-api:${junit_version}"
     testCompile "org.junit.jupiter:junit-jupiter-engine:${junit_version}"
     testCompile "org.junit.jupiter:junit-jupiter-params:${junit_version}"
     testCompile "org.jetbrains.kotlin:kotlin-test-junit5:$kotlin_version"
 
+    // https://mvnrepository.com/artifact/org.codehaus.groovy/groovy-jsr223
+    testCompile group: 'org.codehaus.groovy', name: 'groovy-jsr223', version: '3.0.9'
 }
 
 compileKotlin {

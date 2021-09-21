@@ -1,0 +1,2 @@
+com.itangcent.common.text.LiteralTemplateEvaluatorDecorator
+com.itangcent.common.text.GroovyScriptEngineTemplateEvaluatorDecorator
