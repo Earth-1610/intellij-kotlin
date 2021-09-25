@@ -62,9 +62,9 @@ class FilesTest {
             .exceptDir("$tempDir/A".r())
 
         traveler.copy()
-            .onFolder(FileHandle.from { folders.add(it.path()) })
-            .onFile(FileHandle.collectFiles(files) { it.path() })
-            .filter(FileFilter.filterFile { it.name().endsWith(".txt") })
+            .onDirectory { folders.add(it.path()) }
+            .onFile(FileHandles.collectFiles(files) { it.path() })
+            .filterFile { it.name().endsWith(".txt") }
             .onCompleted(object : FileCompleted {
                 override fun onCompleted(fileCnt: Int, folderCnt: Int, time: Long) {
                     assertEquals(2, fileCnt)
@@ -76,15 +76,15 @@ class FilesTest {
         assertEquals(2, files.size)
 
         traveler.copy()
-            .filter(FileFilter.filterFile { it.name().endsWith(".kt") })
-            .filter(FileFilter.filterDirectory { it.name() != "B" })
+            .filterFile { it.name().endsWith(".kt") }
+            .filterDirectory { it.name() != "B" }
             .onCompleted(object : FileCompleted {
                 override fun onCompleted(fileCnt: Int, folderCnt: Int, time: Long) {
                     assertEquals(1, fileCnt)
                 }
             }.andThen(object : FileCompleted {
                 override fun onCompleted(fileCnt: Int, folderCnt: Int, time: Long) {
-                    assertEquals(6, folderCnt)
+                    assertEquals(4, folderCnt)
                 }
             }))
             .travel()
@@ -97,8 +97,8 @@ class FilesTest {
 
         val ktFiles = arrayListOf<FileWrap>()
         traveler.copy()
-            .filter(FileFilter.filterFile { it.name().endsWith(".kt") })
-            .onFile(FileHandle.collectFiles(ktFiles))
+            .filterFile { it.name().endsWith(".kt") }
+            .onFile(FileHandles.collectFiles(ktFiles))
             .travel()
 
         assertEquals(1, ktFiles.size)
@@ -106,19 +106,38 @@ class FilesTest {
 
         //travel unexisted directory
         DefaultFileTraveler(tempDir.toString() + "/Z")
-            .onFile(FileHandle.from { Assertions.fail() })
+            .onFile { Assertions.fail() }
             .travel()
 
         traveler.copy()
-            .onFolder(FileHandle.from { folders.add(it.path()) })
-            .onFile(FileHandle.collectFiles(files) { it.path() })
-            .filter(FileFilter.filterFile { it.name().endsWith(".txt") })
+            .onDirectory { folders.add(it.path()) }
+            .onFile(FileHandles.collectFiles(files) { it.path() })
+            .filterFile { it.name().endsWith(".txt") }
             .onCompleted(object : FileCompleted {
                 override fun onCompleted(fileCnt: Int, folderCnt: Int, time: Long) {
                     assertEquals(2, fileCnt)
+                    assertEquals(6, folderCnt)
                 }
             })
             .travel()
+
+        assertEquals(4, files.size)
+        assertEquals(12, folders.size)
+
+        traveler.copy()
+            .onDirectory { folders.add(it.path()) }
+            .onFile(FileHandles.collectFiles(files) { it.path() })
+            .filterDirectory { !it.path().contains("/C/") }
+            .onCompleted(object : FileCompleted {
+                override fun onCompleted(fileCnt: Int, folderCnt: Int, time: Long) {
+                    assertEquals(1, fileCnt)
+                    assertEquals(4, folderCnt)
+                }
+            })
+            .travel()
+
+        assertEquals(5, files.size)
+        assertEquals(16, folders.size)
     }
 
     @Test
