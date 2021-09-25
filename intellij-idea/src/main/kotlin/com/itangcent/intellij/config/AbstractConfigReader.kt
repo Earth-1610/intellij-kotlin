@@ -2,6 +2,7 @@ package com.itangcent.intellij.config
 
 import com.google.inject.Inject
 import com.itangcent.common.logger.traceWarn
+import com.itangcent.common.text.TemplateUtils
 import com.itangcent.common.utils.*
 import com.itangcent.intellij.config.resource.FileResource
 import com.itangcent.intellij.config.resource.ResourceResolver
@@ -31,7 +32,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
 
     private var ignoreNotFoundFile: Boolean = false
 
-    private var resolveMulti: ResolveMultiType = ResolveMultiType.ERROR
+    private var resolveMulti: ResolveMultiType = ResolveMultiType.FIRST
 
     fun loadConfigInfo() {
 //        if (configInfo.isNotEmpty()) return
@@ -52,7 +53,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
                 YamlConfigResolver()
             }
             "json" -> {
-                //resolve .properties&.config as propertiesConfig
+                //resolve .json as jsonConfig
                 JsonConfigResolver()
             }
             "properties", "config" -> {
@@ -143,38 +144,16 @@ abstract class AbstractConfigReader : MutableConfigReader {
         if (!resolveProperty) {
             return property
         }
-
-        if (property.isBlank()) return property
-        if (!property.contains("$")) return property
-
-        val pattern = Pattern.compile("\\$\\{(.*?)}")
-        val match = pattern.matcher(property)
-        val sb = StringBuffer()
-        while (match.find()) {
-            val key = match.group(1)
-            if (key.startsWith('\'') && key.endsWith('\'')) {
-                match.appendReplacement(sb, key.removeSurrounding("'"))
-            } else if (key.startsWith('\"') && key.endsWith('\"')) {
-                match.appendReplacement(sb, key.removeSurrounding("\""))
-            } else {
-                try {
-                    val value = getPropertyValue(key)
-                    if (value == null || value == MULTI_UNRESOLVED) {
-                        if (!ignoreUnresolved && value != MULTI_UNRESOLVED) {
-                            logger.error("unable to resolve property:$key")
-                            tipsHelper.showTips(UNRESOLVED_TIP)
-                        }
-                        match.appendReplacement(sb, "")
-                        continue
-                    }
-                    match.appendReplacement(sb, value.toString())
-                } catch (e: Exception) {
-                    logger.error("unable to resolve $key")
-                }
+        return TemplateUtils.render(property)
+            .context { p ->
+                getPropertyValue(p)?.takeIf { it != MULTI_UNRESOLVED }
             }
-        }
-        match.appendTail(sb)
-        return sb.toString()
+            .onEval { p, resolved ->
+                if (resolved == null && !ignoreUnresolved) {
+                    logger.error("unable to resolve property:$p")
+                    tipsHelper.showTips(UNRESOLVED_TIP)
+                }
+            }.render() ?: ""
     }
 
     open fun getPropertyStringValue(key: String): String? {
