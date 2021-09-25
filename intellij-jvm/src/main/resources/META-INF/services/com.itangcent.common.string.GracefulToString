@@ -1,0 +1,4 @@
+com.itangcent.intellij.jvm.string.PsiClassGracefulToString
+com.itangcent.intellij.jvm.string.PsiTypeGracefulToString
+com.itangcent.intellij.jvm.string.PsiMemberGracefulToString
+com.itangcent.intellij.jvm.string.PsiElementGracefulToString

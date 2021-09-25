@@ -6,6 +6,7 @@ import com.intellij.psi.PsiAnnotation
 import com.intellij.psi.PsiAnnotationOwner
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiModifierListOwner
+import com.itangcent.common.string.gracefulString
 import com.itangcent.common.utils.*
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.PostConstruct
@@ -76,7 +77,7 @@ open class StandardAnnotationHelper : AnnotationHelper {
                 .stream()
                 .mapNotNull { ann.findAttributeValue(it) }
                 .mapNotNull { psiExpressionResolver!!.process(it) }
-                .mapNotNull { tinyAnnStr(it) }
+                .mapNotNull { tinyAnnStr(it.gracefulString()) }
                 .longest()
         }
     }
@@ -104,18 +105,8 @@ open class StandardAnnotationHelper : AnnotationHelper {
         }
     }
 
-    fun tinyAnnStr(annStr: Any?): String? {
-        return when (annStr) {
-            null -> null
-            is Array<*> -> annStr.joinToString(separator = "\n")
-            is Collection<*> -> annStr.joinToString(separator = "\n")
-            is String -> annStr
-            else -> GsonUtils.toJson(annStr)
-        }
-    }
-
     /**
-     * clean the str of param in annotaion
+     * clean the str of param in annotation
      * 1.remove {}  e.g.{*}->*
      * 2.remove ""  e.g."*"->*
      */
