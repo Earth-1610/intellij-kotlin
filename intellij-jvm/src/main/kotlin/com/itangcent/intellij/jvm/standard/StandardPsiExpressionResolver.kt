@@ -3,6 +3,7 @@ package com.itangcent.intellij.jvm.standard
 import com.google.inject.Inject
 import com.intellij.psi.*
 import com.intellij.psi.tree.IElementType
+import com.intellij.psi.util.PsiUtil
 import com.itangcent.common.utils.*
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.JvmClassHelper
@@ -24,12 +25,6 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
     @Inject
     private val jvmClassHelper: JvmClassHelper? = null
 
-    @Inject
-    private val devEnv: DevEnv? = null
-
-    @Inject
-    private val logger: Logger? = null
-
     private val psiExpressionResolver: PsiExpressionResolver = ActionContext.local()
 
     private val registerGenericExpressionResolverHandler: LinkedList<Pair<(Any) -> Boolean, (Any) -> Any?>> =
@@ -45,7 +40,7 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
         registerGenericExpressionResolverHandler.add(predicate to (handle as (Any) -> Any?))
     }
 
-    open override fun process(psiExpression: PsiExpression): Any? {
+    override fun process(psiExpression: PsiExpression): Any? {
 
         LOG.debug("process PsiExpression: type:${psiExpression::class}, text:【${psiExpression.text.flatten()}】")
 
@@ -65,7 +60,9 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
             is PsiLambdaExpression -> return psiExpression.body?.let { psiExpressionResolver.process(it) }
             is PsiClassObjectAccessExpression -> {
                 val lastChild = psiExpression.lastChild
-                if (lastChild is PsiKeyword && lastChild.text == PsiKeyword.CLASS) {
+                if (psiExpression.children.size == 1) {
+                    return psiExpressionResolver.process(lastChild)
+                } else if (lastChild is PsiKeyword && lastChild.text == PsiKeyword.CLASS) {
                     return psiExpressionResolver.process(psiExpression.firstChild)
                 }
             }
@@ -80,6 +77,7 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
                 }
             }
         }
+        LOG.error("failed process:$psiExpression")
         return psiExpression.text
     }
 
@@ -93,7 +91,7 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
         return resolvedValue
     }
 
-    open override fun process(psiElement: PsiElement): Any? {
+    override fun process(psiElement: PsiElement): Any? {
         LOG.debug("process PsiElement: type:${psiElement::class}, text:【${psiElement.text.flatten()}】")
 
         registerGenericExpressionResolverHandler
@@ -146,17 +144,25 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
                 return psiElement.body?.let { psiExpressionResolver.process(it) }
             }
             is PsiTypeElement -> {
-                return psiElement.type.canonicalText
+                return processPsiType(psiElement.type)
             }
             else -> {
                 //ignore
 //                    logger!!.debug("no matched ele ${psiElement::class.qualifiedName}:${psiElement.text}")
             }
         }
+        LOG.error("failed process:$psiElement")
         return psiElement.text
     }
 
-    open override fun processStaticField(psiField: PsiField): Any? {
+    private fun processPsiType(psiType: PsiType): Any {
+        if (psiType.canonicalText.contains("<")) {
+            return psiType
+        }
+        return PsiUtil.resolveClassInClassTypeOnly(psiType) ?: psiType
+    }
+
+    override fun processStaticField(psiField: PsiField): Any? {
         registerGenericExpressionResolverHandler
             .filter {
                 it.first(psiField)

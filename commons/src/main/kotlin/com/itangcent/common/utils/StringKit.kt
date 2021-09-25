@@ -50,7 +50,7 @@ object StringUtils {
         return sb.toString()
     }
 
-    val UNDERLINE = '_'
+    const val UNDERLINE = '_'
 }
 
 /**
@@ -133,4 +133,4 @@ fun String?.flatten(defaultValue: String = "null"): String {
     return this?.replace(LINE_SEPARATOR, "\\n") ?: defaultValue
 }
 
-private val LINE_SEPARATOR = "\n"
+private const val LINE_SEPARATOR = "\n"
