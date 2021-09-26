@@ -1,8 +1,6 @@
 package com.itangcent.common.utils
 
-import com.itangcent.common.files.DefaultFileTraveler
-import com.itangcent.common.files.FileHandle
-import com.itangcent.common.files.FileTraveler
+import com.itangcent.common.files.*
 import com.itangcent.common.logger.ILogger
 import com.itangcent.common.logger.ILoggerProvider
 import com.itangcent.common.spi.SpiUtils
@@ -27,12 +25,12 @@ object FileUtils {
             fp = formatPattern(fp)
             val pattern = Pattern.compile("^$fp$")
 
-            fileTraveler.filter(com.itangcent.common.files.FileFilter.filterFile {
-                pattern.matcher(it.name()).matches()
-            })
+            fileTraveler.filterFile {
+                pattern.matcher(it.path()).matches() || pattern.matcher(it.name()).matches()
+            }
         }
         val files = ArrayList<File>()
-        fileTraveler.onFile(FileHandle.collectFiles(files) { it.file })
+        fileTraveler.onFile(FileHandles.collectFiles(files) { it.file })
         fileTraveler.travel()
         return files
     }

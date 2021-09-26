@@ -1,46 +1,36 @@
 package com.itangcent.common.files
 
+
+typealias FileHandle = (FileWrap) -> Unit
+
 /**
  * Created by tangcent on 2017/2/12.
  */
 @FunctionalInterface
-interface FileHandle {
-    fun handle(file: FileWrap)
+object FileHandles {
 
-    companion object {
+    val defaultHandle: FileHandle = {}
 
-        val defaultHandle: FileHandle = object : FileHandle {
-            override fun handle(file: FileWrap) {}
+    fun from(handle: (file: FileWrap) -> Unit): FileHandle {
+        return {
+            handle(it)
         }
+    }
 
-        fun from(filter: (file: FileWrap) -> Unit): FileHandle {
-            return object : FileHandle {
-                override fun handle(file: FileWrap) {
-                    filter(file)
-                }
-            }
+    fun collectFiles(files: MutableCollection<FileWrap>): FileHandle {
+        return {
+            files.add(it)
         }
+    }
 
-        fun collectFiles(files: MutableList<FileWrap>): FileHandle {
-            return object : FileHandle {
-                override fun handle(file: FileWrap) {
-                    files.add(file)
-                }
-            }
-        }
-
-        fun <T> collectFiles(files: MutableList<T>, transform: (FileWrap) -> T): FileHandle {
-            return object : FileHandle {
-                override fun handle(file: FileWrap) {
-                    files.add(transform(file))
-                }
-
-            }
+    fun <T> collectFiles(files: MutableCollection<T>, transform: (FileWrap) -> T): FileHandle {
+        return {
+            files.add(transform(it))
         }
     }
 }
 
-public fun FileHandle.andThen(nextHandle: FileHandle): FileHandle = FileHandle.from { file ->
-    this.handle(file)
-    nextHandle.handle(file)
+fun FileHandle.andThen(nextHandle: FileHandle): FileHandle = { file ->
+    this(file)
+    nextHandle(file)
 }

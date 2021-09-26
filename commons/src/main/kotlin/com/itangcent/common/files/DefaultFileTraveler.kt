@@ -8,12 +8,12 @@ import java.util.*
  */
 class DefaultFileTraveler(private val root: String) : FileTraveler {
 
-    private var onFile = FileHandle.defaultHandle
-    private var onFolder = FileHandle.defaultHandle
+    private var onFile = FileHandles.defaultHandle
+    private var onFolder = FileHandles.defaultHandle
 
     private var onCompleted = FileCompleted.defaultHandle
-    private var fileFilter = FileFilter.defaultHandle
-    private var dirFilter = FileFilter.defaultHandle
+    private var fileFilter = FileFilters.defaultHandle
+    private var dirFilter = FileFilters.defaultHandle
 
     override fun exceptDir(vararg dirs: String): DefaultFileTraveler {
         val exceptDir = setOf(*dirs)
@@ -28,7 +28,7 @@ class DefaultFileTraveler(private val root: String) : FileTraveler {
         return this
     }
 
-    override fun onFolder(fileHandle: FileHandle): DefaultFileTraveler {
+    override fun onDirectory(fileHandle: FileHandle): DefaultFileTraveler {
         this.onFolder = this.onFolder.andThen(fileHandle)
         return this
     }
@@ -82,19 +82,21 @@ class DefaultFileTraveler(private val root: String) : FileTraveler {
         }
 
         internal fun travel(file: FileWrap) {
+            if (!fileFilter(file)) {
+                return
+            }
             if (file.file.isDirectory) {
-                if (dirFilter.accept(file)) {
+                if (dirFilter(file)) {
                     ++folderCnt
-                    onFolder.handle(file)
+                    onFolder(file)
                     try {
                         Collections.addAll(files, *file.file.listFiles()!!)
                     } catch (e: Exception) {
                     }
-
                 }
-            } else if (fileFilter.accept(file)) {
+            } else {
                 ++fileCnt
-                onFile.handle(file)
+                onFile(file)
             }
         }
     }
