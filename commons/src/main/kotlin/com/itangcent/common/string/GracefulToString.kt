@@ -2,17 +2,19 @@ package com.itangcent.common.string
 
 import com.itangcent.common.spi.SpiUtils
 import com.itangcent.common.utils.GsonUtils
+import javax.script.ScriptEngine
 
 interface GracefulToString {
     fun toString(any: Any?): String?
 }
 
+private val GRACEFUL_TO_STRING_INSTANCE: GracefulToString by lazy {
+    SpiUtils.loadUltimateBean(GracefulToString::class)!!
+}
+
 fun Any?.gracefulString(): String? {
-    val services = SpiUtils.loadServices(GracefulToString::class) ?: return this?.toString()
-    for (service in services) {
-        service.toString(this)?.let { return it }
-    }
-    if(this==null){
+    GRACEFUL_TO_STRING_INSTANCE.toString(this)?.let { return it }
+    if (this == null) {
         return null
     }
     return try {

@@ -3,6 +3,7 @@ package com.itangcent.common.spi
 import com.itangcent.common.logger.ILogger
 import com.itangcent.common.logger.ILoggerProvider
 import com.itangcent.common.utils.notNullOrEmpty
+import java.lang.reflect.Proxy
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
@@ -66,6 +67,27 @@ object SpiUtils {
             LOG?.info("load services ${service.qualifiedName}:$serviceInstance")
         }
         return serviceInstance.takeIf { it.notNullOrEmpty() }
+    }
+
+
+    private val serviceUltimateBeanCache = ConcurrentHashMap<Any, Any?>()
+
+    @Suppress("UNCHECKED_CAST")
+    fun <S : Any> loadUltimateBean(
+        service: KClass<S>
+    ): S? {
+        return serviceUltimateBeanCache.computeIfAbsent(service) {
+            createProxy(service) ?: NON
+        }?.takeIf { it !== NON } as S?
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <S : Any> createProxy(cls: KClass<S>): S? {
+        val loadServices = loadServices(cls) ?: return null
+        return Proxy.newProxyInstance(
+            cls.java.classLoader, arrayOf(cls.java),
+            ProxyBean(loadServices.toTypedArray())
+        ) as S
     }
 }
 

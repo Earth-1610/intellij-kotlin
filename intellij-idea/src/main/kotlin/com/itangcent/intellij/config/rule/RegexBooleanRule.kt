@@ -20,7 +20,7 @@ abstract class RegexBooleanRule : BooleanRule {
         return match(context)?.first
     }
 
-    fun filterWith(stringRule: StringRule): StringRule {
+    fun asFilterOf(stringRule: StringRule): StringRule {
         return StringRule.of { context ->
             val match = this.match(context)
             if (match?.first == true) {
@@ -29,14 +29,6 @@ abstract class RegexBooleanRule : BooleanRule {
                 return@of null
             }
         }
-    }
-
-    fun filterWith(booleanRule: BooleanRule): BooleanRule {
-        return BooleanRule.filterWith(this, booleanRule)
-    }
-
-    fun filterWith(eventRule: EventRule): EventRule {
-        return BooleanRule.filterWith(this, eventRule)
     }
 
     abstract fun renderVal(str: String?, second: Map<Int, String>?): String?

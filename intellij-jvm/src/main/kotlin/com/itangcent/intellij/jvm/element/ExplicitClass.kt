@@ -77,7 +77,7 @@ class ExplicitClassWithGenericInfo : ExplicitElementWithGenericInfo<PsiClass>, E
     }
 
     override fun containClass(): ExplicitClass {
-        return parent as? ExplicitClass ?: this
+        return (parent as? ExplicitClass)?.containClass() ?: this
     }
 
     override fun defineClass(): ExplicitClass {
@@ -188,7 +188,7 @@ class ExplicitClassWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiCla
     }
 
     override fun containClass(): ExplicitClass {
-        return parent as? ExplicitClass ?: this
+        return (parent as? ExplicitClass)?.containClass() ?: this
     }
 
     override fun defineClass(): ExplicitClass {
