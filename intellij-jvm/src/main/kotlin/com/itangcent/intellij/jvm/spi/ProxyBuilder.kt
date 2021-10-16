@@ -1,6 +1,7 @@
 package com.itangcent.intellij.jvm.spi
 
 import com.itangcent.common.logger.ILogger
+import com.itangcent.common.spi.ProxyBean
 import com.itangcent.common.spi.SpiUtils
 import com.itangcent.common.utils.privileged
 import com.itangcent.intellij.context.ActionContext
@@ -57,13 +58,13 @@ class ProxyBuilder {
     }
 
     fun buildProxy(): Any {
-        val delegates: Array<Any?> = kotlin.Array(delegateBuilders.size) { null }
+        val delegates: Array<Any?> = Array(delegateBuilders.size) { null }
         for ((index, delegateBuilder) in delegateBuilders.withIndex()) {
             delegates[index] = delegateBuilder.buildInstance(delegates)
         }
         return Proxy.newProxyInstance(
             injectClass.java.classLoader, arrayOf(injectClass.java),
-            ProxyBean(delegates.requireNoNulls().reversedArray())
+            ContextProxyBean(delegates.requireNoNulls().reversedArray())
         )
     }
 
@@ -98,7 +99,7 @@ class ConstructorDelegateBuilder(private val constructor: KFunction<Any>) : Dele
     }
 }
 
-class ProxyBean(private val delegates: Array<Any>) : InvocationHandler {
+class ContextProxyBean(private val delegates: Array<Any>) : ProxyBean(delegates) {
 
     @Volatile
     private var initiated: Int = 0
@@ -120,53 +121,7 @@ class ProxyBean(private val delegates: Array<Any>) : InvocationHandler {
         }
     }
 
-    override fun invoke(proxy: Any?, method: Method, args: Array<out Any>?): Any? {
-        return invoke(method, args ?: emptyArray())
-    }
-
-    fun invoke(method: Method, args: Array<out Any>): Any? {
+    override fun beforeInvoke(method: Method, args: Array<out Any>) {
         checkInit()
-        var availableRet: Any? = null
-        for (delegate in delegates) {
-            try {
-                val ret = method.privileged { it.invoke(delegate, *args) }
-                if (ret != null) {
-                    if (ret.isInvalidResult()) {
-                        availableRet = ret
-                        continue
-                    } else {
-                        return ret
-                    }
-                }
-            } catch (e: Throwable) {
-                //ignore NotImplemented
-                if (e.isNotImplemented()) {
-                    continue
-                }
-                throw e
-            }
-        }
-        return availableRet
-    }
-
-    private fun Throwable.isNotImplemented(): Boolean {
-        return when {
-            this is UndeclaredThrowableException -> this.undeclaredThrowable.isNotImplemented()
-            this is InvocationTargetException -> this.targetException.isNotImplemented()
-            else -> this is NotImplementedError
-        }
-    }
-
-    private fun Any?.isInvalidResult(): Boolean {
-        return when {
-            this == null -> true
-            this is Boolean -> !this
-            this is Number -> this.toDouble() != 0.0
-            this is String && this.isEmpty() -> true
-            this is Array<*> && this.isEmpty() -> true
-            this is Collection<*> && this.isEmpty() -> true
-            this is Map<*, *> && this.isEmpty() -> true
-            else -> false
-        }
     }
 }

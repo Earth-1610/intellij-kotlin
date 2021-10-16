@@ -1,59 +1,111 @@
 package com.itangcent.intellij.adaptor
 
-import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.module.Module
-import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.vfs.VirtualFile
-import com.itangcent.common.utils.invokeMethod
-import com.itangcent.common.utils.invokeStaticMethod
-import com.itangcent.common.utils.notNullOrBlank
+import com.itangcent.common.spi.ProxyBean
+import com.itangcent.common.spi.SafeProxyBean
+import com.itangcent.common.spi.createProxy
 import com.itangcent.intellij.context.ActionContext
+import java.io.File
 
 object ModuleAdaptor {
 
     //background idea log
     private val LOG = org.apache.log4j.Logger.getLogger(ActionContext::class.java)
 
+    @Suppress("UNCHECKED_CAST")
+    private val MODULE_FILE_PATH_GETTER: ModuleFilePathGetter by lazy {
+        val getters = ArrayList<ModuleFilePathGetter>()
+        try {
+            val projectUtilKClass = Class.forName("com.intellij.openapi.project.ProjectUtilKt")
+            projectUtilKClass.methods
+                .firstOrNull { it.name == "guessModuleDir" && it.parameterCount == 1 }
+                ?.let { method ->
+                    getters.add(object : ModuleFilePathGetter {
+                        override fun getFile(module: Module): String? {
+                            return (method.invoke(null, module) as? VirtualFile)?.path
+                        }
+                    })
+                }
+        } catch (e: Throwable) {
+            LOG.warn("NoSuchMethod: com.intellij.openapi.project.ProjectUtil.guessModuleDir")
+        }
+
+        try {
+            val projectUtilKClass = Class.forName("com.intellij.openapi.project.ProjectUtil")
+            projectUtilKClass.methods
+                .firstOrNull { it.name == "guessModuleDir" && it.parameterCount == 1 }
+                ?.let { method ->
+                    getters.add(object : ModuleFilePathGetter {
+                        override fun getFile(module: Module): String? {
+                            return (method.invoke(null, module) as? VirtualFile)?.path
+                        }
+                    })
+                }
+        } catch (e: Throwable) {
+            LOG.warn("NoSuchMethod: com.intellij.openapi.project.ProjectUtil.guessModuleDir")
+        }
+
+        try {
+            val moduleUtilKClass = Class.forName("com.intellij.openapi.module.ModuleUtil")
+            moduleUtilKClass.methods
+                .firstOrNull { it.name == "getModuleDirPath" && it.parameterCount == 0 }
+                ?.let { method ->
+                    getters.add(object : ModuleFilePathGetter {
+                        override fun getFile(module: Module): String? {
+                            return method.invoke(null, module) as? String
+                        }
+                    })
+                }
+        } catch (e: Throwable) {
+            LOG.warn("NoSuchMethod: com.intellij.openapi.module.ModuleUtil.getModuleDirPath")
+        }
+
+        try {
+            val moduleKClass = Module::class.java
+            moduleKClass.methods
+                .firstOrNull { it.name == "getModuleFilePath" && it.parameterCount == 0 }
+                ?.let { method ->
+                    getters.add(object : ModuleFilePathGetter {
+                        override fun getFile(module: Module): String? {
+                            return method.invoke(module) as? String
+                        }
+                    })
+                }
+        } catch (e: Throwable) {
+            LOG.warn("NoSuchMethod: com.intellij.openapi.module.Module.getModuleFilePath")
+        }
+
+        try {
+            val moduleKClass = Module::class.java
+            moduleKClass.methods
+                .firstOrNull { it.name == "getModuleFile" && it.parameterCount == 0 }
+                ?.let { method ->
+                    getters.add(object : ModuleFilePathGetter {
+                        override fun getFile(module: Module): String? {
+                            return (method.invoke(module) as? VirtualFile)?.path
+                        }
+                    })
+                }
+        } catch (e: Throwable) {
+            LOG.warn("NoSuchMethod: com.intellij.openapi.module.Module.getModuleFile")
+        }
+
+        return@lazy SafeProxyBean(getters.toTypedArray()).createProxy(ModuleFilePathGetter::class)
+    }
+
     fun Module.filePath(): String? {
-        try {
-            val path = this.invokeMethod("getModuleFilePath") as? String
-            if (path.notNullOrBlank()) {
-                return path
-            }
-        } catch (e: Exception) {
-            LOG.error("NoSuchMethod: com.intellij.openapi.module.Module.getModuleFilePath")
+        val filePath = MODULE_FILE_PATH_GETTER.getFile(this) ?: return null
+        val file = File(filePath)
+        return if (file.exists()) {
+            if (file.isFile) file.parent else filePath
+        } else {
+            if (file.name.contains(".")) file.parent else filePath
         }
-        return this.file()?.path
     }
+}
 
-    fun Module.file(): VirtualFile? {
-        try {
-            val file = this.invokeMethod("getModuleFile") as? VirtualFile
-            if (file != null) {
-                return file
-            }
-        } catch (e: Exception) {
-            LOG.error("NoSuchMethod: com.intellij.openapi.module.Module.getModuleFile")
-        }
-
-        try {
-            val file = ModuleUtil::class.invokeStaticMethod("suggestBaseDirectory", this) as? VirtualFile
-            if (file != null) {
-                return file
-            }
-        } catch (e: Exception) {
-            LOG.error("NoSuchMethod: com.intellij.openapi.module.ModuleUtil.suggestBaseDirectory")
-        }
-
-        try {
-            val file = ProjectUtil::class.invokeStaticMethod("guessModuleDir", this) as? VirtualFile
-            if (file != null) {
-                return file
-            }
-        } catch (e: Exception) {
-            LOG.error("NoSuchMethod: com.intellij.ide.impl.ProjectUtil.guessModuleDir")
-        }
-
-        return null
-    }
+@FunctionalInterface
+private interface ModuleFilePathGetter {
+    fun getFile(module: Module): String?
 }

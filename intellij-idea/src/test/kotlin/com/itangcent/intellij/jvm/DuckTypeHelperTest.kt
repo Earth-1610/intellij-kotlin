@@ -20,6 +20,8 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
 
     private lateinit var userInfoDetailPsiClass: PsiClass
 
+    private lateinit var userLoginInfoPsiClass: PsiClass
+
     private lateinit var userDetailCtrlPsiClass: PsiClass
 
     private lateinit var resultPsiClass: PsiClass
@@ -45,6 +47,7 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
         resultPsiClass = loadClass("model/Result.java")!!
         userInfoPsiClass = loadClass("model/UserInfo.java")!!
         userInfoDetailPsiClass = loadClass("model/UserInfoDetail.java")!!
+        userLoginInfoPsiClass = loadClass("model/UserLoginInfo.java")!!
         userInfoDetailResultPsiClass = loadClass("model/UserInfoDetailResult.java")!!
         genericCtrlPsiClass = loadClass("api/GenericCtrl.java")!!
         userDetailCtrlPsiClass = loadClass("api/UserDetailCtrl.java")!!
@@ -253,6 +256,91 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
             assertEquals(userInfoDetailExplicitClass, idExplicitField.defineClass())
             assertEquals("java.lang.Integer", idExplicitField.getType().canonicalText())
             assertEquals("com.itangcent.model.UserInfoDetail#level", idExplicitField.toString())
+        }
+    }
+
+    fun testExplicitUserLoginInfoPsiClass() {
+        val userLoginInfoExplicitClass = duckTypeHelper.explicit(userLoginInfoPsiClass)
+        assertEquals("UserLoginInfo", userLoginInfoExplicitClass.name())
+        assertEquals(userLoginInfoPsiClass, userLoginInfoExplicitClass.psi())
+        assertEquals(userLoginInfoExplicitClass, userLoginInfoExplicitClass.containClass())
+        assertEquals(userLoginInfoExplicitClass, userLoginInfoExplicitClass.defineClass())
+        assertEquals("com.itangcent.model.UserLoginInfo", userLoginInfoExplicitClass.toString())
+
+        //test methods
+        val methods = userLoginInfoExplicitClass.methods()
+        assertEquals(18, methods.size)
+
+        run {
+            val loginTimeGetterExplicitMethod = methods[0]
+            assertEquals("getLoginTime", loginTimeGetterExplicitMethod.name())
+            assertEquals(userLoginInfoPsiClass.methods[0], loginTimeGetterExplicitMethod.psi())
+            assertEquals(userLoginInfoExplicitClass, loginTimeGetterExplicitMethod.containClass())
+            assertEquals(userLoginInfoExplicitClass, loginTimeGetterExplicitMethod.defineClass())
+            assertEquals("java.lang.Long", loginTimeGetterExplicitMethod.getReturnType()?.canonicalText())
+            assertEquals("com.itangcent.model.UserLoginInfo#getLoginTime", loginTimeGetterExplicitMethod.toString())
+
+            val parameters = loginTimeGetterExplicitMethod.getParameters()
+            assertTrue(parameters.isEmpty())
+        }
+
+        run {
+            val levelGetterExplicitMethod = methods[2]
+            assertEquals("getLevel", levelGetterExplicitMethod.name())
+            assertEquals(userInfoDetailPsiClass.methods[0], levelGetterExplicitMethod.psi())
+            assertEquals(userLoginInfoExplicitClass, levelGetterExplicitMethod.containClass())
+            assertEquals("UserInfoDetail", levelGetterExplicitMethod.defineClass().name())
+            assertEquals("java.lang.Integer", levelGetterExplicitMethod.getReturnType()?.canonicalText())
+            assertEquals("com.itangcent.model.UserLoginInfo#getLevel", levelGetterExplicitMethod.toString())
+
+            val parameters = levelGetterExplicitMethod.getParameters()
+            assertTrue(parameters.isEmpty())
+        }
+
+        run {
+            val idSetterExplicitMethod = methods[5]
+            assertEquals("setId", idSetterExplicitMethod.name())
+            assertEquals(userInfoPsiClass.methods[1], idSetterExplicitMethod.psi())
+            assertEquals(userLoginInfoExplicitClass, idSetterExplicitMethod.containClass())
+            assertEquals("UserInfo", idSetterExplicitMethod.defineClass().name())
+            assertEquals("void", idSetterExplicitMethod.getReturnType()?.canonicalText())
+            assertEquals("com.itangcent.model.UserLoginInfo#setId", idSetterExplicitMethod.toString())
+
+            val parameters = idSetterExplicitMethod.getParameters()
+            assertEquals(1, parameters.size)
+
+            //test parameter
+            val explicitParameter = parameters[0]
+            assertEquals("id", explicitParameter.name())
+            assertEquals(userInfoPsiClass.methods[1].parameterList.parameters[0], explicitParameter.psi())
+            assertEquals(userLoginInfoExplicitClass, explicitParameter.containClass())
+            assertEquals(userLoginInfoExplicitClass, explicitParameter.defineClass())
+            assertEquals("java.lang.Long", explicitParameter.getType()?.canonicalText())
+            assertEquals(idSetterExplicitMethod, explicitParameter.containMethod())
+            assertEquals("com.itangcent.model.UserLoginInfo#setId.id", explicitParameter.toString())
+        }
+
+        //test fields
+        val fields = userLoginInfoExplicitClass.fields()
+        assertEquals(9, fields.size)
+        run {
+            val loginTimeExplicitField = fields[0]
+            assertEquals("loginTime", loginTimeExplicitField.name())
+            assertEquals(userLoginInfoPsiClass.fields[0], loginTimeExplicitField.psi())
+            assertEquals(userLoginInfoExplicitClass, loginTimeExplicitField.containClass())
+            assertEquals(userLoginInfoExplicitClass, loginTimeExplicitField.defineClass())
+            assertEquals("java.lang.Long", loginTimeExplicitField.getType().canonicalText())
+            assertEquals("com.itangcent.model.UserLoginInfo#loginTime", loginTimeExplicitField.toString())
+        }
+
+        run {
+            val levelExplicitField = fields[1]
+            assertEquals("level", levelExplicitField.name())
+            assertEquals(userInfoDetailPsiClass.fields[0], levelExplicitField.psi())
+            assertEquals(userLoginInfoExplicitClass, levelExplicitField.containClass())
+            assertEquals("UserInfoDetail", levelExplicitField.defineClass().name())
+            assertEquals("java.lang.Integer", levelExplicitField.getType().canonicalText())
+            assertEquals("com.itangcent.model.UserLoginInfo#level", levelExplicitField.toString())
         }
     }
 

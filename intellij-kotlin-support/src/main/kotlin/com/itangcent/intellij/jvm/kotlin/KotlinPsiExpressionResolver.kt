@@ -27,12 +27,6 @@ class KotlinPsiExpressionResolver : PsiExpressionResolver {
 
     private val psiResolver: PsiResolver = ActionContext.local()
 
-    @Inject
-    private val devEnv: DevEnv? = null
-
-    @Inject
-    private val logger: Logger? = null
-
     override fun process(psiElement: PsiElement): Any? {
         if (!KtPsiUtils.isKtPsiInst(psiElement)) {
             throw NotImplementedError()
