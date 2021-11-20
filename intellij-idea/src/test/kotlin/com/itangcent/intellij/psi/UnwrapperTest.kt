@@ -7,48 +7,59 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Test case of [Unwrapper]
+ * Test case of [DefaultUnwrapper]
  */
 internal class UnwrapperTest : AdvancedContextTest() {
 
     @Test
     fun testUnwrapped() {
-        assertNull(Unwrapper().unwrapped(null))
-        assertEquals(1, Unwrapper().unwrapped(1))
-        assertEquals("s", Unwrapper().unwrapped("s"))
+        assertNull(DefaultUnwrapper()(null))
+        assertEquals(1, DefaultUnwrapper()(1))
+        assertEquals("s", DefaultUnwrapper()("s"))
         val node = hashMapOf<String, Any?>("x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "msg" to "root")
         node["sub"] = Delay(node)
+        node["upgrade"] = hashMapOf<String, Any?>("z" to 3, "m" to 3).upgrade()
 
         checkEqual(
             hashMapOf(
-                "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "msg" to "root",
+                "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "z" to 3, "m" to 3, "msg" to "root",
                 "sub" to hashMapOf(
-                    "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "msg" to "root",
-                    "sub" to Any()
+                    "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "z" to 3, "m" to 3, "msg" to "root",
+                    "sub" to hashMapOf("msg" to "root")
                 )
-            ), Unwrapper().unwrapped(node) as Map<*, *>
+            ), DefaultUnwrapper()(node) as Map<*, *>
         )
 
         checkEqual(
             hashMapOf(
-                "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "msg" to "root",
+                "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "z" to 3, "m" to 3, "msg" to "root",
                 "sub" to hashMapOf(
-                    "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "msg" to "root",
-                    "sub" to Any()
+                    "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "z" to 3, "m" to 3, "msg" to "root",
+                    "sub" to hashMapOf("msg" to "root")
                 )
-            ), Unwrapper().unwrapped(Delay(node))
+            ), DefaultUnwrapper()(Delay(node))
+        )
+
+        checkEqual(
+            hashMapOf(
+                "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "z" to 3, "m" to 3, "msg" to "root",
+                "sub" to hashMapOf(
+                    "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "z" to 3, "m" to 3, "msg" to "root",
+                    "sub" to hashMapOf("msg" to "root")
+                )
+            ), DefaultUnwrapper()(node.upgrade())
         )
 
         checkEqual(
             listOf(
                 hashMapOf(
-                    "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "msg" to "root",
+                    "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "z" to 3, "m" to 3, "msg" to "root",
                     "sub" to hashMapOf(
-                        "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "msg" to "root",
-                        "sub" to Any()
+                        "x" to 1, "y" to 1, "s1" to "", "s2" to "", "null" to null, "z" to 3, "m" to 3, "msg" to "root",
+                        "sub" to hashMapOf("msg" to "root")
                     )
                 )
-            ), Unwrapper().unwrapped(listOf(Delay(node)))
+            ), DefaultUnwrapper()(listOf(Delay(node)))
         )
     }
 

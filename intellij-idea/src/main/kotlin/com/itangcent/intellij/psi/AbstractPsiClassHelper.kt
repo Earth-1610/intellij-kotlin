@@ -6,9 +6,11 @@ import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
 import com.itangcent.common.utils.*
 import com.itangcent.intellij.config.rule.RuleComputer
+import com.itangcent.intellij.config.rule.computer
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.PostConstruct
 import com.itangcent.intellij.jvm.*
+import com.itangcent.intellij.jvm.JsonOption.has
 import com.itangcent.intellij.jvm.adapt.*
 import com.itangcent.intellij.jvm.duck.ArrayDuckType
 import com.itangcent.intellij.jvm.duck.DuckType
@@ -19,12 +21,9 @@ import com.itangcent.intellij.jvm.element.ExplicitElement
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.ELEMENT_OF_COLLECTION
 import com.itangcent.intellij.logger.Logger
-import com.itangcent.intellij.psi.JsonOption.has
 import com.itangcent.intellij.util.Magics
 import org.apache.commons.lang3.exception.ExceptionUtils
 import java.util.*
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.collections.ArrayDeque
 
 abstract class AbstractPsiClassHelper : PsiClassHelper {
 
@@ -86,19 +85,19 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     override fun copy(obj: Any?): Any? = obj.copy()
 
     override fun getTypeObject(psiType: PsiType?, context: PsiElement): Any? {
-        return doGetTypeObject(psiType, context).unwrapped()
+        return doGetTypeObject(psiType, context).unwrap()
     }
 
     override fun getTypeObject(psiType: PsiType?, context: PsiElement, option: Int): Any? {
-        return doGetTypeObject(psiType, context, option).unwrapped()
+        return doGetTypeObject(psiType, context, option).unwrap()
     }
 
     override fun getTypeObject(duckType: DuckType?, context: PsiElement): Any? {
-        return doGetTypeObject(duckType, context).unwrapped()
+        return doGetTypeObject(duckType, context).unwrap()
     }
 
     override fun getTypeObject(duckType: DuckType?, context: PsiElement, option: Int): Any? {
-        return doGetTypeObject(duckType, context, option).unwrapped()
+        return doGetTypeObject(duckType, context, option).unwrap()
     }
 
     fun doGetTypeObject(psiType: PsiType?, context: PsiElement): Any? {
@@ -251,7 +250,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     override fun getFields(psiClass: PsiClass?): KV<String, Any?> {
-        return doGetFields(psiClass).unwrapped().asKV()
+        return doGetFields(psiClass).unwrap().asKV()
     }
 
     private fun doGetFields(psiClass: PsiClass?): Any? {
@@ -259,7 +258,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     override fun getFields(psiClass: PsiClass?, context: PsiElement?): KV<String, Any?> {
-        return doGetFields(psiClass, context).unwrapped().asKV()
+        return doGetFields(psiClass, context).unwrap().asKV()
     }
 
     fun doGetFields(psiClass: PsiClass?, context: PsiElement?): Any? {
@@ -267,7 +266,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     override fun getFields(psiClass: PsiClass?, option: Int): KV<String, Any?> {
-        return doGetFields(psiClass, option).unwrapped().asKV()
+        return doGetFields(psiClass, option).unwrap().asKV()
     }
 
     fun doGetFields(psiClass: PsiClass?, option: Int): Any? {
@@ -276,7 +275,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     @Suppress("UNCHECKED_CAST")
     override fun getFields(psiClass: PsiClass?, context: PsiElement?, option: Int): KV<String, Any?> {
-        return doGetFields(psiClass, context, option).unwrapped().asKV()
+        return doGetFields(psiClass, context, option).unwrap().asKV()
     }
 
     fun doGetFields(psiClass: PsiClass?, context: PsiElement?, option: Int): Any? {
@@ -447,7 +446,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     @Suppress("UNCHECKED_CAST")
     protected open fun getFields(clsWithParam: SingleDuckType, context: PsiElement?, option: Int): KV<String, Any?> {
-        return doGetFields(clsWithParam, context, option).unwrapped().asKV()
+        return doGetFields(clsWithParam, context, option).unwrap().asKV()
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -946,7 +945,11 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         option: Int,
         kv: KV<String, Any?>
     ) {
-        kv[fieldName] = doGetTypeObject(fieldType, fieldOrMethod.psi(), option)
+        var typeObject = doGetTypeObject(fieldType, fieldOrMethod.psi(), option)
+        if (ruleComputer.computer(ClassRuleKeys.JSON_UNWRAPPED, fieldOrMethod) == true) {
+            typeObject = typeObject.upgrade()
+        }
+        kv[fieldName] = typeObject
     }
 
     open fun afterParseFieldOrMethod(
@@ -982,228 +985,4 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     //return false to ignore current fieldOrMethod
 }
 
-private val index = AtomicInteger()
-
-interface Wrapped {
-    fun get(): Any?
-}
-
-class WrappedValue(private var value: Any?) : KV<String, Any?>(), Wrapped {
-
-    private val id = index.getAndIncrement()
-
-    override fun get(): Any? {
-        return value
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as WrappedValue
-
-        if (id != other.id) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        return id
-    }
-}
-
-fun Any?.wrap(): WrappedValue {
-    return WrappedValue(this)
-}
-
-@Suppress("UNCHECKED_CAST")
-fun <T> T?.unwrapped(): T? {
-    return Unwrapper().unwrapped(this) as T?
-}
-
-fun Any?.delay(): Delay {
-    if (this is Delay) {
-        return this
-    }
-    return Delay(this)
-}
-
-class Delay(private var raw: Any?) : Wrapped {
-
-    private val id = index.getAndIncrement()
-
-    override fun get(): Any? {
-        return raw
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as Delay
-
-        if (id != other.id) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        return id
-    }
-}
-
-fun Any?.wrapped(deep: Int = 0): Boolean {
-    when {
-        this == null || deep > 10 -> {
-            return false
-        }
-        this is Wrapped -> {
-            return true
-        }
-        this is Collection<*> -> {
-            return this.any { it.wrapped(deep + 1) }
-        }
-        this is Array<*> -> {
-            return this.any { it.wrapped(deep + 1) }
-        }
-        this is Map<*, *> -> {
-            return this.keys.any { it.wrapped(deep + 1) }||this.values.any { it.wrapped(deep + 1) }
-        }
-        else -> return false
-    }
-}
-
-class Unwrapper {
-
-    private val stack = ArrayDeque<Any>(5)
-    private val unwrappedCache = SafeHashMap<Any, Any?>()
-
-    @Suppress("UNCHECKED_CAST")
-    fun unwrapped(any: Any?, parent: Map<Any?, Any?>? = null, key: String? = null): Any? {
-        return any.unwrapped(0, parent, key)
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    fun Any?.unwrapped(deep: Int = 0, parent: Map<Any?, Any?>? = null, key: String? = null): Any? {
-        if (this == null) {
-            return null
-        }
-        if (stack.contains(this)) {
-            when {
-                stack.count { it == this } == 1 -> {
-                    //can reentrant
-                    return this.doUnwrappedWithStack(deep, parent, key)
-                }
-                this.wrapped(deep) -> {
-                    val cache = unwrappedCache[this]
-                    if (cache == null) {
-                        return Any()
-                    } else {
-                        return cache.copy()
-                    }
-                }
-                else -> {
-                    return this.copy()
-                }
-            }
-        } else {
-            return this.doUnwrappedWithStack(deep, parent, key)
-        }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    fun Any.doUnwrappedWithStack(deep: Int, parent: Map<Any?, Any?>?, key: String? = null): Any? {
-        stack.add(this)
-        try {
-            return this.doUnwrapped(deep, parent, key).also { unwrappedCache[this] = it }
-        } finally {
-            stack.removeLastOrNull()
-        }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    fun Any.doUnwrapped(deep: Int, parent: Map<Any?, Any?>?, key: String? = null): Any? {
-        return when {
-            deep > 10 -> {
-                this.copy()
-            }
-            this is WrappedValue -> {
-                fillExtras(this, parent, key)
-                this.get().unwrapped(deep, parent, key)
-            }
-            this is Wrapped -> {
-                this.get().unwrapped(deep, parent, key)
-            }
-            this.wrapped(deep) && this is Collection<*> -> {
-                this.map { it.unwrapped(deep + 1, parent, key) }
-            }
-            this.wrapped(deep) && this is Array<*> -> {
-                this.map { it.unwrapped(deep + 1, parent, key) }
-            }
-            this.wrapped(deep) && this is Map<*, *> -> {
-                val copy = LinkedHashMap<Any?, Any?>()
-                this.forEach {
-                    copy.merge(
-                        it.key.unwrapped(deep + 1),
-                        it.value.unwrapped(deep + 1, copy, it.key as? String)
-                    )
-                }
-                copy
-            }
-            else -> {
-                this.copy()
-            }
-        }
-    }
-
-
-    private fun fillExtras(value: WrappedValue, parent: Map<Any?, Any?>?, key: String? = null) {
-        if (parent == null || key == null) {
-            return
-        }
-        value.forEach { k, v ->
-            if ((k as? String)?.startsWith('@') == true) {
-                val index = k.indexOf('@', 1)
-                if (index == -1) {
-                    parent.sub(k).mutable()[key] = v
-                } else {
-                    parent.sub(k.substring(0, index)).mutable()[key + "@" + k.substring(index + 1)] = v
-                }
-            }
-        }
-    }
-}
-
-object JsonOption {
-    const val NONE = 0b0000//None additional options
-    const val READ_COMMENT = 0b0001//try find comments
-    const val READ_GETTER = 0b0010//Try to find the available getter method as property
-    const val READ_SETTER = 0b0100//Try to find the available setter method as property
-    const val ALL = READ_COMMENT or READ_GETTER or READ_SETTER//All additional options
-    const val READ_GETTER_OR_SETTER =
-        READ_GETTER or READ_SETTER//Try to find the available getter or setter method as property
-
-    @Deprecated(
-        message = "use #has",
-        replaceWith = ReplaceWith("has(JsonOption.READ_COMMENT)")
-    )
-    fun needComment(flag: Int): Boolean {
-        return (flag and READ_COMMENT) != 0
-    }
-
-    @Deprecated(
-        message = "use #has",
-        replaceWith = ReplaceWith("has(JsonOption.READ_GETTER)")
-    )
-    fun readGetter(flag: Int): Boolean {
-        return (flag and READ_GETTER) != 0
-    }
-
-    fun Int.has(flag: Int): Boolean {
-        return (this and flag) != 0
-    }
-
-    fun Int.hasAny(vararg flag: Int): Boolean {
-        return flag.any { (this and it) != 0 }
-    }
-}
+typealias JsonOption = com.itangcent.intellij.jvm.JsonOption

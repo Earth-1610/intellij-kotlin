@@ -53,4 +53,11 @@ object ClassRuleKeys {
     val JSON_GROUP: RuleKey<String> =
         SimpleRuleKey("json.group", StringRuleMode.MERGE)
 
+    /**
+     * Rule used to indicate that a property/field should be parsed "unwrapped" -- that is,
+     * its properties are instead included as properties of its containing Object.
+     */
+    val JSON_UNWRAPPED: RuleKey<Boolean> =
+        SimpleRuleKey("json.unwrapped", BooleanRuleMode.ANY)
+
 }

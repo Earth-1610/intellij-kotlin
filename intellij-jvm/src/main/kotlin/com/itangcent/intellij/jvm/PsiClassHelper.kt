@@ -73,3 +73,37 @@ interface PsiClassHelper {
 
     fun getDefaultValue(duckType: DuckType): Any?
 }
+
+object JsonOption {
+    const val NONE = 0b0000//None additional options
+    const val READ_COMMENT = 0b0001//try find comments
+    const val READ_GETTER = 0b0010//Try to find the available getter method as property
+    const val READ_SETTER = 0b0100//Try to find the available setter method as property
+    const val ALL = READ_COMMENT or READ_GETTER or READ_SETTER//All additional options
+    const val READ_GETTER_OR_SETTER =
+        READ_GETTER or READ_SETTER//Try to find the available getter or setter method as property
+
+    @Deprecated(
+        message = "use #has",
+        replaceWith = ReplaceWith("has(JsonOption.READ_COMMENT)")
+    )
+    fun needComment(flag: Int): Boolean {
+        return (flag and READ_COMMENT) != 0
+    }
+
+    @Deprecated(
+        message = "use #has",
+        replaceWith = ReplaceWith("has(JsonOption.READ_GETTER)")
+    )
+    fun readGetter(flag: Int): Boolean {
+        return (flag and READ_GETTER) != 0
+    }
+
+    fun Int.has(flag: Int): Boolean {
+        return (this and flag) != 0
+    }
+
+    fun Int.hasAny(vararg flag: Int): Boolean {
+        return flag.any { (this and it) != 0 }
+    }
+}
