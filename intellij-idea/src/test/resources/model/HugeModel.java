@@ -1,6 +1,8 @@
 package com.itangcent.model;
 
 import com.itangcent.constant.JavaVersion;
+import com.itangcent.model.UserInfo;
+
 import java.util.List;
 
 class HugeModel {
@@ -75,6 +77,11 @@ class HugeModel {
      * primary version
      */
     private JavaVersion version;
+
+    /**
+     * @unwrapped
+     */
+    private UserInfo userInfo;
 
     /**
      * @param a A

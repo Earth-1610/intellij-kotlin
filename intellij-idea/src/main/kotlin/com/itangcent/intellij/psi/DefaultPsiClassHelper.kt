@@ -225,7 +225,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         kv: KV<String, Any?>
     ): Boolean {
         if (fieldOrMethod is ExplicitField &&
-            ruleComputer?.computer(ClassRuleKeys.FIELD_IGNORE, fieldOrMethod) == true
+            ruleComputer.computer(ClassRuleKeys.FIELD_IGNORE, fieldOrMethod) == true
         ) {
             return false
         }
@@ -322,7 +322,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     ) {
         //doc comment
         if (option.has(JsonOption.READ_COMMENT)) {
-            var commentKV: KV<String, Any?> = kv.sub("@comment")
+            val commentKV: KV<String, Any?> = kv.sub("@comment")
             val psiFieldOrMethod = fieldOrMethod.psi()
             if (psiFieldOrMethod is PsiField) {
                 val field: PsiField = psiFieldOrMethod
