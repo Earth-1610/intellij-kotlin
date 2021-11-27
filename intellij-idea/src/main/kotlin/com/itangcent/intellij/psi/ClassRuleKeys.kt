@@ -13,6 +13,18 @@ object ClassRuleKeys {
         StringRuleMode.SINGLE
     )
 
+    val FIELD_NAME_PREFIX: RuleKey<String> = SimpleRuleKey(
+        "field.name.prefix",
+        arrayOf("json.rule.field.prefix"),
+        StringRuleMode.SINGLE
+    )
+
+    val FIELD_NAME_SUFFIX: RuleKey<String> = SimpleRuleKey(
+        "field.name.suffix",
+        arrayOf("json.rule.field.suffix"),
+        StringRuleMode.SINGLE
+    )
+
     val FIELD_IGNORE: RuleKey<Boolean> =
         SimpleRuleKey(
             "field.ignore",
