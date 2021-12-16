@@ -58,6 +58,9 @@ open class StandardPsiResolver : PsiResolver {
     override fun resolveClass(className: String, context: PsiElement): PsiClass? {
         return when {
             className.contains(".") -> findClass(className, context)
+                ?: getContainingClass(context)?.let {
+                    resolveClassFromImport(it, className)
+                }
             else -> getContainingClass(context)?.let {
                 resolveClassFromImport(it, className)
             } ?: findClass(className, context)
@@ -134,31 +137,52 @@ open class StandardPsiResolver : PsiResolver {
         //try find imports
         val imports = PsiTreeUtil.findChildrenOfType(psiClass.context, PsiImportStatement::class.java)
 
-        var cls = imports
+        imports
             .mapNotNull { it.qualifiedName }
             .firstOrNull { it.endsWith(".$clsName") }
             ?.let { findClass(it, psiClass) }
-        if (cls != null) {
-            return cls
-        }
+            ?.let { return it }
+
+        //try find import static
+        val staticImports = PsiTreeUtil.findChildrenOfType(psiClass.context, PsiImportStaticStatement::class.java)
+
+        staticImports
+            .firstOrNull { it.referenceName?.endsWith(".$clsName") == true }
+            ?.let { it.resolve() as? PsiClass }
+            ?.let { return it }
 
         //try find defaultPackage
         val defaultPackage = psiClass.qualifiedName!!.substringBeforeLast(".")
-        cls = findClass("$defaultPackage.$clsName", psiClass)
-        if (cls != null) {
-            return cls
-        }
+        findClass("$defaultPackage.$clsName", psiClass)
+            ?.let { return it }
 
         //try find in import xxx.*
-        cls = imports
+        imports
             .stream()
             .mapNotNull { it.qualifiedName }
             .filter { it.endsWith(".*") }
-            .map { it -> it.removeSuffix("*") + clsName }
+            .map { it.removeSuffix("*") + clsName }
             .map { findClass(it, psiClass) }
             .firstOrNull()
+            ?.let { return it }
 
-        return cls
+        staticImports
+            .stream()
+            .mapNotNull { it.text.removeSuffix(";") }
+            .filter { it.endsWith(".*") }
+            .map { it.substringAfterLast(' ').removeSuffix("*") + clsName }
+            .map { findClass(it, psiClass) }
+            .firstOrNull()
+            ?.let { return it }
+
+        //maybe OutClass.InnerClass
+        if (clsName.contains(".")) {
+            val outClassName = clsName.substringBefore('.')
+            val outClass = resolveClassFromImport(psiClass, outClassName) ?: return null
+            return findClass(outClass.qualifiedName!! + "." + clsName.substringAfter('.'), psiClass)
+        }
+
+        return null
     }
 
     override fun resolveClassWithPropertyOrMethod(
