@@ -12,6 +12,7 @@ class HugeModel {
      *
      * @single
      * @desc low case of A
+     * @prefix p-
      */
     private String a;
 
@@ -23,6 +24,7 @@ class HugeModel {
      * @module x
      * x1 x2 x3
      * @module y
+     * @suffix -s
      */
     private String b;
 

@@ -10,6 +10,7 @@ import com.itangcent.common.utils.notNullOrBlank
 import com.itangcent.common.utils.notNullOrEmpty
 import com.itangcent.common.utils.sub
 import com.itangcent.intellij.config.rule.computer
+import com.itangcent.intellij.jvm.JsonOption.has
 import com.itangcent.intellij.jvm.SourceHelper
 import com.itangcent.intellij.jvm.asPsiClass
 import com.itangcent.intellij.jvm.duck.DuckType
@@ -17,9 +18,7 @@ import com.itangcent.intellij.jvm.duck.SingleDuckType
 import com.itangcent.intellij.jvm.element.ExplicitClass
 import com.itangcent.intellij.jvm.element.ExplicitElement
 import com.itangcent.intellij.jvm.element.ExplicitField
-import com.itangcent.intellij.psi.JsonOption.has
 import org.apache.commons.lang3.StringUtils
-import java.util.*
 
 @Singleton
 open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
@@ -29,8 +28,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
 
     @Inject(optional = true)
     protected val sourceHelper: SourceHelper? = null
-
-
+    
     @Suppress("UNCHECKED_CAST")
     protected open fun resolveSeeDoc(field: PsiField, comment: HashMap<String, Any?>) {
         val sees = getSees(field).takeIf { it.notNullOrEmpty() } ?: return
@@ -123,9 +121,18 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     override fun getJsonFieldName(psiField: PsiField): String {
         try {
             val nameByRule = ruleComputer.computer(ClassRuleKeys.FIELD_NAME, psiField)
-            if (!nameByRule.isNullOrBlank()) {
-                return nameByRule
+            var name = if (!nameByRule.isNullOrBlank()) {
+                nameByRule
+            } else {
+                psiField.name
             }
+            ruleComputer.computer(ClassRuleKeys.FIELD_NAME_PREFIX, psiField)?.let {
+                name = it + name
+            }
+            ruleComputer.computer(ClassRuleKeys.FIELD_NAME_SUFFIX, psiField)?.let {
+                name += it
+            }
+            return name
         } catch (e: Exception) {
             logger!!.traceWarn("error to get field name:${PsiClassUtils.fullNameOfField(psiField)}", e)
         }
