@@ -4,8 +4,6 @@ import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
-import com.itangcent.common.utils.firstOrNull
-import com.itangcent.common.utils.mapNotNull
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.jvm.*
 import com.itangcent.intellij.logger.Logger
@@ -121,6 +119,10 @@ open class StandardPsiResolver : PsiResolver {
     }
 
     protected open fun resolveClassFromImport(psiClass: PsiClass, clsName: String): PsiClass? {
+        return resolveReferenceFromImport(psiClass, clsName) as? PsiClass
+    }
+
+    protected open fun resolveReferenceFromImport(psiClass: PsiClass, clsName: String): Any? {
 
         //maybe it is this class
         if (clsName == psiClass.name || clsName == psiClass.qualifiedName) {
@@ -137,42 +139,47 @@ open class StandardPsiResolver : PsiResolver {
         //try find imports
         val imports = PsiTreeUtil.findChildrenOfType(psiClass.context, PsiImportStatement::class.java)
 
-        imports
-            .mapNotNull { it.qualifiedName }
-            .firstOrNull { it.endsWith(".$clsName") }
-            ?.let { findClass(it, psiClass) }
-            ?.let { return it }
+        for (importStatement in imports) {
+            //import xxx.xxx.Xxx
+            importStatement.qualifiedName
+                ?.takeIf { it.endsWith(".$clsName") || it == clsName }
+                ?.let { findClass(it, psiClass) }
+                ?.let { return it }
+
+            //import xxx.xxx.*
+            importStatement.text.removeSuffix(";")
+                .takeIf { it.endsWith(".*") }
+                ?.let { it.substringAfterLast(' ').removeSuffix("*") + clsName }
+                ?.let { findClass(it, psiClass) }
+                ?.let { return it }
+        }
 
         //try find import static
         val staticImports = PsiTreeUtil.findChildrenOfType(psiClass.context, PsiImportStaticStatement::class.java)
 
-        staticImports
-            .firstOrNull { it.referenceName?.endsWith(".$clsName") == true }
-            ?.let { it.resolve() as? PsiClass }
-            ?.let { return it }
+        for (importStatement in staticImports) {
+            val qualifiedName = importStatement.text.removeSuffix(";").substringAfterLast(' ')
+            //import xxx.xxx.Xxx
+            if (qualifiedName == clsName || qualifiedName.endsWith(".$clsName")) {
+                importStatement.resolve()?.let { return it }
+                findClass(qualifiedName, psiClass)?.let { return it }
+                findClass(qualifiedName.substringBeforeLast('.'), psiClass)?.let {
+                    return resolvePropertyOrMethodOfClass(it, qualifiedName.substringAfterLast('.'))
+                }
+                continue
+            }
+
+            //import xxx.xxx.*
+            importStatement.text.removeSuffix(";")
+                .takeIf { it.endsWith(".*") }
+                ?.let { it.substringAfterLast(' ').removeSuffix("*") + clsName }
+                ?.let { findClass(it, psiClass) }
+                ?.let { return it }
+        }
 
         //try find defaultPackage
         val defaultPackage = psiClass.qualifiedName!!.substringBeforeLast(".")
         findClass("$defaultPackage.$clsName", psiClass)
-            ?.let { return it }
-
-        //try find in import xxx.*
-        imports
-            .stream()
-            .mapNotNull { it.qualifiedName }
-            .filter { it.endsWith(".*") }
-            .map { it.removeSuffix("*") + clsName }
-            .map { findClass(it, psiClass) }
-            .firstOrNull()
-            ?.let { return it }
-
-        staticImports
-            .stream()
-            .mapNotNull { it.text.removeSuffix(";") }
-            .filter { it.endsWith(".*") }
-            .map { it.substringAfterLast(' ').removeSuffix("*") + clsName }
-            .map { findClass(it, psiClass) }
-            .firstOrNull()
             ?.let { return it }
 
         //maybe OutClass.InnerClass
@@ -204,13 +211,19 @@ open class StandardPsiResolver : PsiResolver {
         //{@link java.class#property}
         val linkClassName = classNameWithProperty.substringBefore("#")
         val linkMethodOrProperty = classNameWithProperty.substringAfter("#", "").trim()
-        return if (linkMethodOrProperty.isBlank()) {
-            resolveClassOrType(linkClassName, context)
-                ?.let { it to null }
-        } else {
-            resolveClassOrType(linkClassName, context)
+        if (linkMethodOrProperty.isNotBlank()) {
+            return resolveClassOrType(linkClassName, context)
                 ?.let { it to resolvePropertyOrMethodOfClass(it.asPsiClass(jvmClassHelper!!)!!, linkMethodOrProperty) }
         }
+
+        resolveClassOrType(linkClassName, context)
+            ?.let { return it to null }
+
+        val resolveReference = getContainingClass(context)?.let { resolveReferenceFromImport(it, linkClassName) }
+        if (resolveReference is PsiElement) {
+            getContainingClass(resolveReference)?.let { return it to resolveReference }
+        }
+        return null
     }
 
     override fun resolvePropertyOrMethodOfClass(psiClass: PsiClass, propertyOrMethod: String): PsiElement? {
@@ -264,25 +277,25 @@ open class StandardPsiResolver : PsiResolver {
         return null
     }
 
-    override fun resolveRefText(psiExpression: PsiElement?): String? {
-        when (psiExpression) {
+    override fun resolveRefText(psiElement: PsiElement?): String? {
+        when (psiElement) {
             null -> return null
-            is PsiLiteralExpression -> return psiExpression.value?.toString()
+            is PsiLiteralExpression -> return psiElement.value?.toString()
             is PsiReferenceExpression -> {
-                val value = psiExpression.resolve()
+                val value = psiElement.resolve()
                 return resolveRefText(value)
             }
             is PsiField -> {
-                val constantValue = psiExpression.computeConstantValue()
+                val constantValue = psiElement.computeConstantValue()
                 if (constantValue != null) {
                     if (constantValue is PsiExpression) {
                         return resolveRefText(constantValue)
                     }
                     return constantValue.toString()
                 }
-                return psiExpression.text
+                return psiElement.text
             }
-            else -> return psiExpression.text
+            else -> return psiElement.text
         }
     }
 

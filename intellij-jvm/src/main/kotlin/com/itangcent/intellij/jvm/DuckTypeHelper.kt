@@ -3,7 +3,6 @@ package com.itangcent.intellij.jvm
 import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
-import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
 import com.itangcent.common.utils.safeComputeIfAbsent
@@ -16,8 +15,6 @@ import com.itangcent.intellij.jvm.element.*
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 import com.itangcent.intellij.logger.Logger
 import org.apache.commons.lang3.StringUtils
-import java.util.*
-import kotlin.collections.LinkedHashMap
 
 @Singleton
 open class DuckTypeHelper {
@@ -29,7 +26,7 @@ open class DuckTypeHelper {
     private val jvmClassHelper: JvmClassHelper? = null
 
     @Inject
-    private val psiResolver: PsiResolver? = null
+    private lateinit var psiResolver: PsiResolver
 
     @Inject
     private val sourceHelper: SourceHelper? = null
@@ -280,43 +277,9 @@ open class DuckTypeHelper {
 
     fun resolveClass(fqClassName: String, context: PsiElement): PsiClass? {
         return when {
-            fqClassName.contains(".") -> psiResolver!!.findClass(fqClassName, context)
-            else -> psiResolver!!.getContainingClass(context)?.let { resolveClassFromImport(it, fqClassName) }
-                ?: psiResolver.findClass(fqClassName, context)
+            fqClassName.contains(".") -> psiResolver.findClass(fqClassName, context)
+            else -> psiResolver.resolveClass(fqClassName, context)
         }?.let { sourceHelper?.getSourceClass(it) }
-    }
-
-    protected open fun resolveClassFromImport(psiClass: PsiClass, clsName: String): PsiClass? {
-
-        val imports = PsiTreeUtil.findChildrenOfType(psiClass.context, PsiImportStatement::class.java)
-
-        //try find class by single element import
-        var cls = imports
-            .filterNot { it.isOnDemand }
-            .mapNotNull { it.qualifiedName }
-            .firstOrNull { it.endsWith(".$clsName") }
-            ?.let { psiResolver!!.findClass(it, psiClass) }
-        if (cls != null) {
-            return cls
-        }
-
-        //try find class by default package
-        val defaultPackage = psiClass.qualifiedName!!.substringBeforeLast(".")
-        cls = psiResolver!!.findClass("$defaultPackage.$clsName", psiClass)
-        if (cls != null) {
-            return cls
-        }
-
-        //try find class by on-demand import
-        cls = imports
-            .asSequence()
-            .filter { it.isOnDemand }
-            .mapNotNull { it.qualifiedName }
-            .map { "$it.$clsName" }
-            .map { psiResolver.findClass(it, psiClass) }
-            .firstOrNull()
-
-        return cls
     }
 
     fun extractClassFromCanonicalText(typeCanonicalText: String, context: PsiElement): PsiClass? {
@@ -469,7 +432,7 @@ open class DuckTypeHelper {
 
     fun javaLangObjectType(context: PsiElement): SingleDuckType {
         return SingleDuckType(
-            psiResolver!!.findClass(
+            psiResolver.findClass(
                 CommonClassNames.JAVA_LANG_OBJECT,
                 context
             )!!

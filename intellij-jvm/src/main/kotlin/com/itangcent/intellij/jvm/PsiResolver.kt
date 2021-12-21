@@ -29,7 +29,7 @@ interface PsiResolver {
 
     fun getContainingClass(psiElement: PsiElement): PsiClass?
 
-    fun resolveRefText(psiExpression: PsiElement?): String?
+    fun resolveRefText(psiElement: PsiElement?): String?
 
     /**
      * return
