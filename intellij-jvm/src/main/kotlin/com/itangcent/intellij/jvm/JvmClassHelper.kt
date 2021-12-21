@@ -4,6 +4,8 @@ import com.google.inject.ImplementedBy
 import com.intellij.psi.*
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.duck.DuckType
+import com.itangcent.intellij.jvm.duck.SingleDuckType
+import com.itangcent.intellij.jvm.element.ExplicitClass
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 
 @ImplementedBy(StandardJvmClassHelper::class)
@@ -190,6 +192,12 @@ fun Any?.asPsiClass(jvmClassHelper: JvmClassHelper): PsiClass? {
     if (this == null) return null
     if (this is PsiType) {
         return jvmClassHelper.resolveClassInType(this)
+    }
+    if (this is DuckType) {
+        return (this as? SingleDuckType)?.psiClass()
+    }
+    if (this is ExplicitClass) {
+        return this.psi()
     }
     if (this is PsiClass) {
         return this
