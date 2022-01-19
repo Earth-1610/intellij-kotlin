@@ -170,6 +170,22 @@ class ExplicitClassWithGenericInfo : ExplicitElementWithGenericInfo<PsiClass>, E
     override fun toString(): String {
         return psiClass.qualifiedName ?: ""
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ExplicitClassWithGenericInfo
+
+        if (psiClass != other.psiClass) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return psiClass.hashCode()
+    }
+
 }
 
 class ExplicitClassWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiClass>, ExplicitClass {
@@ -282,5 +298,20 @@ class ExplicitClassWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiCla
 
     override fun toString(): String {
         return psiClass.qualifiedName ?: ""
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ExplicitClassWithOutGenericInfo
+
+        if (psiClass != other.psiClass) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return psiClass.hashCode()
     }
 }

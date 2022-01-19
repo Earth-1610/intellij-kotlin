@@ -58,6 +58,25 @@ class ExplicitParameterWithGenericInfo : ExplicitElementWithGenericInfo<PsiParam
     override fun toString(): String {
         return containMethod().toString() + "." + name()
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ExplicitParameterWithGenericInfo
+
+        if (containMethod != other.containMethod) return false
+        if (psiParameter != other.psiParameter) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = containMethod.hashCode()
+        result = 31 * result + psiParameter.hashCode()
+        return result
+    }
+
 }
 
 class ExplicitParameterWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiParameter>, ExplicitParameter {
@@ -98,5 +117,23 @@ class ExplicitParameterWithOutGenericInfo : ExplicitElementWithOutGenericInfo<Ps
 
     override fun toString(): String {
         return containMethod().toString() + "." + name()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ExplicitParameterWithOutGenericInfo
+
+        if (containMethod != other.containMethod) return false
+        if (psiParameter != other.psiParameter) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = containMethod.hashCode()
+        result = 31 * result + psiParameter.hashCode()
+        return result
     }
 }

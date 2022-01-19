@@ -42,6 +42,25 @@ class ExplicitFieldWithGenericInfo : ExplicitElementWithGenericInfo<PsiField>, E
     override fun toString(): String {
         return containClass().toString() + "#" + name()
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ExplicitFieldWithGenericInfo
+
+        if (containClass != other.containClass) return false
+        if (psiField != other.psiField) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = containClass.hashCode()
+        result = 31 * result + psiField.hashCode()
+        return result
+    }
+
 }
 
 class ExplicitFieldWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiField>, ExplicitField {
@@ -78,5 +97,23 @@ class ExplicitFieldWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiFie
 
     override fun toString(): String {
         return containClass().toString() + "#" + name()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ExplicitFieldWithOutGenericInfo
+
+        if (containClass != other.containClass) return false
+        if (psiField != other.psiField) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = containClass.hashCode()
+        result = 31 * result + psiField.hashCode()
+        return result
     }
 }

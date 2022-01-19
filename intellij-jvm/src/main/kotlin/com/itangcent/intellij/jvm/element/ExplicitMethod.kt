@@ -1,6 +1,7 @@
 package com.itangcent.intellij.jvm.element
 
 import com.intellij.psi.PsiMethod
+import com.itangcent.common.utils.mapToTypedArray
 import com.itangcent.intellij.jvm.duck.DuckType
 
 interface ExplicitMethod : DuckExplicitElement<PsiMethod> {
@@ -19,6 +20,7 @@ interface ExplicitMethod : DuckExplicitElement<PsiMethod> {
      */
     fun getParameters(): Array<ExplicitParameter>
 
+    fun superMethods(): Array<ExplicitMethod>
 }
 
 class ExplicitMethodWithGenericInfo : ExplicitElementWithGenericInfo<PsiMethod>, ExplicitMethod {
@@ -43,6 +45,14 @@ class ExplicitMethodWithGenericInfo : ExplicitElementWithGenericInfo<PsiMethod>,
         return parameterList.map { ExplicitParameterWithGenericInfo(this, it) }.toTypedArray()
     }
 
+    override fun superMethods(): Array<ExplicitMethod> {
+        val superMethods = psiMethod.findSuperMethods()
+        if (superMethods.isNullOrEmpty()) {
+            return emptyArray()
+        }
+        return superMethods.mapToTypedArray { ExplicitMethodWithGenericInfo(containClass, it) }
+    }
+
     override fun psi(): PsiMethod {
         return psiMethod
     }
@@ -62,6 +72,25 @@ class ExplicitMethodWithGenericInfo : ExplicitElementWithGenericInfo<PsiMethod>,
     override fun toString(): String {
         return containClass().toString() + "#" + name()
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ExplicitMethodWithGenericInfo
+
+        if (containClass != other.containClass) return false
+        if (psiMethod != other.psiMethod) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = containClass.hashCode()
+        result = 31 * result + psiMethod.hashCode()
+        return result
+    }
+
 }
 
 class ExplicitMethodWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiMethod>, ExplicitMethod {
@@ -86,6 +115,14 @@ class ExplicitMethodWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiMe
         return parameterList.map { ExplicitParameterWithOutGenericInfo(this, it) }.toTypedArray()
     }
 
+    override fun superMethods(): Array<ExplicitMethod> {
+        val superMethods = psiMethod.findSuperMethods()
+        if (superMethods.isNullOrEmpty()) {
+            return emptyArray()
+        }
+        return superMethods.mapToTypedArray { ExplicitMethodWithOutGenericInfo(containClass, it) }
+    }
+
     override fun psi(): PsiMethod {
         return psiMethod
     }
@@ -104,5 +141,23 @@ class ExplicitMethodWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiMe
 
     override fun toString(): String {
         return containClass().toString() + "#" + name()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ExplicitMethodWithOutGenericInfo
+
+        if (containClass != other.containClass) return false
+        if (psiMethod != other.psiMethod) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = containClass.hashCode()
+        result = 31 * result + psiMethod.hashCode()
+        return result
     }
 }
