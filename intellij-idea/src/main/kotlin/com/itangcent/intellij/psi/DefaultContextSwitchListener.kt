@@ -62,6 +62,8 @@ open class DefaultContextSwitchListener : ContextSwitchListener {
                 }
             }
         }
+        //call if any module is already selected
+        module?.let(event)
     }
 
     protected fun setContext(context: PsiElement?) {
