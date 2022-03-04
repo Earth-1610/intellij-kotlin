@@ -25,6 +25,9 @@ class ConsoleRunnerLogger : AbstractLogger() {
     @Inject
     private val actionContext: ActionContext? = null
 
+    @Inject
+    private lateinit var logConfig: LogConfig
+
     @Inject(optional = true)
     @Named("plugin.name")
     private val pluginName: String = "run"
@@ -78,7 +81,7 @@ class ConsoleRunnerLogger : AbstractLogger() {
         if (logData == null) return
         try {
             val pipedProcess = checkProcess()
-            val bytes = logData.toByteArray()
+            val bytes = logData.toByteArray(logConfig.charset())
             if (bytes.size > 1024) {
                 //split?
                 pipedProcess.getOutForInputStream()!!.write(bytes)
