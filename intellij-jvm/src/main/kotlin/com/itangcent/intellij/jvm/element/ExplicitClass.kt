@@ -3,6 +3,7 @@ package com.itangcent.intellij.jvm.element
 import com.intellij.psi.CommonClassNames
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiClassType
+import com.intellij.psi.PsiMethod
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.DuckTypeHelper
 import com.itangcent.intellij.jvm.JvmClassHelper
@@ -19,6 +20,13 @@ interface ExplicitClass : DuckExplicitElement<PsiClass> {
      * @return the extends list, or null for anonymous classes.
      */
     fun extends(): Array<ExplicitClass>?
+
+    /**
+     * Returns the list of interfaces that this class implements.
+     *
+     * @return the implements list, or null for anonymous classes
+     */
+    fun implements(): Array<ExplicitClass>?
 
     /**
      * Returns the list of methods in the class and all its superclasses.
@@ -101,13 +109,33 @@ class ExplicitClassWithGenericInfo : ExplicitElementWithGenericInfo<PsiClass>, E
     }
 
     /**
+     * Returns the list of interfaces that this class implements.
+     *
+     * @return the implements list, or null for anonymous classes
+     */
+    override fun implements(): Array<ExplicitClass>? {
+        val implementsList = psiClass.implementsList ?: return null
+        val referencedTypes = implementsList.referencedTypes
+        if (referencedTypes.isEmpty()) return emptyArray()
+        return referencedTypes
+            .mapNotNull {
+                resolve(it)
+            }.toTypedArray()
+    }
+
+    /**
      * Returns the list of methods in the class and all its superclasses.
      *
      * @return the list of methods.
      */
     override fun methods(): ArrayList<ExplicitMethod> {
         val explicitMethods: ArrayList<ExplicitMethod> = ArrayList()
-        collectMethods { explicitMethods.add(it) }
+        val methodSet = HashSet<PsiMethod>()
+        collectMethods {
+            if (methodSet.add(it.psi())) {
+                explicitMethods.add(it)
+            }
+        }
         return explicitMethods
     }
 
@@ -120,6 +148,7 @@ class ExplicitClassWithGenericInfo : ExplicitElementWithGenericInfo<PsiClass>, E
             action(ExplicitMethodWithGenericInfo(this, method))
         }
         this.extends()?.forEach { it.collectMethods(action) }
+        this.implements()?.forEach { it.collectMethods(action) }
     }
 
     override fun fields(): ArrayList<ExplicitField> {
@@ -229,13 +258,34 @@ class ExplicitClassWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiCla
     }
 
     /**
+     * Returns the list of interfaces that this class implements.
+     *
+     * @return the implements list, or null for anonymous classes
+     */
+    override fun implements(): Array<ExplicitClass>? {
+        val implementsList = psiClass.implementsList ?: return null
+        val referencedTypes = implementsList.referencedTypes
+        if (referencedTypes.isEmpty()) return emptyArray()
+        return referencedTypes
+            .mapNotNull {
+                resolve(it)
+            }
+            .toTypedArray()
+    }
+
+    /**
      * Returns the list of methods in the class and all its superclasses.
      *
      * @return the list of methods.
      */
     override fun methods(): ArrayList<ExplicitMethod> {
         val explicitMethods: ArrayList<ExplicitMethod> = ArrayList()
-        collectMethods { explicitMethods.add(it) }
+        val methodSet = HashSet<PsiMethod>()
+        collectMethods {
+            if (methodSet.add(it.psi())) {
+                explicitMethods.add(it)
+            }
+        }
         return explicitMethods
     }
 
@@ -248,6 +298,7 @@ class ExplicitClassWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiCla
             action(ExplicitMethodWithOutGenericInfo(this, method))
         }
         this.extends()?.forEach { it.collectMethods(action) }
+        this.implements()?.forEach { it.collectMethods(action) }
     }
 
     override fun fields(): ArrayList<ExplicitField> {

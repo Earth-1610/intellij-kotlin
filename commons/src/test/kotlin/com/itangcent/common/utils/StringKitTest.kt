@@ -76,7 +76,7 @@ class StringKitTest {
     fun testAppendlnIfNotEmpty() {
         Assertions.assertEquals("", StringBuilder().appendlnIfNotEmpty().toString())
         Assertions.assertEquals("", StringBuilder("").appendlnIfNotEmpty().toString())
-        Assertions.assertEquals("a$n", StringBuilder("a").appendlnIfNotEmpty().toString())
+        Assertions.assertEquals("a\n", StringBuilder("a").appendlnIfNotEmpty().toString())
     }
 
     @Test
@@ -122,20 +122,20 @@ class StringKitTest {
         Assertions.assertEquals("null", null.flatten())
         Assertions.assertEquals("default", null.flatten("default"))
         Assertions.assertEquals("1", "1".flatten())
-        Assertions.assertEquals("1\\n2", "1${n}2".flatten())
-        Assertions.assertEquals("1\\n2\\n3", "1${n}2${n}3".flatten())
+        Assertions.assertEquals("1\\n2", "1\n2".flatten())
+        Assertions.assertEquals("1\\n2\\n3", "1\n2\n3".flatten())
     }
 
     @Test
     fun testAppendln() {
         Assertions.assertEquals(null, null.appendln())
         Assertions.assertEquals("", "".appendln())
-        Assertions.assertEquals("1$n", "1".appendln())
-        Assertions.assertEquals("1$n", "1${n}".appendln())
+        Assertions.assertEquals("1\n", "1".appendln())
+        Assertions.assertEquals("1\n", "1\n".appendln())
         Assertions.assertEquals("new-line", null.appendln("new-line"))
         Assertions.assertEquals("new-line", "".appendln("new-line"))
-        Assertions.assertEquals("1${n}new-line", "1".appendln("new-line"))
-        Assertions.assertEquals("1$n${n}new-line", "1${n}".appendln("new-line"))
+        Assertions.assertEquals("1\nnew-line", "1".appendln("new-line"))
+        Assertions.assertEquals("1\n\nnew-line", "1\n".appendln("new-line"))
     }
 
     @Test
