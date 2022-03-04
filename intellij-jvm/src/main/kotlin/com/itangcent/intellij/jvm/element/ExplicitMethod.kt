@@ -20,19 +20,22 @@ interface ExplicitMethod : DuckExplicitElement<PsiMethod> {
      */
     fun getParameters(): Array<ExplicitParameter>
 
+    /**
+     * Searches the superclasses and base interfaces of the containing class to find
+     * the methods which this method overrides or implements. Can return multiple results
+     * if the base class and/or one or more of the implemented interfaces have a method
+     * with the same signature. If the overridden method in turn overrides another method,
+     * only the directly overridden method is returned.
+     *
+     * @return the array of super methods, or an empty array if no methods are found.
+     */
     fun superMethods(): Array<ExplicitMethod>
 }
 
-class ExplicitMethodWithGenericInfo : ExplicitElementWithGenericInfo<PsiMethod>, ExplicitMethod {
-
-    private val containClass: ExplicitClass
-
+class ExplicitMethodWithGenericInfo(
+    private val containClass: ExplicitClass,
     private val psiMethod: PsiMethod
-
-    constructor(containClass: ExplicitClass, psiMethod: PsiMethod) : super(containClass) {
-        this.containClass = containClass
-        this.psiMethod = psiMethod
-    }
+) : ExplicitElementWithGenericInfo<PsiMethod>(containClass), ExplicitMethod {
 
     override fun getReturnType(): DuckType? {
         val returnType = psiMethod.returnType ?: return null
@@ -50,7 +53,9 @@ class ExplicitMethodWithGenericInfo : ExplicitElementWithGenericInfo<PsiMethod>,
         if (superMethods.isNullOrEmpty()) {
             return emptyArray()
         }
-        return superMethods.mapToTypedArray { ExplicitMethodWithGenericInfo(containClass, it) }
+        return containClass.methods().filter {
+            superMethods.contains(it.psi())
+        }.toTypedArray()
     }
 
     override fun psi(): PsiMethod {
@@ -93,16 +98,10 @@ class ExplicitMethodWithGenericInfo : ExplicitElementWithGenericInfo<PsiMethod>,
 
 }
 
-class ExplicitMethodWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiMethod>, ExplicitMethod {
-
-    private val containClass: ExplicitClass
-
+class ExplicitMethodWithOutGenericInfo(
+    private val containClass: ExplicitClass,
     private val psiMethod: PsiMethod
-
-    constructor(containClass: ExplicitClass, psiMethod: PsiMethod) : super(containClass) {
-        this.containClass = containClass
-        this.psiMethod = psiMethod
-    }
+) : ExplicitElementWithOutGenericInfo<PsiMethod>(containClass), ExplicitMethod {
 
     override fun getReturnType(): DuckType? {
         val returnType = psiMethod.returnType ?: return null
@@ -115,12 +114,23 @@ class ExplicitMethodWithOutGenericInfo : ExplicitElementWithOutGenericInfo<PsiMe
         return parameterList.map { ExplicitParameterWithOutGenericInfo(this, it) }.toTypedArray()
     }
 
+    /**
+     * Searches the superclasses and base interfaces of the containing class to find
+     * the methods which this method overrides or implements. Can return multiple results
+     * if the base class and/or one or more of the implemented interfaces have a method
+     * with the same signature. If the overridden method in turn overrides another method,
+     * only the directly overridden method is returned.
+     *
+     * @return the array of super methods, or an empty array if no methods are found.
+     */
     override fun superMethods(): Array<ExplicitMethod> {
         val superMethods = psiMethod.findSuperMethods()
         if (superMethods.isNullOrEmpty()) {
             return emptyArray()
         }
-        return superMethods.mapToTypedArray { ExplicitMethodWithOutGenericInfo(containClass, it) }
+        return containClass.methods().filter {
+            superMethods.contains(it.psi())
+        }.toTypedArray()
     }
 
     override fun psi(): PsiMethod {

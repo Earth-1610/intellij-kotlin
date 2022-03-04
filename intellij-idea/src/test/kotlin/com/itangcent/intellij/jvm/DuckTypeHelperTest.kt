@@ -24,6 +24,8 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
 
     private lateinit var userDetailCtrlPsiClass: PsiClass
 
+    private lateinit var iResultPsiClass: PsiClass
+
     private lateinit var resultPsiClass: PsiClass
 
     private lateinit var userInfoDetailResultPsiClass: PsiClass
@@ -44,6 +46,7 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
         loadSource(Object::class)!!
         loadSource(Collection::class)!!
         loadSource(List::class)!!
+        iResultPsiClass = loadClass("model/IResult.java")!!
         resultPsiClass = loadClass("model/Result.java")!!
         userInfoPsiClass = loadClass("model/UserInfo.java")!!
         userInfoDetailPsiClass = loadClass("model/UserInfoDetail.java")!!
@@ -405,7 +408,7 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
 
         //test methods
         val methods = userInfoDetailResultExplicitClass.methods()
-        assertEquals(11, methods.size)
+        assertEquals(13, methods.size)
 
         run {
             val dataGetterExplicitMethod = methods[7]
@@ -441,6 +444,25 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
             assertEquals(userInfoDetailResultExplicitClass, parameter.defineClass())
             assertEquals("com.itangcent.model.UserInfoDetail", parameter.getType()?.canonicalText())
             assertEquals(dataSetterExplicitMethod, parameter.containMethod())
+        }
+
+        run {
+            val extends = userInfoDetailResultExplicitClass.extends()!!
+            Assert.assertEquals(1, extends.size)
+            Assert.assertEquals(resultPsiClass, extends[0].psi())
+
+            val implements = userInfoDetailResultExplicitClass.implements()!!
+            Assert.assertEquals(0, implements.size)
+        }
+
+        run {
+            val resultExplicitClass = duckTypeHelper.explicit(resultPsiClass)
+            val extends = resultExplicitClass.extends()!!
+            Assert.assertEquals(0, extends.size)
+
+            val implements = resultExplicitClass.implements()!!
+            Assert.assertEquals(1, implements.size)
+            Assert.assertEquals(iResultPsiClass, implements[0].psi())
         }
     }
 
