@@ -219,4 +219,4 @@ class KotlinPsiExpressionResolver : PsiExpressionResolver {
 
 
 //background idea log
-private val LOG = org.apache.log4j.Logger.getLogger(KotlinPsiExpressionResolver::class.java)
+private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(KotlinPsiExpressionResolver::class.java)

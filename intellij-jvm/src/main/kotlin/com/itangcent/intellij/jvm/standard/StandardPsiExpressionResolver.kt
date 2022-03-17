@@ -937,4 +937,4 @@ interface Cast {
 }
 
 //background idea log
-private val LOG = org.apache.log4j.Logger.getLogger(StandardPsiExpressionResolver::class.java)
+private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(StandardPsiExpressionResolver::class.java)

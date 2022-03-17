@@ -125,4 +125,4 @@ private enum class SysFileResolve {
 
 
 //background idea log
-private val LOG = org.apache.log4j.Logger.getLogger(FileResource::class.java)
+private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(FileResource::class.java)

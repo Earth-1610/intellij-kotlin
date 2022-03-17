@@ -1,33 +1,26 @@
-/*
- * Copyright 2000-2014 JetBrains s.r.o.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.itangcent.common.utils
 
 
 /**
- * copy from {@link com.intellij.openapi.util.MultiValuesMap}
+ * A collection that maps keys to values, similar to [Map], but in which each key may be
+ * associated with <i>multiple</i> values. You can visualize the contents of a multimap either as a
+ * map from keys to <i>nonempty</i> collections of values:
+ *
+ * <ul>
+ *   <li>a → 1, 2
+ *   <li>b → 3
+ * </ul>
+ *
+ * ... or as a single "flattened" collection of key-value pairs:
+ *
+ * <ul>
+ *   <li>a → 1
+ *   <li>a → 2
+ *   <li>b → 3
+ * </ul>
+ * @author tangcent
  */
 class MultiValuesMap<K, V> : Map<K, Collection<V>?> {
-
-    @Deprecated(
-        replaceWith = ReplaceWith("MultiValuesMap()"),
-        message = "myOrdered not supported"
-    )
-    constructor(myOrdered: Boolean)
-
-    constructor()
 
     /**
      * The head (eldest) of the doubly linked list.

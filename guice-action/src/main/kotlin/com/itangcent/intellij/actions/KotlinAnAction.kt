@@ -21,7 +21,7 @@ abstract class KotlinAnAction : AnAction {
     constructor(text: String?) : super(text)
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
-    private val log = org.apache.log4j.Logger.getLogger(this.javaClass)
+    private val log = com.intellij.openapi.diagnostic.Logger.getInstance(this.javaClass)
 
     protected open fun onBuildActionContext(
         event: AnActionEvent,

@@ -119,4 +119,4 @@ object ActionUtils {
 }
 
 //background idea log
-private val LOG = org.apache.log4j.Logger.getLogger(ActionUtils::class.java)
+private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(ActionUtils::class.java)

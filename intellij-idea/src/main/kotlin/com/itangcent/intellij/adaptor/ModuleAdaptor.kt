@@ -11,7 +11,7 @@ import java.io.File
 object ModuleAdaptor {
 
     //background idea log
-    private val LOG = org.apache.log4j.Logger.getLogger(ActionContext::class.java)
+    private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(ActionContext::class.java)
 
     @Suppress("UNCHECKED_CAST")
     private val MODULE_FILE_PATH_GETTER: ModuleFilePathGetter by lazy {
