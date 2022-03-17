@@ -15,7 +15,7 @@ import java.util.regex.Pattern
 abstract class AbstractConfigReader : MutableConfigReader {
 
     protected var configInfo: MultiValuesMap<String, String> =
-        MultiValuesMap(true)
+        MultiValuesMap()
 
     @Inject
     protected lateinit var logger: Logger
@@ -44,7 +44,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
     }
 
     override fun reset() {
-        configInfo = MultiValuesMap(true)
+        configInfo = MultiValuesMap()
     }
 
     override fun loadConfigInfoContent(configInfoContent: String, type: String) {
