@@ -353,4 +353,4 @@ open class StandardPsiResolver : PsiResolver {
 }
 
 //background idea log
-private val LOG = org.apache.log4j.Logger.getLogger(StandardPsiResolver::class.java)
+private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(StandardPsiResolver::class.java)

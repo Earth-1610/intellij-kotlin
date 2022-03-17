@@ -5,8 +5,14 @@ import kotlin.reflect.KClass
 
 object ClassMateDataStorage {
 
+    /**
+     * className -> mateData
+     */
     private val mateData = HashMap<String, ClassMateData>()
 
+    /**
+     * tag -> classes
+     */
     private val classWithTagCache = HashMap<String, Array<String>>()
 
     fun classWithTag(tag: String): Array<String> {

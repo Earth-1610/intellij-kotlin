@@ -5,17 +5,17 @@ import kotlin.reflect.KClass
 
 class SystemLogger : Logger {
 
-    private val delegate: org.apache.log4j.Logger
+    private val delegate: com.intellij.openapi.diagnostic.Logger
 
     constructor() : this(LOG)
 
-    constructor(name: String) : this(org.apache.log4j.Logger.getLogger(name))
+    constructor(name: String) : this(com.intellij.openapi.diagnostic.Logger.getInstance(name))
 
-    constructor(clazz: Class<*>) : this(org.apache.log4j.Logger.getLogger(clazz))
+    constructor(clazz: Class<*>) : this(com.intellij.openapi.diagnostic.Logger.getInstance(clazz))
 
-    constructor(clazz: KClass<*>) : this(org.apache.log4j.Logger.getLogger(clazz.java))
+    constructor(clazz: KClass<*>) : this(com.intellij.openapi.diagnostic.Logger.getInstance(clazz.java))
 
-    constructor(delegate: org.apache.log4j.Logger) {
+    constructor(delegate: com.intellij.openapi.diagnostic.Logger) {
         this.delegate = delegate
     }
 
@@ -28,6 +28,6 @@ class SystemLogger : Logger {
     }
 
     companion object {
-        private val LOG = org.apache.log4j.Logger.getLogger(SystemLogger::class.java)
+        private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(SystemLogger::class.java)
     }
 }

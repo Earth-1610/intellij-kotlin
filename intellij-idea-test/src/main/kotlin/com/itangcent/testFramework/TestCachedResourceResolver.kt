@@ -52,4 +52,4 @@ class TestCachedResourceResolver : DefaultResourceResolver() {
     }
 }
 
-private val LOG = org.apache.log4j.Logger.getLogger(TestCachedResourceResolver::class.java)
+private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(TestCachedResourceResolver::class.java)

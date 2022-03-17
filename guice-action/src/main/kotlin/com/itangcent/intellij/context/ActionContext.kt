@@ -872,4 +872,4 @@ class ActionContext {
 }
 
 //background idea log
-private val LOG = org.apache.log4j.Logger.getLogger(ActionContext::class.java)
+private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(ActionContext::class.java)

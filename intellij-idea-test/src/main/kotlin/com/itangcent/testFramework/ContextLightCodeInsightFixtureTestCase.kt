@@ -292,4 +292,4 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightCodeInsightFixtureT
 }
 
 //background idea log
-private val LOG = org.apache.log4j.Logger.getLogger(ContextLightCodeInsightFixtureTestCase::class.java)
+private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(ContextLightCodeInsightFixtureTestCase::class.java)
