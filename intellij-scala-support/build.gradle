@@ -28,7 +28,7 @@ apply plugin: 'signing'
 intellij {
 //    version idea_version
 //    version '2018.2.1'
-    version '2017.3.5'
+    version '2019.1.4'
     pluginName plugin_name
     updateSinceUntilBuild false
     downloadSources true
@@ -36,7 +36,7 @@ intellij {
     updateSinceUntilBuild false
     sameSinceUntilBuild false
 
-    plugins 'org.intellij.scala:2017.3.11'
+    plugins 'org.intellij.scala:2019.1.9'
 }
 
 sourceCompatibility = 1.8

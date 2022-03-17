@@ -20,10 +20,7 @@ class ActionEventDataContextAdaptor : DataContext {
         return actionEvent!!.getData(key)
     }
 
-    override fun getData(dataId: String?): Any? {
-        if (dataId == null) {
-            return null
-        }
+    override fun getData(dataId: String): Any? {
         return actionEvent!!.getData(DataKey.create(dataId))
     }
 }
