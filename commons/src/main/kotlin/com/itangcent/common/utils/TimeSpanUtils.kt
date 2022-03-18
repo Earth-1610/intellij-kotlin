@@ -7,7 +7,7 @@ import java.util.function.BiConsumer
 import java.util.regex.Pattern
 
 /**
- * Created by tangcent on 4/1/17.
+ * @author tangcent
  */
 object TimeSpanUtils {
 
