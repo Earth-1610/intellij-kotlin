@@ -10,7 +10,9 @@ object ResourceUtils {
         return resourceCache.safeComputeIfAbsent(resourceName) {
             (ResourceUtils::class.java.classLoader.getResourceAsStream(resourceName)
                 ?: ResourceUtils::class.java.getResourceAsStream(resourceName))
-                ?.readString(Charsets.UTF_8) ?: ""
+                ?.use {
+                    it.readString(Charsets.UTF_8)
+                } ?: ""
         } ?: ""
     }
 
@@ -24,6 +26,6 @@ object ResourceUtils {
 
     private fun doFindResource(resourceName: String): URL {
         return ResourceUtils::class.java.classLoader.getResource(resourceName)
-            ?: ResourceUtils::class.java.getResource(resourceName)
+            ?: ResourceUtils::class.java.getResource(resourceName)!!
     }
 }
