@@ -38,6 +38,7 @@ object PsiUtils {
                 return psiElement.name
             }
             is JvmNamedElement -> return psiElement.name
+            is PsiExpression -> return resolveExpr(psiElement)
         }
         return psiElement.text
     }
