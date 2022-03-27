@@ -49,6 +49,9 @@ open class StandardPsiResolver : PsiResolver {
     @Inject
     protected val logger: Logger? = null
 
+    @Inject
+    protected val standardEnumFieldResolver: StandardEnumFieldResolver? = null
+
     private val nameToClassCache: java.util.HashMap<String, PsiClass?> = LinkedHashMap()
 
     private val nameToTypeCache: java.util.HashMap<String, PsiType?> = LinkedHashMap()
@@ -303,34 +306,8 @@ open class StandardPsiResolver : PsiResolver {
         val value =
             (psiField as? PsiEnumConstant) ?: (psiField.computeConstantValue() as? PsiEnumConstant) ?: return null
 
+        val params = standardEnumFieldResolver!!.resolveEnumFields(value) ?: return null
         val constant: HashMap<String, Any?> = LinkedHashMap<String, Any?>()
-        val params = HashMap<String, Any?>()
-        val construct = value.resolveConstructor()
-        val expressions = value.argumentList?.expressions
-        val parameters = construct?.parameterList?.parameters
-        if (expressions != null && parameters != null && parameters.isNotEmpty()) {
-            if (parameters.last().isVarArgs) {
-                for (i in 0 until parameters.size - 1) {
-                    params[parameters[i].name!!] = PsiUtils.resolveExpr(expressions[i])
-                }
-                try {
-                    //resolve varArgs
-                    val lastVarArgParam: ArrayList<Any?> = ArrayList(1)
-                    params[parameters[parameters.size - 1].name!!] = lastVarArgParam
-                    for (i in parameters.size - 1..expressions.size) {
-                        lastVarArgParam.add(PsiUtils.resolveExpr(expressions[i]))
-                    }
-                } catch (e: Throwable) {
-                }
-            } else {
-                for ((i, parameter) in parameters.withIndex()) {
-                    try {
-                        params[parameter.name!!] = PsiUtils.resolveExpr(expressions[i])
-                    } catch (e: Throwable) {
-                    }
-                }
-            }
-        }
         constant["params"] = params
         constant["name"] = psiField.name
         constant["ordinal"] = index
