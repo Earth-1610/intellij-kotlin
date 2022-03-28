@@ -159,7 +159,7 @@ class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
 
         val constructors = psiEnumConstant.containingClass?.constructors
         if (constructors.isNullOrEmpty()) {
-            LOG.error("no constructor of ${psiEnumConstant.containingClass?.name} be found")
+            LOG.warn("no constructor of ${psiEnumConstant.containingClass?.name} be found")
             return null
         }
 
@@ -170,13 +170,13 @@ class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
                     if (preferConstructor == null) {
                         preferConstructor = it
                     } else {
-                        LOG.error("can not select constructor of ${psiEnumConstant.containingClass?.name}")
+                        LOG.warn("can not select constructor of ${psiEnumConstant.containingClass?.name}")
                         return null
                     }
                 }
             }
             if (preferConstructor == null) {
-                LOG.error("can not select constructor of ${psiEnumConstant.containingClass?.name}")
+                LOG.warn("can not select constructor of ${psiEnumConstant.containingClass?.name}")
                 return null
             }
         } else {
@@ -235,7 +235,7 @@ class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
                 .replace("this.", "it.")
             return GroovyEnumFieldEvaluator(script)
         } catch (e: Exception) {
-            LOG.error("failed resolve construct: ${construct.text}", e)
+            LOG.warn("failed resolve construct: ${construct.text}", e)
         }
         return NOPEnumFieldEvaluator
     }
@@ -314,7 +314,7 @@ abstract class ScriptEnumFieldEvaluator(
                         ("0." + "0".repeat(before.length - 3) + "1").toDouble()
             }
         } catch (e: Exception) {
-            LOG.error("failed fixDouble $value", e)
+            LOG.warn("failed fixDouble $value", e)
         }
         return value
     }

@@ -101,7 +101,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
                 loadConfigInfoContent(content, path.substringAfterLast("."))
             }
         } catch (e: Exception) {
-            LOG.error("failed load config:$path")
+            LOG.warn("failed load config:$path")
         }
     }
 
