@@ -1,13 +1,14 @@
 package com.itangcent.intellij.jvm.standard
 
 import com.google.inject.Inject
-import com.intellij.psi.PsiClass
-import com.intellij.psi.PsiEnumConstant
+import com.intellij.psi.*
 import com.itangcent.common.utils.GsonUtils
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.with
 import com.itangcent.testFramework.ContextLightCodeInsightFixtureTestCase
+import com.nhaarman.mockitokotlin2.mock
 import junit.framework.Assert
+import org.mockito.Mockito
 
 /**
  * Test case of [StandardEnumFieldResolver]
@@ -71,5 +72,42 @@ internal class StandardEnumFieldResolverTest : ContextLightCodeInsightFixtureTes
                 GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(fields[5]))
             )
         }
+    }
+
+    fun testResolveEnumFieldsOfClsClass() {
+        val param0: PsiParameter = mock {
+            Mockito.`when`(it.name).thenReturn("i")
+            Mockito.`when`(it.isVarArgs).thenReturn(false)
+        }
+        val param1: PsiParameter = mock {
+            Mockito.`when`(it.name).thenReturn("s")
+            Mockito.`when`(it.isVarArgs).thenReturn(false)
+        }
+        val parameterList: PsiParameterList = mock {
+            Mockito.`when`(it.parameters).thenReturn(arrayOf(param0, param1))
+        }
+        val construct: PsiMethod = mock {
+            Mockito.`when`(it.text).thenReturn(
+                "private Level(int i, String s) {\n" +
+                        "        this.levelInt = i;\n" +
+                        "        this.levelStr = s;\n" +
+                        "    }"
+            )
+            Mockito.`when`(it.parameterList).thenReturn(parameterList)
+        }
+        val psiClass: PsiClass = mock {
+            Mockito.`when`(it.constructors).thenReturn(
+                arrayOf(construct)
+            )
+        }
+        val psiEnumConstant: PsiEnumConstant = mock {
+            Mockito.`when`(it.resolveConstructor()).thenReturn(null)
+            Mockito.`when`(it.text).thenReturn("ERROR(40, \"ERROR\")")
+            Mockito.`when`(it.containingClass).thenReturn(psiClass)
+        }
+        Assert.assertEquals(
+            "{\"levelInt\":40.0,\"levelStr\":\"ERROR\"}",
+            GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(psiEnumConstant))
+        )
     }
 }

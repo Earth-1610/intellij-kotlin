@@ -2,6 +2,7 @@ package com.itangcent.intellij.jvm.standard
 
 import com.google.inject.ImplementedBy
 import com.intellij.psi.*
+import com.itangcent.common.utils.GsonUtils
 import com.itangcent.intellij.jvm.PsiUtils
 import java.util.*
 import javax.script.ScriptContext
@@ -21,8 +22,19 @@ interface StandardEnumFieldResolver {
 
 class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
     override fun resolveEnumFields(psiEnumConstant: PsiEnumConstant): Map<String, Any?>? {
+        val construct = psiEnumConstant.resolveConstructor()
+        return if (construct == null) {
+            resolveWithoutConstruct(psiEnumConstant)
+        } else {
+            resolveFieldsWithResolvedConstructor(psiEnumConstant, construct)
+        }
+    }
+
+    private fun resolveFieldsWithResolvedConstructor(
+        psiEnumConstant: PsiEnumConstant,
+        construct: PsiMethod
+    ): Map<String, Any?>? {
         val params = HashMap<String, Any?>()
-        val construct = psiEnumConstant.resolveConstructor() ?: return null
         val expressions = psiEnumConstant.argumentList?.expressions
         val parameters = construct.parameterList.parameters
         if (expressions != null && parameters.isNotEmpty()) {
@@ -49,7 +61,7 @@ class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
             }
         }
         return try {
-            val enumFieldEvaluators = resolveConstruct(construct)
+            val enumFieldEvaluators = parseEvaluatorForResolvedConstruct(construct)
             val fields = HashMap<String, Any?>()
             enumFieldEvaluators.evaluate(params, fields)
             fields
@@ -61,13 +73,13 @@ class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
 
     private val evaluatorCache = HashMap<PsiMethod, EnumFieldEvaluator>()
 
-    private fun resolveConstruct(construct: PsiMethod): EnumFieldEvaluator {
+    private fun parseEvaluatorForResolvedConstruct(construct: PsiMethod): EnumFieldEvaluator {
         return evaluatorCache.computeIfAbsent(construct) {
-            doResolveConstruct(it)
+            doParseEvaluatorForResolvedConstruct(it)
         }
     }
 
-    private fun doResolveConstruct(construct: PsiMethod): EnumFieldEvaluator {
+    private fun doParseEvaluatorForResolvedConstruct(construct: PsiMethod): EnumFieldEvaluator {
         val body = construct.body ?: return NOPEnumFieldEvaluator
         var children = body.children
         val l = children.indexOfFirst { it.text == "{" }
@@ -135,6 +147,97 @@ class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
         val script = exps.filter { it !is PsiWhiteSpace }
             .joinToString(separator = "\n") { it.text }
         return GroovyEnumFieldEvaluator(script.replace("this.", "it."))
+    }
+
+    private fun resolveWithoutConstruct(
+        psiEnumConstant: PsiEnumConstant
+    ): Map<String, Any?>? {
+        var constantText = psiEnumConstant.text
+        constantText = constantText.substringAfter('(')
+            .substringBeforeLast(')')
+        val paramArray = GsonUtils.fromJson("[$constantText]", Array<Any?>::class.java)
+
+        val constructors = psiEnumConstant.containingClass?.constructors
+        if (constructors.isNullOrEmpty()) {
+            LOG.error("no constructor of ${psiEnumConstant.containingClass?.name} be found")
+            return null
+        }
+
+        var preferConstructor: PsiMethod? = null
+        if (constructors.size > 1) {
+            constructors.forEach {
+                if (it.parameters.size == paramArray.size) {
+                    if (preferConstructor == null) {
+                        preferConstructor = it
+                    } else {
+                        LOG.error("can not select constructor of ${psiEnumConstant.containingClass?.name}")
+                        return null
+                    }
+                }
+            }
+            if (preferConstructor == null) {
+                LOG.error("can not select constructor of ${psiEnumConstant.containingClass?.name}")
+                return null
+            }
+        } else {
+            preferConstructor = constructors[0]
+        }
+
+        val params = HashMap<String, Any?>()
+        val parameters = preferConstructor!!.parameterList.parameters
+        if (parameters.isNotEmpty()) {
+            if (parameters.last().isVarArgs) {
+                for (i in 0 until parameters.size - 1) {
+                    params[parameters[i].name!!] = paramArray[i]
+                }
+                try {
+                    //resolve varArgs
+                    val lastVarArgParam: ArrayList<Any?> = ArrayList(1)
+                    params[parameters[parameters.size - 1].name!!] = lastVarArgParam
+                    for (i in parameters.size - 1..paramArray.size) {
+                        lastVarArgParam.add(paramArray[i])
+                    }
+                } catch (e: Throwable) {
+                }
+            } else {
+                for ((i, parameter) in parameters.withIndex()) {
+                    try {
+                        params[parameter.name!!] = paramArray[i]
+                    } catch (e: Throwable) {
+                    }
+                }
+            }
+        }
+
+        return try {
+            val enumFieldEvaluators = parseEvaluatorForUnresolvedConstruct(preferConstructor!!)
+            val fields = HashMap<String, Any?>()
+            enumFieldEvaluators.evaluate(params, fields)
+            fields
+        } catch (e: Exception) {
+            LOG.info("failed resolve enum ${psiEnumConstant.containingClass?.text}", e)
+            params
+        }
+    }
+
+
+    private fun parseEvaluatorForUnresolvedConstruct(construct: PsiMethod): EnumFieldEvaluator {
+        return evaluatorCache.computeIfAbsent(construct) {
+            doParseEvaluatorForUnresolvedConstruct(it)
+        }
+    }
+
+    private fun doParseEvaluatorForUnresolvedConstruct(construct: PsiMethod): EnumFieldEvaluator {
+        try {
+            val script = construct.text
+                .substringAfter('{')
+                .substringBeforeLast('}')
+                .replace("this.", "it.")
+            return GroovyEnumFieldEvaluator(script)
+        } catch (e: Exception) {
+            LOG.error("failed resolve construct: ${construct.text}", e)
+        }
+        return NOPEnumFieldEvaluator
     }
 }
 
