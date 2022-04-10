@@ -111,7 +111,7 @@ object ActionUtils {
         try {
             anActionEvent.actionManager.getAction(action).actionPerformed(anActionEvent)
         } catch (e: Exception) {
-            LOG.error("faield doAction:$action", e)
+            LOG.warn("failed doAction:$action", e)
         }
 
     }

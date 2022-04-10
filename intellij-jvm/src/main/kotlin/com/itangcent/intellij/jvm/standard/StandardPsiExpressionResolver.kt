@@ -77,7 +77,7 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
                 }
             }
         }
-        LOG.error("failed process:$psiExpression")
+        LOG.warn("failed process:$psiExpression")
         return psiExpression.text
     }
 
@@ -151,7 +151,7 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
 //                    logger!!.debug("no matched ele ${psiElement::class.qualifiedName}:${psiElement.text}")
             }
         }
-        LOG.error("failed process:$psiElement")
+        LOG.warn("failed process:$psiElement")
         return psiElement.text
     }
 
