@@ -21,6 +21,7 @@ interface StandardEnumFieldResolver {
 }
 
 class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
+
     override fun resolveEnumFields(psiEnumConstant: PsiEnumConstant): Map<String, Any?>? {
         val construct = psiEnumConstant.resolveConstructor()
         return if (construct == null) {
@@ -153,9 +154,25 @@ class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
         psiEnumConstant: PsiEnumConstant
     ): Map<String, Any?>? {
         var constantText = psiEnumConstant.text
-        constantText = constantText.substringAfter('(')
-            .substringBeforeLast(')')
-        val paramArray = GsonUtils.fromJson("[$constantText]", Array<Any?>::class.java)
+        val paramArray: Array<Any?>
+
+        if (!constantText.contains('(')) {
+            //Enum field with NoArgConstructor
+            paramArray = emptyArray()
+        }else {
+            constantText = constantText.substringAfter('(')
+                .substringBeforeLast(')')
+            paramArray = if(constantText.isBlank()){
+                emptyArray()
+            }else {
+                try {
+                    GsonUtils.fromJson("[$constantText]", Array<Any?>::class.java)
+                } catch (e: Exception) {
+                    LOG.warn("failed resolve {$constantText} in ${psiEnumConstant.containingClass?.name}", e)
+                    return null
+                }
+            }
+        }
 
         val constructors = psiEnumConstant.containingClass?.constructors
         if (constructors.isNullOrEmpty()) {
@@ -166,7 +183,7 @@ class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
         var preferConstructor: PsiMethod? = null
         if (constructors.size > 1) {
             constructors.forEach {
-                if (it.parameters.size == paramArray.size) {
+                if (it.parameterList.parameters.size == paramArray.size) {
                     if (preferConstructor == null) {
                         preferConstructor = it
                     } else {
