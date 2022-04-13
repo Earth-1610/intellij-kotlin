@@ -75,39 +75,81 @@ internal class StandardEnumFieldResolverTest : ContextLightCodeInsightFixtureTes
     }
 
     fun testResolveEnumFieldsOfClsClass() {
-        val param0: PsiParameter = mock {
-            Mockito.`when`(it.name).thenReturn("i")
-            Mockito.`when`(it.isVarArgs).thenReturn(false)
+        val construct0: PsiMethod
+        run {
+            val param0: PsiParameter = mock {
+                Mockito.`when`(it.name).thenReturn("i")
+                Mockito.`when`(it.isVarArgs).thenReturn(false)
+            }
+            val param1: PsiParameter = mock {
+                Mockito.`when`(it.name).thenReturn("s")
+                Mockito.`when`(it.isVarArgs).thenReturn(false)
+            }
+            val parameterList: PsiParameterList = mock {
+                Mockito.`when`(it.parameters).thenReturn(arrayOf(param0, param1))
+            }
+            construct0 = mock {
+                Mockito.`when`(it.text).thenReturn(
+                    "private Level(int i, String s) {\n" +
+                            "        this.levelInt = i;\n" +
+                            "        this.levelStr = s;\n" +
+                            "    }"
+                )
+                Mockito.`when`(it.parameterList).thenReturn(parameterList)
+            }
         }
-        val param1: PsiParameter = mock {
-            Mockito.`when`(it.name).thenReturn("s")
-            Mockito.`when`(it.isVarArgs).thenReturn(false)
-        }
-        val parameterList: PsiParameterList = mock {
-            Mockito.`when`(it.parameters).thenReturn(arrayOf(param0, param1))
-        }
-        val construct: PsiMethod = mock {
-            Mockito.`when`(it.text).thenReturn(
-                "private Level(int i, String s) {\n" +
-                        "        this.levelInt = i;\n" +
-                        "        this.levelStr = s;\n" +
-                        "    }"
-            )
-            Mockito.`when`(it.parameterList).thenReturn(parameterList)
+        val construct1: PsiMethod
+        run {
+            val parameterList: PsiParameterList = mock {
+                Mockito.`when`(it.parameters).thenReturn(emptyArray())
+            }
+            construct1 = mock {
+                Mockito.`when`(it.text).thenReturn(
+                    "private Level() {\n" +
+                            "        this.levelInt = -1;\n" +
+                            "        this.levelStr = \"default\";\n" +
+                            "    }"
+                )
+                Mockito.`when`(it.parameterList).thenReturn(parameterList)
+            }
         }
         val psiClass: PsiClass = mock {
             Mockito.`when`(it.constructors).thenReturn(
-                arrayOf(construct)
+                arrayOf(construct0,construct1)
             )
         }
-        val psiEnumConstant: PsiEnumConstant = mock {
-            Mockito.`when`(it.resolveConstructor()).thenReturn(null)
-            Mockito.`when`(it.text).thenReturn("ERROR(40, \"ERROR\")")
-            Mockito.`when`(it.containingClass).thenReturn(psiClass)
+        run {
+            val psiEnumConstant: PsiEnumConstant = mock {
+                Mockito.`when`(it.resolveConstructor()).thenReturn(null)
+                Mockito.`when`(it.text).thenReturn("ERROR(40, \"ERROR\")")
+                Mockito.`when`(it.containingClass).thenReturn(psiClass)
+            }
+            Assert.assertEquals(
+                "{\"levelInt\":40.0,\"levelStr\":\"ERROR\"}",
+                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(psiEnumConstant))
+            )
         }
-        Assert.assertEquals(
-            "{\"levelInt\":40.0,\"levelStr\":\"ERROR\"}",
-            GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(psiEnumConstant))
-        )
+        run {
+            val psiEnumConstant: PsiEnumConstant = mock {
+                Mockito.`when`(it.resolveConstructor()).thenReturn(null)
+                Mockito.`when`(it.text).thenReturn("DEFAULT")
+                Mockito.`when`(it.containingClass).thenReturn(psiClass)
+            }
+            Assert.assertEquals(
+                "{\"levelInt\":-1,\"levelStr\":\"default\"}",
+                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(psiEnumConstant))
+            )
+        }
+        run {
+            val psiEnumConstant: PsiEnumConstant = mock {
+                Mockito.`when`(it.resolveConstructor()).thenReturn(null)
+                Mockito.`when`(it.text).thenReturn("DEFAULT()")
+                Mockito.`when`(it.containingClass).thenReturn(psiClass)
+            }
+            Assert.assertEquals(
+                "{\"levelInt\":-1,\"levelStr\":\"default\"}",
+                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(psiEnumConstant))
+            )
+        }
     }
 }
