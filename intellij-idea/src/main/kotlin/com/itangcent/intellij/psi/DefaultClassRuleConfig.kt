@@ -6,15 +6,19 @@ import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiType
 import com.itangcent.common.utils.safeComputeIfAbsent
+import com.itangcent.intellij.config.ConfigReader
 import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.jvm.DuckTypeHelper
 import com.itangcent.intellij.jvm.JvmClassHelper
 import com.itangcent.intellij.jvm.PsiResolver
 import com.itangcent.intellij.jvm.duck.DuckType
-import java.util.*
 
 @Singleton
 open class DefaultClassRuleConfig : ClassRuleConfig {
+
+    @Inject
+    protected val configReader: ConfigReader? = null
+
     @Inject
     protected val ruleComputer: RuleComputer? = null
 
@@ -59,4 +63,11 @@ open class DefaultClassRuleConfig : ClassRuleConfig {
         } as PsiClass? ?: psiClass
     }
 
+    override fun maxDeep(): Int {
+        return configReader?.first("max.deep")?.toIntOrNull() ?: 6
+    }
+
+    override fun maxElements(): Int {
+        return configReader?.first("max.elements")?.toIntOrNull() ?: 256
+    }
 }
