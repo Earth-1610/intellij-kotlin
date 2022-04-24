@@ -72,7 +72,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
     protected open fun loadConfigFile(path: String) {
         try {
             val resource = resourceResolver.resolve(path)
-            LOG.info("load config:$resource")
+            LOG.info("read config file:$resource")
             val content = resource.content
             if (content.isNullOrBlank()) {
                 if (!ignoreNotFoundFile) {
@@ -101,7 +101,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
                 loadConfigInfoContent(content, path.substringAfterLast("."))
             }
         } catch (e: Exception) {
-            LOG.warn("failed load config:$path")
+            LOG.warn("Error reading config file:$path")
         }
     }
 

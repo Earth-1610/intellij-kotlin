@@ -306,7 +306,7 @@ open class StandardPsiResolver : PsiResolver {
         val value =
             (psiField as? PsiEnumConstant) ?: (psiField.computeConstantValue() as? PsiEnumConstant) ?: return null
 
-        val params = standardEnumFieldResolver!!.resolveEnumFields(value) ?: return null
+        val params = standardEnumFieldResolver!!.resolveEnumFields(value) ?: emptyMap()
         val constant: HashMap<String, Any?> = LinkedHashMap<String, Any?>()
         constant["params"] = params
         constant["name"] = psiField.name

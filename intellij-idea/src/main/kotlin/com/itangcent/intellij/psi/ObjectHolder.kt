@@ -460,12 +460,12 @@ class MapObjectHolder(obj: MutableMap<*, *>) : UnstableObjectHolder<MutableMap<*
         for ((k, v) in this.rawObj.entries) {
             //keep the extends
             if (k.isExtendKey()) {
-                t[k] = v
+                t.merge(k, v)
                 continue
             }
             k.getObject(context) { key ->
                 v.getObject(context, key?.toString(), { value ->
-                    t[key] = value
+                    t.merge(key, value)
                 }) {}
             }
         }
@@ -515,14 +515,14 @@ class ExtendObjectHolder(private val objHolder: ObjectHolder) : ObjectHolder by 
             if (k.startsWith('@')) {
                 val index = k.indexOf('@', 1)
                 if (index == -1) {
-                    target.sub(k).mutable()[property] = v
+                    target.sub(k).mutable().merge(property, v)
                 } else {
                     val key = k.substring(0, index)
                     val subKey = property + "@" + k.substring(index + 1)
-                    target.sub(key).mutable()[subKey] = v
+                    target.sub(key).mutable().merge(subKey, v)
                 }
             } else {
-                (target as? MutableMap<Any?, Any?>)?.set(k, v)
+                (target as? MutableMap<Any?, Any?>)?.merge(k, v)
             }
         }
     }

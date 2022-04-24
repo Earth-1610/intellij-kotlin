@@ -22,12 +22,15 @@ internal class StandardEnumFieldResolverTest : ContextLightCodeInsightFixtureTes
 
     private lateinit var myConstantPsiClass: PsiClass
 
+    private lateinit var myNoArgConstantPsiClass: PsiClass
+
     override fun beforeBind() {
         super.beforeBind()
         loadSource(Object::class.java)!!
         loadSource(java.lang.String::class)!!
         javaVersionPsiClass = loadClass("constant/JavaVersion.java")!!
         myConstantPsiClass = loadClass("constant/MyConstant.java")!!
+        myNoArgConstantPsiClass = loadClass("constant/MyNoArgConstant.java")!!
     }
 
     override fun bind(builder: ActionContext.ActionContextBuilder) {
@@ -70,6 +73,26 @@ internal class StandardEnumFieldResolverTest : ContextLightCodeInsightFixtureTes
             Assert.assertEquals(
                 "{\"name\":\"f\",\"value\":23.1}",
                 GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(fields[5]))
+            )
+            Assert.assertEquals(
+                "{\"name\":\"default\",\"value\":0}",
+                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(fields[6]))
+            )
+        }
+        run {
+            val fields = myNoArgConstantPsiClass.fields
+                .filterIsInstance<PsiEnumConstant>()
+            Assert.assertEquals(
+                "{}",
+                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(fields[0] as PsiEnumConstant))
+            )
+            Assert.assertEquals(
+                "{}",
+                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(fields[1]))
+            )
+            Assert.assertEquals(
+                "{}",
+                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(fields[2]))
             )
         }
     }

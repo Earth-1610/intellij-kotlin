@@ -2,6 +2,7 @@ package com.itangcent.model;
 
 import com.itangcent.constant.JavaVersion;
 import com.itangcent.model.UserInfo;
+import com.itangcent.constant.MyNoArgConstant;
 
 import java.util.List;
 
@@ -79,6 +80,11 @@ class HugeModel {
      * primary version
      */
     private JavaVersion version;
+
+    /**
+     * no arg constant
+     */
+    private MyNoArgConstant myNoArgConstant;
 
     /**
      * @unwrapped

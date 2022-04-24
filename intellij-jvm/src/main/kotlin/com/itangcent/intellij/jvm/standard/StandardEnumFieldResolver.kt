@@ -159,12 +159,12 @@ class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
         if (!constantText.contains('(')) {
             //Enum field with NoArgConstructor
             paramArray = emptyArray()
-        }else {
+        } else {
             constantText = constantText.substringAfter('(')
                 .substringBeforeLast(')')
-            paramArray = if(constantText.isBlank()){
+            paramArray = if (constantText.isBlank()) {
                 emptyArray()
-            }else {
+            } else {
                 try {
                     GsonUtils.fromJson("[$constantText]", Array<Any?>::class.java)
                 } catch (e: Exception) {
@@ -176,6 +176,9 @@ class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
 
         val constructors = psiEnumConstant.containingClass?.constructors
         if (constructors.isNullOrEmpty()) {
+            if (paramArray.isEmpty()) {
+                return emptyMap()
+            }
             LOG.warn("no constructor of ${psiEnumConstant.containingClass?.name} be found")
             return null
         }

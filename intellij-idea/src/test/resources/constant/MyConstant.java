@@ -26,11 +26,16 @@ public enum MyConstant {
      * 5th
      */
     FIVE(5.5f),
+
     /**
      * 6th
      */
-    SIX("f", 6.6f, 7.7f, 8.8f),
+    SIX("f", 6.6f, 7.7f, 8.8f),,
 
+    /**
+     * 7th
+     */
+    SEVEN
     ;
 
     /**
@@ -42,6 +47,16 @@ public enum MyConstant {
      * The float value.
      */
     private final float value;
+
+
+    /**
+     * Constructor
+     */
+    MyConstant() {
+        this.value = 0;//default
+        this.name = "default";
+    }
+
 
     /**
      * Constructor.
