@@ -178,18 +178,12 @@ interface JvmClassHelper {
 
 
 fun Any?.asPsiClass(): PsiClass? {
-    if (this == null) return null
-    if (this is PsiType) {
-        return ActionContext.instance(JvmClassHelper::class).resolveClassInType(this)
-    }
-    if (this is PsiClass) {
-        return this
-    }
-    return null
+    this ?: return null
+    return this.asPsiClass(ActionContext.instance(JvmClassHelper::class))
 }
 
 fun Any?.asPsiClass(jvmClassHelper: JvmClassHelper): PsiClass? {
-    if (this == null) return null
+    this ?: return null
     if (this is PsiType) {
         return jvmClassHelper.resolveClassInType(this)
     }

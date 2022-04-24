@@ -24,4 +24,14 @@ interface ClassRuleConfig {
      * try convert one class to another for parse
      */
     fun tryConvert(psiClass: PsiClass): PsiClass
+
+    /**
+     * max parsing deep to prevent the stack overflow occurring.
+     */
+    fun maxDeep(): Int
+
+    /**
+     * max parsing elements to prevent the stack overflow occurring.
+     */
+    fun maxElements(): Int
 }

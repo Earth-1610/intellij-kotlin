@@ -1,8 +1,5 @@
 package com.itangcent.common.utils
 
-import java.util.*
-import kotlin.collections.ArrayDeque
-import kotlin.collections.LinkedHashMap
 import kotlin.jvm.internal.CallableReference
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
@@ -226,8 +223,9 @@ fun Any?.copy(): Any? {
         is Map<*, *> -> this.copy(ValuePresence())
         is Collection<*> -> this.copy(ValuePresence())
         is Cloneable -> try {
-            return this.invokeMethod("clone")
+            this.invokeMethod("clone")
         } catch (e: Exception) {
+            this
         }
         else -> this
     }
@@ -254,6 +252,37 @@ private fun Any?.copy(values: ValuePresence): Any? {
             }
             values.pop()
             return newCopy
+        }
+        is Cloneable -> return try {
+            this.invokeMethod("clone")
+        } catch (e: Exception) {
+            this
+        }
+        else -> return this
+    }
+}
+
+fun Any?.copyUnsafe(): Any? {
+    when (this) {
+        null -> return null
+        is Map<*, *> -> {
+            val newCopy: HashMap<Any?, Any?> = LinkedHashMap()
+            this.forEach { (key, value) ->
+                newCopy[key] = value.copyUnsafe()
+            }
+            return newCopy
+        }
+        is Collection<*> -> {
+            val newCopy: ArrayList<Any?> = ArrayList()
+            this.forEach { value ->
+                newCopy.add(value.copyUnsafe())
+            }
+            return newCopy
+        }
+        is Cloneable -> return try {
+            this.invokeMethod("clone")
+        } catch (e: Exception) {
+            this
         }
         else -> return this
     }
