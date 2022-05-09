@@ -23,7 +23,6 @@ class AutoSearchConfigReaderTest : AdvancedContextTest() {
     protected lateinit var configReader: ConfigReader
 
     override fun beforeBind() {
-        super.afterBind()
         //load configs from resource to tempDir as files in module
         for (file in configFiles) {
             File("$tempDir${s}config${s}$file")

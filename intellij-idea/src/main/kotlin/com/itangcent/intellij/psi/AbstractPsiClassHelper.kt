@@ -87,7 +87,15 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     protected fun getResolveContext(): ResolveContext {
         resolveContext?.let { return it }
         val psiClass = contextSwitchListener.getContext().asPsiClass(jvmClassHelper)
-        val resolveContext = SimpleResolveContext(psiClass?.qualifiedName, 0, JsonOption.NONE)
+        val className = psiClass?.qualifiedName
+        val basePackage = if (!className.isNullOrBlank()) {
+            var dotIndex = className.indexOf('.')
+            dotIndex = className.indexOf('.', dotIndex + 1)
+            className.substring(0, dotIndex)
+        } else {
+            null
+        }
+        val resolveContext = SimpleResolveContext(basePackage, 0, JsonOption.NONE)
         this.resolveContext = resolveContext
         return resolveContext
     }
@@ -96,7 +104,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         val resolveContext = getResolveContext().copy()
         val result = doGetTypeObject(psiType, context, resolveContext)?.getOrResolve()
         if (resolveContext.blocked()) {
-            logger.error("${psiType?.canonicalText} is to complex. Blocked cause by ${resolveContext.blockInfo()}")
+            logger.error("${psiType?.canonicalText} is too complex. Blocked by ${resolveContext.blockInfo()}")
         }
         return result
     }
@@ -105,7 +113,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         val resolveContext = getResolveContext().withOption(option)
         val result = doGetTypeObject(psiType, context, resolveContext).getOrResolve()
         if (resolveContext.blocked()) {
-            logger.error("${psiType?.canonicalText} is to complex. Blocked cause by ${resolveContext.blockInfo()}")
+            logger.error("${psiType?.canonicalText} is too complex. Blocked by ${resolveContext.blockInfo()}")
         }
         return result
     }
@@ -114,7 +122,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         val resolveContext = getResolveContext().copy()
         val result = doGetTypeObject(duckType, context, resolveContext).getOrResolve()
         if (resolveContext.blocked()) {
-            logger.error("${duckType?.canonicalText()} is to complex. Blocked cause by ${resolveContext.blockInfo()}")
+            logger.error("${duckType?.canonicalText()} is too complex. Blocked by ${resolveContext.blockInfo()}")
         }
         return result
     }
@@ -123,7 +131,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         val resolveContext = getResolveContext().withOption(option)
         val result = doGetTypeObject(duckType, context, resolveContext).getOrResolve()
         if (resolveContext.blocked()) {
-            logger.error("${duckType?.canonicalText()} is to complex. Blocked cause by ${resolveContext.blockInfo()}")
+            logger.error("${duckType?.canonicalText()} is too complex. Blocked by ${resolveContext.blockInfo()}")
         }
         return result
     }
@@ -287,7 +295,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         val resolveContext = getResolveContext()
         val result = doGetFields(psiClass, context, resolveContext).getOrResolve().asKV()
         if (resolveContext.blocked()) {
-            logger.error("${psiClass?.qualifiedName} is to complex. Blocked cause by ${resolveContext.blockInfo()}")
+            logger.error("${psiClass?.qualifiedName} is too complex. Blocked by ${resolveContext.blockInfo()}")
         }
         return result
     }
@@ -301,7 +309,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         val resolveContext = getResolveContext().withOption(option)
         val result = doGetFields(psiClass, context, resolveContext).getOrResolve().asKV()
         if (resolveContext.blocked()) {
-            logger.error("${psiClass?.qualifiedName} is to complex. Blocked cause by ${resolveContext.blockInfo()}")
+            logger.error("${psiClass?.qualifiedName} is too complex. Blocked by ${resolveContext.blockInfo()}")
         }
         return result
     }
@@ -838,11 +846,15 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
             var desc = enumConstant["desc"]
             if (desc == null) {
-                desc = (enumConstant["params"] as HashMap<String, Any?>?)!!
-                    .filterKeys { k -> k != valProperty }
-                    .map { entry -> entry.value.toString() }
-                    .joinToString(" ")
-                    .trimToNull()
+                val params = enumConstant["params"] as? Map<String, Any?>
+                if (!params.isNullOrEmpty()) {
+                    desc = params
+                        .mutable(false)
+                        .filterKeys { k -> k != valProperty }
+                        .map { entry -> entry.value.toString() }
+                        .joinToString(" ")
+                        .trimToNull()
+                }
             }
             if (desc.anyIsNullOrBlank()) {
                 desc = enumConstant["name"]
@@ -1106,7 +1118,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         }
 
         override fun blockResolve(className: String?): Boolean {
-            var maxDeep = classRuleConfig?.maxDeep() ?: 6
+            var maxDeep = classRuleConfig?.maxDeep() ?: 7
             var maxElements = classRuleConfig?.maxElements() ?: 256
             if (basePackage != null && className != null && className.startsWith(basePackage)) {
                 maxDeep += 2

@@ -98,7 +98,7 @@ class ValueHolder<T> : AbstractHolder<T>() {
     fun compute(action: (() -> T?)) {
         try {
             this.success(action())
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             this.failed(e)
         }
     }
@@ -141,7 +141,7 @@ class VoidHolder : AbstractHolder<Void>() {
         try {
             action()
             this.success()
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             this.failed(e)
         }
     }

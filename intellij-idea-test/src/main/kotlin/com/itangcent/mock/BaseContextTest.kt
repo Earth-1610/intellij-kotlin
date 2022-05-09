@@ -36,7 +36,7 @@ abstract class BaseContextTest {
         val actionContext = builder.build()
         try {
             actionContext.init(this)
-            afterBind()
+            afterBind(actionContext)
         } catch (e: Exception) {
             e.printStackTrace()
             fail("buildContext failed")
@@ -47,7 +47,7 @@ abstract class BaseContextTest {
     protected open fun beforeBind() {
     }
 
-    protected open fun afterBind() {
+    protected open fun afterBind(actionContext: ActionContext) {
     }
 
     protected open fun setUp() {
@@ -59,7 +59,7 @@ abstract class BaseContextTest {
     @AfterEach
     fun tearDown() {
         actionContext.waitComplete()
-        actionContext.stop(true)
+        actionContext.stop()
         doTearDown()
     }
 

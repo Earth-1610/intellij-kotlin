@@ -42,29 +42,17 @@ abstract class KotlinAnAction : AnAction {
 
         log.info("start action:" + this::class.qualifiedName)
 
-        if (actionContext.lock()) {
-            actionContext.runAsync {
-                try {
-                    actionPerformed(actionContext, project, anActionEvent)
-                } catch (ex: Exception) {
-                    log.info("Error:${ex.message}trace:${ExceptionUtils.getStackTrace(ex)}")
-                    NotificationHelper.instance().notify {
-                        it.createNotification(
-                            when (ex) {
-                                is ProcessCanceledException -> ex.stopMsg ?: "Unknown"
-                                else -> "Error at:${ex.message}trace:${ExceptionUtils.getStackTrace(ex)}"
-                            },
-                            NotificationType.ERROR
-                        )
-                    }
-                }
-            }
-        } else {
-            log.info("Found unfinished task!")
-            actionContext.runInWriteUI {
+        actionContext.runAsync {
+            try {
+                actionPerformed(actionContext, project, anActionEvent)
+            } catch (ex: Exception) {
+                log.info("Error:${ex.message}trace:${ExceptionUtils.getStackTrace(ex)}")
                 NotificationHelper.instance().notify {
                     it.createNotification(
-                        "Found unfinished task!",
+                        when (ex) {
+                            is ProcessCanceledException -> ex.stopMsg ?: "Unknown"
+                            else -> "Error at:${ex.message}trace:${ExceptionUtils.getStackTrace(ex)}"
+                        },
                         NotificationType.ERROR
                     )
                 }

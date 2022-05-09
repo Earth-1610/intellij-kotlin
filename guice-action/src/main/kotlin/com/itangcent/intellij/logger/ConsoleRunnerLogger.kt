@@ -6,6 +6,7 @@ import com.google.inject.name.Named
 import com.intellij.execution.ExecutionException
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
+import com.itangcent.common.exception.ProcessCanceledException
 import com.itangcent.intellij.constant.CacheKey
 import com.itangcent.intellij.constant.EventKey
 import com.itangcent.intellij.context.ActionContext
@@ -22,6 +23,9 @@ class ConsoleRunnerLogger : AbstractLogger() {
 
     private var logConsoleRunner: LogConsoleRunner? = null
 
+    @Volatile
+    private var close = false
+
     @Inject
     private val actionContext: ActionContext? = null
 
@@ -37,11 +41,20 @@ class ConsoleRunnerLogger : AbstractLogger() {
     private fun checkProcess(): PipedProcess {
         if (pipedProcess == null || logConsoleRunner == null) {
             lock.withLock {
+                if (close) {
+                    throw ProcessCanceledException("logger closed")
+                }
                 if (pipedProcess == null) {
                     pipedProcess = PipedProcess()
                     actionContext!!.cache(CacheKey.LOGPROCESS, pipedProcess!!)
                     actionContext.on(EventKey.ON_COMPLETED) {
+                        close = true
+                        try {
+                            Thread.sleep(100)
+                        } catch (_: Exception) {
+                        }
                         pipedProcess?.setExitValue(0)
+//                        logConsoleRunner?.close()
                         clear()
                     }
                 }
@@ -51,7 +64,6 @@ class ConsoleRunnerLogger : AbstractLogger() {
 
                     try {
                         logConsoleRunner = LogConsoleRunner(project, pluginName, project.basePath!!, pipedProcess!!)
-
                         logConsoleRunner!!.initAndRun()
                     } catch (ex: ExecutionException) {
                         actionContext.runInWriteUI {
@@ -78,7 +90,7 @@ class ConsoleRunnerLogger : AbstractLogger() {
     }
 
     override fun processLog(logData: String?) {
-        if (logData == null) return
+        if (logData == null || close) return
         try {
             val pipedProcess = checkProcess()
             val bytes = logData.toByteArray(logConfig.charset())
@@ -95,7 +107,6 @@ class ConsoleRunnerLogger : AbstractLogger() {
     }
 
     companion object {
-
         //background idea log
         private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(ConsoleRunnerLogger::class.java)
     }

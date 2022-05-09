@@ -1,6 +1,5 @@
 package com.itangcent.common.concurrent
 
-import com.itangcent.common.concurrent.AQSCountLatch
 import com.itangcent.common.exception.ProcessCanceledException
 import org.junit.jupiter.api.*
 import java.time.Duration
@@ -44,10 +43,23 @@ class AQSCountLatchTest {
     }
 
     @Test
-    fun testWaitForCompleted() {
+    fun testWaitForCompletedWithTimeOutSuccess() {
         assertTimeout(Duration.ofMillis(2000)) {
             assertTrue(aqs!!.waitFor(2000))
         }
+    }
+
+    @Test
+    fun testWaitForCompletedWithTimeOutFailed() {
+        aqs!!.down()
+        threadPool!!.submit {
+            try {
+                TimeUnit.MILLISECONDS.sleep(2000L)
+            } finally {
+                aqs!!.up()
+            }
+        }
+        assertFalse(aqs!!.waitFor(100))
     }
 
     @Test

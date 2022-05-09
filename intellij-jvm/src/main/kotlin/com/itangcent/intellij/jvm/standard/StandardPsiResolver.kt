@@ -5,6 +5,7 @@ import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
 import com.itangcent.common.utils.safeComputeIfAbsent
+import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.*
 import com.itangcent.intellij.logger.Logger
 import com.siyeh.ig.psiutils.ClassUtils
@@ -52,6 +53,9 @@ open class StandardPsiResolver : PsiResolver {
     @Inject
     protected val standardEnumFieldResolver: StandardEnumFieldResolver? = null
 
+    @Inject
+    protected lateinit var actionContext: ActionContext
+
     private val nameToClassCache: java.util.HashMap<String, PsiClass?> = LinkedHashMap()
 
     private val nameToTypeCache: java.util.HashMap<String, PsiType?> = LinkedHashMap()
@@ -89,7 +93,7 @@ open class StandardPsiResolver : PsiResolver {
         var cls: PsiClass? = null
         try {
             LOG.info("find class:$fqClassName")
-            cls = ClassUtils.findClass(fqClassName, context)
+            cls = actionContext.callInReadUI { ClassUtils.findClass(fqClassName, context) }
         } catch (e: Exception) {
         }
 
@@ -99,7 +103,12 @@ open class StandardPsiResolver : PsiResolver {
             for (defaultPackage in defaultPackages()) {
                 try {
                     LOG.info("find class:$defaultPackage${fqClassName.capitalize()}")
-                    cls = ClassUtils.findClass("$defaultPackage${fqClassName.capitalize()}", context)
+                    cls = actionContext.callInReadUI {
+                        ClassUtils.findClass(
+                            "$defaultPackage${fqClassName.capitalize()}",
+                            context
+                        )
+                    }
                     if (cls != null) {
                         break
                     }
@@ -122,7 +131,9 @@ open class StandardPsiResolver : PsiResolver {
     }
 
     protected open fun resolveClassFromImport(psiClass: PsiClass, clsName: String): PsiClass? {
-        return resolveReferenceFromImport(psiClass, clsName) as? PsiClass
+        return actionContext.callInReadUI {
+            resolveReferenceFromImport(psiClass, clsName) as? PsiClass
+        }
     }
 
     protected open fun resolveReferenceFromImport(psiClass: PsiClass, clsName: String): Any? {

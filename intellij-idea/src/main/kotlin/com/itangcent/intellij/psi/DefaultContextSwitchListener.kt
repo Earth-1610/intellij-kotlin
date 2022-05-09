@@ -1,11 +1,14 @@
 package com.itangcent.intellij.psi
 
+import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.itangcent.common.utils.safeComputeIfAbsent
+import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.context.ThreadFlag
 
 @Singleton
 open class DefaultContextSwitchListener : ContextSwitchListener {
@@ -17,13 +20,27 @@ open class DefaultContextSwitchListener : ContextSwitchListener {
 
     protected var moduleCache: MutableMap<String, Module> = LinkedHashMap()
 
+    @Inject
+    private lateinit var actionContext: ActionContext
+
     override fun switchTo(psiElement: PsiElement) {
         if (context == psiElement) {
             return
         }
 
-        context = psiElement
+        synchronized(this) {
+            context = psiElement
+            if (ActionContext.getFlag() != ThreadFlag.ASYNC.value) {
+                doSwitchTo(psiElement)
+            } else {
+                val boundary = actionContext.createBoundary()
+                actionContext.runInReadUI { doSwitchTo(psiElement) }
+                boundary.waitComplete()
+            }
+        }
+    }
 
+    private fun doSwitchTo(psiElement: PsiElement) {
         val containingFile = when (psiElement) {
             is PsiFile -> psiElement
             else -> psiElement.containingFile
@@ -35,9 +52,9 @@ open class DefaultContextSwitchListener : ContextSwitchListener {
         }
 
         if (nextModule != null && module != nextModule) {
-            synchronized(this) {
-                if (module != nextModule) {
-                    module = nextModule
+            if (module != nextModule) {
+                module = nextModule
+                actionContext.runAsync {
                     moduleChangeEvent?.invoke(nextModule)
                 }
             }

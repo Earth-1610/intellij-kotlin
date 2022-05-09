@@ -96,7 +96,7 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightCodeInsightFixtureT
     override fun tearDown() {
         try {
             actionContext.waitComplete()
-            actionContext.stop(true)
+            actionContext.stop()
 
             super.tearDown()
         } finally {

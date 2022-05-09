@@ -16,7 +16,6 @@ interface CountLatch {
     @Throws(InterruptedException::class)
     fun waitFor(msTimeout: Long): Boolean
 
-
     /**
      * acquire
      */
