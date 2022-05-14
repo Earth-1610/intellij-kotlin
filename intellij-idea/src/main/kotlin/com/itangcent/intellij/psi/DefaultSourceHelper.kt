@@ -31,6 +31,7 @@ import com.intellij.psi.StubBasedPsiElement
 import com.intellij.psi.impl.compiled.ClsClassImpl
 import com.intellij.psi.impl.java.stubs.impl.PsiClassStubImpl
 import com.intellij.util.containers.stream
+import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.SourceHelper
 import java.io.File
 import java.util.*
@@ -99,8 +100,10 @@ open class DefaultSourceHelper : SourceHelper {
 
     protected open fun isLocalClass(psiClass: PsiClass): Boolean {
         if (psiClass is StubBasedPsiElement<*>) {
-            val stub = psiClass.stub
-            return stub is PsiClassStubImpl<*> && stub.isLocalClassInner
+            return ActionContext.getContext()?.callInReadUI {
+                val stub = psiClass.stub
+                stub is PsiClassStubImpl<*> && stub.isLocalClassInner
+            } ?: false
         }
         return false
     }

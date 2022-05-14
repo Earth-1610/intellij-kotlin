@@ -63,11 +63,14 @@ class PipedProcess : Process() {
 
     fun setExitValue(exitValue: Int) {
         this.exitValueHolder.success(exitValue)
+        destroy()
     }
 
     @Throws(InterruptedException::class)
     override fun waitFor(): Int {
-        return exitValueHolder.value() ?: 0
+        val ret = exitValueHolder.value() ?: 0
+        LOG.info("PipedProcess exit for $ret")
+        return ret
     }
 
     override fun exitValue(): Int {
@@ -83,5 +86,11 @@ class PipedProcess : Process() {
             this.outForInputStream,
             this.outputStream
         )
+    }
+
+    companion object {
+
+        //background idea log
+        private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(PipedProcess::class.java)
     }
 }

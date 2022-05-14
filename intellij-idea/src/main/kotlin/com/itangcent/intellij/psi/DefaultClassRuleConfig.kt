@@ -64,7 +64,7 @@ open class DefaultClassRuleConfig : ClassRuleConfig {
     }
 
     override fun maxDeep(): Int {
-        return configReader?.first("max.deep")?.toIntOrNull() ?: 6
+        return configReader?.first("max.deep")?.toIntOrNull() ?: 7
     }
 
     override fun maxElements(): Int {

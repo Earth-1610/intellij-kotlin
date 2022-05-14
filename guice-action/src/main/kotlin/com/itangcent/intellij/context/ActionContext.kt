@@ -16,7 +16,6 @@ import com.itangcent.common.exception.ProcessCanceledException
 import com.itangcent.common.logger.traceError
 import com.itangcent.common.spi.SpiUtils
 import com.itangcent.common.utils.IDUtils
-import com.itangcent.common.utils.ThreadPoolUtils
 import com.itangcent.intellij.CustomInfo
 import com.itangcent.intellij.constant.EventKey
 import com.itangcent.intellij.extend.guice.KotlinModule
@@ -24,14 +23,16 @@ import com.itangcent.intellij.extend.guice.instance
 import com.itangcent.intellij.extend.guice.singleton
 import com.itangcent.intellij.logger.Logger
 import org.aopalliance.intercept.MethodInterceptor
+import org.apache.commons.lang3.concurrent.BasicThreadFactory
 import java.awt.EventQueue
 import java.lang.reflect.Method
 import java.util.*
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import java.util.concurrent.Future
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.collections.ArrayList
 import kotlin.concurrent.withLock
 import kotlin.reflect.KClass
 
@@ -48,15 +49,20 @@ class ActionContext {
     private val lock = ReentrantReadWriteLock()
 
     @Volatile
-    private var stopped = false
+    private var lastActive = System.currentTimeMillis()
 
-    @Volatile
-    private var locked = false
+    private val activeThreadCnt = Array(ThreadFlag.values().size) { AtomicInteger() }
 
-    private var countLatch: CountLatch = AQSCountLatch()
+    internal lateinit var mainBoundary: InnerBoundary
+
+    private lateinit var rootContextStatus: ContextStatus
 
     private var executorService: ExecutorService =
-        ThreadPoolUtils.createPool(4, 32, ActionContext::class.java)
+        Executors.newFixedThreadPool(
+            32,
+            BasicThreadFactory.Builder().daemon(true)
+                .namingPattern("ActionContext-%d").build()
+        )
 
     //Use guice to manage the current context instance lifecycle and dependencies
     private var injector: Injector
@@ -66,6 +72,12 @@ class ActionContext {
         appendModules.addAll(modules)
         appendModules.add(ContextModule(this))
         injector = Guice.createInjector(appendModules)!!
+        initContextStatus()
+    }
+
+    private fun initContextStatus() {
+        this.rootContextStatus = ContextStatus(this, 0)
+        localContextStatus.set(rootContextStatus)
     }
 
     class ContextModule(private var context: ActionContext) : KotlinModule() {
@@ -75,9 +87,10 @@ class ActionContext {
     }
 
     //region cache--------------------------------------------------------------
+
     fun cache(name: String, bean: Any?) {
         LOG.info("cache [$name]")
-        checkStatus()
+        innerCheckStatus()
         lock.writeLock().withLock {
             cache[cachePrefix + name] = bean
             LOG.info("cache [$name] success")
@@ -86,30 +99,44 @@ class ActionContext {
 
     @Suppress("UNCHECKED_CAST")
     fun <T> getCache(name: String): T? {
-        checkStatus()
+        innerCheckStatus()
         return lock.readLock().withLock { cache[cachePrefix + name] as T? }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun <T> deleteCache(name: String): T? {
+        innerCheckStatus()
+        lock.writeLock().withLock {
+            return cache.remove(cachePrefix + name) as T?
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
     fun <T> cacheOrCompute(name: String, beanSupplier: () -> T?): T? {
         LOG.info("compute cache [$name]")
-        checkStatus()
+        innerCheckStatus()
         lock.readLock().withLock {
             if (cache.containsKey(cachePrefix + name)) {
                 return cache[cachePrefix + name] as T?
             }
         }
         val bean = beanSupplier()
-        lock.writeLock().withLock { cache.put(cachePrefix + name, bean) }
+        lock.writeLock().withLock {
+            if (cache.containsKey(cachePrefix + name)) {
+                return cache[cachePrefix + name] as T?
+            }
+            cache.put(cachePrefix + name, bean)
+        }
         return bean
     }
+
     //endregion cache--------------------------------------------------------------
 
     //region event--------------------------------------------------------------
     @Suppress("UNCHECKED_CAST")
     fun on(name: String, event: ((ActionContext) -> Unit)) {
         LOG.info("register event [$name]")
-        checkStatus()
+        innerCheckStatus()
         lock.writeLock().withLock {
             val key = eventPrefix + name
             val oldEvent: ((ActionContext) -> Unit)? = cache[key] as ((ActionContext) -> Unit)?
@@ -117,8 +144,18 @@ class ActionContext {
                 cache[key] = event
             } else {
                 val merge: ((ActionContext) -> Unit) = { actionContext ->
-                    oldEvent(actionContext)
-                    event(actionContext)
+                    var error: Throwable? = null
+                    try {
+                        oldEvent(actionContext)
+                    } catch (e: Exception) {
+                        error = e
+                    }
+                    try {
+                        event(actionContext)
+                    } catch (e: Exception) {
+                        error = e
+                    }
+                    error?.let { throw it }
                 }
                 cache[key] = merge
             }
@@ -138,102 +175,118 @@ class ActionContext {
 
     //region lock and run----------------------------------------------------------------
 
-    //lock current context
-    fun lock(): Boolean = lock.writeLock().withLock {
-        return if (locked) {
-            false
-        } else {
-            locked = true
-            setContext(this)
-            true
-        }
-    }
-
     fun hold() {
-        checkStatus()
-        countLatch.down()
+        innerCheckStatus()
+        this.mainBoundary.down()
     }
 
     fun unHold() {
-        countLatch.up()
+        this.mainBoundary.up()
     }
 
     fun runAsync(runnable: Runnable): Future<*>? {
-        checkStatus()
-        countLatch.down()
+        innerCheckStatus()
+        val contextStatus = getContextStatus()
+        val boundaries = contextStatus.boundaries()
+        boundaries?.down()
+        activeThreadCnt[ThreadFlag.ASYNC.ordinal].getAndIncrement()
         return executorService.submit {
             try {
-                setContext(this, 0)
+                innerCheckStatus()
+                setContext(contextStatus, ThreadFlag.ASYNC)
                 runnable.run()
+            } catch (e: ProcessCanceledException) {
             } catch (e: Exception) {
                 this.instance(Logger::class).traceError("error in Async", e)
             } finally {
+                boundaries?.up()
                 releaseContext()
-                countLatch.up()
+                activeThreadCnt[ThreadFlag.ASYNC.ordinal].getAndDecrement()
             }
         }
     }
 
     fun runAsync(runnable: () -> Unit): Future<*>? {
-        checkStatus()
-        countLatch.down()
+        innerCheckStatus()
+        val contextStatus = getContextStatus()
+        val boundaries = contextStatus.boundaries()
+        boundaries?.down()
+        activeThreadCnt[ThreadFlag.ASYNC.ordinal]!!.getAndIncrement()
         return executorService.submit {
             try {
-                setContext(this, 0)
+                innerCheckStatus()
+                setContext(contextStatus, ThreadFlag.ASYNC)
                 runnable()
+            } catch (e: ProcessCanceledException) {
             } catch (e: Exception) {
                 this.instance(Logger::class).traceError("error in Async", e)
             } finally {
+                boundaries?.up()
                 releaseContext()
-                countLatch.up()
+                activeThreadCnt[ThreadFlag.ASYNC.ordinal].getAndDecrement()
             }
         }
     }
 
     fun <T> callAsync(callable: () -> T): Future<T>? {
-        checkStatus()
-        countLatch.down()
-        val actionContext = this
+        innerCheckStatus()
+        val contextStatus = getContextStatus()
+        val boundaries = contextStatus.boundaries()
+        boundaries?.down()
+        activeThreadCnt[ThreadFlag.ASYNC.ordinal]!!.getAndIncrement()
         return executorService.submit(Callable<T> {
             try {
-                setContext(actionContext, 0)
+                innerCheckStatus()
+                setContext(contextStatus, ThreadFlag.ASYNC)
                 return@Callable callable()
+            } catch (e: ProcessCanceledException) {
+                return@Callable null
             } finally {
+                boundaries?.up()
                 releaseContext()
-                countLatch.up()
+                activeThreadCnt[ThreadFlag.ASYNC.ordinal].getAndDecrement()
             }
         })
     }
 
     fun runInSwingUI(runnable: () -> Unit) {
-        checkStatus()
+        innerCheckStatus()
         when {
-            getFlag() == swingThreadFlag -> runnable()
+            getFlag() == ThreadFlag.SWING.value -> runnable()
             EventQueue.isDispatchThread() -> {
+                val contextStatus = getContextStatus()
                 setContext(
-                    this,
-                    swingThreadFlag
+                    contextStatus,
+                    ThreadFlag.SWING
                 )
+                activeThreadCnt[ThreadFlag.SWING.ordinal]!!.getAndIncrement()
                 try {
                     runnable()
                 } finally {
                     releaseContext()
+                    activeThreadCnt[ThreadFlag.SWING.ordinal].getAndDecrement()
                 }
             }
             else -> {
-                countLatch.down()
+                val contextStatus = getContextStatus()
+                val boundaries = contextStatus.boundaries()
+                boundaries?.down()
                 EventQueue.invokeLater {
                     try {
+                        activeThreadCnt[ThreadFlag.SWING.ordinal]!!.getAndIncrement()
+                        innerCheckStatus()
                         setContext(
-                            this,
-                            swingThreadFlag
+                            contextStatus,
+                            ThreadFlag.SWING
                         )
                         runnable()
+                    } catch (e: ProcessCanceledException) {
                     } catch (e: Exception) {
                         this.instance(Logger::class).traceError("error in SwingUI", e)
                     } finally {
+                        boundaries?.up()
                         releaseContext()
-                        countLatch.up()
+                        activeThreadCnt[ThreadFlag.SWING.ordinal].getAndDecrement()
                     }
                 }
             }
@@ -241,33 +294,45 @@ class ActionContext {
     }
 
     fun <T> callInSwingUI(callable: () -> T?): T? {
-        checkStatus()
+        innerCheckStatus()
         when {
-            getFlag() == swingThreadFlag -> return callable()
+            getFlag() == ThreadFlag.SWING.value -> return callable()
             EventQueue.isDispatchThread() -> {
+                val contextStatus = getContextStatus()
                 try {
+                    activeThreadCnt[ThreadFlag.SWING.ordinal]!!.getAndIncrement()
                     setContext(
-                        this,
-                        swingThreadFlag
+                        contextStatus,
+                        ThreadFlag.SWING
                     )
                     return callable()
                 } finally {
                     releaseContext()
+                    activeThreadCnt[ThreadFlag.SWING.ordinal].getAndDecrement()
                 }
             }
             else -> {
-                countLatch.down()
+                val contextStatus = getContextStatus()
+                val boundaries = contextStatus.boundaries()
+                boundaries?.down()
                 val valueHolder: ValueHolder<T> = ValueHolder()
                 EventQueue.invokeLater {
                     try {
+                        activeThreadCnt[ThreadFlag.SWING.ordinal]!!.getAndIncrement()
                         setContext(
-                            this,
-                            swingThreadFlag
+                            contextStatus,
+                            ThreadFlag.SWING
                         )
-                        valueHolder.compute { callable() }
+                        valueHolder.compute {
+                            innerCheckStatus()
+                            callable()
+                        }
+                    } catch (e: Throwable) {
+                        valueHolder.failed(e)
                     } finally {
+                        boundaries?.up()
                         releaseContext()
-                        countLatch.up()
+                        activeThreadCnt[ThreadFlag.SWING.ordinal].getAndDecrement()
                     }
                 }
                 return valueHolder.value()
@@ -276,55 +341,69 @@ class ActionContext {
     }
 
     fun runInWriteUI(runnable: () -> Unit) {
-        checkStatus()
-        if (getFlag() == writeThreadFlag) {
+        innerCheckStatus()
+        if (getFlag() == ThreadFlag.WRITE.value) {
             runnable()
         } else {
             val project = this.instance(Project::class)
-            countLatch.down()
+            val contextStatus = getContextStatus()
+            val boundaries = contextStatus.boundaries()
+            boundaries?.down()
             try {
                 WriteCommandAction.runWriteCommandAction(project, "callInWriteUI",
                     SpiUtils.loadService(CustomInfo::class)?.pluginName() ?: "intellij-plugin", Runnable {
                         try {
+                            activeThreadCnt[ThreadFlag.WRITE.ordinal]!!.getAndIncrement()
+                            innerCheckStatus()
                             setContext(
-                                this,
-                                writeThreadFlag
+                                contextStatus,
+                                ThreadFlag.WRITE
                             )
                             runnable()
+                        } catch (e: ProcessCanceledException) {
                         } catch (e: Exception) {
                             this.instance(Logger::class).traceError("error in WriteUI", e)
                         } finally {
+                            boundaries?.up()
                             releaseContext()
-                            countLatch.up()
+                            activeThreadCnt[ThreadFlag.WRITE.ordinal].getAndDecrement()
                         }
                     })
             } catch (e: Throwable) {
                 releaseContext()
-                countLatch.up()
             }
         }
     }
 
     fun <T> callInWriteUI(callable: () -> T?): T? {
-        checkStatus()
-        if (getFlag() == writeThreadFlag) {
+        innerCheckStatus()
+        if (getFlag() == ThreadFlag.WRITE.value) {
             return callable()
         } else {
             val project = this.instance(Project::class)
-            countLatch.down()
+            val contextStatus = getContextStatus()
+            val boundaries = contextStatus.boundaries()
+            boundaries?.down()
             val valueHolder: ValueHolder<T> = ValueHolder()
             WriteCommandAction.runWriteCommandAction(project, "callInWriteUI",
                 SpiUtils.loadService(CustomInfo::class)?.pluginName() ?: "intellij-plugin",
                 Runnable {
                     try {
+                        activeThreadCnt[ThreadFlag.WRITE.ordinal]!!.getAndIncrement()
                         setContext(
-                            this,
-                            writeThreadFlag
+                            contextStatus,
+                            ThreadFlag.WRITE
                         )
-                        valueHolder.compute { callable() }
+                        valueHolder.compute {
+                            innerCheckStatus()
+                            callable()
+                        }
+                    } catch (e: Throwable) {
+                        valueHolder.failed(e)
                     } finally {
+                        boundaries?.up()
                         releaseContext()
-                        countLatch.up()
+                        activeThreadCnt[ThreadFlag.WRITE.ordinal].getAndDecrement()
                     }
                 })
             return valueHolder.value()
@@ -332,45 +411,60 @@ class ActionContext {
     }
 
     fun runInReadUI(runnable: () -> Unit) {
-        checkStatus()
-        if (getFlag() == readThreadFlag) {
+        innerCheckStatus()
+        if (getFlag() == ThreadFlag.READ.value) {
             runnable()
         } else {
-            countLatch.down()
+            val contextStatus = getContextStatus()
+            val boundaries = contextStatus.boundaries()
+            boundaries?.down()
             ReadAction.run<Throwable> {
                 try {
+                    activeThreadCnt[ThreadFlag.READ.ordinal]!!.getAndIncrement()
                     setContext(
-                        this,
-                        readThreadFlag
+                        contextStatus,
+                        ThreadFlag.READ
                     )
+                    innerCheckStatus()
                     runnable()
+                } catch (e: ProcessCanceledException) {
                 } catch (e: Exception) {
                     this.instance(Logger::class).traceError("error in ReadUI", e)
                 } finally {
+                    boundaries?.up()
                     releaseContext()
-                    countLatch.up()
+                    activeThreadCnt[ThreadFlag.READ.ordinal].getAndDecrement()
                 }
             }
         }
     }
 
     fun <T> callInReadUI(callable: () -> T?): T? {
-        checkStatus()
-        if (getFlag() == readThreadFlag) {
+        innerCheckStatus()
+        if (getFlag() == ThreadFlag.READ.value) {
             return callable()
         } else {
-            countLatch.down()
+            val contextStatus = getContextStatus()
+            val boundaries = contextStatus.boundaries()
+            boundaries?.down()
             val valueHolder: ValueHolder<T> = ValueHolder()
             ReadAction.run<Throwable> {
                 try {
+                    activeThreadCnt[ThreadFlag.READ.ordinal]!!.getAndIncrement()
                     setContext(
-                        this,
-                        readThreadFlag
+                        contextStatus,
+                        ThreadFlag.READ
                     )
-                    valueHolder.compute { callable() }
+                    valueHolder.compute {
+                        innerCheckStatus()
+                        callable()
+                    }
+                } catch (e: Throwable) {
+                    valueHolder.failed(e)
                 } finally {
+                    boundaries?.up()
                     releaseContext()
-                    countLatch.up()
+                    activeThreadCnt[ThreadFlag.READ.ordinal].getAndDecrement()
                 }
             }
             return valueHolder.value()
@@ -378,18 +472,20 @@ class ActionContext {
     }
 
     /**
-     * waits on the sub thread for the complete
+     * Blocks until all sub thread have completed terminated.
      * warning:call method as [waitComplete*] will clear ActionContext which bind on current Thread
      * @see ActionContext.waitCompleteAsync
      */
     fun waitComplete() {
-        checkStatus()
-        releaseContext()
-        this.countLatch.waitFor()
-        this.call(EventKey.ON_COMPLETED)
-        lock.writeLock().withLock {
-            this.cache.clear()
-            locked = false
+        try {
+            if (this.isStopped()) {
+                return
+            }
+            innerCheckStatus()
+            releaseContext()
+            this.mainBoundary.waitComplete()
+        } finally {
+            stop()
         }
     }
 
@@ -399,16 +495,22 @@ class ActionContext {
      * @see ActionContext.waitComplete
      */
     fun waitCompleteAsync() {
-        checkStatus()
+        innerCheckStatus()
         releaseContext()
         executorService.submit {
-            this.countLatch.waitFor()
-            this.call(EventKey.ON_COMPLETED)
-            lock.writeLock().withLock {
-                this.cache.clear()
-                locked = false
+            try {
+                this.mainBoundary.waitComplete()
+            } finally {
+                stop()
             }
         }
+    }
+
+    fun createBoundary(): Boundary {
+        val contextStatus = getContextStatus()
+        val boundary = BoundaryImpl(contextStatus)
+        contextStatus.addBoundary(boundary)
+        return boundary
     }
 
     //endregion lock and run----------------------------------------------------------------
@@ -457,23 +559,67 @@ class ActionContext {
      * force shutdown all thread if param shutdown is true
      * todo:call completed event?
      */
-    fun stop(shutdown: Boolean = true) {
+    fun stop() {
         Thread {
-            stopped = true
-            if (shutdown) {
-                executorService.shutdown()
+            try {
+                this.call(EventKey.ON_COMPLETED)
+                lock.writeLock().withLock {
+                    this.cache.clear()
+                }
+            } catch (e: Throwable) {
+                LOG.error("failed do on completed", e)
             }
+            this.mainBoundary.close()
+            executorService.shutdown()
         }.start()
     }
 
     fun isStopped(): Boolean {
-        return stopped
+        return this.mainBoundary.isClosed()
     }
 
     fun checkStatus() {
-        if (stopped) {
+        if (isStopped() || (localContextStatus.get()?.boundaries()?.isClosed() == true)) {
             throw ProcessCanceledException("ActionContext was stopped")
         }
+    }
+
+    private fun innerCheckStatus() {
+        checkStatus()
+        ping()
+    }
+
+    fun lastActive(): Long {
+        return this.lastActive
+    }
+
+    fun keepAlive(duration: Long) {
+        this.lastActive = kotlin.math.max(this.lastActive, System.currentTimeMillis() + duration)
+    }
+
+    fun keepAliveUtil(aliveTime: Long) {
+        this.lastActive = kotlin.math.max(this.lastActive, aliveTime)
+    }
+
+    fun ping() {
+        this.lastActive = kotlin.math.max(this.lastActive, System.currentTimeMillis())
+    }
+
+    @Deprecated(message = "replace with [rebirth]", replaceWith = ReplaceWith("rebirth()"))
+    fun suicide() {
+        rebirth()
+    }
+
+    fun rebirth() {
+        this.lastActive = System.currentTimeMillis()
+    }
+
+    fun activeThreads(): Int {
+        return activeThreadCnt.sumOf { it.get() }
+    }
+
+    fun activeThreads(threadFlag: ThreadFlag): Int {
+        return activeThreadCnt[threadFlag.ordinal].get()
     }
 
     private fun onStart() {
@@ -492,24 +638,20 @@ class ActionContext {
 
     companion object {
 
-        private const val readThreadFlag = 0b0001
-        private const val writeThreadFlag = 0b0010
-        private const val swingThreadFlag = 0b0100
-
         private const val cachePrefix = "cache_"
         private const val eventPrefix = "event_"
 
-        private var localContext: ThreadLocal<ThreadLocalContext> = ThreadLocal()
+        private var localContextStatus: ThreadLocal<ContextStatus> = ThreadLocal()
 
         /**
          * Get actionContext in the current thread
          */
         fun getContext(): ActionContext? {
-            return localContext.get()?.actionContext
+            return localContextStatus.get()?.actionContext
         }
 
         fun getFlag(): Int {
-            return localContext.get()?.flag ?: 0
+            return localContextStatus.get()?.flag ?: 0
         }
 
         fun builder(): ActionContextBuilder {
@@ -528,45 +670,29 @@ class ActionContext {
             defaultInjects.remove(inject)
         }
 
-        private fun setContext(actionContext: ActionContext) {
-            setContext(
-                actionContext,
-                getFlag()
-            )
+        private fun setContext(contextStatus: ContextStatus, flag: ThreadFlag) {
+            localContextStatus.set(createContextStatus(contextStatus, flag.value))
         }
 
-        private fun setContext(actionContext: ActionContext, flag: Int) {
-            val existContext = localContext.get()
-            when {
-                existContext == null -> localContext.set(
-                    ThreadLocalContext(
-                        actionContext,
-                        flag,
-                        1
-                    )
-                )
-                existContext.actionContext != actionContext -> {
-                    existContext.releaseCount()
-                    localContext.set(
-                        ThreadLocalContext(
-                            actionContext,
-                            flag,
-                            1
-                        )
-                    )
-                }
-                else -> existContext.addCount()
+        private fun createContextStatus(
+            contextStatus: ContextStatus,
+            flag: Int
+        ): ContextStatus {
+            val existContext = localContextStatus.get()
+            val subContextStatus: ContextStatus = if (existContext == contextStatus) {
+                //in one thread
+                ContextStatus(contextStatus.actionContext, flag, existContext)
+            } else {
+                ContextStatus(contextStatus.actionContext, flag)
             }
+            contextStatus.boundaries()?.let {
+                subContextStatus.addBoundary(it)
+            }
+            return subContextStatus
         }
 
         private fun releaseContext() {
-
-            val existContext = localContext.get()
-            if (existContext != null) {
-                if (existContext.releaseCount() == 0) {
-                    localContext.remove()
-                }
-            }
+            localContextStatus.get()?.release()
         }
 
         /**
@@ -581,16 +707,64 @@ class ActionContext {
             return ThreadLocalContextBeanProxies.instance(clazz)
         }
 
-        class ThreadLocalContext(val actionContext: ActionContext, val flag: Int, var count: Int) {
-            fun addCount() {
-                count++
+        class ContextStatus(
+            val actionContext: ActionContext,
+            val flag: Int,
+            var parent: ContextStatus? = null
+        ) {
+            private var boundaries: LinkedList<InnerBoundary>? = null
+            private var unionBoundary: InnerBoundary? = null
+
+            fun release() {
+                if (parent == null) {
+                    localContextStatus.remove()
+                } else {
+                    localContextStatus.set(parent)
+                }
             }
 
-            fun releaseCount(): Int {
-                return --count
+            fun boundaries(): InnerBoundary? {
+                var boundary = unionBoundary
+                if (boundary == null) {
+                    boundary = buildUnionBoundary()
+                    this.unionBoundary = boundary
+                }
+                return boundary!!
+            }
+
+            private fun buildUnionBoundary(): InnerBoundary? {
+                this.boundaries?.removeIf { it.removed() }
+                val bs = boundaries
+                return when {
+                    bs.isNullOrEmpty() -> {
+                        null
+                    }
+                    bs.size == 1 -> {
+                        bs.first
+                    }
+                    else -> InnerBoundaries(LinkedList(bs))
+                }
+            }
+
+            fun addBoundary(boundary: InnerBoundary) {
+                if (this.boundaries == null) {
+                    this.boundaries = LinkedList()
+                }
+                this.boundaries!!.add(boundary)
+                this.unionBoundary = null
+            }
+
+            fun removeBoundary(boundary: InnerBoundary) {
+                if (localContextStatus.get() == this) {
+                    this.boundaries!!.remove(boundary)
+                }
+                this.unionBoundary = null
             }
         }
+    }
 
+    private fun getContextStatus(): ContextStatus {
+        return localContextStatus.get() ?: rootContextStatus
     }
 
     /**
@@ -698,12 +872,17 @@ class ActionContext {
                 appendModules.add(ConfiguredModule(ArrayList(moduleActions)))
                 moduleActions.clear()
             }
+
             val actionContext = ActionContext(*appendModules.toTypedArray())
-            setContext(actionContext)
+            actionContext.mainBoundary = actionContext.createBoundary() as InnerBoundary
             contextActions.forEach { it(actionContext) }
             actionContext.runAsync {
                 actionContext.onStart()
             }
+
+            //register ActionContextMonitor
+            ActionContextMonitor.addActionContext(actionContext)
+
             return actionContext
         }
 
@@ -868,6 +1047,186 @@ class ActionContext {
         )
 
         fun bindConstant(callBack: (AnnotatedConstantBindingBuilder) -> Unit)
+    }
+}
+
+enum class ThreadFlag(val value: Int) {
+    ASYNC(0),
+    READ(1),
+    WRITE(2),
+    SWING(4);
+}
+
+interface Boundary {
+
+    fun count(): Int
+
+    fun close()
+
+    fun remove()
+
+    fun isClosed(): Boolean
+
+    fun waitComplete(autoRemove: Boolean = true)
+
+    fun waitComplete(msTimeout: Long, autoRemove: Boolean = true): Boolean
+}
+
+interface InnerBoundary : Boundary {
+
+    fun down()
+
+    fun up()
+
+    fun removed(): Boolean
+}
+
+class BoundaryImpl(private val root: ActionContext.Companion.ContextStatus) : InnerBoundary {
+
+    private var countLatch: CountLatch = AQSCountLatch()
+
+    private var cnt = AtomicInteger()
+
+    @Volatile
+    private var closed = false
+
+    @Volatile
+    private var removed = false
+
+    override fun down() {
+        if (closed) {
+            throw ProcessCanceledException("boundary closed")
+        }
+        countLatch.down()
+        cnt.getAndIncrement()
+    }
+
+    override fun up() {
+        countLatch.up()
+        cnt.getAndDecrement()
+    }
+
+    override fun removed(): Boolean {
+        return this.removed
+    }
+
+    override fun count(): Int {
+        return cnt.get()
+    }
+
+    override fun close() {
+        closed = true
+    }
+
+    override fun remove() {
+        this.removed = true
+        root.removeBoundary(this)
+    }
+
+    override fun isClosed(): Boolean {
+        return closed
+    }
+
+    /**
+     * waits on the sub thread for this Boundary
+     */
+    override fun waitComplete(autoRemove: Boolean) {
+        try {
+            if (ActionContext.getFlag() != 0) {
+                LOG.warn("don't waitComplete at ui thread!")
+                this.countLatch.waitFor(200)
+                return
+            }
+            this.countLatch.waitFor()
+        } finally {
+            if (autoRemove) {
+                this.remove()
+            }
+        }
+    }
+
+    override fun waitComplete(msTimeout: Long, autoRemove: Boolean): Boolean {
+        try {
+            if (ActionContext.getFlag() != 0) {
+                LOG.warn("don't waitComplete at ui thread!")
+                return false
+            }
+            return this.countLatch.waitFor(msTimeout)
+        } finally {
+            if (autoRemove) {
+                this.remove()
+            }
+        }
+    }
+}
+
+class InnerBoundaries(private var boundaries: List<InnerBoundary>) : InnerBoundary {
+
+    override fun down() {
+        var error: Throwable? = null
+        var index = 0
+        while (index < boundaries.size) {
+            try {
+                boundaries[index].down()
+                index++
+            } catch (e: Exception) {
+                error = e
+                break
+            }
+        }
+        if (error != null) {
+            //roll back
+            for (i in 0 until index) {
+                boundaries[i].up()
+            }
+            throw error
+        }
+    }
+
+    override fun up() {
+        boundaries.forEach { it.up() }
+    }
+
+    override fun removed(): Boolean {
+        return boundaries.all { it.removed() }
+    }
+
+    override fun count(): Int {
+        return boundaries.sumOf { it.count() }
+    }
+
+    override fun close() {
+        boundaries.forEach { it.close() }
+    }
+
+    override fun remove() {
+        boundaries.forEach { it.remove() }
+    }
+
+    override fun isClosed(): Boolean {
+        return boundaries.any { it.isClosed() }
+    }
+
+    override fun waitComplete(autoRemove: Boolean) {
+        boundaries.forEach {
+            it.waitComplete(autoRemove)
+        }
+    }
+
+    override fun waitComplete(msTimeout: Long, autoRemove: Boolean): Boolean {
+        val timeOut = System.currentTimeMillis() + msTimeout
+        for (boundary in boundaries) {
+            if (System.currentTimeMillis() > timeOut) {
+                if (autoRemove) {
+                    boundary.remove()
+                    continue
+                }
+            }
+            if (!boundary.waitComplete(msTimeout, autoRemove)) {
+                return false
+            }
+        }
+        return System.currentTimeMillis() < timeOut
     }
 }
 

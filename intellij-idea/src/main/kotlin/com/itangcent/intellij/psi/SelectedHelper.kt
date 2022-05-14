@@ -9,14 +9,12 @@ import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiClassOwner
 import com.intellij.psi.PsiDirectory
 import com.intellij.psi.PsiFile
-import com.itangcent.common.concurrent.AQSCountLatch
 import com.itangcent.common.logger.traceWarn
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.logger.Logger
 import com.itangcent.intellij.util.DirFilter
 import com.itangcent.intellij.util.FileFilter
 import com.itangcent.intellij.util.FileUtils
-import java.util.concurrent.TimeUnit
 
 object SelectedHelper {
 
@@ -25,8 +23,6 @@ object SelectedHelper {
         private var fileHandle: ((PsiFile) -> Unit)? = null
         private var dirFilter: DirFilter? = null
         private var classHandle: ((PsiClass) -> Unit)? = null
-        private var onCompleted: (() -> Unit)? = null
-        private var timeOut: Long? = null
         private var fileFilter: FileFilter = { true }
 
         private var contextSwitchListener: ContextSwitchListener? = ActionContext.getContext()
@@ -52,81 +48,62 @@ object SelectedHelper {
             return this
         }
 
-        fun onCompleted(onCompleted: () -> Unit): Builder {
-            this.onCompleted = onCompleted
-            return this
-        }
-
-        private val aqsCount = AQSCountLatch()
-
         private val actionContext = ActionContext.getContext()!!
 
         private val logger = actionContext.instance(Logger::class)
 
         public fun traversal() {
-            aqsCount.down()
-
-            actionContext.runAsync {
-                if (timeOut == null) {
-                    aqsCount.waitForUnsafe()
-                } else {
-                    aqsCount.waitForUnsafe(TimeUnit.MINUTES.toMillis(timeOut!!))
+            try {
+                val psiFile = actionContext.cacheOrCompute(CommonDataKeys.PSI_FILE.name) {
+                    actionContext.instance(DataContext::class).getData(CommonDataKeys.PSI_FILE)
                 }
-                onCompleted?.invoke()
+                if (psiFile != null) {
+                    if (fileFilter(psiFile)) {
+                        actionContext.runInReadUI {
+                            onFile(psiFile)
+                        }
+                    }
+                    return
+                }
+            } catch (e: Exception) {
+                logger.traceWarn("error handle class", e)
             }
 
-            actionContext.runInReadUI {
-                try {
-                    val psiFile = actionContext.cacheOrCompute(CommonDataKeys.PSI_FILE.name) {
-                        actionContext.instance(DataContext::class).getData(CommonDataKeys.PSI_FILE)
-                    }
-                    if (psiFile != null) {
-                        try {
-                            if (fileFilter(psiFile)) {
-                                aqsCount.down()
-                                onFile(psiFile)
-                            }
-                        } finally {
-                            aqsCount.up()
-                        }
-                        return@runInReadUI
-                    }
-                } catch (e: Exception) {
-                    logger.traceWarn("error handle class", e)
+            try {
+                val navigatable = actionContext.cacheOrCompute(CommonDataKeys.NAVIGATABLE.name) {
+                    actionContext.instance(DataContext::class).getData(CommonDataKeys.NAVIGATABLE)
                 }
-
-                try {
-                    val navigatable = actionContext.cacheOrCompute(CommonDataKeys.NAVIGATABLE.name) {
-                        actionContext.instance(DataContext::class).getData(CommonDataKeys.NAVIGATABLE)
-                    }
-                    if (navigatable != null) {
+                if (navigatable != null) {
+                    actionContext.runInReadUI {
                         onNavigatable(navigatable)
-                        return@runInReadUI
                     }
-                } catch (e: Exception) {
-                    logger.traceWarn("error handle navigatable", e)
+                    return
                 }
+            } catch (e: Exception) {
+                logger.traceWarn("error handle navigatable", e)
+            }
 
-                try {
-                    val navigatables = actionContext.cacheOrCompute(CommonDataKeys.NAVIGATABLE_ARRAY.name) {
-                        actionContext.instance(DataContext::class).getData(CommonDataKeys.NAVIGATABLE_ARRAY)
-                    }
-                    if (navigatables != null && navigatables.isNotEmpty()) {
-                        try {
-                            for (navigatable in navigatables) {
-                                aqsCount.down()
+            try {
+                val navigatables = actionContext.cacheOrCompute(CommonDataKeys.NAVIGATABLE_ARRAY.name) {
+                    actionContext.instance(DataContext::class).getData(CommonDataKeys.NAVIGATABLE_ARRAY)
+                }
+                if (navigatables != null && navigatables.isNotEmpty()) {
+                    val boundary = actionContext.createBoundary()
+                    try {
+                        for (navigatable in navigatables) {
+                            actionContext.runInReadUI {
                                 onNavigatable(navigatable)
                             }
-                        } finally {
-                            aqsCount.up()
+                            boundary.waitComplete(false)
+                            Thread.sleep(100)
                         }
-                        return@runInReadUI
+                    } finally {
+                        boundary.remove()
                     }
-                } catch (e: Exception) {
-                    logger.traceWarn("error handle navigatables", e)
+                    return
                 }
-
-                aqsCount.up()
+            } catch (e: Exception) {
+                logger.traceWarn("error handle navigatables", e)
             }
         }
 
@@ -144,64 +121,42 @@ object SelectedHelper {
                 is PsiDirectoryNode -> {
                     navigatable.element?.value?.let { onDirectory(it) }
                 }
-                else -> aqsCount.up()
             }
         }
 
         private fun onFile(psiFile: PsiFile) {
-            try {
-                contextSwitchListener?.switchTo(psiFile)
-                if (fileHandle != null) fileHandle!!(psiFile)
-                if (classHandle != null && psiFile is PsiClassOwner) {
-                    actionContext.runInReadUI {
-                        for (psiCls in psiFile.classes) {
-                            classHandle!!(psiCls)
-                        }
-                    }
+
+            contextSwitchListener?.switchTo(psiFile)
+            if (fileHandle != null) fileHandle!!(psiFile)
+            if (classHandle != null && psiFile is PsiClassOwner) {
+                for (psiCls in psiFile.classes) {
+                    classHandle!!(psiCls)
                 }
-            } finally {
-                aqsCount.up()
             }
         }
 
         private fun onClass(psiClass: PsiClass) {
-            try {
-                if (classHandle != null) classHandle!!(psiClass)
-                if (fileHandle != null) fileHandle!!(psiClass.containingFile)
-            } finally {
-                aqsCount.up()
-            }
+            if (classHandle != null) classHandle!!(psiClass)
+            if (fileHandle != null) fileHandle!!(psiClass.containingFile)
         }
 
         private fun onDirectory(psiDirectory: PsiDirectory) {
             if (dirFilter == null) {
-                try {
-                    actionContext.runInReadUI {
-                        contextSwitchListener?.switchTo(psiDirectory)
-                        FileUtils.traversal(psiDirectory, fileFilter, {
-                            aqsCount.down()
-                            onFile(it)
-                        })
+                actionContext.runInReadUI {
+                    contextSwitchListener?.switchTo(psiDirectory)
+                    FileUtils.traversal(psiDirectory, fileFilter) {
+                        onFile(it)
                     }
-                } finally {
-                    aqsCount.up()
                 }
             } else {
                 dirFilter!!(psiDirectory) {
                     if (it) {
                         actionContext.runInReadUI {
-                            try {
-                                contextSwitchListener?.switchTo(psiDirectory)
-                                FileUtils.traversal(psiDirectory, fileFilter, { file ->
-                                    aqsCount.down()
-                                    onFile(file)
-                                })
-                            } finally {
-                                aqsCount.up()
+                            contextSwitchListener?.switchTo(psiDirectory)
+                            FileUtils.traversal(psiDirectory, fileFilter) { file ->
+                                onFile(file)
                             }
                         }
-                    } else {
-                        aqsCount.up()
                     }
                 }
             }

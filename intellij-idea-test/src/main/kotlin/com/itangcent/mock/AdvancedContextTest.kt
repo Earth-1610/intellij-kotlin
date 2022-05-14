@@ -1,6 +1,7 @@
 package com.itangcent.mock
 
 import com.itangcent.common.spi.Setup
+import com.itangcent.common.utils.FileUtils
 import com.itangcent.intellij.config.AbstractConfigReader
 import com.itangcent.intellij.config.ConfigReader
 import com.itangcent.intellij.context.ActionContext
@@ -11,6 +12,7 @@ import com.itangcent.intellij.file.AbstractLocalFileRepository
 import com.itangcent.intellij.file.LocalFileRepository
 import com.itangcent.intellij.jvm.PsiClassHelper
 import com.itangcent.intellij.psi.DefaultPsiClassHelper
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
@@ -33,7 +35,7 @@ abstract class AdvancedContextTest : BaseContextTest() {
 
     override fun bind(builder: ActionContext.ActionContextBuilder) {
         super.bind(builder)
-        builder.bindInstance("plugin.name", "easy_api")
+        builder.bindInstance("plugin.name", "intellij-kotlin")
         builder.bind(LocalFileRepository::class) {
             it.toInstance(TempFileRepository())
         }
@@ -71,6 +73,11 @@ abstract class AdvancedContextTest : BaseContextTest() {
 
     protected val n = System.getProperty("line.separator")
     protected val s = File.separator
+
+    @AfterEach
+    fun clearFile() {
+        tempDir?.toFile()?.let { FileUtils.cleanDirectory(it) }
+    }
 
     companion object {
         @JvmStatic

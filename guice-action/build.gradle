@@ -67,6 +67,10 @@ compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
 }
 
+test {
+    useJUnitPlatform()
+}
+
 task javadocJar(type: Jar) {
     classifier = 'javadoc'
     from javadoc

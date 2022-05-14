@@ -101,19 +101,19 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     }
 
     override fun isNormalType(psiType: PsiType): Boolean {
-        return jvmClassHelper!!.isNormalType(classRuleConfig!!.tryConvert(psiType).canonicalText)
+        return jvmClassHelper.isNormalType(classRuleConfig!!.tryConvert(psiType).canonicalText)
     }
 
     override fun isNormalType(psiClass: PsiClass): Boolean {
-        return jvmClassHelper!!.isNormalType(classRuleConfig!!.tryConvert(psiClass).qualifiedName ?: return false)
+        return jvmClassHelper.isNormalType(classRuleConfig!!.tryConvert(psiClass).qualifiedName ?: return false)
     }
 
     override fun getDefaultValue(psiType: PsiType): Any? {
-        return jvmClassHelper!!.getDefaultValue(classRuleConfig!!.tryConvert(psiType).canonicalText)
+        return jvmClassHelper.getDefaultValue(classRuleConfig!!.tryConvert(psiType).canonicalText)
     }
 
     override fun getDefaultValue(psiClass: PsiClass): Any? {
-        return jvmClassHelper!!.getDefaultValue(classRuleConfig!!.tryConvert(psiClass).qualifiedName ?: return null)
+        return jvmClassHelper.getDefaultValue(classRuleConfig!!.tryConvert(psiClass).qualifiedName ?: return null)
     }
 
     override fun getJsonFieldName(psiField: PsiField): String {

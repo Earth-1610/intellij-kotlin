@@ -9,6 +9,7 @@ import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
 import com.itangcent.common.utils.getPropertyValue
 import com.itangcent.common.utils.safeComputeIfAbsent
+import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.ClassMateDataStorage
 import com.itangcent.intellij.jvm.JvmClassHelper
 import com.itangcent.intellij.jvm.duck.DuckType
@@ -58,29 +59,31 @@ open class StandardJvmClassHelper : JvmClassHelper {
     }
 
     override fun isInheritor(psiClass: PsiClass, vararg baseClass: String): Boolean {
+        return ActionContext.getContext()?.callInReadUI {
 
-        if (baseClass.contains(psiClass.qualifiedName)) {
-            return true
-        }
-
-        for (superCls in psiClass.supers) {
-            if (baseClass.contains(superCls.qualifiedName)) {
-                return true
+            if (baseClass.contains(psiClass.qualifiedName)) {
+                return@callInReadUI true
             }
-            for (inter in superCls.interfaces) {
-                if (baseClass.contains(inter.qualifiedName)) {
-                    return true
+
+            for (superCls in psiClass.supers) {
+                if (baseClass.contains(superCls.qualifiedName)) {
+                    return@callInReadUI true
+                }
+                for (inter in superCls.interfaces) {
+                    if (baseClass.contains(inter.qualifiedName)) {
+                        return@callInReadUI true
+                    }
                 }
             }
-        }
 
-        for (inter in psiClass.interfaces) {
-            if (baseClass.contains(inter.qualifiedName)) {
-                return true
+            for (inter in psiClass.interfaces) {
+                if (baseClass.contains(inter.qualifiedName)) {
+                    return@callInReadUI true
+                }
             }
-        }
 
-        return false
+            return@callInReadUI false
+        } ?: false
     }
 
     override fun isCollection(psiType: PsiType): Boolean {

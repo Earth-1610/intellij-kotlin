@@ -34,7 +34,7 @@ class KotlinAnnotationHelper : AnnotationHelper {
     private val duckTypeHelper: DuckTypeHelper? = null
 
     @Inject
-    protected val actionContext: ActionContext? = null
+    protected lateinit var actionContext: ActionContext
 
     @Inject
     private val psiExpressionResolver: PsiExpressionResolver? = null
@@ -53,33 +53,35 @@ class KotlinAnnotationHelper : AnnotationHelper {
         val ktAnnotation = findKtAnnotation(psiElement, annName)
         if (ktAnnotation != null) {
             val ret: LinkedHashMap<String, Any?> = LinkedHashMap()
-            var allValue = 0
-            ktAnnotation.valueArguments
-                .forEachIndexed { index, valueArgument ->
-                    val argumentName = getArgName(psiElement, annName, valueArgument, index)
-                    if (index == 0 && argumentName == "value") {
-                        allValue = 1
-                        ret[argumentName] =
-                            valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
-                    } else if (argumentName != null) {
-                        allValue = -1
-                        ret[argumentName] =
-                            valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
-                    } else if (allValue == 1) {
-                        ++allValue
-                        ret["value"] = arrayListOf(
-                            ret["value"],
-                            valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
-                        )
-                    } else if (allValue > 1) {
-                        (ret["value"] as ArrayList<Any?>).add(
-                            valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
-                        )
+            actionContext.callInReadUI {
+                var allValue = 0
+                ktAnnotation.valueArguments
+                    .forEachIndexed { index, valueArgument ->
+                        val argumentName = getArgName(psiElement, annName, valueArgument, index)
+                        if (index == 0 && argumentName == "value") {
+                            allValue = 1
+                            ret[argumentName] =
+                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
+                        } else if (argumentName != null) {
+                            allValue = -1
+                            ret[argumentName] =
+                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
+                        } else if (allValue == 1) {
+                            ++allValue
+                            ret["value"] = arrayListOf(
+                                ret["value"],
+                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
+                            )
+                        } else if (allValue > 1) {
+                            (ret["value"] as ArrayList<Any?>).add(
+                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
+                            )
+                        }
                     }
-                }
 //            annotationHelper.findAnnMap(psiElement, annName)?.forEach { k, v ->
 //                ret.putIfAbsent(k, v)
 //            }
+            }
             return ret
         }
 
@@ -97,7 +99,8 @@ class KotlinAnnotationHelper : AnnotationHelper {
     @Suppress("UNCHECKED_CAST")
     override fun findAttr(psiElement: PsiElement?, annName: String, vararg attrs: String): Any? {
         val ktAnnotation = findKtAnnotation(psiElement, annName)
-        if (ktAnnotation != null) {
+        if (ktAnnotation == null) return null
+        return actionContext.callInReadUI {
             if (attrs.contains("value")) {
                 var allValue = 0
                 var values: Any? = null
@@ -106,11 +109,12 @@ class KotlinAnnotationHelper : AnnotationHelper {
                         val argumentName = getArgName(psiElement, annName, valueArgument, index)
                         if (index == 0 && argumentName == "value") {
                             allValue = 1
-                            values = valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
+                            values =
+                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
                         } else if (argumentName != null) {
                             allValue = -1
                             if (attrs.contains(argumentName)) {
-                                return valueArgument.getArgumentExpression()
+                                return@callInReadUI valueArgument.getArgumentExpression()
                                     ?.let { psiExpressionResolver!!.process(it) }
                             }
                         } else if (allValue == 1) {
@@ -125,9 +129,9 @@ class KotlinAnnotationHelper : AnnotationHelper {
                             )
                         }
                     }
-                return values
+                return@callInReadUI values
             } else {
-                return ktAnnotation.valueArguments
+                return@callInReadUI ktAnnotation.valueArguments
                     .filterIndexed { index, valueArgument ->
                         getArgName(psiElement, annName, valueArgument, index)?.let { name ->
                             attrs.contains(name)
@@ -138,9 +142,6 @@ class KotlinAnnotationHelper : AnnotationHelper {
                     .firstOrNull()
             }
         }
-
-
-        return null
     }
 
     override fun findAttrAsString(psiElement: PsiElement?, annName: String): String? {
@@ -148,9 +149,9 @@ class KotlinAnnotationHelper : AnnotationHelper {
     }
 
     override fun findAttrAsString(psiElement: PsiElement?, annName: String, vararg attrs: String): String? {
-        val ktAnnotation = findKtAnnotation(psiElement, annName)
-        if (ktAnnotation != null) {
-            return ktAnnotation.valueArguments
+        val ktAnnotation = findKtAnnotation(psiElement, annName) ?: return null
+        return actionContext.callInReadUI {
+            ktAnnotation.valueArguments
                 .filterIndexed { index, valueArgument ->
                     getArgName(psiElement, annName, valueArgument, index)?.let { name ->
                         attrs.contains(name)
@@ -161,8 +162,6 @@ class KotlinAnnotationHelper : AnnotationHelper {
                 .mapNotNull { tinyAnnStr(it) }
                 .longest()
         }
-
-        return null
     }
 
     private fun getArgName(psiElement: PsiElement?, annName: String, valArg: ValueArgument?, index: Int): String? {
@@ -209,7 +208,7 @@ class KotlinAnnotationHelper : AnnotationHelper {
         if (psiElement is KtLightMember<*>) {
             val kotlinOrigin = psiElement.kotlinOrigin
             if (kotlinOrigin != null) {
-                return actionContext!!.callInReadUI {
+                return actionContext.callInReadUI {
                     return@callInReadUI kotlinOrigin.findAnnotation(fqNameHelper!!.of(annName))
                 }
             }
@@ -217,13 +216,13 @@ class KotlinAnnotationHelper : AnnotationHelper {
 
         if (psiElement is KtLightClassForSourceDeclaration) {
             val kotlinOrigin = psiElement.kotlinOrigin
-            return actionContext!!.callInReadUI {
+            return actionContext.callInReadUI {
                 return@callInReadUI kotlinOrigin.findAnnotation(fqNameHelper!!.of(annName))
             }
         }
 
         if (psiElement is KtDeclaration) {
-            return actionContext!!.callInReadUI {
+            return actionContext.callInReadUI {
                 return@callInReadUI psiElement.findAnnotation(fqNameHelper!!.of(annName))
             }
         }
