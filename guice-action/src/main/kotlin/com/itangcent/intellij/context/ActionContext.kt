@@ -570,6 +570,7 @@ class ActionContext {
                 LOG.error("failed do on completed", e)
             }
             this.mainBoundary.close()
+            this.rootContextStatus.flag = ThreadFlag.INVALID.value
             executorService.shutdown()
         }.start()
     }
@@ -647,11 +648,11 @@ class ActionContext {
          * Get actionContext in the current thread
          */
         fun getContext(): ActionContext? {
-            return localContextStatus.get()?.actionContext
+            return getLocalContextStatus()?.actionContext
         }
 
         fun getFlag(): Int {
-            return localContextStatus.get()?.flag ?: 0
+            return getLocalContextStatus()?.flag ?: 0
         }
 
         fun builder(): ActionContextBuilder {
@@ -678,7 +679,7 @@ class ActionContext {
             contextStatus: ContextStatus,
             flag: Int
         ): ContextStatus {
-            val existContext = localContextStatus.get()
+            val existContext = getLocalContextStatus()
             val subContextStatus: ContextStatus = if (existContext == contextStatus) {
                 //in one thread
                 ContextStatus(contextStatus.actionContext, flag, existContext)
@@ -692,7 +693,7 @@ class ActionContext {
         }
 
         private fun releaseContext() {
-            localContextStatus.get()?.release()
+            getLocalContextStatus()?.release()
         }
 
         /**
@@ -709,7 +710,7 @@ class ActionContext {
 
         class ContextStatus(
             val actionContext: ActionContext,
-            val flag: Int,
+            var flag: Int,
             var parent: ContextStatus? = null
         ) {
             private var boundaries: LinkedList<InnerBoundary>? = null
@@ -755,16 +756,30 @@ class ActionContext {
             }
 
             fun removeBoundary(boundary: InnerBoundary) {
-                if (localContextStatus.get() == this) {
+                if (getLocalContextStatus() == this) {
                     this.boundaries!!.remove(boundary)
                 }
                 this.unionBoundary = null
             }
         }
+
+        private fun getLocalContextStatus(): ContextStatus? {
+            val contextStatus = localContextStatus.get()
+            return when {
+                contextStatus == null -> {
+                    null
+                }
+                contextStatus.flag == ThreadFlag.INVALID.value -> {
+                    localContextStatus.remove()
+                    null
+                }
+                else -> contextStatus
+            }
+        }
     }
 
     private fun getContextStatus(): ContextStatus {
-        return localContextStatus.get() ?: rootContextStatus
+        return getLocalContextStatus() ?: rootContextStatus
     }
 
     /**
@@ -1054,7 +1069,8 @@ enum class ThreadFlag(val value: Int) {
     ASYNC(0),
     READ(1),
     WRITE(2),
-    SWING(4);
+    SWING(4),
+    INVALID(-1)
 }
 
 interface Boundary {
