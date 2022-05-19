@@ -193,22 +193,22 @@ class KVTest {
 
         //merge sub list
         assertEquals(
-            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2, 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to arrayListOf(1, 2))
                 .merge(mapOf(1 to 2, 3 to 3, 4 to arrayListOf(2, 3)))
         )
         assertEquals(
-            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2, 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to arrayListOf(1, 2))
                 .merge(mapOf(1 to 2, 3 to 3, 4 to listOf(2, 3)))
         )
         assertEquals(
-            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2, 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2))
                 .merge(mapOf(1 to 2, 3 to 3, 4 to arrayListOf(2, 3)))
         )
         assertEquals(
-            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2, 3)),
             hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2))
                 .merge(mapOf(1 to 2, 3 to 3, 4 to listOf(2, 3)))
         )

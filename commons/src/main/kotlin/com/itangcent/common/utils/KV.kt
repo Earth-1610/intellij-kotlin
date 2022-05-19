@@ -168,7 +168,7 @@ fun MutableMap<*, *>.merge(key: Any?, value: Any?): MutableMap<*, *> {
 fun MutableCollection<*>.merge(collection: Collection<*>): MutableCollection<*> {
     this as MutableCollection<Any?>
     for (ele in collection) {
-        if (ele.isOriginal()) {
+        if (ele.isOriginal() || this.contains(ele)) {
             continue
         }
         this.add(ele)
