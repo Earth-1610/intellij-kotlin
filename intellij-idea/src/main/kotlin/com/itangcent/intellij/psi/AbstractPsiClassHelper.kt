@@ -7,6 +7,7 @@ import com.intellij.psi.util.PsiUtil
 import com.itangcent.common.utils.*
 import com.itangcent.intellij.config.rule.RuleComputer
 import com.itangcent.intellij.config.rule.computer
+import com.itangcent.intellij.constant.RuleConstant
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.PostConstruct
 import com.itangcent.intellij.jvm.*
@@ -1118,11 +1119,11 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         }
 
         override fun blockResolve(className: String?): Boolean {
-            var maxDeep = classRuleConfig?.maxDeep() ?: 7
-            var maxElements = classRuleConfig?.maxElements() ?: 256
+            var maxDeep = classRuleConfig?.maxDeep() ?: RuleConstant.DEFAULT_MAX_DEEP
+            var maxElements = classRuleConfig?.maxElements() ?: RuleConstant.DEFAULT_MAX_ELEMENTS
             if (basePackage != null && className != null && className.startsWith(basePackage)) {
                 maxDeep += 2
-                maxElements += 128
+                maxElements += 256
             }
 
             if (deep > maxDeep) {

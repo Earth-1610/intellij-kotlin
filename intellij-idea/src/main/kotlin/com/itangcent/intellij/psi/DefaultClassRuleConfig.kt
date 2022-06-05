@@ -8,6 +8,7 @@ import com.intellij.psi.PsiType
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.config.ConfigReader
 import com.itangcent.intellij.config.rule.RuleComputer
+import com.itangcent.intellij.constant.RuleConstant
 import com.itangcent.intellij.jvm.DuckTypeHelper
 import com.itangcent.intellij.jvm.JvmClassHelper
 import com.itangcent.intellij.jvm.PsiResolver
@@ -64,10 +65,10 @@ open class DefaultClassRuleConfig : ClassRuleConfig {
     }
 
     override fun maxDeep(): Int {
-        return configReader?.first("max.deep")?.toIntOrNull() ?: 7
+        return configReader?.first("max.deep")?.toIntOrNull() ?: RuleConstant.DEFAULT_MAX_DEEP
     }
 
     override fun maxElements(): Int {
-        return configReader?.first("max.elements")?.toIntOrNull() ?: 256
+        return configReader?.first("max.elements")?.toIntOrNull() ?: RuleConstant.DEFAULT_MAX_ELEMENTS
     }
 }
