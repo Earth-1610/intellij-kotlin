@@ -6,11 +6,9 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiClass
-import com.intellij.psi.PsiDirectory
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiFile
+import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
+import com.itangcent.common.utils.cast
 import com.itangcent.intellij.context.ActionContext
 import org.apache.commons.lang.StringUtils
 import java.io.File
@@ -35,6 +33,7 @@ object ActionUtils {
         if (navigatable != null && navigatable is PsiDirectory) {//select dir
             return findCurrentPath(navigatable)
         }
+
         val navigatables = actionContext.cacheOrCompute(CommonDataKeys.NAVIGATABLE_ARRAY.name) {
             actionContext.callInReadUI {
                 actionContext.instance(DataContext::class).getData(CommonDataKeys.NAVIGATABLE_ARRAY)
@@ -60,12 +59,12 @@ object ActionUtils {
         return project.basePath
     }
 
-    fun findCurrentPath(psiFile: PsiFile): String? {
+    fun findCurrentPath(psiFile: PsiFile): String {
         val dir = ActionContext.getContext()!!.callInReadUI { psiFile.parent }
         return dir?.let { findCurrentPath(it) } + File.separator + psiFile.name
     }
 
-    fun findCurrentPath(psiDirectory: PsiDirectory): String? {
+    fun findCurrentPath(psiDirectory: PsiDirectory): String {
         var dirPath = psiDirectory.toString()
         if (dirPath.contains(':')) {
             dirPath = StringUtils.substringAfter(dirPath, ":")
@@ -74,6 +73,31 @@ object ActionUtils {
     }
 
     fun findCurrentClass(): PsiClass? {
+        findContextOfType<PsiClass>()?.let { return it }
+        val actionContext = ActionContext.getContext()!!
+        return actionContext.cacheOrCompute(CommonDataKeys.PSI_FILE.name) {
+            actionContext.callInReadUI { actionContext.instance(DataContext::class).getData(CommonDataKeys.PSI_FILE) }
+        }.cast(PsiClassOwner::class)?.classes?.firstOrNull()
+    }
+
+    fun findCurrentMethod(): PsiMethod? {
+        val actionContext = ActionContext.getContext()!!
+        actionContext.cacheOrCompute(CommonDataKeys.PSI_ELEMENT.name) {
+            actionContext.callInReadUI {
+                actionContext.instance(DataContext::class).getData(CommonDataKeys.PSI_ELEMENT)
+            }
+        }?.let { actionContext.callInReadUI {PsiTreeUtil.getContextOfType<PsiElement>(it, PsiMethod::class.java)} }
+            .cast(PsiMethod::class)
+            ?.let { return it }
+
+        return findContextOfType()
+    }
+
+    inline fun <reified T : PsiElement> findContextOfType(): T? {
+        return findContextOfType(T::class.java)
+    }
+
+    fun <T : PsiElement> findContextOfType(cls: Class<T>): T? {
         val actionContext = ActionContext.getContext()!!
         val editor = actionContext.cacheOrCompute(CommonDataKeys.EDITOR.name) {
             actionContext.callInReadUI { actionContext.instance(DataContext::class).getData(CommonDataKeys.EDITOR) }
@@ -81,22 +105,14 @@ object ActionUtils {
         val psiFile = actionContext.cacheOrCompute(CommonDataKeys.PSI_FILE.name) {
             actionContext.callInReadUI { actionContext.instance(DataContext::class).getData(CommonDataKeys.PSI_FILE) }
         } ?: return null
-        var referenceAt = psiFile.findElementAt(editor.caretModel.offset)
-        var cls: PsiClass? = null
+        val referenceAt = actionContext.callInReadUI { psiFile.findElementAt(editor.caretModel.offset) } ?: return null
         try {
-            cls = PsiTreeUtil.getContextOfType<PsiElement>(referenceAt, PsiClass::class.java) as PsiClass?
+            return actionContext.callInReadUI { PsiTreeUtil.getContextOfType(referenceAt, cls) }
         } catch (e: Exception) {
             //ignore
         }
-        if (cls == null) {
-            val document = editor.document
-            referenceAt = psiFile.findElementAt(DocumentUtils.getInsertIndex(document))
-            try {
-                cls = PsiTreeUtil.getContextOfType<PsiElement>(referenceAt, PsiClass::class.java) as PsiClass?
-            } catch (e: Exception) {
-            }
-        }
-        return cls
+        return null
+
     }
 
     fun format(anActionEvent: AnActionEvent) {
