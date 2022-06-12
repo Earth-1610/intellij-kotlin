@@ -231,9 +231,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         resolveContext: ResolveContext,
         kv: KV<String, Any?>
     ): Boolean {
-        if (fieldOrMethod is ExplicitField &&
-            ruleComputer.computer(ClassRuleKeys.FIELD_IGNORE, fieldOrMethod) == true
-        ) {
+        if (ruleComputer.computer(ClassRuleKeys.FIELD_IGNORE, fieldOrMethod) == true) {
             return false
         }
 
