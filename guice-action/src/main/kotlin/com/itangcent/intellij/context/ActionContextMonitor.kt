@@ -45,7 +45,7 @@ object ActionContextMonitor {
         }
 
         fun checkContext() {
-            LOG.info("check context $actionContext")
+            LOG.info("Health check heartbeat $actionContext")
             val inactive = System.currentTimeMillis() - actionContext.lastActive()
             if (inactive > MAX_INACTIVE && actionContext.activeThreads(ThreadFlag.SWING) == 0) {
                 LOG.warn("action was inactive for $inactive ms.")

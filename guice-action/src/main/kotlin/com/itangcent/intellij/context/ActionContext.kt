@@ -16,6 +16,7 @@ import com.itangcent.common.exception.ProcessCanceledException
 import com.itangcent.common.logger.traceError
 import com.itangcent.common.spi.SpiUtils
 import com.itangcent.common.utils.IDUtils
+import com.itangcent.common.utils.safe
 import com.itangcent.intellij.CustomInfo
 import com.itangcent.intellij.constant.EventKey
 import com.itangcent.intellij.extend.guice.KotlinModule
@@ -562,16 +563,17 @@ class ActionContext {
     fun stop() {
         Thread {
             try {
-                this.call(EventKey.ON_COMPLETED)
-                lock.writeLock().withLock {
-                    this.cache.clear()
+                safe { this.call(EventKey.ON_COMPLETED) }
+                safe {
+                    lock.writeLock().withLock {
+                        this.cache.clear()
+                    }
                 }
-            } catch (e: Throwable) {
-                LOG.error("failed do on completed", e)
+                safe { this.mainBoundary.close() }
+                this.rootContextStatus.flag = ThreadFlag.INVALID.value
+            } finally {
+                executorService.shutdown()
             }
-            this.mainBoundary.close()
-            this.rootContextStatus.flag = ThreadFlag.INVALID.value
-            executorService.shutdown()
         }.start()
     }
 
