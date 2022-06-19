@@ -338,6 +338,14 @@ open class StandardPsiResolver : PsiResolver {
             })
         }
     }
+
+    override fun getChildren(psiElement: PsiElement): Array<PsiElement> {
+        return psiElement.children
+    }
+
+    override fun getReturnType(psiMethod: PsiMethod): PsiType? {
+        return psiMethod.returnType
+    }
 }
 
 //background idea log
