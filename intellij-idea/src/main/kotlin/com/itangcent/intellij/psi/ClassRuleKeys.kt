@@ -32,6 +32,12 @@ object ClassRuleKeys {
             BooleanRuleMode.ANY
         )
 
+    val ENUM_USE_CUSTOM: RuleKey<String> =
+        SimpleRuleKey(
+            "enum.use.custom",
+            StringRuleMode.SINGLE
+        )
+
     val ENUM_USE_NAME: RuleKey<Boolean> =
         SimpleRuleKey(
             "enum.use.name",

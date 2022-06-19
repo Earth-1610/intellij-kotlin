@@ -767,7 +767,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             val enumConstants = parseEnumConstant(cls)
 
             var valProperty = property.trimToNull() ?: defaultPropertyName
-            if (valProperty.maybeMethodPropertyName()) {
+            if (valProperty.maybeGetterMethodPropertyName()) {
                 val candidateProperty = valProperty.getterPropertyName()
                 if (valProperty != candidateProperty) {
                     val allFields = jvmClassHelper.getAllFields(cls)
@@ -784,18 +784,19 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             }
 
             if (options.isEmpty() && property.isNullOrBlank()) {
-                if (ruleComputer.computer(ClassRuleKeys.ENUM_USE_ORDINAL, context) == true) {
+                val customFieldName = ruleComputer.computer(ClassRuleKeys.ENUM_USE_CUSTOM, cls)
+                if (!customFieldName.isNullOrBlank()) {
+                    findConstantsByProperty(enumConstants, customFieldName, options)
+                } else if (ruleComputer.computer(ClassRuleKeys.ENUM_USE_ORDINAL, cls) == true) {
                     findConstantsByProperty(enumConstants, "ordinal()", options)
                     valueTypeHandle?.let { it(duckTypeHelper!!.resolve("java.lang.Integer", context)!!) }
-                } else if (ruleComputer.computer(ClassRuleKeys.ENUM_USE_NAME, context) != false) {
+                } else if (ruleComputer.computer(ClassRuleKeys.ENUM_USE_NAME, cls) != false) {
                     findConstantsByProperty(enumConstants, "name()", options)
                     valueTypeHandle?.let { it(duckTypeHelper!!.resolve("java.lang.String", context)!!) }
                 }
             }
-
         } else {
             val constants = parseStaticFields(cls)
-
             if (property.notNullOrBlank()) {
                 for (constant in constants) {
                     val name = constant["name"] as String
