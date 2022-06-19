@@ -1,8 +1,8 @@
 package com.itangcent.intellij.jvm.element
 
 import com.intellij.psi.PsiMethod
-import com.itangcent.common.utils.mapToTypedArray
 import com.itangcent.intellij.jvm.duck.DuckType
+import com.itangcent.intellij.jvm.getResolvedReturnType
 
 interface ExplicitMethod : DuckExplicitElement<PsiMethod> {
 
@@ -38,7 +38,7 @@ class ExplicitMethodWithGenericInfo(
 ) : ExplicitElementWithGenericInfo<PsiMethod>(containClass), ExplicitMethod {
 
     override fun getReturnType(): DuckType? {
-        val returnType = psiMethod.returnType ?: return null
+        val returnType = psiMethod.getResolvedReturnType() ?: return null
         return ensureType(returnType)
     }
 
@@ -104,7 +104,7 @@ class ExplicitMethodWithOutGenericInfo(
 ) : ExplicitElementWithOutGenericInfo<PsiMethod>(containClass), ExplicitMethod {
 
     override fun getReturnType(): DuckType? {
-        val returnType = psiMethod.returnType ?: return null
+        val returnType = psiMethod.getResolvedReturnType() ?: return null
         return ensureType(returnType)
     }
 

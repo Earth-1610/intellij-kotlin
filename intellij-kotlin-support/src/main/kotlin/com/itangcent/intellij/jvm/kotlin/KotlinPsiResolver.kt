@@ -1,16 +1,16 @@
 package com.itangcent.intellij.jvm.kotlin
 
-import com.intellij.psi.PsiClass
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiElementVisitor
-import com.intellij.psi.PsiImportStatement
+import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
+import com.itangcent.common.utils.cast
 import com.itangcent.common.utils.firstOrNull
 import com.itangcent.intellij.jvm.standard.StandardPsiResolver
 import org.jetbrains.kotlin.asJava.classes.KtLightClass
 import org.jetbrains.kotlin.asJava.classes.KtLightClassImpl
 import org.jetbrains.kotlin.asJava.elements.KtLightElement
+import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtVisitor
 import org.jetbrains.kotlin.psi.psiUtil.containingClass
 
@@ -33,7 +33,6 @@ import org.jetbrains.kotlin.psi.psiUtil.containingClass
  * Note that KDoc does not have any syntax for resolving overloaded members in links. Since the Kotlin documentation generation tool puts the documentation for all overloads of a function on the same page, identifying a specific overloaded function is not required for the link to work.
  */
 open class KotlinPsiResolver : StandardPsiResolver() {
-
     /**
      * ref: {@link https://kotlinlang.org/docs/reference/packages.html#default-imports}
      * Default Imports
@@ -174,5 +173,47 @@ open class KotlinPsiResolver : StandardPsiResolver() {
             return
         }
         super.visit(psiElement, visitor)
+    }
+
+    override fun getChildren(psiElement: PsiElement): Array<PsiElement> {
+        if (!KtPsiUtils.isKtPsiInst(psiElement)) {
+            throw NotImplementedError()
+        }
+        val descendant = HashSet<PsiElement>()
+        val children = LinkedHashSet<PsiElement>()
+        visit(psiElement) { element ->
+            element.cast(PsiElement::class)
+                ?.also { descendant.add(it) }
+                ?.takeIf { !descendant.contains(it.parent) }
+                ?.let { children.add(it) }
+        }
+        return children.toTypedArray()
+    }
+
+    override fun getReturnType(psiMethod: PsiMethod): PsiType? {
+        if (!KtPsiUtils.isKtPsiInst(psiMethod)) {
+            throw NotImplementedError()
+        }
+        if (!psiMethod.modifierList.text.contains("suspend") || psiMethod.returnType?.canonicalText != "java.lang.Object") {
+            return super.getReturnType(psiMethod)
+        }
+        return getReturnTypeOfSuspendFun(psiMethod) ?: super.getReturnType(psiMethod)
+    }
+
+    private fun getReturnTypeOfSuspendFun(psiMethod: PsiMethod): PsiType? {
+        var typeReference: KtTypeReference? = null
+        val children = getChildren(psiMethod)
+        for (element in children) {
+            typeReference = if (element is KtTypeReference) {
+                element
+            } else if (element is KtBlockExpression) {
+                break
+            } else {
+                null
+            }
+        }
+        typeReference ?: return null
+        typeReference.text?.let { findType(it, psiMethod) }?.let { return it }
+        return null
     }
 }

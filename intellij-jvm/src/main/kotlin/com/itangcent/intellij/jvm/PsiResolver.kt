@@ -1,10 +1,8 @@
 package com.itangcent.intellij.jvm
 
 import com.google.inject.ImplementedBy
-import com.intellij.psi.PsiClass
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiField
-import com.intellij.psi.PsiType
+import com.intellij.psi.*
+import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.standard.StandardPsiResolver
 
 @ImplementedBy(StandardPsiResolver::class)
@@ -47,4 +45,13 @@ interface PsiResolver {
     fun findType(canonicalText: String, context: PsiElement): PsiType?
 
     fun visit(psiElement: Any, visitor: (Any) -> Unit)
+
+    fun getChildren(psiElement: PsiElement): Array<PsiElement>
+
+    fun getReturnType(psiMethod: PsiMethod): PsiType?
+}
+
+fun PsiMethod.getResolvedReturnType(): PsiType? {
+    return ActionContext.getContext()?.instance(PsiResolver::class)
+        ?.getReturnType(this) ?: this.returnType
 }
