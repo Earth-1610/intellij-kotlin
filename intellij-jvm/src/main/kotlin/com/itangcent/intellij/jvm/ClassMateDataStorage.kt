@@ -41,6 +41,24 @@ object ClassMateDataStorage {
         cls.simpleName?.let { addTag(it, *tags) }
     }
 
+    fun hasAcceptedType(className: String, acceptedType: String): Boolean {
+        return mateData[className]?.acceptedTypes?.contains(acceptedType) ?: false
+    }
+
+    fun addAcceptedType(className: String, vararg acceptedTypes: String) {
+        mateDataOf(className).addAcceptedTypes(*acceptedTypes)
+    }
+
+    fun addAcceptedType(cls: Class<*>, vararg acceptedTypes: String) {
+        addAcceptedType(cls.name, *acceptedTypes)
+        addAcceptedType(cls.simpleName, *acceptedTypes)
+    }
+
+    fun addAcceptedType(cls: KClass<*>, vararg acceptedTypes: String) {
+        cls.qualifiedName?.let { addAcceptedType(it, *acceptedTypes) }
+        cls.simpleName?.let { addAcceptedType(it, *acceptedTypes) }
+    }
+
     fun setDefaultValue(className: String, defaultValue: Any) {
         mateDataOf(className).defaultValue = defaultValue
     }
@@ -65,11 +83,19 @@ object ClassMateDataStorage {
         }!!
     }
 
+    fun isAccepted(oneClass: String, anotherClass: String):Boolean {
+        mateDataOf(oneClass).acceptedTypes?.contains(anotherClass)?.takeIf { it }?.let { return true}
+        mateDataOf(anotherClass).acceptedTypes?.contains(oneClass)?.takeIf { it }?.let { return true}
+        return false
+    }
+
     class ClassMateData {
 
         var tags: Array<String>? = null
 
         var defaultValue: Any? = null
+
+        var acceptedTypes:Array<String>? = null
 
         @Synchronized
         fun addTags(vararg tags: String) {
@@ -77,6 +103,15 @@ object ClassMateDataStorage {
                 this.tags = arrayOf(*tags)
             } else {
                 this.tags = this.tags!! + tags
+            }
+        }
+        
+        @Synchronized
+        fun addAcceptedTypes(vararg types: String) {
+            if (this.acceptedTypes == null) {
+                this.acceptedTypes = arrayOf(*types)
+            } else {
+                this.acceptedTypes = this.acceptedTypes!! + types
             }
         }
     }

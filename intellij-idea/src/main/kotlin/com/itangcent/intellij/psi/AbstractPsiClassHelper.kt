@@ -22,6 +22,7 @@ import com.itangcent.intellij.jvm.element.ExplicitElement
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.ELEMENT_OF_COLLECTION
 import com.itangcent.intellij.logger.Logger
+import com.itangcent.intellij.util.AppropriateStringMatcher
 import com.itangcent.intellij.util.Magics
 import org.apache.commons.lang3.exception.ExceptionUtils
 import java.util.*
@@ -787,6 +788,19 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 val customFieldName = ruleComputer.computer(ClassRuleKeys.ENUM_USE_CUSTOM, cls)
                 if (!customFieldName.isNullOrBlank()) {
                     findConstantsByProperty(enumConstants, customFieldName, options)
+                } else if (ruleComputer.computer(ClassRuleKeys.ENUM_USE_BY_TYPE, cls) == true) {
+                    val appropriateProperty = findAppropriateProperty(context, cls)
+                    if (appropriateProperty.isNullOrBlank()) {
+                        logger.warn(
+                            "can not resolve ${cls.qualifiedName} for ${
+                                PsiClassUtils.qualifiedNameOfMember(
+                                    context
+                                )
+                            }"
+                        )
+                    } else {
+                        findConstantsByProperty(enumConstants, appropriateProperty, options)
+                    }
                 } else if (ruleComputer.computer(ClassRuleKeys.ENUM_USE_ORDINAL, cls) == true) {
                     findConstantsByProperty(enumConstants, "ordinal()", options)
                     valueTypeHandle?.let { it(duckTypeHelper!!.resolve("java.lang.Integer", context)!!) }
@@ -830,6 +844,32 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
         }
         return options
+    }
+
+    private fun findAppropriateProperty(
+        context: PsiElement,
+        cls: PsiClass
+    ): String? {
+        val property = (context as? PsiMember)?.let { Property.of(it) } ?: return null
+        val candidates = LinkedHashSet<String>()
+        jvmClassHelper.getFields(cls)
+            .filter { jvmClassHelper.isAccepted(it.type, property.type()) }
+            .filter { !ignoreField(it) }
+            .map { it.name }
+            .forEach { candidates.add(it) }
+        jvmClassHelper.getAllMethods(cls)
+            .filter { it.returnType != null && jvmClassHelper.isAccepted(it.returnType!!, property.type()) }
+            .map { it.name }
+            .filter { it.maybeGetterMethodPropertyName() }
+            .map { it.propertyName() }
+            .forEach { candidates.add(it) }
+        if (candidates.isEmpty()) {
+            return null
+        }
+        if (candidates.size == 1) {
+            return candidates.first()
+        }
+        return AppropriateStringMatcher.findAppropriate(property.name(), candidates)
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -1183,6 +1223,14 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         fun blockInfo(): String? {
             return blockInfo
         }
+    }
+
+    companion object {
+        val appropriatePropertyMatcher: Array<(String, String) -> Int> = arrayOf(
+            { propertyName, candidate ->
+                1
+            }
+        )
     }
 }
 

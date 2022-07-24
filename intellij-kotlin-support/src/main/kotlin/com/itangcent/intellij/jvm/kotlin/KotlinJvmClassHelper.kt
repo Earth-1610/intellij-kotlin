@@ -73,6 +73,10 @@ class KotlinJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper 
         TODO("Not yet implemented")
     }
 
+    override fun isAccepted(oneClass: String, anotherClass: String): Boolean {
+        TODO("Not yet implemented")
+    }
+
     override fun getDefaultValue(typeName: String): Any? {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
@@ -283,18 +287,23 @@ class KotlinJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper 
         init {
             ClassMateDataStorage.addTag(kotlin.Byte::class, "normal", "primitive")
             ClassMateDataStorage.setDefaultValue(kotlin.Byte::class, 0.toByte())
+            ClassMateDataStorage.addAcceptedType(kotlin.Byte::class, "byte")
 
             ClassMateDataStorage.addTag(kotlin.Int::class, "normal", "primitive")
             ClassMateDataStorage.setDefaultValue(kotlin.Int::class, 0)
+            ClassMateDataStorage.addAcceptedType(kotlin.Int::class, "int")
 
             ClassMateDataStorage.addTag(kotlin.Short::class, "normal", "primitive")
             ClassMateDataStorage.setDefaultValue(kotlin.Short::class, 0.toShort())
+            ClassMateDataStorage.addAcceptedType(kotlin.Short::class, "short")
 
             ClassMateDataStorage.addTag(kotlin.Float::class, "normal", "primitive")
             ClassMateDataStorage.setDefaultValue(kotlin.Float::class, 0.0f)
+            ClassMateDataStorage.addAcceptedType(kotlin.Float::class, "float")
 
             ClassMateDataStorage.addTag(kotlin.Double::class, "normal", "primitive")
             ClassMateDataStorage.setDefaultValue(kotlin.Double::class, 0.0)
+            ClassMateDataStorage.addAcceptedType(kotlin.Double::class, "double")
 
             ClassMateDataStorage.addTag(kotlin.collections.Collection::class, "collection")
             ClassMateDataStorage.addTag(kotlin.collections.MutableCollection::class, "collection")

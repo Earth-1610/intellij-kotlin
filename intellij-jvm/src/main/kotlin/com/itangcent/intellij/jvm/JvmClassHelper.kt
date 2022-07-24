@@ -51,6 +51,8 @@ interface JvmClassHelper {
      */
     fun isPrimitiveWrapper(typeName: String): Boolean
 
+    fun isAccepted(oneClass: String, anotherClass: String): Boolean
+
     fun getDefaultValue(typeName: String): Any?
 
     fun isBasicMethod(methodName: String): Boolean
@@ -176,7 +178,6 @@ interface JvmClassHelper {
     fun defineOtherCode(psiElement: PsiElement): String
 }
 
-
 fun Any?.asPsiClass(): PsiClass? {
     this ?: return null
     return this.asPsiClass(ActionContext.instance(JvmClassHelper::class))
@@ -197,4 +198,8 @@ fun Any?.asPsiClass(jvmClassHelper: JvmClassHelper): PsiClass? {
         return this
     }
     return null
+}
+
+fun JvmClassHelper.isAccepted(psiType: PsiType, anotherType: PsiType): Boolean {
+    return psiType == anotherType || this.isAccepted(psiType.canonicalText, anotherType.canonicalText)
 }

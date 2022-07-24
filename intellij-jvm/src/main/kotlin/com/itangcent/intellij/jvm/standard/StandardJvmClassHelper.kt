@@ -229,6 +229,13 @@ open class StandardJvmClassHelper : JvmClassHelper {
         return ClassMateDataStorage.hasTag(typeName, "wrapper")
     }
 
+    override fun isAccepted(oneClass: String, anotherClass: String): Boolean {
+        if (oneClass == anotherClass) {
+            return true
+        }
+        return ClassMateDataStorage.isAccepted(oneClass, anotherClass)
+    }
+
     override fun getDefaultValue(typeName: String): Any? {
         return ClassMateDataStorage.getDefaultValue(typeName)
     }
@@ -455,12 +462,14 @@ open class StandardJvmClassHelper : JvmClassHelper {
 
             ClassMateDataStorage.addTag(java.lang.Void::class.java, "normal", "primitive")
             ClassMateDataStorage.addTag("void", "normal", "primitive")
+            ClassMateDataStorage.addAcceptedType(java.lang.Void::class.java, "void")
 
             ClassMateDataStorage.addTag("char", "normal", "primitive")
             ClassMateDataStorage.setDefaultValue("char", 'a')
 
             ClassMateDataStorage.addTag(java.lang.Character::class.java, "normal", "wrapper")
             ClassMateDataStorage.setDefaultValue(java.lang.Character::class.java, 'a')
+            ClassMateDataStorage.addAcceptedType(java.lang.Character::class.java, "char")
 
             ClassMateDataStorage.addTag("null", "normal", "primitive")
 
@@ -469,36 +478,43 @@ open class StandardJvmClassHelper : JvmClassHelper {
 
             ClassMateDataStorage.addTag(java.lang.Byte::class.java, "normal", "wrapper")
             ClassMateDataStorage.setDefaultValue(java.lang.Byte::class.java, 0.toByte())
+            ClassMateDataStorage.addAcceptedType(java.lang.Byte::class.java, "byte")
+
 
             ClassMateDataStorage.addTag("short", "normal", "primitive")
             ClassMateDataStorage.setDefaultValue("short", 0.toShort())
 
             ClassMateDataStorage.addTag(java.lang.Short::class.java, "normal", "wrapper")
             ClassMateDataStorage.setDefaultValue(java.lang.Short::class.java, 0.toShort())
+            ClassMateDataStorage.addAcceptedType(java.lang.Short::class.java, "short")
 
             ClassMateDataStorage.addTag("int", "normal", "primitive")
             ClassMateDataStorage.setDefaultValue("int", 0)
 
             ClassMateDataStorage.addTag(java.lang.Integer::class.java, "normal", "wrapper")
             ClassMateDataStorage.setDefaultValue(java.lang.Integer::class.java, 0)
+            ClassMateDataStorage.addAcceptedType(java.lang.Integer::class.java, "int")
 
             ClassMateDataStorage.addTag("long", "normal", "primitive")
             ClassMateDataStorage.setDefaultValue("long", 0L)
 
             ClassMateDataStorage.addTag(java.lang.Long::class.java, "normal", "wrapper")
             ClassMateDataStorage.setDefaultValue(java.lang.Long::class.java, 0L)
+            ClassMateDataStorage.addAcceptedType(java.lang.Long::class.java, "long")
 
             ClassMateDataStorage.addTag("float", "normal", "primitive")
             ClassMateDataStorage.setDefaultValue("float", 0.0F)
 
             ClassMateDataStorage.addTag(java.lang.Float::class.java, "normal", "wrapper")
             ClassMateDataStorage.setDefaultValue(java.lang.Float::class.java, 0.0F)
+            ClassMateDataStorage.addAcceptedType(java.lang.Float::class.java, "float")
 
             ClassMateDataStorage.addTag("double", "normal", "primitive")
             ClassMateDataStorage.setDefaultValue("double", 0.0)
 
             ClassMateDataStorage.addTag(java.lang.Double::class.java, "normal", "wrapper")
             ClassMateDataStorage.setDefaultValue(java.lang.Double::class.java, 0.0)
+            ClassMateDataStorage.addAcceptedType(java.lang.Double::class.java, "double")
 
             ClassMateDataStorage.addTag(java.lang.Object::class.java, "normal")
             ClassMateDataStorage.setDefaultValue(java.lang.Object::class.java, emptyMap<Any, Any>())
