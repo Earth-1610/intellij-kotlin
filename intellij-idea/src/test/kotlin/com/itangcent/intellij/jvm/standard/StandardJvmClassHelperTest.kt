@@ -230,6 +230,15 @@ internal class StandardJvmClassHelperTest : ContextLightCodeInsightFixtureTestCa
         assertFalse(jvmClassHelper.isPrimitiveWrapper(javaVersionPsiClass.qualifiedName!!))
         assertFalse(jvmClassHelper.isPrimitiveWrapper(numbersPsiClass.qualifiedName!!))
     }
+    fun testIsAccepted() {
+        assertTrue(jvmClassHelper.isAccepted("int","int"))
+        assertTrue(jvmClassHelper.isAccepted(integerPsiClass.qualifiedName!!,"int"))
+        assertTrue(jvmClassHelper.isAccepted("int",integerPsiClass.qualifiedName!!))
+
+        assertTrue(jvmClassHelper.isAccepted("long","long"))
+        assertTrue(jvmClassHelper.isAccepted(longPsiClass.qualifiedName!!,"long"))
+        assertTrue(jvmClassHelper.isAccepted("long",longPsiClass.qualifiedName!!))
+    }
 
     fun testGetDefaultValue() {
         assertEquals(emptyMap<Any, Any>(), jvmClassHelper.getDefaultValue(objectPsiClass.qualifiedName!!))

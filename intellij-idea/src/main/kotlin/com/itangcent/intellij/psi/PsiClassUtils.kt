@@ -2,7 +2,6 @@ package com.itangcent.intellij.psi
 
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTypesUtil
-import com.itangcent.intellij.psi.PsiClassUtils.findClassName
 import com.siyeh.ig.psiutils.ClassUtils
 
 object PsiClassUtils {
@@ -188,28 +187,28 @@ object PsiClassUtils {
         return nameOfMember(psiMember)
     }
 
-    fun qualifiedNameOfMember(psiMember: PsiElement): String {
-        if (psiMember is PsiMethod) {
-            return qualifiedNameOfMethod(psiMember)
+    fun qualifiedNameOfMember(psiElement: PsiElement): String {
+        if (psiElement is PsiMethod) {
+            return qualifiedNameOfMethod(psiElement)
         }
-        if (psiMember is PsiField) {
-            return qualifiedNameOfField(psiMember)
+        if (psiElement is PsiField) {
+            return qualifiedNameOfField(psiElement)
         }
-        return nameOfMember(psiMember)
+        return nameOfMember(psiElement)
     }
 
-    fun nameOfMember(psiMember: PsiElement): String {
-        if (psiMember is PsiNamedElement) {
-            return psiMember.name ?: "anonymous"
+    fun nameOfMember(psiElement: PsiElement): String {
+        if (psiElement is PsiNamedElement) {
+            return psiElement.name ?: "anonymous"
         }
-        if (psiMember is PsiMethod) {
-            return psiMember.name
+        if (psiElement is PsiMethod) {
+            return psiElement.name
         }
-        if (psiMember is PsiField) {
-            return psiMember.name
+        if (psiElement is PsiField) {
+            return psiElement.name
         }
-        if (psiMember is PsiParameter) {
-            return psiMember.name ?: "anonymous"
+        if (psiElement is PsiParameter) {
+            return psiElement.name ?: "anonymous"
         }
         return "anonymous"
     }

@@ -43,4 +43,15 @@ object PsiUtils {
         return psiElement.text
     }
 
+    fun resolveFieldType(psiElement: PsiElement): Any? {
+        when (psiElement) {
+            is PsiField -> {
+                return psiElement.type
+            }
+            is PsiMethod -> return psiElement.returnType
+            is PsiExpression -> return resolveExpr(psiElement)
+        }
+        return psiElement.text
+    }
+
 }

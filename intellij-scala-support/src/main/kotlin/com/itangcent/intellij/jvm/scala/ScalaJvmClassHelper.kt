@@ -81,6 +81,10 @@ class ScalaJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper {
         TODO("Not yet implemented")
     }
 
+    override fun isAccepted(oneClass: String, anotherClass: String): Boolean {
+        TODO("Not yet implemented")
+    }
+
     override fun getDefaultValue(typeName: String): Any? {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
