@@ -1,6 +1,7 @@
 package com.itangcent.intellij.jvm.standard
 
 import com.google.inject.Singleton
+import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiMember
 import java.util.regex.Pattern
 
@@ -9,7 +10,7 @@ open class StandardLinkExtractor : AbstractLinkExtractor() {
 
     override fun findLink(
         doc: String,
-        psiMember: PsiMember,
+        psiElement: PsiElement,
         resolver: (String) -> String?
     ): String {
 
