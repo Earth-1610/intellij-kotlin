@@ -1,6 +1,6 @@
 package com.itangcent.intellij.jvm.scala
 
-import com.intellij.psi.PsiMember
+import com.intellij.psi.PsiElement
 import com.itangcent.intellij.jvm.standard.AbstractLinkExtractor
 import java.util.regex.Pattern
 
@@ -9,9 +9,9 @@ import java.util.regex.Pattern
  */
 open class ScalaLinkExtractor : AbstractLinkExtractor() {
 
-    override fun findLink(doc: String, psiMember: PsiMember, resolver: (String) -> String?): String {
+    override fun findLink(doc: String, psiElement: PsiElement, resolver: (String) -> String?): String {
 
-        if (!ScPsiUtils.isScPsiInst(psiMember)) {
+        if (!ScPsiUtils.isScPsiInst(psiElement)) {
             throw NotImplementedError()
         }
 

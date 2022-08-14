@@ -1,6 +1,7 @@
 package com.itangcent.intellij.jvm
 
 import com.google.inject.ImplementedBy
+import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiMember
 import com.itangcent.intellij.jvm.standard.StandardLinkExtractor
 
@@ -9,7 +10,7 @@ interface LinkExtractor {
 
     fun extract(
         doc: String?,
-        psiMember: PsiMember,
+        psiElement: PsiElement,
         resolve: LinkResolver
     ): String?
 

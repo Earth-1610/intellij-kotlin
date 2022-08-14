@@ -850,15 +850,18 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         context: PsiElement,
         cls: PsiClass
     ): String? {
-        val property = (context as? PsiMember)?.let { Property.of(it) } ?: return null
+
+        val property: Property = (context as? PsiMember)?.let { Property.of(it) } ?: return null
+        val targetType: PsiType = property.type()
+
         val candidates = LinkedHashSet<String>()
         jvmClassHelper.getFields(cls)
-            .filter { jvmClassHelper.isAccepted(it.type, property.type()) }
+            .filter { jvmClassHelper.isAccepted(it.type, targetType) }
             .filter { !ignoreField(it) }
             .map { it.name }
             .forEach { candidates.add(it) }
         jvmClassHelper.getAllMethods(cls)
-            .filter { it.returnType != null && jvmClassHelper.isAccepted(it.returnType!!, property.type()) }
+            .filter { it.returnType != null && jvmClassHelper.isAccepted(it.returnType!!, targetType) }
             .map { it.name }
             .filter { it.maybeGetterMethodPropertyName() }
             .map { it.propertyName() }
@@ -869,7 +872,12 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         if (candidates.size == 1) {
             return candidates.first()
         }
-        return AppropriateStringMatcher.findAppropriate(property.name(), candidates)
+
+        property.name().takeIf { it.isNotEmpty() }?.let {
+            return AppropriateStringMatcher.findAppropriate(property.name(), candidates)
+        }
+
+        return null
     }
 
     @Suppress("UNCHECKED_CAST")

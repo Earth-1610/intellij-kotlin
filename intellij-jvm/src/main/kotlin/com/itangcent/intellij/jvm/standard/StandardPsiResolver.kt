@@ -4,6 +4,7 @@ import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.psi.util.parentOfType
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.*
@@ -288,7 +289,7 @@ open class StandardPsiResolver : PsiResolver {
         if (psiElement is PsiMember) {
             psiElement.containingClass?.let { return it }
         }
-        return null
+        return psiElement.parentOfType(PsiClass::class)
     }
 
     override fun resolveRefText(psiElement: PsiElement?): String? {

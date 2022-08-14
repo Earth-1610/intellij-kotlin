@@ -1,14 +1,14 @@
 package com.itangcent.intellij.jvm.kotlin
 
-import com.intellij.psi.PsiMember
+import com.intellij.psi.PsiElement
 import com.itangcent.intellij.jvm.standard.AbstractLinkExtractor
 import java.util.regex.Pattern
 
 open class KotlinLinkExtractor : AbstractLinkExtractor() {
 
-    override fun findLink(doc: String, psiMember: PsiMember, resolver: (String) -> String?): String {
+    override fun findLink(doc: String, psiElement: PsiElement, resolver: (String) -> String?): String {
 
-        if (!KtPsiUtils.isKtPsiInst(psiMember)) {
+        if (!KtPsiUtils.isKtPsiInst(psiElement)) {
             throw NotImplementedError()
         }
 
