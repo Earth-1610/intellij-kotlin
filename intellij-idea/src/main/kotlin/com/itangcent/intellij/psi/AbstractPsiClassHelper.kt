@@ -43,7 +43,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     protected val duckTypeHelper: DuckTypeHelper? = null
 
     @Inject
-    protected val actionContext: ActionContext? = null
+    protected lateinit var actionContext: ActionContext
 
     @Inject
     protected lateinit var ruleComputer: RuleComputer
@@ -144,7 +144,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         resolveContext: ResolveContext
     ): ObjectHolder? {
         if (psiType == null || psiType == PsiType.NULL) return null
-        actionContext!!.checkStatus()
+        actionContext.checkStatus()
         val cacheKey = psiType.canonicalText + "@" + groupKey(context, resolveContext.option)
 
         val resolvedInfo = getResolvedInfo<Any>(cacheKey)
@@ -254,7 +254,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         resolveContext: ResolveContext
     ): ObjectHolder? {
         duckType ?: return null
-        actionContext!!.checkStatus()
+        actionContext.checkStatus()
 
         val cacheKey = duckType.canonicalText() + "@" + groupKey(context, resolveContext.option)
 
@@ -326,7 +326,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         resolveContext: ResolveContext
     ): ObjectHolder {
         psiClass ?: return NULL_OBJECT_HOLDER
-        actionContext!!.checkStatus()
+        actionContext.checkStatus()
 
         val qualifiedName = psiClass.qualifiedName
 
@@ -410,7 +410,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         resolveContext: ResolveContext
     ): ObjectHolder? {
         duckType ?: return null
-        actionContext!!.checkStatus()
+        actionContext.checkStatus()
 
         val cacheKey = duckType.canonicalText() + "@" + groupKey(context, resolveContext.option)
 
@@ -538,7 +538,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         context: PsiElement?,
         resolveContext: ResolveContext
     ): ObjectHolder? {
-        actionContext!!.checkStatus()
+        actionContext.checkStatus()
 
         val cacheKey = clsWithParam.canonicalText() + "@" + groupKey(context, resolveContext.option)
 
@@ -600,7 +600,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             fieldOrMethod: ExplicitElement<*>
         ) -> Unit
     ) {
-        actionContext!!.checkStatus()
+        actionContext.checkStatus()
 
         val readMethod = option.has(JsonOption.READ_GETTER_OR_SETTER)
 
@@ -708,7 +708,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         context: PsiElement,
         defaultPropertyName: String
     ): ArrayList<HashMap<String, Any?>>? {
-        actionContext!!.checkStatus()
+        actionContext.checkStatus()
         val clsName: String?
         var property: String? = null
 
@@ -920,7 +920,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     protected open val staticResolvedInfo: HashMap<PsiClass, List<Map<String, Any?>>> = HashMap()
 
     override fun parseStaticFields(psiClass: PsiClass): List<Map<String, Any?>> {
-        actionContext!!.checkStatus()
+        actionContext.checkStatus()
         val resourceClass = getResourceClass(psiClass)
         if (staticResolvedInfo.containsKey(resourceClass)) {
             return staticResolvedInfo[resourceClass]!!
@@ -957,7 +957,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     protected open fun ignoreField(psiField: PsiField) = jvmClassHelper.isStaticFinal(psiField)
 
     override fun parseEnumConstant(psiClass: PsiClass): List<Map<String, Any?>> {
-        actionContext!!.checkStatus()
+        actionContext.checkStatus()
         val sourcePsiClass = getResourceClass(psiClass)
         if (!jvmClassHelper.isEnum(sourcePsiClass)) return ArrayList()
 

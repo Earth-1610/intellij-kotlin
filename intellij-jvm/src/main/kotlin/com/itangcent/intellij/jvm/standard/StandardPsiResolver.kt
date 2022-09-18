@@ -255,9 +255,13 @@ open class StandardPsiResolver : PsiResolver {
                 candidates.size == 1 -> return candidates[0]
             }
 
-            val params = propertyOrMethod.substringAfter("(")
+            val paramStr = propertyOrMethod.substringAfter("(")
                 .removeSuffix(")")
-                .split(",")
+            val params: List<String> = if (paramStr.isBlank()) {
+                emptyList()
+            } else {
+                paramStr.split(",")
+            }
             candidates = candidates.filter { it.parameters.size == params.size }
 
             when {
@@ -277,7 +281,7 @@ open class StandardPsiResolver : PsiResolver {
                 candidates.size == 1 -> return candidates[0]
             }
 
-            return null
+            return candidates.firstOrNull()
         } else {
             return jvmClassHelper!!.getAllFields(psiClass).firstOrNull { it.name == propertyOrMethod }
                 ?: jvmClassHelper.getAllMethods(psiClass).firstOrNull { it.name == propertyOrMethod }
