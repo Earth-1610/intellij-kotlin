@@ -1,6 +1,7 @@
 package com.itangcent.intellij.io
 
 import com.itangcent.common.concurrent.ValueHolder
+import com.itangcent.common.logger.Log
 import com.itangcent.common.utils.IOUtils
 import java.io.IOException
 import java.io.InputStream
@@ -88,9 +89,5 @@ class PipedProcess : Process() {
         )
     }
 
-    companion object {
-
-        //background idea log
-        private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(PipedProcess::class.java)
-    }
+    companion object : Log()
 }

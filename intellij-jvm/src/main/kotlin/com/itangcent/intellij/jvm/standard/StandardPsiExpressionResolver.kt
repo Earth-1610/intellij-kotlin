@@ -4,20 +4,20 @@ import com.google.inject.Inject
 import com.intellij.psi.*
 import com.intellij.psi.tree.IElementType
 import com.intellij.psi.util.PsiUtil
+import com.itangcent.common.logger.Log
 import com.itangcent.common.utils.*
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.JvmClassHelper
 import com.itangcent.intellij.jvm.PsiExpressionResolver
 import com.itangcent.intellij.jvm.PsiResolver
-import com.itangcent.intellij.jvm.dev.DevEnv
-import com.itangcent.intellij.logger.Logger
 import org.apache.commons.lang.StringUtils
 import java.util.*
-import kotlin.collections.ArrayList
 import kotlin.reflect.KClass
 import kotlin.reflect.full.isSubclassOf
 
 open class StandardPsiExpressionResolver : PsiExpressionResolver {
+
+    companion object : Log()
 
     @Inject
     private val psiResolver: PsiResolver? = null
@@ -53,6 +53,7 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
             is PsiReferenceExpression -> {
                 return processReferenceExpression(psiExpression)
             }
+
             is PsiLiteralExpression -> return psiExpression.value
             is PsiBinaryExpression -> return processBinaryExpression(psiExpression)
             is PsiPolyadicExpression -> return processPolyadicExpression(psiExpression)
@@ -66,6 +67,7 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
                     return psiExpressionResolver.process(psiExpression.firstChild)
                 }
             }
+
             is PsiArrayAccessExpression -> {
                 val array = psiExpressionResolver.process(psiExpression.arrayExpression) ?: return null
                 if (array is Array<*> && array.size > 0) {
@@ -106,9 +108,11 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
                     return psiExpressionResolver.process(it)
                 }
             }
+
             is PsiEnumConstant -> {
                 return resolveEnumFields(psiElement)
             }
+
             is PsiField -> {
                 if (jvmClassHelper!!.isStaticFinal(psiElement)) {
                     return psiExpressionResolver.processStaticField(psiElement)
@@ -117,19 +121,24 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
                     return psiExpressionResolver.process(it)
                 }
             }
+
             is PsiKeyword -> {
                 //todo:any keyword return null??
             }
+
             is PsiReferenceParameterList -> {
                 //todo:what does PsiReferenceParameterList mean
             }
+
             is PsiWhiteSpace -> {
                 //ignore white space
                 return psiElement.text
             }
+
             is PsiJavaCodeReferenceElement -> {
                 //todo:what does PsiJavaCodeReferenceElement mean
             }
+
             is PsiExpressionList -> {
                 val list = ArrayList<Any?>()
                 for (expression in psiElement.expressions) {
@@ -137,15 +146,15 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
                 }
                 return list
             }
+
             is PsiArrayInitializerMemberValue -> {
                 return psiElement.initializers.map { psiExpressionResolver.process(it) }.toTypedArray()
             }
-            is PsiLambdaExpression -> {
-                return psiElement.body?.let { psiExpressionResolver.process(it) }
-            }
+
             is PsiTypeElement -> {
                 return processPsiType(psiElement.type)
             }
+
             else -> {
                 //ignore
 //                    logger!!.debug("no matched ele ${psiElement::class.qualifiedName}:${psiElement.text}")
@@ -217,6 +226,7 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
                     }
                 }
             }
+
             JavaTokenType.EQEQ, JavaTokenType.NE -> {
                 return true
             }
@@ -771,18 +781,23 @@ enum class StandardOperand : Operand {
             is Boolean -> {
                 operateBool(f, s as Boolean)
             }
+
             is Int -> {
                 operateInt(f, s as Int)
             }
+
             is Long -> {
                 operateLong(f, s as Long)
             }
+
             is Float -> {
                 operateFloat(f, s as Float)
             }
+
             is Double -> {
                 operateDouble(f, s as Double)
             }
+
             else -> {
                 null
             }
@@ -802,60 +817,79 @@ enum class StandardOperand : Operand {
                 JavaTokenType.PLUS -> {
                     PLUS
                 }
+
                 JavaTokenType.MINUS -> {
                     MINUS
                 }
+
                 JavaTokenType.ASTERISK -> {
                     ASTERISK
                 }
+
                 JavaTokenType.DIV -> {
                     DIV
                 }
+
                 JavaTokenType.PERC -> {
                     PERC
                 }
+
                 JavaTokenType.LTLT -> {
                     LTLT
                 }
+
                 JavaTokenType.GTGT -> {
                     GTGT
                 }
+
                 JavaTokenType.AND -> {
                     AND
                 }
+
                 JavaTokenType.EQ -> {
                     EQ
                 }
+
                 JavaTokenType.EQEQ -> {
                     EQEQ
                 }
+
                 JavaTokenType.NE -> {
                     NE
                 }
+
                 JavaTokenType.GT -> {
                     GT
                 }
+
                 JavaTokenType.GE -> {
                     GE
                 }
+
                 JavaTokenType.LT -> {
                     LT
                 }
+
                 JavaTokenType.LE -> {
                     LE
                 }
+
                 JavaTokenType.OR -> {
                     OR
                 }
+
                 JavaTokenType.XOR -> {
                     XOR
                 }
+
                 JavaTokenType.ANDAND -> {
                     ANDAND
                 }
+
                 JavaTokenType.OROR -> {
                     OROR
                 }
+
                 else -> null
             }
         }
@@ -904,21 +938,27 @@ enum class StandardCast(private val priority: Int) : Cast {
                 null, is String -> {
                     return STRING
                 }
+
                 is Boolean -> {
                     return BOOL
                 }
+
                 is Int -> {
                     return INT
                 }
+
                 is Long -> {
                     return LONG
                 }
+
                 is Float -> {
                     return FLOAT
                 }
+
                 is Double -> {
                     return DOUBLE
                 }
+
                 else -> {
                     return STRING
                 }
@@ -935,6 +975,3 @@ interface Cast {
     fun getPriority(): Int
     fun cast(any: Any?): Any?
 }
-
-//background idea log
-private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(StandardPsiExpressionResolver::class.java)

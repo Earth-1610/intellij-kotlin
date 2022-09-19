@@ -1,20 +1,18 @@
 package com.itangcent.intellij.jvm.kotlin
 
-import com.google.inject.Inject
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiExpression
 import com.intellij.psi.PsiField
 import com.intellij.psi.tree.IElementType
+import com.itangcent.common.logger.Log
 import com.itangcent.common.utils.flatten
 import com.itangcent.common.utils.invokeMethod
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.PsiExpressionResolver
 import com.itangcent.intellij.jvm.PsiResolver
 import com.itangcent.intellij.jvm.adaptor.KtUltraLightFieldAdaptor
-import com.itangcent.intellij.jvm.dev.DevEnv
 import com.itangcent.intellij.jvm.standard.Operand
 import com.itangcent.intellij.jvm.standard.StandardOperand
-import com.itangcent.intellij.logger.Logger
 import org.jetbrains.kotlin.asJava.elements.KtLightFieldImpl
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
@@ -22,6 +20,8 @@ import org.jetbrains.kotlin.psi.psiUtil.plainContent
 import kotlin.reflect.KClass
 
 class KotlinPsiExpressionResolver : PsiExpressionResolver {
+
+    companion object : Log()
 
     private val psiExpressionResolver: PsiExpressionResolver = ActionContext.local()
 
@@ -44,30 +44,39 @@ class KotlinPsiExpressionResolver : PsiExpressionResolver {
                 }
                 return psiElement.text
             }
+
             psiElement is KtBinaryExpression -> {
                 return processBinaryExpression(psiElement)
             }
+
             psiElement is KtLightFieldImpl<*> -> {
                 return psiElement.computeConstantValue()
             }
+
             KtUltraLightFieldAdaptor.isKtUltraLightField(psiElement) -> {
                 return KtUltraLightFieldAdaptor.computeConstantValue(psiElement)
             }
+
             psiElement is KtCollectionLiteralExpression -> {
                 return psiElement.getInnerExpressions().map { psiExpressionResolver.process(it) }.toTypedArray()
             }
+
             psiElement is KtDotQualifiedExpression -> {
                 return processDot(psiElement)
             }
+
             psiElement is KtNameReferenceExpression -> {
                 return psiElement.getIdentifier()?.let { psiExpressionResolver.process(it) }
             }
+
             psiElement is KtStringTemplateExpression -> {
                 return psiElement.plainContent
             }
+
             psiElement is KtCallExpression -> {
                 return psiElement.valueArgumentList?.let { psiExpressionResolver.process(it) }
             }
+
             psiElement is KtValueArgumentList -> {
                 val map = LinkedHashMap<Any?, Any?>()
                 for (argument in psiElement.arguments) {
@@ -84,9 +93,11 @@ class KotlinPsiExpressionResolver : PsiExpressionResolver {
                 }
                 return map
             }
+
             psiElement is KtValueArgument -> {
                 return psiElement.getArgumentExpression()?.let { psiExpressionResolver.process(it) }
             }
+
             psiElement is KtValueArgumentName -> {
                 val name = psiElement.asName
                 if (name.isSpecial) {
@@ -171,52 +182,62 @@ class KotlinPsiExpressionResolver : PsiExpressionResolver {
                     KtTokens.PLUS -> {
                         StandardOperand.PLUS
                     }
+
                     KtTokens.MINUS -> {
                         StandardOperand.MINUS
                     }
+
                     KtTokens.MUL -> {
                         StandardOperand.ASTERISK
                     }
+
                     KtTokens.DIV -> {
                         StandardOperand.DIV
                     }
+
                     KtTokens.EQ -> {
                         StandardOperand.EQ
                     }
+
                     KtTokens.EQEQ -> {
                         StandardOperand.EQEQ
                     }
+
                     KtTokens.EXCLEQ -> {
                         StandardOperand.NE
                     }
+
                     KtTokens.GT -> {
                         StandardOperand.GT
                     }
+
                     KtTokens.GTEQ -> {
                         StandardOperand.GE
                     }
+
                     KtTokens.LT -> {
                         StandardOperand.LT
                     }
+
                     KtTokens.LTEQ -> {
                         StandardOperand.LE
                     }
+
                     KtTokens.PERC -> {
                         StandardOperand.PERC
                     }
+
                     KtTokens.ANDAND -> {
                         StandardOperand.ANDAND
                     }
+
                     KtTokens.OROR -> {
                         StandardOperand.OROR
                     }
+
                     else -> StandardOperand.findOperand(op)
                 }
             }
         }
     }
 }
-
-
-//background idea log
-private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(KotlinPsiExpressionResolver::class.java)

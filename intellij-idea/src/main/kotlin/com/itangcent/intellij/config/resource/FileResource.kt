@@ -1,5 +1,6 @@
 package com.itangcent.intellij.config.resource
 
+import com.itangcent.common.logger.Log
 import com.itangcent.common.utils.SystemUtils
 import com.itangcent.intellij.config.ConfigReader
 import com.itangcent.intellij.context.ActionContext
@@ -9,6 +10,8 @@ import java.net.URL
 import java.util.regex.Pattern
 
 class FileResource(val path: String) : Resource() {
+
+    companion object : Log()
 
     private val currPath: String? =
         ActionContext.getContext()
@@ -109,7 +112,8 @@ private enum class SysFileResolve {
         return File(path)
     }
 
-    companion object {
+
+    companion object : Log() {
 
         private var adaptiveSysFileResolve: SysFileResolve? = null
 
@@ -122,7 +126,3 @@ private enum class SysFileResolve {
         }
     }
 }
-
-
-//background idea log
-private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(FileResource::class.java)

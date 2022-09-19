@@ -1,6 +1,7 @@
 package com.itangcent.intellij.config
 
 import com.google.inject.Inject
+import com.itangcent.common.logger.Log
 import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.text.TemplateUtils
 import com.itangcent.common.utils.*
@@ -52,14 +53,17 @@ abstract class AbstractConfigReader : MutableConfigReader {
             "yml", "yaml" -> {//resolve .yaml&.yml as yamlConfig
                 YamlConfigResolver()
             }
+
             "json" -> {
                 //resolve .json as jsonConfig
                 JsonConfigResolver()
             }
+
             "properties", "config" -> {
                 //resolve .properties&.config as propertiesConfig
                 PropertiesConfigResolver()
             }
+
             else -> {
                 PropertiesConfigResolver()
             }
@@ -118,14 +122,17 @@ abstract class AbstractConfigReader : MutableConfigReader {
                     this.resolveProperty = value.toBool()
                     return
                 }
+
                 "ignoreUnresolved" -> {
                     this.ignoreUnresolved = value.toBool()
                     return
                 }
+
                 "ignoreNotFoundFile" -> {
                     this.ignoreNotFoundFile = value.toBool()
                     return
                 }
+
                 "resolveMulti" -> {
                     this.resolveMulti = ResolveMultiType.valueOf(value.toUpperCase())
                     return
@@ -179,24 +186,28 @@ abstract class AbstractConfigReader : MutableConfigReader {
                     return MULTI_UNRESOLVED
                 }
             }
+
             ResolveMultiType.FIRST -> {
                 val value = configInfo.getFirst(key)
                 if (!value.isNullOrBlank()) {
                     return value
                 }
             }
+
             ResolveMultiType.LAST -> {
                 val value = configInfo[key]?.last()
                 if (!value.isNullOrBlank()) {
                     return value
                 }
             }
+
             ResolveMultiType.LONGEST -> {
                 val value = configInfo[key]?.longest()
                 if (!value.isNullOrBlank()) {
                     return value
                 }
             }
+
             ResolveMultiType.SHORTEST -> {
                 val value = configInfo[key]?.shortest()
                 if (!value.isNullOrBlank()) {
@@ -245,7 +256,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
         })
     }
 
-    companion object {
+    companion object : Log() {
         val MULTI_UNRESOLVED = Object()
 
         val UNRESOLVED_TIP = OnlyOnceInContextTip(
@@ -390,6 +401,3 @@ enum class ResolveMultiType {
      */
     SHORTEST
 }
-
-//background idea log
-private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(AbstractConfigReader::class.java)

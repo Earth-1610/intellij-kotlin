@@ -5,6 +5,7 @@ import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.parentOfType
+import com.itangcent.common.logger.Log
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.*
@@ -35,6 +36,8 @@ import com.siyeh.ig.psiutils.ClassUtils
  */
 @Singleton
 open class StandardPsiResolver : PsiResolver {
+
+    companion object : Log()
 
     @Inject
     protected val duckTypeHelper: DuckTypeHelper? = null
@@ -67,6 +70,7 @@ open class StandardPsiResolver : PsiResolver {
                 ?: getContainingClass(context)?.let {
                     resolveClassFromImport(it, className)
                 }
+
             else -> getContainingClass(context)?.let {
                 resolveClassFromImport(it, className)
             } ?: findClass(className, context)
@@ -304,6 +308,7 @@ open class StandardPsiResolver : PsiResolver {
                 val value = psiElement.resolve()
                 return resolveRefText(value)
             }
+
             is PsiField -> {
                 val constantValue = psiElement.computeConstantValue()
                 if (constantValue != null) {
@@ -314,6 +319,7 @@ open class StandardPsiResolver : PsiResolver {
                 }
                 return psiElement.text
             }
+
             else -> return psiElement.text
         }
     }
@@ -352,6 +358,3 @@ open class StandardPsiResolver : PsiResolver {
         return psiMethod.returnType
     }
 }
-
-//background idea log
-private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(StandardPsiResolver::class.java)
