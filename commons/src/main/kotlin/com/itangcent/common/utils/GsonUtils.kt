@@ -6,57 +6,81 @@ import com.google.gson.reflect.TypeToken
 import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonToken
 import com.google.gson.stream.JsonWriter
+import com.itangcent.common.logger.Log
+import com.itangcent.common.logger.traceError
 import java.io.IOException
-import java.util.ArrayList
 import kotlin.reflect.KClass
 
 /**
  *
  * @author tangcent
  */
-object GsonUtils {
+object GsonUtils : Log() {
 
     private val numberObjectTypeAdapter = NumberFixedObjectTypeAdapter()
 
-    private val gson = GsonBuilder()
-        .setExclusionStrategies(RegisterExclusionStrategy().exclude(Visional::class.java))
-        .registerTypeAdapter(Any::class.java, numberObjectTypeAdapter)
-        .registerTypeAdapter(Map::class.java, numberObjectTypeAdapter)
-        .registerTypeAdapter(List::class.java, numberObjectTypeAdapter)
-        .registerTypeAdapter(LazilyParsedNumber::class.java, LazilyParsedNumberTypeAdapter())
-        .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
-        .create()
+    private lateinit var gson: Gson
+    private lateinit var gsonWithNulls: Gson
+    private lateinit var prettyGson: Gson
+    private lateinit var pretty_gson_with_nulls: Gson
 
-    private val gsonWithNulls = GsonBuilder()
-        .setExclusionStrategies(RegisterExclusionStrategy().exclude(Visional::class.java))
-        .registerTypeAdapter(Any::class.java, numberObjectTypeAdapter)
-        .registerTypeAdapter(Map::class.java, numberObjectTypeAdapter)
-        .registerTypeAdapter(List::class.java, numberObjectTypeAdapter)
-        .registerTypeAdapter(LazilyParsedNumber::class.java, LazilyParsedNumberTypeAdapter())
-        .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
-        .serializeNulls()
-        .create()
+    init {
+        try {
+            gson = GsonBuilder()
+                .setExclusionStrategies(RegisterExclusionStrategy().exclude(Visional::class.java))
+                .registerTypeAdapter(Any::class.java, numberObjectTypeAdapter)
+                .registerTypeAdapter(Map::class.java, numberObjectTypeAdapter)
+                .registerTypeAdapter(List::class.java, numberObjectTypeAdapter)
+                .registerTypeAdapter(LazilyParsedNumber::class.java, LazilyParsedNumberTypeAdapter())
+                .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
+                .create()
 
-    private val prettyGson = GsonBuilder()
-        .setExclusionStrategies(RegisterExclusionStrategy().exclude(Visional::class.java))
-        .registerTypeAdapter(Any::class.java, numberObjectTypeAdapter)
-        .registerTypeAdapter(Map::class.java, numberObjectTypeAdapter)
-        .registerTypeAdapter(List::class.java, numberObjectTypeAdapter)
-        .registerTypeAdapter(LazilyParsedNumber::class.java, LazilyParsedNumberTypeAdapter())
-        .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
-        .setPrettyPrinting()
-        .create()
+            gsonWithNulls = GsonBuilder()
+                .setExclusionStrategies(RegisterExclusionStrategy().exclude(Visional::class.java))
+                .registerTypeAdapter(Any::class.java, numberObjectTypeAdapter)
+                .registerTypeAdapter(Map::class.java, numberObjectTypeAdapter)
+                .registerTypeAdapter(List::class.java, numberObjectTypeAdapter)
+                .registerTypeAdapter(LazilyParsedNumber::class.java, LazilyParsedNumberTypeAdapter())
+                .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
+                .serializeNulls()
+                .create()
 
-    private val pretty_gson_with_nulls = GsonBuilder()
-        .setExclusionStrategies(RegisterExclusionStrategy().exclude(Visional::class.java))
-        .registerTypeAdapter(Any::class.java, numberObjectTypeAdapter)
-        .registerTypeAdapter(Map::class.java, numberObjectTypeAdapter)
-        .registerTypeAdapter(List::class.java, numberObjectTypeAdapter)
-        .registerTypeAdapter(LazilyParsedNumber::class.java, LazilyParsedNumberTypeAdapter())
-        .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
-        .setPrettyPrinting()
-        .serializeNulls()
-        .create()
+            prettyGson = GsonBuilder()
+                .setExclusionStrategies(RegisterExclusionStrategy().exclude(Visional::class.java))
+                .registerTypeAdapter(Any::class.java, numberObjectTypeAdapter)
+                .registerTypeAdapter(Map::class.java, numberObjectTypeAdapter)
+                .registerTypeAdapter(List::class.java, numberObjectTypeAdapter)
+                .registerTypeAdapter(LazilyParsedNumber::class.java, LazilyParsedNumberTypeAdapter())
+                .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
+                .setPrettyPrinting()
+                .create()
+
+            pretty_gson_with_nulls = GsonBuilder()
+                .setExclusionStrategies(RegisterExclusionStrategy().exclude(Visional::class.java))
+                .registerTypeAdapter(Any::class.java, numberObjectTypeAdapter)
+                .registerTypeAdapter(Map::class.java, numberObjectTypeAdapter)
+                .registerTypeAdapter(List::class.java, numberObjectTypeAdapter)
+                .registerTypeAdapter(LazilyParsedNumber::class.java, LazilyParsedNumberTypeAdapter())
+                .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
+                .setPrettyPrinting()
+                .serializeNulls()
+                .create()
+        } catch (e: Exception) {
+            LOG.traceError("failed init GSON module.", e)
+            if (!this::gson.isInitialized) {
+                gson = Gson()
+            }
+            if (!this::gsonWithNulls.isInitialized) {
+                gsonWithNulls = Gson()
+            }
+            if (!this::prettyGson.isInitialized) {
+                prettyGson = Gson()
+            }
+            if (!this::pretty_gson_with_nulls.isInitialized) {
+                pretty_gson_with_nulls = Gson()
+            }
+        }
+    }
 
     fun toJsonSafely(any: Any?): String {
         return gsonWithNulls.toJson(any.resolveCycle())
@@ -94,7 +118,8 @@ object GsonUtils {
         return pretty_gson_with_nulls.toJson(any)
     }
 
-    @Deprecated(message = "use com.itangcent.common.utils.AnyKitKt.resolveCycle",
+    @Deprecated(
+        message = "use com.itangcent.common.utils.AnyKitKt.resolveCycle",
         replaceWith = ReplaceWith("com.itangcent.common.utils.resolveCycle")
     )
     fun resolveCycle(any: Any?): Any? = any.resolveCycle()
@@ -115,10 +140,12 @@ class LazilyParsedNumberTypeAdapter : TypeAdapter<LazilyParsedNumber>() {
             JsonToken.NUMBER -> {
                 LazilyParsedNumber(reader.nextString())
             }
+
             JsonToken.NULL -> {
                 reader.nextNull()
                 null
             }
+
             else -> throw IllegalStateException()
         }
     }

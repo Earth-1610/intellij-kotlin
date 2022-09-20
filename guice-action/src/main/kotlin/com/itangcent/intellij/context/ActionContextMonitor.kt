@@ -1,9 +1,11 @@
 package com.itangcent.intellij.context
 
+import com.itangcent.common.logger.Log
+import com.itangcent.common.logger.traceError
 import com.itangcent.intellij.constant.EventKey
 import java.util.*
 
-object ActionContextMonitor {
+object ActionContextMonitor : Log() {
 
     private val actionContextList: LinkedList<ActionContext> = LinkedList()
 
@@ -27,6 +29,7 @@ object ActionContextMonitor {
 
     private fun startCheckActionContextThread(actionContext: ActionContext) {
         val thread = ActionContextMonitorThread(actionContext)
+        thread.isDaemon = true
         thread.start()
         actionContext.cache("_monitor_thread", thread)
     }
@@ -39,7 +42,7 @@ object ActionContextMonitor {
                 try {
                     checkContext()
                 } catch (e: Exception) {
-                    LOG.error("failed check context", e)
+                    LOG.traceError("failed check context", e)
                 }
             }
         }
@@ -72,7 +75,4 @@ object ActionContextMonitor {
             private const val MAX_INACTIVE = 20000L
         }
     }
-
-    //background idea log
-    private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(ActionContextMonitor::class.java)
 }

@@ -6,6 +6,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.project.Project
 import com.itangcent.common.exception.ProcessCanceledException
+import com.itangcent.common.logger.Log
 import com.itangcent.common.spi.Setup
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.singleton
@@ -21,7 +22,8 @@ abstract class KotlinAnAction : AnAction {
     constructor(text: String?) : super(text)
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
-    private val log = com.intellij.openapi.diagnostic.Logger.getInstance(this.javaClass)
+    @Deprecated(replaceWith = ReplaceWith("LOG"), message = "use LOG instead")
+    private val log = LOG
 
     protected open fun onBuildActionContext(
         event: AnActionEvent,
@@ -40,13 +42,13 @@ abstract class KotlinAnAction : AnAction {
         val actionContext = actionContextBuilder.build()
         actionContext.init(this)
 
-        log.info("start action:" + this::class.qualifiedName)
+        LOG.info("start action:" + this::class.qualifiedName)
 
         actionContext.runAsync {
             try {
                 actionPerformed(actionContext, project, anActionEvent)
             } catch (ex: Exception) {
-                log.info("Error:${ex.message}trace:${ExceptionUtils.getStackTrace(ex)}")
+                LOG.info("Error:${ex.message}trace:${ExceptionUtils.getStackTrace(ex)}")
                 NotificationHelper.instance().notify {
                     it.createNotification(
                         when (ex) {
@@ -67,7 +69,7 @@ abstract class KotlinAnAction : AnAction {
         anActionEvent: AnActionEvent
     )
 
-    companion object {
+    companion object : Log() {
         init {
             Setup.load(KotlinAnAction::class.java.classLoader)
         }

@@ -8,6 +8,8 @@ import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.project.Project
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
+import com.itangcent.common.logger.Log
+import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.cast
 import com.itangcent.intellij.context.ActionContext
 import org.apache.commons.lang.StringUtils
@@ -16,7 +18,7 @@ import java.io.File
 /**
  * Created by tangcent on 2017/2/16.
  */
-object ActionUtils {
+object ActionUtils : Log() {
 
     fun findCurrentPath(): String? {
         val actionContext = ActionContext.getContext()!!
@@ -45,9 +47,11 @@ object ActionUtils {
                     is PsiDirectory -> {//select dir
                         return findCurrentPath(navigatable)
                     }
+
                     is ClassTreeNode -> {
                         return findCurrentPath(navigatable.psiClass.containingFile)
                     }
+
                     is PsiDirectoryNode -> {
                         return navigatable.element?.value?.let { findCurrentPath(it) }
                     }
@@ -86,7 +90,7 @@ object ActionUtils {
             actionContext.callInReadUI {
                 actionContext.instance(DataContext::class).getData(CommonDataKeys.PSI_ELEMENT)
             }
-        }?.let { actionContext.callInReadUI {PsiTreeUtil.getContextOfType<PsiElement>(it, PsiMethod::class.java)} }
+        }?.let { actionContext.callInReadUI { PsiTreeUtil.getContextOfType<PsiElement>(it, PsiMethod::class.java) } }
             .cast(PsiMethod::class)
             ?.let { return it }
 
@@ -127,12 +131,9 @@ object ActionUtils {
         try {
             anActionEvent.actionManager.getAction(action).actionPerformed(anActionEvent)
         } catch (e: Exception) {
-            LOG.warn("failed doAction:$action", e)
+            LOG.traceWarn("failed doAction:$action", e)
         }
 
     }
 
 }
-
-//background idea log
-private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(ActionUtils::class.java)

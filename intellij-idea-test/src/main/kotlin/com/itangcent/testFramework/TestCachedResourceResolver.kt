@@ -1,5 +1,6 @@
 package com.itangcent.testFramework
 
+import com.itangcent.common.logger.Log
 import com.itangcent.intellij.config.resource.DefaultResourceResolver
 import com.itangcent.intellij.config.resource.URLResource
 import com.itangcent.intellij.file.DefaultLocalFileRepository
@@ -9,6 +10,8 @@ import java.net.URL
 import java.net.URLConnection
 
 class TestCachedResourceResolver : DefaultResourceResolver() {
+
+    companion object : Log()
 
     private var cacheRepository = DefaultLocalFileRepository()
 
@@ -51,5 +54,3 @@ class TestCachedResourceResolver : DefaultResourceResolver() {
         }
     }
 }
-
-private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(TestCachedResourceResolver::class.java)

@@ -2,6 +2,9 @@ package com.itangcent.intellij.jvm.standard
 
 import com.google.inject.ImplementedBy
 import com.intellij.psi.*
+import com.itangcent.common.logger.Log
+import com.itangcent.common.logger.traceError
+import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.GsonUtils
 import com.itangcent.intellij.jvm.PsiUtils
 import java.util.*
@@ -21,6 +24,8 @@ interface StandardEnumFieldResolver {
 }
 
 class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
+
+    companion object : Log()
 
     override fun resolveEnumFields(psiEnumConstant: PsiEnumConstant): Map<String, Any?>? {
         val construct = psiEnumConstant.resolveConstructor()
@@ -67,7 +72,7 @@ class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
             enumFieldEvaluators.evaluate(params, fields)
             fields
         } catch (e: Exception) {
-            LOG.info("failed resolve enum ${psiEnumConstant.containingClass?.text}", e)
+            LOG.traceWarn("failed resolve enum ${psiEnumConstant.containingClass?.text}", e)
             params
         }
     }
@@ -168,7 +173,7 @@ class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
                 try {
                     GsonUtils.fromJson("[$constantText]", Array<Any?>::class.java)
                 } catch (e: Exception) {
-                    LOG.warn("failed resolve {$constantText} in ${psiEnumConstant.containingClass?.name}", e)
+                    LOG.traceWarn("failed resolve {$constantText} in ${psiEnumConstant.containingClass?.name}", e)
                     return null
                 }
             }
@@ -235,7 +240,7 @@ class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
             enumFieldEvaluators.evaluate(params, fields)
             fields
         } catch (e: Exception) {
-            LOG.info("failed resolve enum ${psiEnumConstant.containingClass?.text}", e)
+            LOG.traceWarn("failed resolve enum ${psiEnumConstant.containingClass?.text}", e)
             params
         }
     }
@@ -255,7 +260,7 @@ class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
                 .replace("this.", "it.")
             return GroovyEnumFieldEvaluator(script)
         } catch (e: Exception) {
-            LOG.warn("failed resolve construct: ${construct.text}", e)
+            LOG.traceWarn("failed resolve construct: ${construct.text}", e)
         }
         return NOPEnumFieldEvaluator
     }
@@ -334,7 +339,7 @@ abstract class ScriptEnumFieldEvaluator(
                         ("0." + "0".repeat(before.length - 3) + "1").toDouble()
             }
         } catch (e: Exception) {
-            LOG.warn("failed fixDouble $value", e)
+            LOG.traceWarn("failed fixDouble $value", e)
         }
         return value
     }
@@ -349,6 +354,8 @@ abstract class ScriptEnumFieldEvaluator(
     }
 
     abstract fun scriptType(): String
+
+    companion object : Log()
 }
 
 class GroovyEnumFieldEvaluator(script: String) : ScriptEnumFieldEvaluator(script) {
@@ -363,6 +370,3 @@ class CompositedEnumFieldEvaluator(private val enumFieldEvaluators: Collection<E
         enumFieldEvaluators.forEach { it.evaluate(params, fields) }
     }
 }
-
-//background idea log
-private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(StandardEnumFieldResolver::class.java)

@@ -6,6 +6,7 @@ import com.itangcent.common.utils.notNullOrEmpty
 import java.lang.reflect.Proxy
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.concurrent.getOrSet
 import kotlin.reflect.KClass
 import kotlin.reflect.full.isSubclassOf
 
@@ -13,9 +14,10 @@ object SpiUtils {
 
     private val serviceCache = ConcurrentHashMap<Any, Any?>()
 
+    private val loadStack = ThreadLocal<Stack<Any>>()
+
     private val NON = Object()
 
-    @Suppress("UNCHECKED_CAST")
     fun <S : Any> setService(
         service: KClass<S>,
         serviceBean: S
@@ -27,7 +29,7 @@ object SpiUtils {
     fun <S : Any> loadService(
         service: KClass<S>
     ): S? {
-        return serviceCache.computeIfAbsent(service) {
+        return cache(service) {
             loadService(service, SpiUtils::class.java.classLoader) ?: NON
         }?.takeIf { it !== NON } as S?
     }
@@ -36,7 +38,7 @@ object SpiUtils {
     fun <S : Any> loadServices(
         service: KClass<S>
     ): List<S>? {
-        return serviceCache.computeIfAbsent("list-" + service.qualifiedName!!) {
+        return cache("list-" + service.qualifiedName!!) {
             loadServices(service, SpiUtils::class.java.classLoader) ?: NON
         }?.takeIf { it !== NON } as List<S>?
     }
@@ -88,6 +90,23 @@ object SpiUtils {
             cls.java.classLoader, arrayOf(cls.java),
             ProxyBean(loadServices.toTypedArray())
         ) as S
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> cache(key: Any, call: () -> T): T? {
+        serviceCache[key]?.let { return it as T }
+        val stack= loadStack.getOrSet { Stack() }
+        if (stack.contains(key)) {
+            return null
+        }
+        stack.push(key)
+        try {
+            return serviceCache.computeIfAbsent(key) {
+                call()
+            } as T
+        } finally {
+            loadStack.get().pop()
+        }
     }
 }
 

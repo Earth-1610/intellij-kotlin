@@ -2,13 +2,13 @@ package com.itangcent.common.spi
 
 import com.itangcent.common.logger.ILogger
 import com.itangcent.common.logger.ILoggerProvider
+import com.itangcent.common.logger.Log
 import com.itangcent.common.logger.traceError
 import java.util.*
-import kotlin.collections.HashSet
 import kotlin.reflect.KClass
 import kotlin.reflect.full.createInstance
 
-object Setup {
+object Setup : Log() {
 
     private val setups: HashSet<String> = HashSet()
 
@@ -26,9 +26,9 @@ object Setup {
     }
 
     fun setup(key: String, setup: () -> Unit) {
-        LOG?.debug("try setup key:$key")
+        LOG.debug("try setup key:$key")
         if (setups.contains(key)) {
-            LOG?.debug("key:$key has already setup")
+            LOG.debug("key:$key has already setup")
             return
         }
         synchronized(this) {
@@ -78,6 +78,3 @@ object Setup {
         }
     }
 }
-
-
-private val LOG: ILogger? = SpiUtils.loadService(ILoggerProvider::class)?.getLogger(Setup::class)

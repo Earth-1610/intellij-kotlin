@@ -1,9 +1,7 @@
 package com.itangcent.common.utils
 
 import com.itangcent.common.files.*
-import com.itangcent.common.logger.ILogger
-import com.itangcent.common.logger.ILoggerProvider
-import com.itangcent.common.spi.SpiUtils
+import com.itangcent.common.logger.Log
 import org.apache.commons.lang3.StringUtils
 import java.io.File
 import java.io.FileNotFoundException
@@ -14,7 +12,7 @@ import java.nio.file.Files
 import java.util.*
 import java.util.regex.Pattern
 
-object FileUtils {
+object FileUtils : Log() {
 
     fun search(localPath: String, filePattern: String): List<File> {
         val tinyLocalPath = localPath.removeSuffix(File.separator)
@@ -304,15 +302,15 @@ object FileUtils {
     private fun verifiedListFiles(directory: File): Array<File> {
         if (!directory.exists()) {
             val message = "$directory does not exist"
-            LOG?.error(message)
+            LOG.error(message)
         }
         if (!directory.isDirectory) {
             val message = "$directory is not a directory"
-            LOG?.error(message)
+            LOG.error(message)
         }
         val listFiles = directory.listFiles()
         if (listFiles == null) {// null if security restricted
-            LOG?.error("Failed to list contents of $directory")
+            LOG.error("Failed to list contents of $directory")
             return emptyArray()
         }
         return listFiles
@@ -375,7 +373,3 @@ fun File.forceMkdir() {
 fun File.forceDelete() {
     return FileUtils.forceDelete(this)
 }
-
-
-//background idea log
-private val LOG: ILogger? = SpiUtils.loadService(ILoggerProvider::class)?.getLogger(FileUtils::class)

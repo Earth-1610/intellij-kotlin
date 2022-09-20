@@ -12,6 +12,7 @@ import com.intellij.psi.PsiClassOwner
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.LightProjectDescriptor
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
+import com.itangcent.common.logger.Log
 import com.itangcent.common.spi.Setup
 import com.itangcent.common.utils.ResourceUtils
 import com.itangcent.common.utils.forceDelete
@@ -269,7 +270,7 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightCodeInsightFixtureT
         }
     }
 
-    companion object {
+    companion object : Log() {
         init {
             print("load Setup")
             Setup.load()
@@ -290,6 +291,3 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightCodeInsightFixtureT
     protected open val JDK
         get() = "https://raw.githubusercontent.com/openjdk/jdk/jdk8-b120/jdk"
 }
-
-//background idea log
-private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(ContextLightCodeInsightFixtureTestCase::class.java)

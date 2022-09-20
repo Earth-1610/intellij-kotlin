@@ -2,16 +2,12 @@ package com.itangcent.intellij.adaptor
 
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.vfs.VirtualFile
-import com.itangcent.common.spi.ProxyBean
+import com.itangcent.common.logger.Log
 import com.itangcent.common.spi.SafeProxyBean
 import com.itangcent.common.spi.createProxy
-import com.itangcent.intellij.context.ActionContext
 import java.io.File
 
-object ModuleAdaptor {
-
-    //background idea log
-    private val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(ActionContext::class.java)
+object ModuleAdaptor : Log() {
 
     @Suppress("UNCHECKED_CAST")
     private val MODULE_FILE_PATH_GETTER: ModuleFilePathGetter by lazy {
