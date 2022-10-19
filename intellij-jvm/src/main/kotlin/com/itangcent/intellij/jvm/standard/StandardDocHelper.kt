@@ -6,25 +6,22 @@ import com.intellij.psi.*
 import com.intellij.psi.javadoc.PsiDocComment
 import com.intellij.psi.javadoc.PsiDocTag
 import com.intellij.util.containers.stream
-import com.itangcent.common.utils.*
-import com.itangcent.intellij.context.ActionContext
+import com.itangcent.common.utils.appendln
+import com.itangcent.common.utils.firstOrNull
+import com.itangcent.common.utils.joinToString
+import com.itangcent.common.utils.notNullOrBlank
 import com.itangcent.intellij.jvm.DocHelper
 import com.itangcent.intellij.jvm.ExtendProvider
+import com.itangcent.intellij.jvm.docComment
 import java.util.*
+
+const val COMMENT_PREFIX = "//"
 
 @Singleton
 open class StandardDocHelper : DocHelper {
 
     @Inject(optional = true)
     private val extendProvider: ExtendProvider? = null
-
-    private fun <T> PsiElement?.docComment(action: ((PsiDocComment) -> T?)): T? {
-        return this.cast(PsiDocCommentOwner::class)?.let { docCommentOwner ->
-            ActionContext.getContext()!!.callInReadUI {
-                docCommentOwner.docComment?.let { it -> action(it) }
-            }
-        }
-    }
 
     override fun hasTag(psiElement: PsiElement?, tag: String?): Boolean {
         return psiElement.docComment { docComment ->
@@ -161,12 +158,12 @@ open class StandardDocHelper : DocHelper {
         //text maybe null
         val text = psiElement.text ?: return null
 
-        if (text.contains("//")) {
+        if (text.contains(COMMENT_PREFIX)) {
             return psiElement.children
                 .stream()
                 .filter { (it is PsiComment) && it.tokenType == JavaTokenType.END_OF_LINE_COMMENT }
                 .map { it.text.trim() }
-                .map { it.removePrefix("//") }
+                .map { it.removePrefix(COMMENT_PREFIX) }
                 .firstOrNull()
         }
 
@@ -183,7 +180,7 @@ open class StandardDocHelper : DocHelper {
                 break
             }
         }
-        return (nextSibling as? PsiComment)?.text?.trim()?.removePrefix("//")
+        return (nextSibling as? PsiComment)?.text?.trim()?.removePrefix(COMMENT_PREFIX)
     }
 
     override fun getAttrOfField(field: PsiField): String? {

@@ -198,9 +198,6 @@ object PsiClassUtils {
     }
 
     fun nameOfMember(psiElement: PsiElement): String {
-        if (psiElement is PsiNamedElement) {
-            return psiElement.name ?: "anonymous"
-        }
         if (psiElement is PsiMethod) {
             return psiElement.name
         }
@@ -208,6 +205,26 @@ object PsiClassUtils {
             return psiElement.name
         }
         if (psiElement is PsiParameter) {
+            return psiElement.name ?: "anonymous"
+        }
+        if (psiElement is PsiNamedElement) {
+            return psiElement.name ?: "anonymous"
+        }
+        return "anonymous"
+    }
+
+
+    fun logicalNameOfMember(psiElement: PsiElement): String {
+        if (psiElement is PsiMethod) {
+            return psiElement.name + "()"
+        }
+        if (psiElement is PsiField) {
+            return psiElement.name
+        }
+        if (psiElement is PsiParameter) {
+            return psiElement.name ?: "anonymous"
+        }
+        if (psiElement is PsiNamedElement) {
             return psiElement.name ?: "anonymous"
         }
         return "anonymous"

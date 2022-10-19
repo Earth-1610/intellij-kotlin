@@ -722,7 +722,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     resolveEnumOrStatic(
                         context,
                         first,
-                        PsiClassUtils.nameOfMember(classAndPropertyOrMethod.second!!),
+                        PsiClassUtils.logicalNameOfMember(classAndPropertyOrMethod.second!!),
                         defaultPropertyName
                     )
                 } else {
