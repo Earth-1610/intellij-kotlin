@@ -67,7 +67,7 @@ open class DefaultSourceHelper : SourceHelper {
             }
 
             if (original is ClsClassImpl) {
-                val navigationElement = original.getNavigationElement()
+                val navigationElement = original.navigationElement
                 if (navigationElement != original && navigationElement is PsiClass) {
                     return navigationElement
                 }

@@ -4,6 +4,7 @@ import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
 import com.itangcent.common.utils.cast
 import com.itangcent.common.utils.firstOrNull
+import com.itangcent.intellij.jvm.asPsiClass
 import com.itangcent.intellij.jvm.standard.StandardPsiResolver
 import org.jetbrains.kotlin.asJava.classes.KtLightClass
 import org.jetbrains.kotlin.asJava.classes.KtLightClassImpl
@@ -71,7 +72,7 @@ open class KotlinPsiResolver : StandardPsiResolver() {
     override fun resolveClassWithPropertyOrMethod(
         classNameWithProperty: String,
         context: PsiElement
-    ): Pair<PsiClass?, PsiElement?>? {
+    ): Pair<Any?, PsiElement?>? {
         if (!KtPsiUtils.isKtPsiInst(context)) {
             throw NotImplementedError()
         }
@@ -88,12 +89,17 @@ open class KotlinPsiResolver : StandardPsiResolver() {
             return linkClass to null
         }
 
+        val separator = cwp.lastIndexOfAny(charArrayOf('#', '.'))
         //[kotlin.reflect.KClass.properties]
-        if (cwp.contains('.')) {
-            val linkClassName = cwp.substringBeforeLast(".")
-            val linkMethodOrProperty = cwp.substringAfterLast(".", "").trim()
-            linkClass = resolveClass(linkClassName, context) ?: return null
-            return linkClass to resolvePropertyOrMethodOfClass(linkClass, linkMethodOrProperty)
+        if (separator != -1) {
+            val linkClassName = cwp.substring(0, separator)
+            val linkMethodOrProperty = cwp.substring(separator + 1).trim()
+            val cls: Any = (resolveClassOrType(linkClassName, context)
+                ?: resolveClass(linkClassName, context)) ?: return null
+            return cls to resolvePropertyOrMethodOfClass(
+                cls.asPsiClass(com.itangcent.intellij.jvm.element.jvmClassHelper)!!,
+                linkMethodOrProperty
+            )
         }
 
         //[properties]

@@ -2,10 +2,14 @@ package com.itangcent.intellij.jvm.kotlin
 
 import com.google.inject.Inject
 import com.google.inject.Singleton
+import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiField
 import com.intellij.psi.javadoc.PsiDocComment
+import com.itangcent.common.utils.appendln
 import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.jvm.findChildren
+import com.itangcent.intellij.jvm.standard.COMMENT_PREFIX
 import com.itangcent.intellij.jvm.standard.StandardDocHelper
 import org.apache.commons.lang3.StringUtils
 import org.jetbrains.kotlin.asJava.elements.KtLightElement
@@ -13,6 +17,7 @@ import org.jetbrains.kotlin.kdoc.parser.KDocKnownTag
 import org.jetbrains.kotlin.kdoc.psi.api.KDoc
 import org.jetbrains.kotlin.kdoc.psi.impl.KDocSection
 import org.jetbrains.kotlin.kdoc.psi.impl.KDocTag
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtDeclaration
 import java.util.*
 
@@ -30,8 +35,19 @@ class KotlinDocHelper : StandardDocHelper() {
         //text maybe null
         val text = psiElement.text?.trim() ?: return null
 
-        if (text.startsWith("//")) {
-            return text.substringAfter("//")
+        if (text.startsWith(COMMENT_PREFIX)) {
+            return text.lines()
+                .filter { it.startsWith(COMMENT_PREFIX) }
+                .joinToString("\n") {
+                    it.removePrefix(COMMENT_PREFIX)
+                }
+        }
+
+        val ktProperty = psiElement.navigationElement
+        if (ktProperty != null) {
+            ktProperty.findChildren { it is PsiComment && it.tokenType == KtTokens.EOL_COMMENT }
+                ?.let { return it.text.removePrefix(COMMENT_PREFIX) }
+            return super.getSuffixComment(ktProperty)
         }
 
         return super.getSuffixComment(psiElement)
@@ -291,7 +307,7 @@ class KotlinDocHelper : StandardDocHelper() {
             throw NotImplementedError()
         }
 
-        return super.getAttrOfField(field)
+        return this.findDocsByTagAndName(field.containingClass?.constructors?.get(0), "property", field.name)
+            .appendln(super.getAttrOfField(field))
     }
-
 }
