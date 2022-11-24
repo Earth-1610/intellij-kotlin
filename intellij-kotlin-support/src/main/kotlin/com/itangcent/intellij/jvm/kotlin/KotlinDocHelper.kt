@@ -307,7 +307,7 @@ class KotlinDocHelper : StandardDocHelper() {
             throw NotImplementedError()
         }
 
-        return this.findDocsByTagAndName(field.containingClass?.constructors?.get(0), "property", field.name)
+        return this.findDocsByTagAndName(field.containingClass?.constructors?.firstOrNull(), "property", field.name)
             .appendln(super.getAttrOfField(field))
     }
 }

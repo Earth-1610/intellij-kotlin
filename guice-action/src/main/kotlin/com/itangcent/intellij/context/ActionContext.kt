@@ -6,6 +6,7 @@ import com.google.inject.Module
 import com.google.inject.binder.AnnotatedConstantBindingBuilder
 import com.google.inject.binder.LinkedBindingBuilder
 import com.google.inject.matcher.Matcher
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.project.Project
@@ -212,13 +213,13 @@ class ActionContext {
         val contextStatus = getContextStatus()
         val boundaries = contextStatus.boundaries()
         boundaries?.down()
-        activeThreadCnt[ThreadFlag.ASYNC.ordinal]!!.getAndIncrement()
+        activeThreadCnt[ThreadFlag.ASYNC.ordinal].getAndIncrement()
         return executorService.submit {
             try {
                 innerCheckStatus()
                 setContext(contextStatus, ThreadFlag.ASYNC)
                 runnable()
-            } catch (e: ProcessCanceledException) {
+            } catch (_: ProcessCanceledException) {
             } catch (e: Exception) {
                 this.instance(Logger::class).traceError("error in Async", e)
             } finally {
@@ -234,8 +235,8 @@ class ActionContext {
         val contextStatus = getContextStatus()
         val boundaries = contextStatus.boundaries()
         boundaries?.down()
-        activeThreadCnt[ThreadFlag.ASYNC.ordinal]!!.getAndIncrement()
-        return executorService.submit(Callable<T> {
+        activeThreadCnt[ThreadFlag.ASYNC.ordinal].getAndIncrement()
+        return executorService.submit(Callable {
             try {
                 innerCheckStatus()
                 setContext(contextStatus, ThreadFlag.ASYNC)
@@ -260,7 +261,7 @@ class ActionContext {
                     contextStatus,
                     ThreadFlag.SWING
                 )
-                activeThreadCnt[ThreadFlag.SWING.ordinal]!!.getAndIncrement()
+                activeThreadCnt[ThreadFlag.SWING.ordinal].getAndIncrement()
                 try {
                     runnable()
                 } finally {
@@ -274,14 +275,14 @@ class ActionContext {
                 boundaries?.down()
                 EventQueue.invokeLater {
                     try {
-                        activeThreadCnt[ThreadFlag.SWING.ordinal]!!.getAndIncrement()
+                        activeThreadCnt[ThreadFlag.SWING.ordinal].getAndIncrement()
                         innerCheckStatus()
                         setContext(
                             contextStatus,
                             ThreadFlag.SWING
                         )
                         runnable()
-                    } catch (e: ProcessCanceledException) {
+                    } catch (_: ProcessCanceledException) {
                     } catch (e: Exception) {
                         this.instance(Logger::class).traceError("error in SwingUI", e)
                     } finally {
@@ -301,7 +302,7 @@ class ActionContext {
             EventQueue.isDispatchThread() -> {
                 val contextStatus = getContextStatus()
                 try {
-                    activeThreadCnt[ThreadFlag.SWING.ordinal]!!.getAndIncrement()
+                    activeThreadCnt[ThreadFlag.SWING.ordinal].getAndIncrement()
                     setContext(
                         contextStatus,
                         ThreadFlag.SWING
@@ -319,7 +320,7 @@ class ActionContext {
                 val valueHolder: ValueHolder<T> = ValueHolder()
                 EventQueue.invokeLater {
                     try {
-                        activeThreadCnt[ThreadFlag.SWING.ordinal]!!.getAndIncrement()
+                        activeThreadCnt[ThreadFlag.SWING.ordinal].getAndIncrement()
                         setContext(
                             contextStatus,
                             ThreadFlag.SWING
@@ -354,14 +355,14 @@ class ActionContext {
                 WriteCommandAction.runWriteCommandAction(project, "callInWriteUI",
                     SpiUtils.loadService(CustomInfo::class)?.pluginName() ?: "intellij-plugin", Runnable {
                         try {
-                            activeThreadCnt[ThreadFlag.WRITE.ordinal]!!.getAndIncrement()
+                            activeThreadCnt[ThreadFlag.WRITE.ordinal].getAndIncrement()
                             innerCheckStatus()
                             setContext(
                                 contextStatus,
                                 ThreadFlag.WRITE
                             )
                             runnable()
-                        } catch (e: ProcessCanceledException) {
+                        } catch (_: ProcessCanceledException) {
                         } catch (e: Exception) {
                             this.instance(Logger::class).traceError("error in WriteUI", e)
                         } finally {
@@ -390,7 +391,7 @@ class ActionContext {
                 SpiUtils.loadService(CustomInfo::class)?.pluginName() ?: "intellij-plugin",
                 Runnable {
                     try {
-                        activeThreadCnt[ThreadFlag.WRITE.ordinal]!!.getAndIncrement()
+                        activeThreadCnt[ThreadFlag.WRITE.ordinal].getAndIncrement()
                         setContext(
                             contextStatus,
                             ThreadFlag.WRITE
@@ -421,14 +422,14 @@ class ActionContext {
             boundaries?.down()
             ReadAction.run<Throwable> {
                 try {
-                    activeThreadCnt[ThreadFlag.READ.ordinal]!!.getAndIncrement()
+                    activeThreadCnt[ThreadFlag.READ.ordinal].getAndIncrement()
                     setContext(
                         contextStatus,
                         ThreadFlag.READ
                     )
                     innerCheckStatus()
                     runnable()
-                } catch (e: ProcessCanceledException) {
+                } catch (_: ProcessCanceledException) {
                 } catch (e: Exception) {
                     this.instance(Logger::class).traceError("error in ReadUI", e)
                 } finally {
@@ -451,7 +452,7 @@ class ActionContext {
             val valueHolder: ValueHolder<T> = ValueHolder()
             ReadAction.run<Throwable> {
                 try {
-                    activeThreadCnt[ThreadFlag.READ.ordinal]!!.getAndIncrement()
+                    activeThreadCnt[ThreadFlag.READ.ordinal].getAndIncrement()
                     setContext(
                         contextStatus,
                         ThreadFlag.READ
@@ -466,6 +467,67 @@ class ActionContext {
                     boundaries?.up()
                     releaseContext()
                     activeThreadCnt[ThreadFlag.READ.ordinal].getAndDecrement()
+                }
+            }
+            return valueHolder.value()
+        }
+    }
+
+    fun runInAWT(runnable: () -> Unit) {
+        innerCheckStatus()
+        if (getFlag() == ThreadFlag.AWT.value) {
+            runnable()
+        } else {
+            val contextStatus = getContextStatus()
+            val boundaries = contextStatus.boundaries()
+            boundaries?.down()
+            ApplicationManager.getApplication().invokeLater {
+                try {
+                    activeThreadCnt[ThreadFlag.AWT.ordinal].getAndIncrement()
+                    setContext(
+                        contextStatus,
+                        ThreadFlag.AWT
+                    )
+                    innerCheckStatus()
+                    runnable()
+                } catch (e: ProcessCanceledException) {
+                } catch (e: Exception) {
+                    this.instance(Logger::class).traceError("error in AWT UI", e)
+                } finally {
+                    boundaries?.up()
+                    releaseContext()
+                    activeThreadCnt[ThreadFlag.AWT.ordinal].getAndDecrement()
+                }
+            }
+        }
+    }
+
+    fun <T> callInAWT(callable: () -> T?): T? {
+        innerCheckStatus()
+        if (getFlag() == ThreadFlag.AWT.value) {
+            return callable()
+        } else {
+            val contextStatus = getContextStatus()
+            val boundaries = contextStatus.boundaries()
+            boundaries?.down()
+            val valueHolder: ValueHolder<T> = ValueHolder()
+            ApplicationManager.getApplication().invokeLater {
+                try {
+                    activeThreadCnt[ThreadFlag.AWT.ordinal].getAndIncrement()
+                    setContext(
+                        contextStatus,
+                        ThreadFlag.AWT
+                    )
+                    valueHolder.compute {
+                        innerCheckStatus()
+                        callable()
+                    }
+                } catch (e: Throwable) {
+                    valueHolder.failed(e)
+                } finally {
+                    boundaries?.up()
+                    releaseContext()
+                    activeThreadCnt[ThreadFlag.AWT.ordinal].getAndDecrement()
                 }
             }
             return valueHolder.value()
@@ -1072,6 +1134,7 @@ enum class ThreadFlag(val value: Int) {
     READ(1),
     WRITE(2),
     SWING(4),
+    AWT(8),
     INVALID(-1)
 }
 
