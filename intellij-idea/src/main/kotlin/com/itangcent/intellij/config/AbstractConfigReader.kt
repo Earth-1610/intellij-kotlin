@@ -2,7 +2,6 @@ package com.itangcent.intellij.config
 
 import com.google.inject.Inject
 import com.itangcent.common.logger.Log
-import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.text.TemplateUtils
 import com.itangcent.common.utils.*
 import com.itangcent.intellij.config.resource.FileResource
@@ -311,13 +310,23 @@ abstract class AbstractConfigReader : MutableConfigReader {
             val yaml = Yaml()
             try {
                 val yamlProperties = yaml.loadAll(content)
-                for (yamlProperty in yamlProperties) {
-                    if (yamlProperty is Map<*, *>) {
-                        handle(yamlProperty as Map<*, *>)
-                    }
-                }
+                resolveProperties(yamlProperties, handle)
             } catch (e: Exception) {
-                logger.traceWarn("load yaml failed", e)
+                val yamlProperties = yaml.loadAll(content.replace(Regex("@(.*?)@")) {
+                    "\${${it.groupValues[0]}}"
+                })
+                resolveProperties(yamlProperties, handle)
+            }
+        }
+
+        private fun resolveProperties(
+            yamlProperties: Iterable<Any>,
+            handle: (Map<*, *>) -> Unit
+        ) {
+            for (yamlProperty in yamlProperties) {
+                if (yamlProperty is Map<*, *>) {
+                    handle(yamlProperty as Map<*, *>)
+                }
             }
         }
     }
