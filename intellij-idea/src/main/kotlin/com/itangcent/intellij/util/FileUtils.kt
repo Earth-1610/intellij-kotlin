@@ -4,11 +4,15 @@ import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDirectory
 import com.intellij.psi.PsiFile
+import com.itangcent.common.logger.Log
+import com.itangcent.common.logger.traceError
+import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.forceMkdirParent
+import com.itangcent.intellij.context.ActionContext
 import java.io.File
 import java.util.*
 
-object FileUtils {
+object FileUtils :Log(){
 
     fun getLastModified(psiFile: PsiFile): Long? {
         val lastModified = psiFile.modificationStamp
@@ -22,8 +26,13 @@ object FileUtils {
     }
 
     fun forceSave(file: VirtualFile, content: ByteArray) {
-        WriteAction.run<Exception> {
-            file.setBinaryContent(content)
+        try {
+            forceSave(file.path,content)
+        } catch (e: Exception) {
+            LOG.traceWarn("failed save content to file ${file.path}",e)
+            ActionContext.getContext()!!.runInWriteUI {
+                file.setBinaryContent(content)
+            }
         }
     }
 

@@ -3,7 +3,6 @@ package com.itangcent.intellij.jvm.standard
 import com.google.inject.ImplementedBy
 import com.intellij.psi.*
 import com.itangcent.common.logger.Log
-import com.itangcent.common.logger.traceError
 import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.GsonUtils
 import com.itangcent.intellij.jvm.PsiUtils
@@ -158,7 +157,7 @@ class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
     private fun resolveWithoutConstruct(
         psiEnumConstant: PsiEnumConstant
     ): Map<String, Any?>? {
-        var constantText = psiEnumConstant.text
+        var constantText = psiEnumConstant.text ?: ""
         val paramArray: Array<Any?>
 
         if (!constantText.contains('(')) {
