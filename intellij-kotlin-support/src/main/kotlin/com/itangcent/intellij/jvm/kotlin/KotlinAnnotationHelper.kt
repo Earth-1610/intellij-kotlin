@@ -98,8 +98,7 @@ class KotlinAnnotationHelper : AnnotationHelper {
 
     @Suppress("UNCHECKED_CAST")
     override fun findAttr(psiElement: PsiElement?, annName: String, vararg attrs: String): Any? {
-        val ktAnnotation = findKtAnnotation(psiElement, annName)
-        if (ktAnnotation == null) return null
+        val ktAnnotation = findKtAnnotation(psiElement, annName) ?: return null
         return actionContext.callInReadUI {
             if (attrs.contains("value")) {
                 var allValue = 0

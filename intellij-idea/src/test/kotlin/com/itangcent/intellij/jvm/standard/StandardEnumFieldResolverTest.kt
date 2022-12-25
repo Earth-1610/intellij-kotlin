@@ -148,7 +148,7 @@ internal class StandardEnumFieldResolverTest : ContextLightCodeInsightFixtureTes
                 Mockito.`when`(it.containingClass).thenReturn(psiClass)
             }
             Assert.assertEquals(
-                "{\"levelInt\":40.0,\"levelStr\":\"ERROR\"}",
+                "{\"levelInt\":40,\"levelStr\":\"ERROR\"}",
                 GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(psiEnumConstant))
             )
         }
