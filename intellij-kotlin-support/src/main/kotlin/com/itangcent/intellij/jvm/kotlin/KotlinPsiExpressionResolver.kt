@@ -10,10 +10,10 @@ import com.itangcent.common.utils.invokeMethod
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.PsiExpressionResolver
 import com.itangcent.intellij.jvm.PsiResolver
+import com.itangcent.intellij.jvm.adaptor.KtLightFieldAdaptor
 import com.itangcent.intellij.jvm.adaptor.KtUltraLightFieldAdaptor
 import com.itangcent.intellij.jvm.standard.Operand
 import com.itangcent.intellij.jvm.standard.StandardOperand
-import org.jetbrains.kotlin.asJava.elements.KtLightFieldImpl
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.plainContent
@@ -28,6 +28,15 @@ class KotlinPsiExpressionResolver : PsiExpressionResolver {
     private val psiResolver: PsiResolver = ActionContext.local()
 
     override fun process(psiElement: PsiElement): Any? {
+        return doProcess(psiElement).also {
+            LOG.debug(
+                "process ktElement: type:${psiElement::class}, text:【${psiElement.text.flatten()}】" +
+                        "-> $it"
+            )
+        }
+    }
+
+    private fun doProcess(psiElement: PsiElement): Any? {
         if (!KtPsiUtils.isKtPsiInst(psiElement)) {
             throw NotImplementedError()
         }
@@ -49,8 +58,8 @@ class KotlinPsiExpressionResolver : PsiExpressionResolver {
                 return processBinaryExpression(psiElement)
             }
 
-            psiElement is KtLightFieldImpl<*> -> {
-                return psiElement.computeConstantValue()
+            KtLightFieldAdaptor.isKtLightField(psiElement) -> {
+                return KtLightFieldAdaptor.computeConstantValue(psiElement)
             }
 
             KtUltraLightFieldAdaptor.isKtUltraLightField(psiElement) -> {
@@ -70,7 +79,7 @@ class KotlinPsiExpressionResolver : PsiExpressionResolver {
             }
 
             psiElement is KtStringTemplateExpression -> {
-                return psiElement.plainContent
+                return psiElement.plainContent()
             }
 
             psiElement is KtCallExpression -> {
@@ -108,6 +117,15 @@ class KotlinPsiExpressionResolver : PsiExpressionResolver {
 
         }
         throw NotImplementedError("not implemented")
+    }
+
+    private fun KtStringTemplateExpression.plainContent(): String {
+        val content = this.plainContent
+        LOG.debug("$this.plainContent -> content")
+        if (content.startsWith('\"') && content.endsWith('\"')) {
+            return content.substring(1, content.length - 1)
+        }
+        return this.plainContent
     }
 
     private fun processDot(ktDotQualifiedExpression: KtDotQualifiedExpression): Any? {

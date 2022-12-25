@@ -30,7 +30,6 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
     private val registerGenericExpressionResolverHandler: LinkedList<Pair<(Any) -> Boolean, (Any) -> Any?>> =
         LinkedList()
 
-    @Suppress("UNCHECKED_CAST")
     override fun <T : Any> registerExpressionResolver(cls: KClass<T>, handle: (T) -> Any?) {
         registerExpressionResolver({ it::class.isSubclassOf(cls) }, handle)
     }

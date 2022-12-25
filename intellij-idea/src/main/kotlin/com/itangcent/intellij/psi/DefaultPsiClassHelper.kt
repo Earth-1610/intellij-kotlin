@@ -14,11 +14,11 @@ import com.itangcent.intellij.jvm.JsonOption
 import com.itangcent.intellij.jvm.JsonOption.has
 import com.itangcent.intellij.jvm.SourceHelper
 import com.itangcent.intellij.jvm.asPsiClass
+import com.itangcent.intellij.jvm.dev.DevEnv
 import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.duck.SingleDuckType
 import com.itangcent.intellij.jvm.element.ExplicitClass
 import com.itangcent.intellij.jvm.element.ExplicitElement
-import com.itangcent.intellij.jvm.element.ExplicitField
 import org.apache.commons.lang3.StringUtils
 
 @Singleton
@@ -36,6 +36,9 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     @Suppress("UNCHECKED_CAST")
     protected open fun resolveSeeDoc(field: PsiField, fieldName: String, comment: HashMap<String, Any?>) {
         val sees = getSees(field).takeIf { it.notNullOrEmpty() } ?: return
+        devEnv?.dev {
+            logger.debug("get sees from $fieldName: $sees")
+        }
         resolveSeeDoc(field, fieldName, sees, comment)
     }
 
@@ -155,7 +158,11 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         return sourceHelper?.getSourceClass(psiClass) ?: psiClass
     }
 
-    override fun doGetTypeObject(duckType: SingleDuckType?, context: PsiElement, resolveContext: ResolveContext): ObjectHolder? {
+    override fun doGetTypeObject(
+        duckType: SingleDuckType?,
+        context: PsiElement,
+        resolveContext: ResolveContext
+    ): ObjectHolder? {
         if (duckType is SingleDuckType && jvmClassHelper.isEnum(duckType.psiClass())) {
             val convertTo = ruleComputer.computer(ClassRuleKeys.ENUM_CONVERT, duckType, null)
             val enumClass = duckType.psiClass()
@@ -209,7 +216,11 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
             if (typeObj == null) {
                 //use java.lang.String by default.
                 typeObj =
-                    super.doGetTypeObject(duckTypeHelper!!.resolve("java.lang.String", context)!!, context, resolveContext)
+                    super.doGetTypeObject(
+                        duckTypeHelper!!.resolve("java.lang.String", context)!!,
+                        context,
+                        resolveContext
+                    )
             }
             val objectHolder = typeObj.asObjectHolder()
 

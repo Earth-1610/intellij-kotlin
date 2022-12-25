@@ -13,6 +13,7 @@ import com.itangcent.intellij.extend.guice.PostConstruct
 import com.itangcent.intellij.jvm.*
 import com.itangcent.intellij.jvm.JsonOption.has
 import com.itangcent.intellij.jvm.adapt.*
+import com.itangcent.intellij.jvm.dev.DevEnv
 import com.itangcent.intellij.jvm.duck.ArrayDuckType
 import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.duck.SingleDuckType
@@ -38,6 +39,9 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     @Inject
     protected lateinit var logger: Logger
+
+    @Inject(optional = true)
+    protected val devEnv: DevEnv? = null
 
     @Inject
     protected val duckTypeHelper: DuckTypeHelper? = null
@@ -641,14 +645,14 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                 if (readGetter && methodName.maybeGetterMethodPropertyName()) {
                     val propertyName = methodName.getterPropertyName()
-                    if (readMethod && !fieldNames!!.add(propertyName)) continue
+                    if (!fieldNames!!.add(propertyName)) continue
                     if (method.parameters.isNotEmpty()) continue
                     explicitMethod.getReturnType()?.let { handle(propertyName, it, explicitMethod) }
                 }
 
                 if (readSetter && methodName.maybeSetterMethodPropertyName()) {
                     val propertyName = methodName.setterPropertyName()
-                    if (readMethod && !fieldNames!!.add(propertyName)) continue
+                    if (!fieldNames!!.add(propertyName)) continue
                     if (method.parameters.isEmpty()) continue
                     explicitMethod.getParameters().firstOrNull()?.getType()?.let {
                         handle(propertyName, it, explicitMethod)
@@ -709,11 +713,18 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         defaultPropertyName: String
     ): ArrayList<HashMap<String, Any?>>? {
         actionContext.checkStatus()
+        devEnv?.dev {
+            logger.debug("resolveEnumOrStatic: $classNameWithProperty")
+        }
         val clsName: String?
         var property: String? = null
 
         val classAndPropertyOrMethod =
             psiResolver!!.resolveClassWithPropertyOrMethod(classNameWithProperty, context)
+
+        devEnv?.dev {
+            logger.debug("resolve $classNameWithProperty -> $classAndPropertyOrMethod")
+        }
 
         if (classAndPropertyOrMethod?.first != null) {
             val first = classAndPropertyOrMethod.first?.asPsiClass(jvmClassHelper)
@@ -749,6 +760,11 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             clsName = classNameWithProperty.trim()
         }
         val cls = duckTypeHelper!!.resolveClass(clsName, context)?.let { getResourceClass(it) }
+        if (cls == null) {
+            devEnv?.dev {
+                logger.debug("failed resolve $classNameWithProperty")
+            }
+        }
         return resolveEnumOrStatic(context, cls, property, defaultPropertyName)
     }
 
@@ -799,6 +815,15 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                             }"
                         )
                     } else {
+                        devEnv?.dev {
+                            logger.debug(
+                                "select $appropriateProperty in ${cls.qualifiedName} for ${
+                                    PsiClassUtils.qualifiedNameOfMember(
+                                        context
+                                    )
+                                }"
+                            )
+                        }
                         findConstantsByProperty(enumConstants, appropriateProperty, options)
                     }
                 } else if (ruleComputer.computer(ClassRuleKeys.ENUM_USE_ORDINAL, cls) == true) {

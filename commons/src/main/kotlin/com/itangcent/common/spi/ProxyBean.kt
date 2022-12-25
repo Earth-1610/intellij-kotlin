@@ -1,5 +1,7 @@
 package com.itangcent.common.spi
 
+import com.itangcent.common.logger.Log
+import com.itangcent.common.logger.traceError
 import com.itangcent.common.utils.notNullOrEmpty
 import com.itangcent.common.utils.privileged
 import java.lang.reflect.*
@@ -7,6 +9,8 @@ import java.util.*
 import kotlin.reflect.KClass
 
 open class ProxyBean(private val delegates: Array<Any>) : InvocationHandler {
+
+    companion object : Log()
 
     override fun invoke(proxy: Any?, method: Method, args: Array<out Any>?): Any? {
         return invoke(method, args ?: emptyArray())
@@ -32,6 +36,7 @@ open class ProxyBean(private val delegates: Array<Any>) : InvocationHandler {
                 if (e.isNotImplemented()) {
                     continue
                 }
+                LOG.traceError("failed call $delegate.${method.name}", e)
                 if (throwables == null) {
                     throwables = LinkedList()
                 }
