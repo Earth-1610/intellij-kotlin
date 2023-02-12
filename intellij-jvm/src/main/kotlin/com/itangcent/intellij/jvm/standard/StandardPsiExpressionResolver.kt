@@ -53,7 +53,7 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
                 return processReferenceExpression(psiExpression)
             }
 
-            is PsiLiteralExpression -> return psiExpression.value
+            is PsiLiteralValue -> return psiExpression.value
             is PsiBinaryExpression -> return processBinaryExpression(psiExpression)
             is PsiPolyadicExpression -> return processPolyadicExpression(psiExpression)
             is PsiUnaryExpression -> return processUnaryExpression(psiExpression)
@@ -102,6 +102,7 @@ open class StandardPsiExpressionResolver : PsiExpressionResolver {
             .any { return it }
         when (psiElement) {
             is PsiExpression -> return psiExpressionResolver.process(psiElement)
+            is PsiLiteralValue -> return psiElement.value
             is PsiLocalVariable -> {
                 psiElement.initializer?.let {
                     return psiExpressionResolver.process(it)
