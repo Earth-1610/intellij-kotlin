@@ -16,7 +16,7 @@ object IDUtils {
      * uuid:no bar
      */
     fun UUID(): String {
-        return UUID2Tidy(UUID.randomUUID()).toLowerCase()
+        return UUID2Tidy(UUID.randomUUID()).lowercase(Locale.US)
     }
 
     private fun UUID2Tidy(uuid: UUID): String {

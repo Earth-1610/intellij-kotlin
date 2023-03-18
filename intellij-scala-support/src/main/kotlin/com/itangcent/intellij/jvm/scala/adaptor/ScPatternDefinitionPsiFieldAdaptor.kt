@@ -1,6 +1,7 @@
 package com.itangcent.intellij.jvm.scala.adaptor
 
 import com.intellij.navigation.ItemPresentation
+import com.intellij.pom.Navigatable
 import com.intellij.psi.*
 import com.intellij.psi.javadoc.PsiDocComment
 import org.jetbrains.plugins.scala.lang.psi.api.expr.ScExpression
@@ -12,7 +13,8 @@ import org.jetbrains.plugins.scala.lang.psi.api.statements.ScPatternDefinition
 class ScPatternDefinitionPsiFieldAdaptor(private val scPatternDefinition: ScPatternDefinition) :
     ScAdaptor<ScPatternDefinition>,
     PsiField,
-    PsiModifierListOwner by scPatternDefinition {
+    PsiModifierListOwner by scPatternDefinition,
+    Navigatable by scPatternDefinition {
 
     override fun adaptor(): ScPatternDefinition {
         return scPatternDefinition
@@ -117,5 +119,4 @@ class ScPatternDefinitionPsiFieldAdaptor(private val scPatternDefinition: ScPatt
     override fun hashCode(): Int {
         return scPatternDefinition.hashCode()
     }
-
 }

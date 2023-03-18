@@ -6,9 +6,9 @@ import com.itangcent.common.utils.GsonUtils
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.with
 import com.itangcent.testFramework.ContextLightCodeInsightFixtureTestCase
-import com.nhaarman.mockitokotlin2.mock
 import junit.framework.Assert
 import org.mockito.Mockito
+import org.mockito.kotlin.mock
 
 /**
  * Test case of [StandardEnumFieldResolver]

@@ -283,7 +283,7 @@ class TypeParameterTypeWrapper(private val scTypeParam: TypeParameterType) {
                 TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
             }
 
-            override fun <T : Any?> putCopyableUserData(key: Key<T>?, value: T?) {
+            override fun <T : Any?> putCopyableUserData(key: Key<T>, value: T?) {
                 TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
             }
 
@@ -394,7 +394,7 @@ class TypeParameterTypeWrapper(private val scTypeParam: TypeParameterType) {
                 TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
             }
 
-            override fun <T : Any?> getCopyableUserData(key: Key<T>?): T? {
+            override fun <T : Any?> getCopyableUserData(key: Key<T>): T? {
                 return null
             }
 

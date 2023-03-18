@@ -15,7 +15,6 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.swing.*
 import javax.swing.event.*
 import javax.swing.text.JTextComponent
-import kotlin.collections.ArrayList
 import kotlin.jvm.internal.CallableReference
 import kotlin.reflect.*
 import kotlin.reflect.jvm.isAccessible
@@ -66,7 +65,7 @@ class AutoComputer {
      */
     @Suppress("UNCHECKED_CAST")
     fun <T : Any?> value(setter: ASetter<T>, value: T?) {
-        if(!mode.allowed(setter)){
+        if (!mode.allowed(setter)) {
             return
         }
         setter.set(value)
@@ -140,6 +139,7 @@ class AutoComputer {
                 actionStack.push(action)
                 true
             }
+
             actionStack.contains(action) -> false
             else -> {
                 actionStack.push(action)
@@ -1928,7 +1928,10 @@ fun AutoComputer.AutoBind0<Int?>.from(param: JList<*>) {
 }
 
 fun <T, P> AutoComputer.AutoBind1<T, P?>.option(exp: (Optional<P>) -> T) {
-    this.eval { p -> exp(Optional.ofNullable(p)) }
+    this.eval { p ->
+        val optional: Optional<*> = Optional.ofNullable(p)
+        exp(optional as Optional<P>)
+    }
 }
 
 fun <T, X : T> AutoComputer.AutoBind1<T, X>.eval() {
