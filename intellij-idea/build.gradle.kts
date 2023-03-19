@@ -45,6 +45,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params:${properties["junit_version"]}")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${properties["junit_version"]}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${properties["junit_version"]}")
+    testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.7.1")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:1.8.0")
 
 }
@@ -53,10 +54,6 @@ tasks.getByName<Test>("test") {
     useJUnitPlatform()
 }
 
-tasks.register("sourcesJar", Jar::class) {
-    archiveClassifier.set("sources")
-    from(kotlin.sourceSets["main"].kotlin.srcDirs)
-}
 
 intellij {
     version.set("2021.2.1")
@@ -76,6 +73,13 @@ util:
 
 val publishProps = loadProperties(project.rootDir.path + ("/script/publish.properties"))
 
+val sourcesJar by tasks.registering(Jar::class) {
+    archiveClassifier.set("sources")
+    from(kotlin.sourceSets["main"].kotlin.srcDirs)
+}
+val javadocJar by tasks.registering(Jar::class) {
+    archiveClassifier.set("javadoc")
+}
 
 publishing {
     publications {
@@ -85,9 +89,9 @@ publishing {
             version = "${project.version}"
 
             from(components["kotlin"])
-            artifact(tasks.getByName("sourcesJar"))
-//            artifact(sour)
-//            artifact sourcesJar
+            artifact(sourcesJar.get())
+            artifact(javadocJar.get())
+
             pom {
                 name.set("Intellij Kotlin(intellij-idea)")
                 description.set(mvnDescription)

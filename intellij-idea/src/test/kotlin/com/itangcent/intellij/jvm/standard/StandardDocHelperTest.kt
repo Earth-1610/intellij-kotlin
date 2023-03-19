@@ -167,14 +167,13 @@ internal class StandardDocHelperTest : ContextLightCodeInsightFixtureTestCase() 
     }
 
     fun testGetSuffixComment() {
-        assertNull(standardDocHelper.getSuffixComment(commentDemoPsiClass.fields[3]))
+        assertNull(standardDocHelper.getEolComment(commentDemoPsiClass.fields[3]))
         assertEquals(
             "E is a mathematical constant approximately equal to 2.71828",
-            standardDocHelper.getSuffixComment(commentDemoPsiClass.fields[4])
+            standardDocHelper.getEolComment(commentDemoPsiClass.fields[4])
         )
-        assertEquals(
-            "It's before s",
-            standardDocHelper.getSuffixComment(commentDemoPsiClass.fields[5])
+        assertNull(
+            standardDocHelper.getEolComment(commentDemoPsiClass.fields[5])
         )
     }
 
@@ -201,8 +200,7 @@ internal class StandardDocHelperTest : ContextLightCodeInsightFixtureTestCase() 
             standardDocHelper.getAttrOfField(commentDemoPsiClass.fields[4])
         )
         assertEquals(
-            "R, or r, is the eighteenth letter of the modern English alphabet and the ISO basic Latin alphabet.\n" +
-                    "It's before s",
+            "R, or r, is the eighteenth letter of the modern English alphabet and the ISO basic Latin alphabet.",
             standardDocHelper.getAttrOfField(commentDemoPsiClass.fields[5])
         )
     }

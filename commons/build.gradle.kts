@@ -38,10 +38,6 @@ tasks.getByName<Test>("test") {
     useJUnitPlatform()
 }
 
-tasks.register("sourcesJar", Jar::class) {
-    archiveClassifier.set("sources")
-    from(kotlin.sourceSets["main"].kotlin.srcDirs)
-}
 
 val mvnDescription = """
 Help for developing plugins for JetBrains products.
@@ -50,6 +46,13 @@ Common utils
 
 val publishProps = loadProperties(project.rootDir.path + ("/script/publish.properties"))
 
+val sourcesJar by tasks.registering(Jar::class) {
+    archiveClassifier.set("sources")
+    from(kotlin.sourceSets["main"].kotlin.srcDirs)
+}
+val javadocJar by tasks.registering(Jar::class) {
+    archiveClassifier.set("javadoc")
+}
 
 publishing {
     publications {
@@ -59,7 +62,8 @@ publishing {
             version = "${project.version}"
 
             from(components["kotlin"])
-            artifact(tasks.getByName("sourcesJar"))
+            artifact(sourcesJar.get())
+            artifact(javadocJar.get())
 
             pom {
                 name.set("Intellij Kotlin(commons)")
