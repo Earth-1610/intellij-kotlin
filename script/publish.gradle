@@ -1,7 +1,0 @@
-
-ext.'signing.keyId' = '***'
-ext.'signing.password' = '***'
-ext.'signing.secretKeyRingFile' = '/***/gpg/secret.gpg'
-
-ext.'sonatypeUsername'='***'
-ext.'sonatypePassword'='***'

@@ -1,6 +1,7 @@
 package com.itangcent.intellij.jvm.scala.adaptor
 
 import com.intellij.navigation.ItemPresentation
+import com.intellij.pom.Navigatable
 import com.intellij.psi.*
 import com.intellij.psi.javadoc.PsiDocComment
 import org.jetbrains.plugins.scala.lang.psi.api.statements.ScVariable
@@ -9,7 +10,8 @@ import org.jetbrains.plugins.scala.lang.psi.api.statements.ScVariable
  * read only
  */
 class ScalaPsiFieldAdaptor(private val scVariable: ScVariable) : PsiField, ScAdaptor<ScVariable>,
-    PsiModifierListOwner by scVariable {
+    PsiModifierListOwner by scVariable,
+    Navigatable by scVariable {
 
     override fun adaptor(): ScVariable {
         return scVariable

@@ -48,7 +48,7 @@ open class ScalaPsiResolver : StandardPsiResolver() {
         if (cwp.contains('.')) {
             val linkClassName = cwp.substringBeforeLast(".")
             val linkMethodOrProperty = cwp.substringAfterLast(".", "").trim()
-            linkClass = duckTypeHelper.resolveClass(linkClassName, context) ?: return null
+            linkClass = duckTypeHelper!!.resolveClass(linkClassName, context) ?: return null
             return linkClass to resolvePropertyOrMethodOfClass(linkClass, linkMethodOrProperty)
         }
 

@@ -340,10 +340,8 @@ open class StandardPsiResolver : PsiResolver {
     override fun visit(psiElement: Any, visitor: (Any) -> Unit) {
         if (psiElement is PsiElement) {
             psiElement.acceptChildren(object : PsiElementVisitor() {
-                override fun visitElement(element: PsiElement?) {
-                    if (element != null) {
-                        visitor(element)
-                    }
+                override fun visitElement(element: PsiElement) {
+                    visitor(element)
                     super.visitElement(element)
                 }
             })

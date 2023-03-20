@@ -62,12 +62,12 @@ object Setup : Log() {
             SetupAble::class.java, classLoader
         )
         for (setupAble in setupAbles) {
-            LOG?.debug("try setup:$setupAble")
+            LOG.debug("try setup:$setupAble")
             try {
                 setup(setupAble)
-                LOG?.debug("setup:$setupAble success")
+                LOG.debug("setup:$setupAble success")
             } catch (e: Throwable) {
-                LOG?.traceError("setup:$setupAble failed", e)
+                LOG.traceError("setup:$setupAble failed", e)
             }
         }
     }

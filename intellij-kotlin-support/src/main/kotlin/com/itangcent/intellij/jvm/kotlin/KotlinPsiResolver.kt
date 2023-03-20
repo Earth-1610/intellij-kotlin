@@ -9,6 +9,7 @@ import com.itangcent.intellij.jvm.standard.StandardPsiResolver
 import org.jetbrains.kotlin.asJava.classes.KtLightClass
 import org.jetbrains.kotlin.asJava.classes.KtLightClassImpl
 import org.jetbrains.kotlin.asJava.elements.KtLightElement
+import org.jetbrains.kotlin.config.JvmDefaultMode
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtTypeReference
@@ -111,7 +112,9 @@ open class KotlinPsiResolver : StandardPsiResolver() {
     }
 
     override fun getContainingClass(psiElement: PsiElement): PsiClass? {
-        return (psiElement.originalElement as? KtElement)?.containingClass()?.let { KtLightClassImpl(it) }
+        val ktElement = psiElement.originalElement as? KtElement
+        return ktElement?.containingClass()
+            ?.let { KtLightClassImpl(it, JvmDefaultMode.ENABLE, false) }
             ?: super.getContainingClass(psiElement)
     }
 
@@ -158,20 +161,16 @@ open class KotlinPsiResolver : StandardPsiResolver() {
         }
         if (psiElement is KtElement) {
             psiElement.acceptChildren(object : KtVisitor<Void, Any>() {
-                override fun visitElement(element: PsiElement?) {
-                    element?.let {
-                        visitor(it)
-                        visit(it, visitor)
-                    }
+                override fun visitElement(element: PsiElement) {
+                    visitor(element)
+                    visit(element, visitor)
                     super.visitElement(element)
                 }
             }, 1)
 
             psiElement.acceptChildren(object : PsiElementVisitor() {
-                override fun visitElement(element: PsiElement?) {
-                    if (element != null) {
-                        visitor(element)
-                    }
+                override fun visitElement(element: PsiElement) {
+                    visitor(element)
                     super.visitElement(element)
                 }
             })

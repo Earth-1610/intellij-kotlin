@@ -11,13 +11,21 @@ basedir=${scriptDir%/*}
 echo "baseDir:"${basedir}
 cd ${basedir}
 
-if [[ ! -f "$basedir/.gradle/publish.gradle" ]];then
-    echo please edit the publish.gradle:${basedir}/.gradle/publish.gradle
-    cp ${basedir}/script/publish.gradle ${basedir}/.gradle/publish.gradle
+if [[ ! -f "$basedir/.gradle/publish.properties" ]];then
+    echo please edit the publish.properties:${basedir}/.gradle/publish.properties
+    cp ${basedir}/script/publish.properties ${basedir}/.gradle/publish.properties
 else
-    mv ${basedir}/script/publish.gradle ${basedir}/script/publish.gradle.bak
-    cp ${basedir}/.gradle/publish.gradle ${basedir}/script/publish.gradle
-    ./gradlew clean publish --stacktrace
-    mv ${basedir}/script/publish.gradle.bak ${basedir}/script/publish.gradle
+    mv ${basedir}/script/publish.properties ${basedir}/script/publish.properties.bak
+    cp ${basedir}/.gradle/publish.properties ${basedir}/script/publish.properties
+    cp ${basedir}/gradle.properties ${basedir}/gradle.properties.bak
+    echo '\n' >> ${basedir}/gradle.properties
+    cat ${basedir}/script/publish.properties >> ${basedir}/gradle.properties
+    echo "start clean"
+    ./gradlew clean --stacktrace
+    echo "start publish"
+    ./gradlew publish --stacktrace
+    echo "publish completed"
+    mv ${basedir}/script/publish.properties.bak ${basedir}/script/publish.properties
+    mv ${basedir}/gradle.properties.bak ${basedir}/gradle.properties
 fi
 

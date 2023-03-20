@@ -7,7 +7,6 @@ import com.itangcent.mock.AdvancedContextTest
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import kotlin.test.assertEquals
-import kotlin.test.assertSame
 
 /**
  * Test case of [ModuleAdaptor]

@@ -11,7 +11,7 @@ import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiClassOwner
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.LightProjectDescriptor
-import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
+import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase
 import com.itangcent.common.logger.Log
 import com.itangcent.common.spi.Setup
 import com.itangcent.common.utils.ResourceUtils
@@ -37,7 +37,7 @@ import java.security.PrivilegedAction
 import kotlin.reflect.KClass
 
 
-abstract class ContextLightCodeInsightFixtureTestCase : LightCodeInsightFixtureTestCase() {
+abstract class ContextLightCodeInsightFixtureTestCase : LightJavaCodeInsightFixtureTestCase() {
 
     @Inject
     protected lateinit var actionContext: ActionContext
@@ -48,8 +48,8 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightCodeInsightFixtureT
     protected val tempDir: String = FileUtil.getTempDirectory()
 
     override fun getProjectDescriptor(): LightProjectDescriptor {
-        //use java8
-        return JAVA_8
+        //use java11
+        return JAVA_11
     }
 
     open fun customConfig(): String? {
