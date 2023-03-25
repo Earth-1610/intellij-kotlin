@@ -15,16 +15,17 @@ dependencies {
     implementation(project(":commons"))
     implementation(project(":guice-action"))
     implementation(project(":intellij-jvm"))
+
+    implementation("com.google.inject:guice:4.2.2") {
+        exclude("org.checkerframework", "checker-compat-qual")
+        exclude("com.google.guava", "guava")
+    }
 }
 
 tasks.getByName<Test>("test") {
     useJUnitPlatform()
 }
 
-tasks.register("sourcesJar", Jar::class) {
-    archiveClassifier.set("sources")
-    from(kotlin.sourceSets["main"].kotlin.srcDirs)
-}
 
 intellij {
     version.set("2021.2.1")
@@ -41,6 +42,13 @@ support kotlin feature
 
 val publishProps = loadProperties(project.rootDir.path + ("/script/publish.properties"))
 
+val sourcesJar by tasks.registering(Jar::class) {
+    archiveClassifier.set("sources")
+    from(kotlin.sourceSets["main"].kotlin.srcDirs)
+}
+val javadocJar by tasks.registering(Jar::class) {
+    archiveClassifier.set("javadoc")
+}
 
 publishing {
     publications {
@@ -50,9 +58,9 @@ publishing {
             version = "${project.version}"
 
             from(components["kotlin"])
-            artifact(tasks.getByName("sourcesJar"))
-//            artifact(sour)
-//            artifact sourcesJar
+            artifact(sourcesJar.get())
+            artifact(javadocJar.get())
+
             pom {
                 name.set("Intellij Kotlin(intellij-groovy-support)")
                 description.set(mvnDescription)

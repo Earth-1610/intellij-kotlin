@@ -62,7 +62,7 @@ class CommentDemo {
     /**
      * R, or r, is the eighteenth letter of the modern English alphabet and the ISO basic Latin alphabet.
      */
-    private String r;//It's before s
+    private String r;
 
     /**
      * @param a A

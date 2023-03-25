@@ -8,7 +8,7 @@ import com.intellij.psi.PsiField
 import com.intellij.psi.javadoc.PsiDocComment
 import com.itangcent.common.utils.appendln
 import com.itangcent.intellij.context.ActionContext
-import com.itangcent.intellij.jvm.findChildren
+import com.itangcent.intellij.jvm.standard.BLOCK_COMMENT_REGEX
 import com.itangcent.intellij.jvm.standard.COMMENT_PREFIX
 import com.itangcent.intellij.jvm.standard.StandardDocHelper
 import org.apache.commons.lang3.StringUtils
@@ -27,7 +27,7 @@ class KotlinDocHelper : StandardDocHelper() {
     @Inject
     private val actionContext: ActionContext? = null
 
-    override fun getSuffixComment(psiElement: PsiElement): String? {
+    override fun getEolComment(psiElement: PsiElement): String? {
         if (!KtPsiUtils.isKtPsiInst(psiElement)) {
             throw NotImplementedError()
         }
@@ -37,6 +37,7 @@ class KotlinDocHelper : StandardDocHelper() {
 
         if (text.startsWith(COMMENT_PREFIX)) {
             return text.lines()
+                .map { it.trim() }
                 .filter { it.startsWith(COMMENT_PREFIX) }
                 .joinToString("\n") {
                     it.removePrefix(COMMENT_PREFIX)
@@ -45,12 +46,18 @@ class KotlinDocHelper : StandardDocHelper() {
 
         val ktProperty = psiElement.navigationElement
         if (ktProperty != null) {
-            ktProperty.findChildren { it is PsiComment && it.tokenType == KtTokens.EOL_COMMENT }
-                ?.let { return it.text.removePrefix(COMMENT_PREFIX) }
-            return super.getSuffixComment(ktProperty)
+            ktProperty.firstChild.nextSiblings()
+                .findEolComment()
+                ?.let { return it }
+
+            ktProperty.prevSiblings()
+                .findBlockComment()
+                ?.let {
+                    return it
+                }
         }
 
-        return super.getSuffixComment(psiElement)
+        return null
     }
 
     override fun getDocCommentContent(docComment: PsiDocComment): String? {
@@ -307,7 +314,25 @@ class KotlinDocHelper : StandardDocHelper() {
             throw NotImplementedError()
         }
 
-        return this.findDocsByTagAndName(field.containingClass?.constructors?.firstOrNull(), "property", field.name)
-            .appendln(super.getAttrOfField(field))
+        val containingClass = field.containingClass ?: return super.getAttrOfField(field)
+        val attrFromPropertyTag = containingClass.constructors.firstNotNullOfOrNull {
+            this.findDocsByTagAndName(it, "property", field.name)
+        } ?: this.findDocsByTagAndName(containingClass, "property", field.name)
+
+        return attrFromPropertyTag.appendln(super.getAttrOfField(field))
+    }
+
+    override fun PsiComment.eolComment(): String? {
+        if (this.tokenType == KtTokens.EOL_COMMENT) {
+            return text.trim().removePrefix(COMMENT_PREFIX).trimStart()
+        }
+        return null
+    }
+
+    override fun PsiComment.blockComment(): String? {
+        if (this.tokenType == KtTokens.BLOCK_COMMENT) {
+            return BLOCK_COMMENT_REGEX.find(text)?.let { it.groupValues[1].trim() }
+        }
+        return null
     }
 }

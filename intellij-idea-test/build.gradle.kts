@@ -34,11 +34,6 @@ tasks.getByName<Test>("test") {
     useJUnitPlatform()
 }
 
-tasks.register("sourcesJar", Jar::class) {
-    archiveClassifier.set("sources")
-    from(kotlin.sourceSets["main"].kotlin.srcDirs)
-}
-
 intellij {
     version.set("2021.2.1")
     type.set("IC")
@@ -47,27 +42,19 @@ intellij {
     plugins.set(listOf("java"))
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("myLibrary") {
-            from(components["java"])
-        }
-    }
-
-    repositories {
-        maven {
-            name = "myRepo"
-            url = uri(layout.buildDirectory.dir("repo"))
-        }
-    }
-}
-
 val mvnDescription = """
 Help for test intellij-idea
 """
 
 val publishProps = loadProperties(project.rootDir.path + ("/script/publish.properties"))
 
+val sourcesJar by tasks.registering(Jar::class) {
+    archiveClassifier.set("sources")
+    from(kotlin.sourceSets["main"].kotlin.srcDirs)
+}
+val javadocJar by tasks.registering(Jar::class) {
+    archiveClassifier.set("javadoc")
+}
 
 publishing {
     publications {
@@ -77,9 +64,9 @@ publishing {
             version = "${project.version}"
 
             from(components["kotlin"])
-            artifact(tasks.getByName("sourcesJar"))
-//            artifact(sour)
-//            artifact sourcesJar
+            artifact(sourcesJar.get())
+            artifact(javadocJar.get())
+
             pom {
                 name.set("Intellij Kotlin(intellij-idea-test)")
                 description.set(mvnDescription)

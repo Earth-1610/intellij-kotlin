@@ -24,8 +24,11 @@ interface DocHelper {
     fun findDocByTag(psiElement: PsiElement?, tag: String?): String?
 
     fun hasTag(psiElement: PsiElement?, tag: String?): Boolean
-    
-    fun getSuffixComment(psiElement: PsiElement): String?
+
+    /**
+     * get end of line comment
+     */
+    fun getEolComment(psiElement: PsiElement): String?
 
     fun getAttrOfField(field: PsiField): String?
 }

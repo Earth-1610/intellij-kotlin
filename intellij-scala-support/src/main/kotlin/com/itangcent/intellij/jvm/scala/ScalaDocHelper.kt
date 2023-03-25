@@ -179,13 +179,13 @@ class ScalaDocHelper : StandardDocHelper() {
         return null
     }
 
-    override fun getSuffixComment(psiElement: PsiElement): String? {
+    override fun getEolComment(psiElement: PsiElement): String? {
 
         if (!ScPsiUtils.isScPsiInst(psiElement)) {
             throw NotImplementedError()
         }
 
-        return super.getSuffixComment(psiElement)
+        return super.getEolComment(psiElement)
     }
 
     override fun getAttrOfField(field: PsiField): String? {

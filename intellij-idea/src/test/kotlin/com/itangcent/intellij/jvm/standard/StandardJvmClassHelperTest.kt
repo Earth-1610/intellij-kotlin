@@ -294,13 +294,13 @@ internal class StandardJvmClassHelperTest : ContextLightCodeInsightFixtureTestCa
     fun testGetAllMethods() {
         assertEquals(12, jvmClassHelper.getAllMethods(numbersPsiClass).size)
         assertEquals(22, jvmClassHelper.getAllMethods(modelPsiClass).size)
-        assertEquals(7, jvmClassHelper.getAllMethods(javaVersionPsiClass).size)
+        assertEquals(9, jvmClassHelper.getAllMethods(javaVersionPsiClass).size)
     }
 
     fun testGetMethods() {
         assertEquals(0, jvmClassHelper.getMethods(numbersPsiClass).size)
         assertEquals(10, jvmClassHelper.getMethods(modelPsiClass).size)
-        assertEquals(7, jvmClassHelper.getMethods(javaVersionPsiClass).size)
+        assertEquals(9, jvmClassHelper.getMethods(javaVersionPsiClass).size)
     }
 
     fun testGetFields() {

@@ -5,9 +5,7 @@ import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.psi.javadoc.PsiDocComment
 import com.intellij.psi.javadoc.PsiDocTag
-import com.intellij.util.containers.stream
 import com.itangcent.common.utils.appendln
-import com.itangcent.common.utils.firstOrNull
 import com.itangcent.common.utils.joinToString
 import com.itangcent.common.utils.notNullOrBlank
 import com.itangcent.intellij.jvm.DocHelper
@@ -16,6 +14,11 @@ import com.itangcent.intellij.jvm.docComment
 import java.util.*
 
 const val COMMENT_PREFIX = "//"
+val BLOCK_COMMENT_REGEX =
+    Regex(
+        "/\\*+(.*?)\\**/",
+        setOf(RegexOption.MULTILINE, RegexOption.DOT_MATCHES_ALL)
+    )
 
 @Singleton
 open class StandardDocHelper : DocHelper {
@@ -153,42 +156,101 @@ open class StandardDocHelper : DocHelper {
         } ?: Collections.emptyMap()
     }
 
-    override fun getSuffixComment(psiElement: PsiElement): String? {
+    override fun getEolComment(psiElement: PsiElement): String? {
 
         //text maybe null
         val text = psiElement.text ?: return null
 
         if (text.contains(COMMENT_PREFIX)) {
             return psiElement.children
-                .stream()
-                .filter { (it is PsiComment) && it.tokenType == JavaTokenType.END_OF_LINE_COMMENT }
-                .map { it.text.trim() }
-                .map { it.removePrefix(COMMENT_PREFIX) }
-                .firstOrNull()
+                .asSequence()
+                .findEolComment { false }
         }
 
-        var nextSibling: PsiElement = psiElement
-        while (true) {
-            nextSibling = nextSibling.nextSibling ?: return null
-            if (nextSibling is PsiWhiteSpace) {
-                if (nextSibling.text?.contains('\n') == true) {
-                    return null
-                }
-                continue
+        psiElement.nextSiblings()
+            .findEolComment()
+            ?.let {
+                return it
             }
-            if (nextSibling is PsiComment) {
-                break
-            }
-        }
-        return (nextSibling as? PsiComment)?.text?.trim()?.removePrefix(COMMENT_PREFIX)
+
+        return null
     }
 
     override fun getAttrOfField(field: PsiField): String? {
 
         val attrInDoc = getAttrOfDocComment(field)
-        val suffixComment = getSuffixComment(field)
+        val eolComment = getEolComment(field)?.takeIf { it != attrInDoc }
         val docByRule = extendProvider?.extraDoc(field)
 
-        return attrInDoc.appendln(suffixComment).appendln(docByRule)
+        return attrInDoc.appendln(eolComment).appendln(docByRule)
+    }
+
+    open fun Sequence<PsiElement>.findEolComment(
+        stopInUnexpectedElement: (PsiElement) -> Boolean = { true }
+    ): String? {
+        for (next in this) {
+            when {
+                next.isWhiteSpace() -> {
+                    if (next.text?.contains('\n') == true) {
+                        return null
+                    }
+                    continue
+                }
+
+                next is PsiComment -> {
+                    return next.eolComment()
+                }
+            }
+            if (stopInUnexpectedElement(next)) {
+                return null
+            }
+        }
+
+        return null
+    }
+
+    open fun Sequence<PsiElement>.findBlockComment(
+        stopInUnexpectedElement: (PsiElement) -> Boolean = { true }
+    ): String? {
+        for (next in this) {
+            when {
+                next.isWhiteSpace() -> {
+                    continue
+                }
+
+                next is PsiComment -> {
+                    return next.blockComment()
+                }
+
+                stopInUnexpectedElement(next) -> {
+                    return null
+                }
+            }
+        }
+
+        return null
+    }
+
+    open fun PsiElement.isWhiteSpace() = this is PsiWhiteSpace
+
+    open fun PsiComment.eolComment(): String? {
+        if (this.tokenType == JavaTokenType.END_OF_LINE_COMMENT) {
+            return text.trim().removePrefix(COMMENT_PREFIX).trimStart()
+        }
+        return null
+    }
+
+    open fun PsiComment.blockComment(): String? {
+        if (this.tokenType == JavaTokenType.C_STYLE_COMMENT) {
+            return BLOCK_COMMENT_REGEX.find(text)?.let { it.groupValues[1].trim() }
+        }
+        return null
+    }
+
+    protected fun PsiElement.prevSiblings() = generateSequence { it.prevSibling }
+    protected fun PsiElement.nextSiblings() = generateSequence { it.nextSibling }
+
+    protected fun PsiElement.generateSequence(nextFunction: (PsiElement) -> PsiElement?): Sequence<PsiElement> {
+        return generateSequence(nextFunction(this), nextFunction)
     }
 }
