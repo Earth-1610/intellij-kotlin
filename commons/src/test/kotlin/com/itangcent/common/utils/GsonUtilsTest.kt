@@ -13,7 +13,14 @@ class GsonUtilsTest {
     fun testToJson() {
         assertEquals("123", GsonUtils.toJson(123))
         assertEquals("\"123\"", GsonUtils.toJson("123"))
-        assertEquals("{\"1\":1,\"2\":\"2\"}", GsonUtils.toJson(KV.any().set(1, 1).set("2", "2")))
+        assertEquals(
+            "{\"1\":1,\"2\":\"2\",\"3\":\"<>&='\"}", GsonUtils.toJson(
+                KV.any()
+                    .set(1, 1)
+                    .set("2", "2")
+                    .set("3", "<>&='")
+            )
+        )
     }
 
     @Test
