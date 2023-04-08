@@ -272,4 +272,20 @@ class KVTest {
                 .merge(mapOf(1 to 2, 3 to 3, 4 to emptySet<Int>()))
         )
     }
+
+    @Test
+    fun trySet() {
+        kotlin.test.assertEquals(
+            mapOf("x" to 1),
+            mapOf("x" to 1).also {
+                it.trySet("y", 2)
+            }
+        )
+        kotlin.test.assertEquals(
+            hashMapOf("x" to 1, "y" to 2),
+            hashMapOf("x" to 1).also {
+                it.trySet("y", 2)
+            }
+        )
+    }
 }

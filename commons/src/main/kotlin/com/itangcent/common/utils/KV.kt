@@ -66,12 +66,10 @@ inline fun <reified T> Map<*, *>.getAs(key: Any?): T? {
     return this[key] as? T
 }
 
-@Suppress("UNCHECKED_CAST")
 inline fun <reified T> Map<*, *>.getAs(key: Any?, subKey: Any?): T? {
     return this.getAs<Map<*, *>>(key)?.getAs(subKey)
 }
 
-@Suppress("UNCHECKED_CAST")
 inline fun <reified T> Map<*, *>.getAs(key: Any?, subKey: Any?, grandKey: Any?): T? {
     return this.getAs<Map<*, *>>(key)?.getAs<Map<*, *>>(subKey)?.getAs(grandKey)
 }
@@ -83,7 +81,6 @@ fun Map<*, *>.sub(key: String): Map<String, Any?> {
     }
 }
 
-@Suppress("UNCHECKED_CAST")
 fun MutableMap<*, *>.merge(map: Map<*, *>): MutableMap<*, *> {
     map.forEach { this.merge(it.key, it.value) }
     return this
@@ -106,13 +103,15 @@ fun MutableMap<*, *>.merge(key: Any?, value: Any?): MutableMap<*, *> {
 
     if (oldValue is Map<*, *> && value is Map<*, *>) {
         when {
-            oldValue is MutableMap<*, *> -> {
+            oldValue.isMutableMap() -> {
                 (oldValue as MutableMap<Any?, Any?>).merge(value as Map<Any?, Any?>)
             }
-            value is MutableMap<*, *> -> {
+
+            value.isMutableMap() -> {
                 (value as MutableMap<Any?, Any?>).merge(oldValue as Map<Any?, Any?>)
                 (this as MutableMap<Any?, Any?>)[key] = value
             }
+
             else -> {
                 val mergeMap = LinkedHashMap<Any?, Any?>()
                 mergeMap.putAll(oldValue as Map<Any?, Any?>)
@@ -133,6 +132,7 @@ fun MutableMap<*, *>.merge(key: Any?, value: Any?): MutableMap<*, *> {
                     //ignore
                 }
             }
+
             value is MutableCollection<*> -> {
                 try {
                     (value as MutableCollection<Any?>).merge(oldValue as Collection<Any?>)
@@ -190,31 +190,37 @@ fun Any?.isOriginal(): Boolean {
         null -> {
             return true
         }
+
         is Array<*> -> {
             return obj.size == 0 || (obj.size == 1 && obj[0].isOriginal())
         }
+
         is Collection<*> -> {
             return obj.size == 0 || (obj.size == 1 && obj.first().isOriginal())
         }
+
         is Map<*, *> -> {
             return obj.size == 0 || (obj.size == 1 && obj.entries.first().let {
                 (it.key == "key" || it.key.isOriginal()) && it.value.isOriginal()
             })
         }
+
         is Boolean -> {
             return obj
         }
+
         is Number -> {
             return obj.toDouble() == 0.0
         }
+
         is String -> {
             return obj.isBlank()
         }
+
         else -> return false
     }
 }
 
-@Suppress("UNCHECKED_CAST")
 fun KV<*, *>.getAsKv(key: String): KV<String, Any?>? {
     return this[key]?.asKV()
 }
@@ -228,7 +234,7 @@ fun KV<*, *>.sub(key: String): KV<String, Any?> {
 
 @Suppress("UNCHECKED_CAST")
 fun <K, V> Map<out K, V>.mutable(copy: Boolean = false): MutableMap<K, V> {
-    if (!copy && this is MutableMap) {
+    if (!copy && this.isMutableMap()) {
         return this as MutableMap<K, V>
     }
     return LinkedHashMap(this)
@@ -267,6 +273,26 @@ fun Any?.asMap(onCastFailed: (Map<String, Any?>) -> Unit = {}): Map<String, Any?
     val ret = HashMap<String, Any?>()
     onCastFailed(ret)
     return ret
+}
+
+@Suppress("UNCHECKED_CAST")
+fun Map<*, *>.trySet(key: Any?, value: Any?) {
+    try {
+        (this as? MutableMap<Any?, Any?>)?.set(key, value)
+    } catch (_: Exception) {
+    }
+}
+
+private val immutableMapClasses = listOf(
+    emptyMap<Any, Any>()::class,
+    mapOf(1 to 1)::class
+)
+
+fun Any.isMutableMap(): Boolean {
+    if (this !is MutableMap<*, *>) {
+        return false
+    }
+    return !immutableMapClasses.contains(this::class)
 }
 
 private val LOG: ILogger? = SpiUtils.loadService(ILoggerProvider::class)?.getLogger(KV::class)

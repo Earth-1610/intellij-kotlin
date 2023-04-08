@@ -18,7 +18,6 @@ import kotlin.reflect.KClass
  */
 object GsonUtils : Log() {
 
-
     private val gson: Gson by lazy {
         try {
             val numberObjectTypeAdapter = NumberFixedObjectTypeAdapter()
@@ -29,6 +28,7 @@ object GsonUtils : Log() {
                 .registerTypeAdapter(List::class.java, numberObjectTypeAdapter)
                 .registerTypeAdapter(LazilyParsedNumber::class.java, LazilyParsedNumberTypeAdapter())
                 .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
+                .disableHtmlEscaping()
                 .create()
                 .fix()
                 .also {
@@ -51,6 +51,7 @@ object GsonUtils : Log() {
                 .registerTypeAdapter(LazilyParsedNumber::class.java, LazilyParsedNumberTypeAdapter())
                 .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
                 .serializeNulls()
+                .disableHtmlEscaping()
                 .create()
                 .fix()
                 .also {
@@ -73,6 +74,7 @@ object GsonUtils : Log() {
                 .registerTypeAdapter(LazilyParsedNumber::class.java, LazilyParsedNumberTypeAdapter())
                 .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
                 .setPrettyPrinting()
+                .disableHtmlEscaping()
                 .create()
                 .fix()
                 .also {
@@ -93,6 +95,7 @@ object GsonUtils : Log() {
                 .registerTypeAdapter(List::class.java, numberObjectTypeAdapter)
                 .registerTypeAdapter(LazilyParsedNumber::class.java, LazilyParsedNumberTypeAdapter())
                 .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
+                .disableHtmlEscaping()
                 .setPrettyPrinting()
                 .serializeNulls()
                 .create()
@@ -205,8 +208,7 @@ class NumberFixedObjectTypeAdapter : TypeAdapter<Any> {
 
     @Throws(IOException::class)
     override fun read(reader: JsonReader): Any? {
-        val token = reader.peek()
-        when (token) {
+        when (reader.peek()) {
             JsonToken.BEGIN_ARRAY -> {
                 val list = ArrayList<Any?>()
                 reader.beginArray()
