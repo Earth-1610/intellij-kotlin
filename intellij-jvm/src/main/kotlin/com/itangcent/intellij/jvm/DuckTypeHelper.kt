@@ -44,12 +44,15 @@ open class DuckTypeHelper {
             is PsiClass -> {
                 explicit(psiElement)
             }
+
             is PsiMethod -> {
                 ExplicitMethodWithOutGenericInfo(explicit(psiElement.containingClass!!), psiElement)
             }
+
             is PsiField -> {
                 ExplicitFieldWithOutGenericInfo(explicit(psiElement.containingClass!!), psiElement)
             }
+
             else -> {
                 logger!!.error("can not explicit PsiElement beyond class/method/field:$psiElement")
                 null
@@ -217,6 +220,7 @@ open class DuckTypeHelper {
             typeCanonicalText == "?" -> {
                 return javaLangObjectType(context)
             }
+
             typeCanonicalText.endsWith("[]") -> {
                 val componentTypeCanonicalText = typeCanonicalText.removeSuffix(ARRAY_SUFFIX)
                 return resolve(componentTypeCanonicalText, context)?.let {
@@ -225,10 +229,12 @@ open class DuckTypeHelper {
                     )
                 }
             }
+
             typeCanonicalText.startsWith("? extends") -> return resolve(
                 typeCanonicalText.removePrefix("? extends").trim(),
                 context
             )
+
             typeCanonicalText.contains('<') && typeCanonicalText.endsWith('>') -> {
                 val paramCls = extractClassFromCanonicalText(typeCanonicalText, context)
                 if (paramCls != null) {
@@ -250,6 +256,7 @@ open class DuckTypeHelper {
                 logger!!.error("error to find class:$typeCanonicalText")
                 return null
             }
+
             StandardJvmClassHelper.isPrimitive(typeCanonicalText) -> {
                 return SingleUnresolvedDuckType(
                     StandardJvmClassHelper.getPrimitiveType(
@@ -257,6 +264,7 @@ open class DuckTypeHelper {
                     )!!
                 )
             }
+
             else -> {
                 val paramCls = resolveClass(typeCanonicalText, context)
                 return when (paramCls) {
@@ -267,6 +275,7 @@ open class DuckTypeHelper {
                         logger!!.warn("error to resolve class:$typeCanonicalText")
                         null
                     }
+
                     else -> {
                         SingleDuckType(paramCls)
                     }
@@ -305,13 +314,16 @@ open class DuckTypeHelper {
                     param += ch
                     ++waitGt
                 }
+
                 ch == '>' -> {
                     param += ch
                     --waitGt
                 }
+
                 waitGt > 0 -> {
                     param += ch
                 }
+
                 ch == ',' -> {
                     when {
                         waitGt > 0 -> param += ch
@@ -323,6 +335,7 @@ open class DuckTypeHelper {
                         }
                     }
                 }
+
                 else -> param += ch
             }
         }
@@ -351,6 +364,7 @@ open class DuckTypeHelper {
             is ArrayDuckType -> {
                 return buildPsiType(duckType.componentType(), context)?.let { PsiArrayType(it) }
             }
+
             is SingleDuckType -> {
                 return when {
                     duckType.genericInfo.isNullOrEmpty() -> PsiTypesUtil.getClassType(duckType.psiClass())
@@ -366,6 +380,7 @@ open class DuckTypeHelper {
                     }
                 }
             }
+
             else -> {
                 return null
             }
@@ -444,4 +459,8 @@ open class DuckTypeHelper {
     companion object {
         const val ARRAY_SUFFIX = "[]"
     }
+}
+
+fun DuckTypeHelper.findDuckType(canonicalText: String, context: PsiElement): DuckType? {
+    return findType(canonicalText, context)?.let { ensureType(it) }
 }

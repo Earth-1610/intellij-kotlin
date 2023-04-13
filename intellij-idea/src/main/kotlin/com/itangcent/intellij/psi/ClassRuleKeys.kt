@@ -25,6 +25,11 @@ object ClassRuleKeys {
         StringRuleMode.SINGLE
     )
 
+    val FIELD_TYPE: RuleKey<String> = SimpleRuleKey(
+        "field.type",
+        StringRuleMode.SINGLE
+    )
+
     val FIELD_IGNORE: RuleKey<Boolean> =
         SimpleRuleKey(
             "field.ignore",

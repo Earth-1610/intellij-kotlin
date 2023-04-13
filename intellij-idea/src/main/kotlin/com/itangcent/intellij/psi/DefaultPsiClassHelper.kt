@@ -14,7 +14,6 @@ import com.itangcent.intellij.jvm.JsonOption
 import com.itangcent.intellij.jvm.JsonOption.has
 import com.itangcent.intellij.jvm.SourceHelper
 import com.itangcent.intellij.jvm.asPsiClass
-import com.itangcent.intellij.jvm.dev.DevEnv
 import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.duck.SingleDuckType
 import com.itangcent.intellij.jvm.element.ExplicitClass
@@ -27,13 +26,11 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     @Inject(optional = true)
     protected val sourceHelper: SourceHelper? = null
 
-    @Suppress("UNCHECKED_CAST")
     protected open fun resolveSeeDoc(field: PsiField, comment: HashMap<String, Any?>) {
         val sees = getSees(field).takeIf { it.notNullOrEmpty() } ?: return
         resolveSeeDoc(field, sees, comment)
     }
 
-    @Suppress("UNCHECKED_CAST")
     protected open fun resolveSeeDoc(field: PsiField, fieldName: String, comment: HashMap<String, Any?>) {
         val sees = getSees(field).takeIf { it.notNullOrEmpty() } ?: return
         devEnv?.dev {
@@ -42,7 +39,6 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         resolveSeeDoc(field, fieldName, sees, comment)
     }
 
-    @Suppress("UNCHECKED_CAST")
     protected open fun resolveSeeDoc(
         field: PsiField,
         sees: List<String>,
@@ -51,7 +47,6 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         resolveSeeDoc(field, field.name, sees, comment)
     }
 
-    @Suppress("UNCHECKED_CAST")
     protected open fun resolveSeeDoc(
         field: PsiField,
         fieldName: String,
@@ -70,7 +65,6 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
     protected open fun resolveSeeDoc(
         fieldName: String,
         context: PsiMember,
@@ -122,10 +116,10 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     override fun getJsonFieldName(psiField: PsiField): String {
         try {
             val nameByRule = ruleComputer.computer(ClassRuleKeys.FIELD_NAME, psiField)
-            var name = if (!nameByRule.isNullOrBlank()) {
-                nameByRule
-            } else {
+            var name = if (nameByRule.isNullOrBlank()) {
                 psiField.name
+            } else {
+                nameByRule
             }
             ruleComputer.computer(ClassRuleKeys.FIELD_NAME_PREFIX, psiField)?.let {
                 name = it + name
@@ -144,8 +138,16 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     override fun getJsonFieldName(psiMethod: PsiMethod): String {
         try {
             val nameByRule = ruleComputer.computer(ClassRuleKeys.FIELD_NAME, psiMethod)
-            if (!nameByRule.isNullOrBlank()) {
-                return nameByRule
+            var name = if (nameByRule.isNullOrBlank()) {
+                super.getJsonFieldName(psiMethod)
+            } else {
+                nameByRule
+            }
+            ruleComputer.computer(ClassRuleKeys.FIELD_NAME_PREFIX, psiMethod)?.let {
+                name = it + name
+            }
+            ruleComputer.computer(ClassRuleKeys.FIELD_NAME_SUFFIX, psiMethod)?.let {
+                name += it
             }
         } catch (e: Exception) {
             logger.traceWarn("error to get field name:${PsiClassUtils.fullNameOfMethod(psiMethod)}", e)
@@ -249,7 +251,6 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         return super.beforeParseFieldOrMethod(fieldName, fieldType, fieldOrMethod, resourcePsiClass, resolveContext, kv)
     }
 
-    @Suppress("UNCHECKED_CAST")
     override fun parseFieldOrMethod(
         fieldName: String,
         fieldType: DuckType,
@@ -327,7 +328,6 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         super.parseFieldOrMethod(fieldName, fieldType, fieldOrMethod, resourcePsiClass, resolveContext, kv)
     }
 
-    @Suppress("UNCHECKED_CAST")
     override fun afterParseFieldOrMethod(
         fieldName: String,
         fieldType: DuckType,
