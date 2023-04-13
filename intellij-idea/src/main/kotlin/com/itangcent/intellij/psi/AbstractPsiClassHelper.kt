@@ -174,6 +174,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 doGetTypeObject(componentType, context, resolveContext.next())?.let { list.add(it) }
                 return objectHolder
             }
+
             jvmClassHelper.isCollection(castTo) -> {   //list type
                 resolveContext.incrementElement()
                 val list = ArrayList<Any?>()
@@ -183,6 +184,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 doGetTypeObject(iterableType, context, resolveContext.next())?.let { list.add(it) }
                 return objectHolder
             }
+
             jvmClassHelper.isMap(castTo) -> {   //list type
                 resolveContext.incrementElement()
                 val map: HashMap<Any, Any?> = HashMap()
@@ -215,10 +217,12 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                 return objectHolder
             }
+
             jvmClassHelper.isEnum(psiType) -> {
                 resolveContext.incrementElement()
                 return ResolvedObjectHolder(parseEnum(psiType, context, resolveContext))
             }
+
             else -> {
                 val typeCanonicalText = castTo.canonicalText
                 if (typeCanonicalText.contains('<') && typeCanonicalText.endsWith('>')) {
@@ -229,6 +233,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                             cacheResolvedInfo(cacheKey, result)
                             result
                         }
+
                         else -> null
                     }
                 } else {
@@ -436,6 +441,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         when {
             isNormalType(duckType) -> //normal Type
                 return ResolvedObjectHolder(getDefaultValue(duckType))
+
             jvmClassHelper.isCollection(duckType) -> {   //list type
                 resolveContext.incrementElement()
                 val list = ArrayList<Any>()
@@ -449,6 +455,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                 return objectHolder
             }
+
             jvmClassHelper.isMap(duckType) -> {
                 resolveContext.incrementElement()
 
@@ -504,9 +511,11 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                 return objectHolder
             }
+
             jvmClassHelper.isEnum(duckType) -> {
                 return ResolvedObjectHolder(parseEnum(duckType, context, resolveContext))
             }
+
             else -> //class type
             {
                 if (psiClass is PsiTypeParameter) {
@@ -608,9 +617,8 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
         val readMethod = option.has(JsonOption.READ_GETTER_OR_SETTER)
 
-        var fieldNames: HashSet<String>? = null
-        if (readMethod) {
-            fieldNames = HashSet()
+        val fieldNames: HashSet<String> by lazy {
+            HashSet()
         }
 
         for (explicitField in psiClass.fields()) {
@@ -624,8 +632,12 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 //                continue
 //            }
 
-            if (!readMethod || fieldNames!!.add(explicitField.name())) {
-                handle(getJsonFieldName(psiField), explicitField.getType(), explicitField)
+            if (!readMethod || fieldNames.add(explicitField.name())) {
+                handle(
+                    getJsonFieldName(psiField),
+                    explicitField.jsonType(explicitField.getType()),
+                    explicitField
+                )
             }
         }
 
@@ -645,22 +657,23 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
                 if (readGetter && methodName.maybeGetterMethodPropertyName()) {
                     val propertyName = methodName.getterPropertyName()
-                    if (!fieldNames!!.add(propertyName)) continue
+                    if (!fieldNames.add(propertyName)) continue
                     if (method.parameters.isNotEmpty()) continue
-                    explicitMethod.getReturnType()?.let { handle(propertyName, it, explicitMethod) }
+                    explicitMethod.getReturnType()?.let {
+                        handle(propertyName, explicitMethod.jsonType(it), explicitMethod)
+                    }
                 }
 
                 if (readSetter && methodName.maybeSetterMethodPropertyName()) {
                     val propertyName = methodName.setterPropertyName()
-                    if (!fieldNames!!.add(propertyName)) continue
+                    if (!fieldNames.add(propertyName)) continue
                     if (method.parameters.isEmpty()) continue
                     explicitMethod.getParameters().firstOrNull()?.getType()?.let {
-                        handle(propertyName, it, explicitMethod)
+                        handle(propertyName, explicitMethod.jsonType(it), explicitMethod)
                     }
                 }
             }
         }
-        fieldNames?.clear()
     }
 
     protected open fun tryCastTo(psiType: PsiType, context: PsiElement): PsiType {
@@ -706,7 +719,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         return null
     }
 
-    @Suppress("UNCHECKED_CAST")
     override fun resolveEnumOrStatic(
         classNameWithProperty: String,
         context: PsiElement,
@@ -1030,6 +1042,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             psiType is PsiArrayType -> {   //array type
                 return psiType.getDeepComponentType()
             }
+
             jvmClassHelper.isCollection(psiType) -> {   //list type
                 val iterableType = PsiUtil.extractIterableTypeParameter(psiType, false)
                 return when {
@@ -1037,6 +1050,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     else -> PsiType.NULL
                 }
             }
+
             else -> {
                 return psiType
             }
@@ -1050,12 +1064,17 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     override fun getJsonFieldName(psiMethod: PsiMethod): String {
         val name = psiMethod.name
         if (name.startsWith("is")) {
-            return name.removePrefix("is").decapitalize()
+            return name.removePrefix("is").replaceFirstChar { it.lowercase(Locale.getDefault()) }
         }
         if (name.startsWith("get")) {
-            return name.removePrefix("get").decapitalize()
+            return name.removePrefix("get").replaceFirstChar { it.lowercase(Locale.getDefault()) }
         }
         return name
+    }
+
+    protected fun ExplicitElement<*>.jsonType(originDuckType: DuckType): DuckType {
+        val fieldType = ruleComputer.computer(ClassRuleKeys.FIELD_TYPE, this) ?: return originDuckType
+        return duckTypeHelper!!.findDuckType(fieldType, this.psi()) ?: originDuckType
     }
 
     open fun getResourceClass(psiClass: PsiClass): PsiClass {
@@ -1074,6 +1093,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     SingleDuckType(resourceClass, duckType.genericInfo) as T
                 }
             }
+
             is ArrayDuckType -> {
                 val componentType = duckType.componentType()
                 val resourceComponentType = getResourceType(componentType)
@@ -1083,6 +1103,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     ArrayDuckType(componentType) as T
                 }
             }
+
             else -> duckType
         }
     }

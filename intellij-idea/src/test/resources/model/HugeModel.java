@@ -40,7 +40,7 @@ class HugeModel {
      *         }
      *     }
      * </pre>
-     * see @{link somelink}
+     * see {@link somelink}
      * tail line
      */
     private String c;
@@ -59,8 +59,9 @@ class HugeModel {
      *
      * </pre>
      * <p>
-     * see @{link somelink}
+     * see {@link somelink}
      * tail line
+     * @type com.itangcent.model.Node
      */
     private String d;
 
