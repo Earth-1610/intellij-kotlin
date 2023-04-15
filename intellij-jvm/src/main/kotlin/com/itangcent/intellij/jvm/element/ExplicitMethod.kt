@@ -50,7 +50,7 @@ class ExplicitMethodWithGenericInfo(
 
     override fun superMethods(): Array<ExplicitMethod> {
         val superMethods = psiMethod.findSuperMethods()
-        if (superMethods.isNullOrEmpty()) {
+        if (superMethods.isEmpty()) {
             return emptyArray()
         }
         return containClass.methods().filter {
@@ -125,7 +125,7 @@ class ExplicitMethodWithOutGenericInfo(
      */
     override fun superMethods(): Array<ExplicitMethod> {
         val superMethods = psiMethod.findSuperMethods()
-        if (superMethods.isNullOrEmpty()) {
+        if (superMethods.isEmpty()) {
             return emptyArray()
         }
         return containClass.methods().filter {

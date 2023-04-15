@@ -35,6 +35,8 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
     private lateinit var nodePsiClass: PsiClass
     private lateinit var hugeModelPsiClass: PsiClass
     private lateinit var userInfoPsiClass: PsiClass
+    private lateinit var userInfoDetailPsiClass: PsiClass
+    private lateinit var userLoginInfoPsiClass: PsiClass
     private lateinit var javaVersionPsiClass: PsiClass
     private lateinit var numbersPsiClass: PsiClass
     private lateinit var myNoArgConstantPsiClass: PsiClass
@@ -61,6 +63,8 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
         nodePsiClass = loadClass("model/Node.java")!!
         hugeModelPsiClass = loadClass("model/HugeModel.java")!!
         userInfoPsiClass = loadClass("model/UserInfo.java")!!
+        userInfoDetailPsiClass = loadClass("model/UserInfoDetail.java")!!
+        userLoginInfoPsiClass = loadClass("model/UserLoginInfo.java")!!
         resultPsiClass = loadClass("model/Result.java")!!
     }
 
@@ -526,6 +530,18 @@ internal class DefaultPsiClassHelperTest : ContextLightCodeInsightFixtureTestCas
         assertEquals(
             "{\"a\":\"\",\"@comment\":{\"a\":\"single line\",\"b\":\"multi-line\\nsecond line\",\"c\":\"head line\\nsecond line\\n<pre>\\n    {\\n        \\\"a\\\":\\\"b\\\",\\n        \\\"c\\\":{\\n             \\\"x\\\":[\\\"y\\\"]\\n        }\\n    }\\n</pre>\\nsee{@link somelink}\\ntail line\",\"d\":\"head line\\nsecond line\\n<pre>\\n\\n    {\\n        \\\"a\\\":\\\"b\\\",\\n        \\\"c\\\":{\\n             \\\"x\\\":[\\\"y\\\"]\\n        }\\n    }\\n\\n</pre>\\n<p>\\nsee{@link somelink}\\ntail line\",\"e\":\"E is a mathematical constant approximately equal to 2.71828\",\"r\":\"R, or r, is the eighteenth letter of the modern English alphabet and the ISO basic Latin alphabet.\",\"candidates\":\"candidates versions\",\"version\":\"primary version\",\"myNoArgConstant\":\"no arg constant\",\"candidates@options\":[{\"value\":\"JAVA_0_9\",\"desc\":\"The Java version reported by Android. This is not an official Java version number.\"},{\"value\":\"JAVA_1_1\",\"desc\":\"Java 1.1.\"},{\"value\":\"JAVA_1_2\",\"desc\":\"Java 1.2.\"},{\"value\":\"JAVA_1_3\",\"desc\":\"Java 1.3.\"},{\"value\":\"JAVA_1_4\",\"desc\":\"Java 1.4.\"},{\"value\":\"JAVA_1_5\",\"desc\":\"Java 1.5.\"},{\"value\":\"JAVA_1_6\",\"desc\":\"Java 1.6.\"},{\"value\":\"JAVA_1_7\",\"desc\":\"Java 1.7.\"},{\"value\":\"JAVA_1_8\",\"desc\":\"Java 1.8.\"},{\"value\":\"JAVA_1_9\",\"desc\":\"Java 1.9.\"},{\"value\":\"JAVA_9\",\"desc\":\"Java 9\"},{\"value\":\"JAVA_10\",\"desc\":\"Java 10\"},{\"value\":\"JAVA_11\",\"desc\":\"Java 11\"},{\"value\":\"JAVA_12\",\"desc\":\"Java 12\"},{\"value\":\"JAVA_13\",\"desc\":\"Java 13\"}],\"version@options\":[{\"value\":\"JAVA_0_9\",\"desc\":\"The Java version reported by Android. This is not an official Java version number.\"},{\"value\":\"JAVA_1_1\",\"desc\":\"Java 1.1.\"},{\"value\":\"JAVA_1_2\",\"desc\":\"Java 1.2.\"},{\"value\":\"JAVA_1_3\",\"desc\":\"Java 1.3.\"},{\"value\":\"JAVA_1_4\",\"desc\":\"Java 1.4.\"},{\"value\":\"JAVA_1_5\",\"desc\":\"Java 1.5.\"},{\"value\":\"JAVA_1_6\",\"desc\":\"Java 1.6.\"},{\"value\":\"JAVA_1_7\",\"desc\":\"Java 1.7.\"},{\"value\":\"JAVA_1_8\",\"desc\":\"Java 1.8.\"},{\"value\":\"JAVA_1_9\",\"desc\":\"Java 1.9.\"},{\"value\":\"JAVA_9\",\"desc\":\"Java 9\"},{\"value\":\"JAVA_10\",\"desc\":\"Java 10\"},{\"value\":\"JAVA_11\",\"desc\":\"Java 11\"},{\"value\":\"JAVA_12\",\"desc\":\"Java 12\"},{\"value\":\"JAVA_13\",\"desc\":\"Java 13\"}],\"myNoArgConstant@options\":[{\"value\":\"ONE\",\"desc\":\"1st\"},{\"value\":\"TWO\",\"desc\":\"2nd\"},{\"value\":\"THREE\",\"desc\":\"3rd\"}],\"id\":\"user id\",\"age\":\"user age\",\"birthDay\":\"user birthDay\",\"regtime\":\"user regtime\"},\"b\":\"\",\"c\":\"\",\"d\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]},\"sub\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}],\"siblings\":[{\"id\":\"\",\"@comment\":{\"id\":\"primary key\",\"code\":\"org code\",\"sub\":\"sub nodes\",\"siblings\":\"siblings nodes\"},\"code\":\"\",\"parent\":{},\"sub\":[{}],\"siblings\":[{}]}]},\"e\":\"\",\"r\":\"\",\"candidates\":[\"\"],\"version\":\"\",\"myNoArgConstant\":\"\",\"id\":0,\"type\":0,\"name\":\"\",\"age\":0,\"sex\":0,\"birthDay\":\"\",\"regtime\":\"\"}",
             GsonUtils.toJson(psiClassHelper.getFields(hugeModelPsiClass, hugeModelPsiClass, JsonOption.ALL))
+        )
+        assertEquals(
+            "{\"id\":0,\"@comment\":{\"id\":\"user id\",\"age\":\"user age\",\"birthDay\":\"user birthDay\",\"regtime\":\"user regtime\"},\"type\":0,\"name\":\"\",\"age\":0,\"sex\":0,\"birthDay\":\"\",\"regtime\":\"\"}",
+            GsonUtils.toJson(psiClassHelper.getFields(userInfoPsiClass, userInfoPsiClass, JsonOption.ALL))
+        )
+        assertEquals(
+            "{\"id\":0,\"@comment\":{\"id\":\"user id\",\"age\":\"user age\",\"birthDay\":\"user birthDay\",\"regtime\":\"user regtime\"},\"type\":0,\"name\":\"\",\"age\":0,\"sex\":0,\"birthDay\":\"\",\"regtime\":\"\",\"level\":0}",
+            GsonUtils.toJson(psiClassHelper.getFields(userInfoDetailPsiClass, userInfoDetailPsiClass, JsonOption.ALL))
+        )
+        assertEquals(
+            "{\"id\":0,\"@comment\":{\"id\":\"user id\",\"age\":\"user age\",\"birthDay\":\"user birthDay\",\"regtime\":\"user regtime\"},\"type\":0,\"name\":\"\",\"age\":0,\"sex\":0,\"birthDay\":\"\",\"regtime\":\"\",\"level\":0,\"loginTime\":0}",
+            GsonUtils.toJson(psiClassHelper.getFields(userLoginInfoPsiClass, userLoginInfoPsiClass, JsonOption.ALL))
         )
     }
 
