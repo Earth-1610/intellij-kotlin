@@ -605,7 +605,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     protected open fun foreachField(
-        psiClass: ExplicitClass,
+        explicitClass: ExplicitClass,
         option: Int,
         handle: (
             name: String,
@@ -621,7 +621,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             HashSet()
         }
 
-        for (explicitField in psiClass.fields()) {
+        for (explicitField in explicitClass.fields()) {
             val psiField = explicitField.psi()
             if (ignoreField(psiField)) {
                 continue
@@ -644,7 +644,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         if (readMethod) {
             val readGetter = option.has(JsonOption.READ_GETTER)
             val readSetter = option.has(JsonOption.READ_SETTER)
-            for (explicitMethod in psiClass.methods()) {
+            for (explicitMethod in explicitClass.methods()) {
                 val method = explicitMethod.psi()
                 val methodName = method.name
                 if (jvmClassHelper.isBasicMethod(methodName)) continue

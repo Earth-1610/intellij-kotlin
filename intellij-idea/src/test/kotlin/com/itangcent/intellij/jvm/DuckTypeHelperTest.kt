@@ -7,7 +7,6 @@ import com.itangcent.intellij.jvm.element.ExplicitClass
 import com.itangcent.intellij.jvm.element.ExplicitField
 import com.itangcent.intellij.jvm.element.ExplicitMethod
 import com.itangcent.testFramework.ContextLightCodeInsightFixtureTestCase
-import junit.framework.Assert
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -202,6 +201,7 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
 
     fun testExplicitUserInfoDetail() {
         val userInfoDetailExplicitClass = duckTypeHelper.explicit(userInfoDetailPsiClass)
+        val userInfoExplicitClass = duckTypeHelper.explicit(userInfoPsiClass)
         assertEquals("UserInfoDetail", userInfoDetailExplicitClass.name())
         assertEquals(userInfoDetailPsiClass, userInfoDetailExplicitClass.psi())
         assertEquals(userInfoDetailExplicitClass, userInfoDetailExplicitClass.containClass())
@@ -213,7 +213,20 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
         assertEquals(16, methods.size)
 
         run {
-            val levelGetterExplicitMethod = methods[0]
+            val idGetterExplicitMethod = methods[0]
+            assertEquals("getId", idGetterExplicitMethod.name())
+            assertEquals(userInfoPsiClass.methods[0], idGetterExplicitMethod.psi())
+            assertEquals(userInfoDetailExplicitClass, idGetterExplicitMethod.containClass())
+            assertEquals(userInfoExplicitClass, idGetterExplicitMethod.defineClass())
+            assertEquals("java.lang.Long", idGetterExplicitMethod.getReturnType()?.canonicalText())
+            assertEquals("com.itangcent.model.UserInfoDetail#getId", idGetterExplicitMethod.toString())
+
+            val parameters = idGetterExplicitMethod.getParameters()
+            assertTrue(parameters.isEmpty())
+        }
+
+        run {
+            val levelGetterExplicitMethod = methods[14]
             assertEquals("getLevel", levelGetterExplicitMethod.name())
             assertEquals(userInfoDetailPsiClass.methods[0], levelGetterExplicitMethod.psi())
             assertEquals(userInfoDetailExplicitClass, levelGetterExplicitMethod.containClass())
@@ -226,7 +239,7 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
         }
 
         run {
-            val idSetterExplicitMethod = methods[3]
+            val idSetterExplicitMethod = methods[1]
             assertEquals("setId", idSetterExplicitMethod.name())
             assertEquals(userInfoPsiClass.methods[1], idSetterExplicitMethod.psi())
             assertEquals(userInfoDetailExplicitClass, idSetterExplicitMethod.containClass())
@@ -253,6 +266,15 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
         assertEquals(8, fields.size)
         run {
             val idExplicitField = fields[0]
+            assertEquals("id", idExplicitField.name())
+            assertEquals(userInfoPsiClass.fields[0], idExplicitField.psi())
+            assertEquals(userInfoDetailExplicitClass, idExplicitField.containClass())
+            assertEquals(userInfoExplicitClass, idExplicitField.defineClass())
+            assertEquals("java.lang.Long", idExplicitField.getType().canonicalText())
+            assertEquals("com.itangcent.model.UserInfoDetail#id", idExplicitField.toString())
+        }
+        run {
+            val idExplicitField = fields[7]
             assertEquals("level", idExplicitField.name())
             assertEquals(userInfoDetailPsiClass.fields[0], idExplicitField.psi())
             assertEquals(userInfoDetailExplicitClass, idExplicitField.containClass())
@@ -264,6 +286,8 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
 
     fun testExplicitUserLoginInfoPsiClass() {
         val userLoginInfoExplicitClass = duckTypeHelper.explicit(userLoginInfoPsiClass)
+        val userInfoDetailExplicitClass = duckTypeHelper.explicit(userInfoDetailPsiClass)
+        val userInfoExplicitClass = duckTypeHelper.explicit(userInfoPsiClass)
         assertEquals("UserLoginInfo", userLoginInfoExplicitClass.name())
         assertEquals(userLoginInfoPsiClass, userLoginInfoExplicitClass.psi())
         assertEquals(userLoginInfoExplicitClass, userLoginInfoExplicitClass.containClass())
@@ -275,33 +299,20 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
         assertEquals(18, methods.size)
 
         run {
-            val loginTimeGetterExplicitMethod = methods[0]
-            assertEquals("getLoginTime", loginTimeGetterExplicitMethod.name())
-            assertEquals(userLoginInfoPsiClass.methods[0], loginTimeGetterExplicitMethod.psi())
-            assertEquals(userLoginInfoExplicitClass, loginTimeGetterExplicitMethod.containClass())
-            assertEquals(userLoginInfoExplicitClass, loginTimeGetterExplicitMethod.defineClass())
-            assertEquals("java.lang.Long", loginTimeGetterExplicitMethod.getReturnType()?.canonicalText())
-            assertEquals("com.itangcent.model.UserLoginInfo#getLoginTime", loginTimeGetterExplicitMethod.toString())
+            val idGetterExplicitMethod = methods[0]
+            assertEquals("getId", idGetterExplicitMethod.name())
+            assertEquals(userInfoPsiClass.methods[0], idGetterExplicitMethod.psi())
+            assertEquals(userLoginInfoExplicitClass, idGetterExplicitMethod.containClass())
+            assertEquals(userInfoExplicitClass, idGetterExplicitMethod.defineClass())
+            assertEquals("java.lang.Long", idGetterExplicitMethod.getReturnType()?.canonicalText())
+            assertEquals("com.itangcent.model.UserLoginInfo#getId", idGetterExplicitMethod.toString())
 
-            val parameters = loginTimeGetterExplicitMethod.getParameters()
+            val parameters = idGetterExplicitMethod.getParameters()
             assertTrue(parameters.isEmpty())
         }
 
         run {
-            val levelGetterExplicitMethod = methods[2]
-            assertEquals("getLevel", levelGetterExplicitMethod.name())
-            assertEquals(userInfoDetailPsiClass.methods[0], levelGetterExplicitMethod.psi())
-            assertEquals(userLoginInfoExplicitClass, levelGetterExplicitMethod.containClass())
-            assertEquals("UserInfoDetail", levelGetterExplicitMethod.defineClass().name())
-            assertEquals("java.lang.Integer", levelGetterExplicitMethod.getReturnType()?.canonicalText())
-            assertEquals("com.itangcent.model.UserLoginInfo#getLevel", levelGetterExplicitMethod.toString())
-
-            val parameters = levelGetterExplicitMethod.getParameters()
-            assertTrue(parameters.isEmpty())
-        }
-
-        run {
-            val idSetterExplicitMethod = methods[5]
+            val idSetterExplicitMethod = methods[1]
             assertEquals("setId", idSetterExplicitMethod.name())
             assertEquals(userInfoPsiClass.methods[1], idSetterExplicitMethod.psi())
             assertEquals(userLoginInfoExplicitClass, idSetterExplicitMethod.containClass())
@@ -323,11 +334,47 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
             assertEquals("com.itangcent.model.UserLoginInfo#setId.id", explicitParameter.toString())
         }
 
+        run {
+            val levelGetterExplicitMethod = methods[14]
+            assertEquals("getLevel", levelGetterExplicitMethod.name())
+            assertEquals(userInfoDetailPsiClass.methods[0], levelGetterExplicitMethod.psi())
+            assertEquals(userLoginInfoExplicitClass, levelGetterExplicitMethod.containClass())
+            assertEquals("UserInfoDetail", levelGetterExplicitMethod.defineClass().name())
+            assertEquals("java.lang.Integer", levelGetterExplicitMethod.getReturnType()?.canonicalText())
+            assertEquals("com.itangcent.model.UserLoginInfo#getLevel", levelGetterExplicitMethod.toString())
+
+            val parameters = levelGetterExplicitMethod.getParameters()
+            assertTrue(parameters.isEmpty())
+        }
+
+        run {
+            val loginTimeGetterExplicitMethod = methods[16]
+            assertEquals("getLoginTime", loginTimeGetterExplicitMethod.name())
+            assertEquals(userLoginInfoPsiClass.methods[0], loginTimeGetterExplicitMethod.psi())
+            assertEquals(userLoginInfoExplicitClass, loginTimeGetterExplicitMethod.containClass())
+            assertEquals(userLoginInfoExplicitClass, loginTimeGetterExplicitMethod.defineClass())
+            assertEquals("java.lang.Long", loginTimeGetterExplicitMethod.getReturnType()?.canonicalText())
+            assertEquals("com.itangcent.model.UserLoginInfo#getLoginTime", loginTimeGetterExplicitMethod.toString())
+
+            val parameters = loginTimeGetterExplicitMethod.getParameters()
+            assertTrue(parameters.isEmpty())
+        }
+
         //test fields
         val fields = userLoginInfoExplicitClass.fields()
         assertEquals(9, fields.size)
         run {
-            val loginTimeExplicitField = fields[0]
+            val idExplicitField = fields[0]
+            assertEquals("id", idExplicitField.name())
+            assertEquals(userInfoPsiClass.fields[0], idExplicitField.psi())
+            assertEquals(userLoginInfoExplicitClass, idExplicitField.containClass())
+            assertEquals(userInfoExplicitClass, idExplicitField.defineClass())
+            assertEquals("java.lang.Long", idExplicitField.getType().canonicalText())
+            assertEquals("com.itangcent.model.UserLoginInfo#id", idExplicitField.toString())
+        }
+
+        run {
+            val loginTimeExplicitField = fields[8]
             assertEquals("loginTime", loginTimeExplicitField.name())
             assertEquals(userLoginInfoPsiClass.fields[0], loginTimeExplicitField.psi())
             assertEquals(userLoginInfoExplicitClass, loginTimeExplicitField.containClass())
@@ -337,7 +384,7 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
         }
 
         run {
-            val levelExplicitField = fields[1]
+            val levelExplicitField = fields[7]
             assertEquals("level", levelExplicitField.name())
             assertEquals(userInfoDetailPsiClass.fields[0], levelExplicitField.psi())
             assertEquals(userLoginInfoExplicitClass, levelExplicitField.containClass())
@@ -360,20 +407,7 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
         assertEquals(2, methods.size)
 
         run {
-            val greetingExplicitMethod = methods[0]
-            assertEquals("greeting", greetingExplicitMethod.name())
-            assertEquals(userDetailCtrlPsiClass.methods[0], greetingExplicitMethod.psi())
-            assertEquals(userDetailCtrlExplicitClass, greetingExplicitMethod.containClass())
-            assertEquals(userDetailCtrlExplicitClass, greetingExplicitMethod.defineClass())
-            assertEquals("java.lang.String", greetingExplicitMethod.getReturnType()?.canonicalText())
-            assertEquals("com.itangcent.api.UserDetailCtrl#greeting", greetingExplicitMethod.toString())
-
-            val parameters = greetingExplicitMethod.getParameters()
-            assertTrue(parameters.isEmpty())
-        }
-
-        run {
-            val resultExplicitMethod = methods[1]
+            val resultExplicitMethod = methods[0]
             assertEquals("result", resultExplicitMethod.name())
             assertEquals(genericCtrlPsiClass.methods[0], resultExplicitMethod.psi())
             assertEquals(userDetailCtrlExplicitClass, resultExplicitMethod.containClass())
@@ -397,6 +431,19 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
             assertEquals(resultExplicitMethod, explicitParameter.containMethod())
             assertEquals("com.itangcent.api.UserDetailCtrl#result.t", explicitParameter.toString())
         }
+
+        run {
+            val greetingExplicitMethod = methods[1]
+            assertEquals("greeting", greetingExplicitMethod.name())
+            assertEquals(userDetailCtrlPsiClass.methods[0], greetingExplicitMethod.psi())
+            assertEquals(userDetailCtrlExplicitClass, greetingExplicitMethod.containClass())
+            assertEquals(userDetailCtrlExplicitClass, greetingExplicitMethod.defineClass())
+            assertEquals("java.lang.String", greetingExplicitMethod.getReturnType()?.canonicalText())
+            assertEquals("com.itangcent.api.UserDetailCtrl#greeting", greetingExplicitMethod.toString())
+
+            val parameters = greetingExplicitMethod.getParameters()
+            assertTrue(parameters.isEmpty())
+        }
     }
 
     fun testExplicitUserInfoDetailResult() {
@@ -411,7 +458,7 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
         assertEquals(13, methods.size)
 
         run {
-            val dataGetterExplicitMethod = methods[7]
+            val dataGetterExplicitMethod = methods[9]
             assertEquals("getData", dataGetterExplicitMethod.name())
             assertEquals(resultPsiClass.methods[7], dataGetterExplicitMethod.psi())
             assertEquals(userInfoDetailResultExplicitClass, dataGetterExplicitMethod.containClass())
@@ -426,7 +473,7 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
         }
 
         run {
-            val dataSetterExplicitMethod = methods[8]
+            val dataSetterExplicitMethod = methods[10]
             assertEquals("setData", dataSetterExplicitMethod.name())
             assertEquals(resultPsiClass.methods[8], dataSetterExplicitMethod.psi())
             assertEquals(userInfoDetailResultExplicitClass, dataSetterExplicitMethod.containClass())
@@ -448,36 +495,36 @@ internal class DuckTypeHelperTest : ContextLightCodeInsightFixtureTestCase() {
 
         run {
             val extends = userInfoDetailResultExplicitClass.extends()!!
-            Assert.assertEquals(1, extends.size)
-            Assert.assertEquals(resultPsiClass, extends[0].psi())
+            assertEquals(1, extends.size)
+            assertEquals(resultPsiClass, extends[0].psi())
 
             val implements = userInfoDetailResultExplicitClass.implements()!!
-            Assert.assertEquals(0, implements.size)
+            assertEquals(0, implements.size)
         }
 
         run {
             val resultExplicitClass = duckTypeHelper.explicit(resultPsiClass)
             val extends = resultExplicitClass.extends()!!
-            Assert.assertEquals(0, extends.size)
+            assertEquals(0, extends.size)
 
             val implements = resultExplicitClass.implements()!!
-            Assert.assertEquals(1, implements.size)
-            Assert.assertEquals(iResultPsiClass, implements[0].psi())
+            assertEquals(1, implements.size)
+            assertEquals(iResultPsiClass, implements[0].psi())
         }
     }
 
     fun testExplicitPsiElement() {
         duckTypeHelper.explicit(userInfoPsiClass as PsiElement).let {
             assertTrue(it is ExplicitClass)
-            Assert.assertEquals("com.itangcent.model.UserInfo", it.toString())
+            assertEquals("com.itangcent.model.UserInfo", it.toString())
         }
         duckTypeHelper.explicit(userInfoPsiClass.methods[0]).let {
             assertTrue(it is ExplicitMethod)
-            Assert.assertEquals("com.itangcent.model.UserInfo#getId", it.toString())
+            assertEquals("com.itangcent.model.UserInfo#getId", it.toString())
         }
         duckTypeHelper.explicit(userInfoPsiClass.fields[0]).let {
             assertTrue(it is ExplicitField)
-            Assert.assertEquals("com.itangcent.model.UserInfo#id", it.toString())
+            assertEquals("com.itangcent.model.UserInfo#id", it.toString())
         }
         assertNull(duckTypeHelper.explicit(userInfoPsiClass.methods[1].parameterList.parameters[0]))
     }
