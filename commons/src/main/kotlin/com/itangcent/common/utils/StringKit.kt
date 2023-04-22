@@ -1,5 +1,7 @@
 package com.itangcent.common.utils
 
+import java.util.*
+
 /**
  * @author tangcent
  */
@@ -23,6 +25,7 @@ object StringUtils {
                         sb.append(UNDERLINE)
                         sb.append(Character.toLowerCase(it))
                     }
+
                     else -> sb.append(it)
                 }
             }
@@ -134,3 +137,11 @@ fun String?.flatten(defaultValue: String = "null"): String {
 }
 
 private const val LINE_SEPARATOR = "\n"
+
+fun String.capitalize(): String {
+    return this.replaceFirstChar { it.titlecase(Locale.ENGLISH) }
+}
+
+fun String.decapitalize(): String {
+    return this.replaceFirstChar { it.lowercase(Locale.ENGLISH) }
+}

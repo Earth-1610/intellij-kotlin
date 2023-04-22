@@ -5,7 +5,9 @@ import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.parentOfType
+import com.intellij.psi.util.parentOfTypes
 import com.itangcent.common.logger.Log
+import com.itangcent.common.utils.capitalize
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.*
@@ -99,7 +101,7 @@ open class StandardPsiResolver : PsiResolver {
         try {
             LOG.info("find class:$fqClassName")
             cls = actionContext.callInReadUI { ClassUtils.findClass(fqClassName, context) }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
         }
 
         if (cls == null) {
@@ -117,7 +119,7 @@ open class StandardPsiResolver : PsiResolver {
                     if (cls != null) {
                         break
                     }
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                 }
             }
         }
@@ -137,12 +139,11 @@ open class StandardPsiResolver : PsiResolver {
 
     protected open fun resolveClassFromImport(psiClass: PsiClass, clsName: String): PsiClass? {
         return actionContext.callInReadUI {
-            resolveReferenceFromImport(psiClass, clsName) as? PsiClass
+            resolveReferenceFromClass(psiClass, clsName) as? PsiClass
         }
     }
 
-    protected open fun resolveReferenceFromImport(psiClass: PsiClass, clsName: String): Any? {
-
+    protected open fun resolveReferenceFromClass(psiClass: PsiClass, clsName: String): Any? {
         //maybe it is this class
         if (clsName == psiClass.name || clsName == psiClass.qualifiedName) {
             return psiClass
@@ -155,7 +156,16 @@ open class StandardPsiResolver : PsiResolver {
             }
         }
 
-        //try find imports
+        resolveReferenceFromImport(psiClass, clsName)?.let { return it }
+
+        psiClass.containingClass?.let { resolveReferenceFromClass(it, clsName) }?.let { return it }
+
+        return null
+    }
+
+    protected open fun resolveReferenceFromImport(psiClass: PsiClass, clsName: String): Any? {
+
+        //try to find imports
         val imports = PsiTreeUtil.findChildrenOfType(psiClass.context, PsiImportStatement::class.java)
 
         for (importStatement in imports) {
@@ -173,7 +183,7 @@ open class StandardPsiResolver : PsiResolver {
                 ?.let { return it }
         }
 
-        //try find import static
+        //try to find import static
         val staticImports = PsiTreeUtil.findChildrenOfType(psiClass.context, PsiImportStaticStatement::class.java)
 
         for (importStatement in staticImports) {
@@ -238,7 +248,7 @@ open class StandardPsiResolver : PsiResolver {
         resolveClassOrType(linkClassName, context)
             ?.let { return it to null }
 
-        val resolveReference = getContainingClass(context)?.let { resolveReferenceFromImport(it, linkClassName) }
+        val resolveReference = getContainingClass(context)?.let { resolveReferenceFromClass(it, linkClassName) }
         if (resolveReference is PsiElement) {
             getContainingClass(resolveReference)?.let { return it to resolveReference }
         }
@@ -297,7 +307,7 @@ open class StandardPsiResolver : PsiResolver {
         if (psiElement is PsiMember) {
             psiElement.containingClass?.let { return it }
         }
-        return psiElement.parentOfType(PsiClass::class)
+        return psiElement.parentOfTypes(PsiClass::class)
     }
 
     override fun resolveRefText(psiElement: PsiElement?): String? {

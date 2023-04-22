@@ -3,6 +3,7 @@ package com.itangcent.common.utils
 import com.itangcent.common.utils.*
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -179,6 +180,22 @@ class StringKitTest {
         assertFalse("".notNullOrBlank())
         assertFalse(" ".notNullOrBlank())
         assertTrue("abc".notNullOrBlank())
+    }
+
+    @Test
+    fun testCapitalize() {
+        assertEquals("", "".capitalize())
+        assertEquals("Abc", "abc".capitalize())
+        assertEquals("Abc", "Abc".capitalize())
+        assertEquals("+++", "+++".capitalize())
+    }
+
+    @Test
+    fun testDecapitalize() {
+        assertEquals("", "".decapitalize())
+        assertEquals("abc", "abc".decapitalize())
+        assertEquals("abc", "Abc".decapitalize())
+        assertEquals("+++", "+++".decapitalize())
     }
 
     private val n = System.getProperty("line.separator")

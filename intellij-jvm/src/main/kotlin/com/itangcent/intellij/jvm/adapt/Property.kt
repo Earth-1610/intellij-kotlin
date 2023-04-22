@@ -1,6 +1,7 @@
 package com.itangcent.intellij.jvm.adapt
 
 import com.intellij.psi.*
+import com.itangcent.common.utils.decapitalize
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.JvmClassHelper
 
