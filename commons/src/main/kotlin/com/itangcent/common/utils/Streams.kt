@@ -1,15 +1,8 @@
 package com.itangcent.common.utils
 
-import java.util.*
 import java.util.stream.Stream
-import java.util.stream.StreamSupport
 
-object Streams {
-
-    fun <T> fromGenerate(generator: () -> T?): Stream<T> {
-        return StreamSupport.stream(Iterables.asIterable(generator).spliterator(), false)
-    }
-}
+object Streams
 
 /**
  * Returns a [Array] containing all elements produced by this stream.
@@ -93,7 +86,7 @@ inline fun <T, R : Comparable<R>> Iterable<T>?.head(crossinline selector: (T) ->
     }
     return this
         .filterNotNull()
-        .sortedByDescending { selector(it!!) }
+        .sortedByDescending { selector(it) }
         .firstOrNull()
 }
 
@@ -112,7 +105,7 @@ inline fun <T, R : Comparable<R>> Iterable<T>?.tail(crossinline selector: (T) ->
     }
     return this
         .filterNotNull()
-        .sortedBy { selector(it!!) }
+        .sortedBy { selector(it) }
         .firstOrNull()
 }
 
@@ -125,7 +118,7 @@ inline fun <T, R : Comparable<R>> Array<T>?.head(crossinline selector: (T) -> R?
         this.size == 1 -> this[0]
         else -> this
             .filterNotNull()
-            .sortedByDescending { selector(it!!) }
+            .sortedByDescending { selector(it) }
             .firstOrNull()
     }
 }
@@ -139,7 +132,7 @@ inline fun <T, R : Comparable<R>> Array<T>?.tail(crossinline selector: (T) -> R?
         this.size == 1 -> this[0]
         else -> this
             .filterNotNull()
-            .sortedBy { selector(it!!) }
+            .sortedBy { selector(it) }
             .firstOrNull()
     }
 }

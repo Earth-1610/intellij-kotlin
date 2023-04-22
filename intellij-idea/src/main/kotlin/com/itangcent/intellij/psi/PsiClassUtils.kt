@@ -222,7 +222,7 @@ object PsiClassUtils {
             return psiElement.name
         }
         if (psiElement is PsiParameter) {
-            return psiElement.name ?: "anonymous"
+            return psiElement.name
         }
         if (psiElement is PsiNamedElement) {
             return psiElement.name ?: "anonymous"

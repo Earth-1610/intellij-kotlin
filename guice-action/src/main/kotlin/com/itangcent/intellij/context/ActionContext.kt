@@ -35,7 +35,9 @@ import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
 import kotlin.concurrent.withLock
+import kotlin.concurrent.write
 import kotlin.reflect.KClass
 
 /**
@@ -49,9 +51,6 @@ class ActionContext {
     private val cache = HashMap<String, Any?>()
 
     private val lock = ReentrantReadWriteLock()
-
-    @Volatile
-    private var lastActive = System.currentTimeMillis()
 
     private val activeThreadCnt = Array(ThreadFlag.values().size) { AtomicInteger() }
 
@@ -92,8 +91,8 @@ class ActionContext {
 
     fun cache(name: String, bean: Any?) {
         LOG.info("cache [$name]")
-        innerCheckStatus()
-        lock.writeLock().withLock {
+        checkStatus()
+        lock.write {
             cache[cachePrefix + name] = bean
             LOG.info("cache [$name] success")
         }
@@ -101,14 +100,14 @@ class ActionContext {
 
     @Suppress("UNCHECKED_CAST")
     fun <T> getCache(name: String): T? {
-        innerCheckStatus()
-        return lock.readLock().withLock { cache[cachePrefix + name] as T? }
+        checkStatus()
+        return lock.read { cache[cachePrefix + name] as T? }
     }
 
     @Suppress("UNCHECKED_CAST")
     fun <T> deleteCache(name: String): T? {
-        innerCheckStatus()
-        lock.writeLock().withLock {
+        checkStatus()
+        lock.write {
             return cache.remove(cachePrefix + name) as T?
         }
     }
@@ -116,14 +115,14 @@ class ActionContext {
     @Suppress("UNCHECKED_CAST")
     fun <T> cacheOrCompute(name: String, beanSupplier: () -> T?): T? {
         LOG.info("compute cache [$name]")
-        innerCheckStatus()
-        lock.readLock().withLock {
+        checkStatus()
+        lock.read {
             if (cache.containsKey(cachePrefix + name)) {
                 return cache[cachePrefix + name] as T?
             }
         }
         val bean = beanSupplier()
-        lock.writeLock().withLock {
+        lock.write {
             if (cache.containsKey(cachePrefix + name)) {
                 return cache[cachePrefix + name] as T?
             }
@@ -138,8 +137,8 @@ class ActionContext {
     @Suppress("UNCHECKED_CAST")
     fun on(name: String, event: ((ActionContext) -> Unit)) {
         LOG.info("register event [$name]")
-        innerCheckStatus()
-        lock.writeLock().withLock {
+        checkStatus()
+        lock.write {
             val key = eventPrefix + name
             val oldEvent: ((ActionContext) -> Unit)? = cache[key] as ((ActionContext) -> Unit)?
             if (oldEvent == null) {
@@ -167,7 +166,7 @@ class ActionContext {
     @Suppress("UNCHECKED_CAST")
     fun call(name: String) {
         LOG.info("call event [$name]")
-        lock.readLock().withLock {
+        lock.read {
             val event = cache[eventPrefix + name] as ((ActionContext) -> Unit)?
             event?.invoke(this)
         }
@@ -178,7 +177,7 @@ class ActionContext {
     //region lock and run----------------------------------------------------------------
 
     fun hold() {
-        innerCheckStatus()
+        checkStatus()
         this.mainBoundary.down()
     }
 
@@ -187,17 +186,17 @@ class ActionContext {
     }
 
     fun runAsync(runnable: Runnable): Future<*>? {
-        innerCheckStatus()
+        checkStatus()
         val contextStatus = getContextStatus()
         val boundaries = contextStatus.boundaries()
         boundaries?.down()
         activeThreadCnt[ThreadFlag.ASYNC.ordinal].getAndIncrement()
         return executorService.submit {
             try {
-                innerCheckStatus()
+                checkStatus()
                 setContext(contextStatus, ThreadFlag.ASYNC)
                 runnable.run()
-            } catch (e: ProcessCanceledException) {
+            } catch (_: ProcessCanceledException) {
             } catch (e: Exception) {
                 this.instance(Logger::class).traceError("error in Async", e)
             } finally {
@@ -209,14 +208,14 @@ class ActionContext {
     }
 
     fun runAsync(runnable: () -> Unit): Future<*>? {
-        innerCheckStatus()
+        checkStatus()
         val contextStatus = getContextStatus()
         val boundaries = contextStatus.boundaries()
         boundaries?.down()
         activeThreadCnt[ThreadFlag.ASYNC.ordinal].getAndIncrement()
         return executorService.submit {
             try {
-                innerCheckStatus()
+                checkStatus()
                 setContext(contextStatus, ThreadFlag.ASYNC)
                 runnable()
             } catch (_: ProcessCanceledException) {
@@ -231,14 +230,14 @@ class ActionContext {
     }
 
     fun <T> callAsync(callable: () -> T): Future<T>? {
-        innerCheckStatus()
+        checkStatus()
         val contextStatus = getContextStatus()
         val boundaries = contextStatus.boundaries()
         boundaries?.down()
         activeThreadCnt[ThreadFlag.ASYNC.ordinal].getAndIncrement()
         return executorService.submit(Callable {
             try {
-                innerCheckStatus()
+                checkStatus()
                 setContext(contextStatus, ThreadFlag.ASYNC)
                 return@Callable callable()
             } catch (e: ProcessCanceledException) {
@@ -252,7 +251,7 @@ class ActionContext {
     }
 
     fun runInSwingUI(runnable: () -> Unit) {
-        innerCheckStatus()
+        checkStatus()
         when {
             getFlag() == ThreadFlag.SWING.value -> runnable()
             EventQueue.isDispatchThread() -> {
@@ -269,6 +268,7 @@ class ActionContext {
                     activeThreadCnt[ThreadFlag.SWING.ordinal].getAndDecrement()
                 }
             }
+
             else -> {
                 val contextStatus = getContextStatus()
                 val boundaries = contextStatus.boundaries()
@@ -276,7 +276,7 @@ class ActionContext {
                 EventQueue.invokeLater {
                     try {
                         activeThreadCnt[ThreadFlag.SWING.ordinal].getAndIncrement()
-                        innerCheckStatus()
+                        checkStatus()
                         setContext(
                             contextStatus,
                             ThreadFlag.SWING
@@ -296,7 +296,7 @@ class ActionContext {
     }
 
     fun <T> callInSwingUI(callable: () -> T?): T? {
-        innerCheckStatus()
+        checkStatus()
         when {
             getFlag() == ThreadFlag.SWING.value -> return callable()
             EventQueue.isDispatchThread() -> {
@@ -313,6 +313,7 @@ class ActionContext {
                     activeThreadCnt[ThreadFlag.SWING.ordinal].getAndDecrement()
                 }
             }
+
             else -> {
                 val contextStatus = getContextStatus()
                 val boundaries = contextStatus.boundaries()
@@ -326,7 +327,7 @@ class ActionContext {
                             ThreadFlag.SWING
                         )
                         valueHolder.compute {
-                            innerCheckStatus()
+                            checkStatus()
                             callable()
                         }
                     } catch (e: Throwable) {
@@ -343,7 +344,7 @@ class ActionContext {
     }
 
     fun runInWriteUI(runnable: () -> Unit) {
-        innerCheckStatus()
+        checkStatus()
         if (getFlag() == ThreadFlag.WRITE.value) {
             runnable()
         } else {
@@ -352,11 +353,11 @@ class ActionContext {
             val boundaries = contextStatus.boundaries()
             boundaries?.down()
             try {
-                WriteCommandAction.runWriteCommandAction(project, "callInWriteUI",
+                WriteCommandAction.runWriteCommandAction(project, "CallInWriteUI",
                     SpiUtils.loadService(CustomInfo::class)?.pluginName() ?: "intellij-plugin", Runnable {
                         try {
                             activeThreadCnt[ThreadFlag.WRITE.ordinal].getAndIncrement()
-                            innerCheckStatus()
+                            checkStatus()
                             setContext(
                                 contextStatus,
                                 ThreadFlag.WRITE
@@ -378,7 +379,7 @@ class ActionContext {
     }
 
     fun <T> callInWriteUI(callable: () -> T?): T? {
-        innerCheckStatus()
+        checkStatus()
         if (getFlag() == ThreadFlag.WRITE.value) {
             return callable()
         } else {
@@ -387,7 +388,7 @@ class ActionContext {
             val boundaries = contextStatus.boundaries()
             boundaries?.down()
             val valueHolder: ValueHolder<T> = ValueHolder()
-            WriteCommandAction.runWriteCommandAction(project, "callInWriteUI",
+            WriteCommandAction.runWriteCommandAction(project, "CallInWriteUI",
                 SpiUtils.loadService(CustomInfo::class)?.pluginName() ?: "intellij-plugin",
                 Runnable {
                     try {
@@ -397,7 +398,7 @@ class ActionContext {
                             ThreadFlag.WRITE
                         )
                         valueHolder.compute {
-                            innerCheckStatus()
+                            checkStatus()
                             callable()
                         }
                     } catch (e: Throwable) {
@@ -413,7 +414,7 @@ class ActionContext {
     }
 
     fun runInReadUI(runnable: () -> Unit) {
-        innerCheckStatus()
+        checkStatus()
         if (getFlag() == ThreadFlag.READ.value) {
             runnable()
         } else {
@@ -427,7 +428,7 @@ class ActionContext {
                         contextStatus,
                         ThreadFlag.READ
                     )
-                    innerCheckStatus()
+                    checkStatus()
                     runnable()
                 } catch (_: ProcessCanceledException) {
                 } catch (e: Exception) {
@@ -442,7 +443,7 @@ class ActionContext {
     }
 
     fun <T> callInReadUI(callable: () -> T?): T? {
-        innerCheckStatus()
+        checkStatus()
         if (getFlag() == ThreadFlag.READ.value) {
             return callable()
         } else {
@@ -458,7 +459,7 @@ class ActionContext {
                         ThreadFlag.READ
                     )
                     valueHolder.compute {
-                        innerCheckStatus()
+                        checkStatus()
                         callable()
                     }
                 } catch (e: Throwable) {
@@ -474,7 +475,7 @@ class ActionContext {
     }
 
     fun runInAWT(runnable: () -> Unit) {
-        innerCheckStatus()
+        checkStatus()
         if (getFlag() == ThreadFlag.AWT.value) {
             runnable()
         } else {
@@ -488,7 +489,7 @@ class ActionContext {
                         contextStatus,
                         ThreadFlag.AWT
                     )
-                    innerCheckStatus()
+                    checkStatus()
                     runnable()
                 } catch (e: ProcessCanceledException) {
                 } catch (e: Exception) {
@@ -503,7 +504,7 @@ class ActionContext {
     }
 
     fun <T> callInAWT(callable: () -> T?): T? {
-        innerCheckStatus()
+        checkStatus()
         if (getFlag() == ThreadFlag.AWT.value) {
             return callable()
         } else {
@@ -519,7 +520,7 @@ class ActionContext {
                         ThreadFlag.AWT
                     )
                     valueHolder.compute {
-                        innerCheckStatus()
+                        checkStatus()
                         callable()
                     }
                 } catch (e: Throwable) {
@@ -544,7 +545,7 @@ class ActionContext {
             if (this.isStopped()) {
                 return
             }
-            innerCheckStatus()
+            checkStatus()
             releaseContext()
             this.mainBoundary.waitComplete()
         } finally {
@@ -558,7 +559,7 @@ class ActionContext {
      * @see ActionContext.waitComplete
      */
     fun waitCompleteAsync() {
-        innerCheckStatus()
+        checkStatus()
         releaseContext()
         executorService.submit {
             try {
@@ -627,7 +628,7 @@ class ActionContext {
             try {
                 safe { this.call(EventKey.ON_COMPLETED) }
                 safe {
-                    lock.writeLock().withLock {
+                    lock.write {
                         this.cache.clear()
                     }
                 }
@@ -649,25 +650,21 @@ class ActionContext {
         }
     }
 
-    private fun innerCheckStatus() {
-        checkStatus()
-        ping()
-    }
-
+    @Deprecated(message = "deprecated")
     fun lastActive(): Long {
-        return this.lastActive
+        return System.currentTimeMillis()
     }
 
+    @Deprecated(message = "deprecated")
     fun keepAlive(duration: Long) {
-        this.lastActive = kotlin.math.max(this.lastActive, System.currentTimeMillis() + duration)
     }
 
+    @Deprecated(message = "deprecated")
     fun keepAliveUtil(aliveTime: Long) {
-        this.lastActive = kotlin.math.max(this.lastActive, aliveTime)
     }
 
+    @Deprecated(message = "deprecated")
     fun ping() {
-        this.lastActive = kotlin.math.max(this.lastActive, System.currentTimeMillis())
     }
 
     @Deprecated(message = "replace with [rebirth]", replaceWith = ReplaceWith("rebirth()"))
@@ -675,8 +672,8 @@ class ActionContext {
         rebirth()
     }
 
+    @Deprecated(message = "deprecated")
     fun rebirth() {
-        this.lastActive = System.currentTimeMillis()
     }
 
     fun activeThreads(): Int {
@@ -804,9 +801,11 @@ class ActionContext {
                     bs.isNullOrEmpty() -> {
                         null
                     }
+
                     bs.size == 1 -> {
                         bs.first
                     }
+
                     else -> InnerBoundaries(LinkedList(bs))
                 }
             }
@@ -833,10 +832,12 @@ class ActionContext {
                 contextStatus == null -> {
                     null
                 }
+
                 contextStatus.flag == ThreadFlag.INVALID.value -> {
                     localContextStatus.remove()
                     null
                 }
+
                 else -> contextStatus
             }
         }
@@ -959,9 +960,6 @@ class ActionContext {
                 actionContext.onStart()
             }
 
-            //register ActionContextMonitor
-            ActionContextMonitor.addActionContext(actionContext)
-
             return actionContext
         }
 
@@ -995,30 +993,37 @@ class ActionContext {
                             bind(moduleAction[1] as Class<*>, moduleAction[2] as Class<Annotation>)
                         )
                     }
+
                     ActionContextBuilder.BIND_WITH_ANNOTATION -> {
                         (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit))(
                             bind(moduleAction[1] as Class<*>, moduleAction[2] as Annotation)
                         )
                     }
+
                     ActionContextBuilder.BIND_WITH_NAME -> {
                         (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit))(
                             bind(moduleAction[1] as Class<*>, moduleAction[2] as String)
                         )
                     }
+
                     ActionContextBuilder.BIND_INSTANCE_WITH_NAME -> {
                         bindInstance(moduleAction[1] as String, moduleAction[2])
                     }
+
                     ActionContextBuilder.BIND_INSTANCE -> {
                         bindInstance(moduleAction[1])
                     }
+
                     ActionContextBuilder.BIND_INSTANCE_WITH_CLASS -> {
                         bindInstance(moduleAction[1] as Class<Any>, moduleAction[2])
                     }
+
                     ActionContextBuilder.BIND -> {
                         (moduleAction[2] as ((LinkedBindingBuilder<*>) -> Unit))(
                             bind(moduleAction[1] as Class<*>)
                         )
                     }
+
                     ActionContextBuilder.BIND_INTERCEPTOR -> {
                         bindInterceptor(
                             moduleAction[1] as Matcher<in Class<*>>?,
@@ -1026,6 +1031,7 @@ class ActionContext {
                             moduleAction[3] as MethodInterceptor?
                         )
                     }
+
                     ActionContextBuilder.BIND_CONSTANT -> {
                         (moduleAction[1] as ((AnnotatedConstantBindingBuilder) -> Unit)).invoke(
                             bindConstant()

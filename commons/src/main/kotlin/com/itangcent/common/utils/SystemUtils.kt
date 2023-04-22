@@ -54,7 +54,7 @@ object SystemUtils {
     val isWindows: Boolean
         get() {
             val OS = System.getProperty("os.name")
-            return OS.toLowerCase().contains("windows")
+            return OS.lowercase().contains("windows")
         }
 
     fun newLine(): String {

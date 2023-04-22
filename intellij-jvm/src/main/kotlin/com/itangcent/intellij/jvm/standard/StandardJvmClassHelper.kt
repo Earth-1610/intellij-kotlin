@@ -300,13 +300,13 @@ open class StandardJvmClassHelper : JvmClassHelper {
             val modifierList = psiElement.modifierList ?: return emptyList()
             return PsiModifier.MODIFIERS
                 .filter { modifierList.hasModifierProperty(it) }
-                .map { it.toLowerCase() }
+                .map { it.lowercase() }
                 .toList()
         }
         if (psiElement is JvmModifiersOwner) {
             return JvmModifier.values()
                 .filter { psiElement.hasModifier(it) }
-                .map { it.name.toLowerCase() }
+                .map { it.name.lowercase() }
                 .toList()
         }
         return emptyList()
@@ -328,7 +328,7 @@ open class StandardJvmClassHelper : JvmClassHelper {
         }
         sb.append(psiClass.name)
         psiClass.extendsListTypes
-            .takeIf { !it.isNullOrEmpty() }
+            .takeIf { it.isNotEmpty() }
             ?.let {
                 if (sb.last() != ' ') {
                     sb.append(' ')
@@ -337,7 +337,7 @@ open class StandardJvmClassHelper : JvmClassHelper {
                     .append(it.joinToString(separator = ", ") { type -> type.canonicalText })
             }
         psiClass.implementsListTypes
-            .takeIf { !it.isNullOrEmpty() }
+            .takeIf { it.isNotEmpty() }
             ?.let {
                 if (sb.last() != ' ') {
                     sb.append(' ')

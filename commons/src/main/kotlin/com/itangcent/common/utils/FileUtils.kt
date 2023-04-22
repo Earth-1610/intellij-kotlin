@@ -219,7 +219,7 @@ object FileUtils : Log() {
                 if (!filePresent) {
                     return
                 }
-                LOG?.error("Unable to delete file: $file")
+                LOG.error("Unable to delete file: $file")
             }
         }
     }
@@ -240,7 +240,7 @@ object FileUtils : Log() {
             cleanDirectory(directory)
         }
         if (!directory.delete()) {
-            LOG?.error("Unable to delete directory $directory.")
+            LOG.error("Unable to delete directory $directory.")
         }
     }
 
@@ -288,7 +288,7 @@ object FileUtils : Log() {
             try {
                 forceDelete(file)
             } catch (ioe: IOException) {
-                LOG?.error("File cleanDirectory:$file")
+                LOG.error("File cleanDirectory:$file")
             }
         }
     }
@@ -341,7 +341,7 @@ object FileUtils : Log() {
                 // Double-check that some other thread or process hasn't made
                 // the directory in the background
                 if (!directory.isDirectory) {
-                    LOG?.error("Unable to create directory $directory")
+                    LOG.error("Unable to create directory $directory")
                 }
             }
         }

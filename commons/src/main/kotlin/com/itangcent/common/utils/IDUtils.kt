@@ -15,11 +15,19 @@ object IDUtils {
     /**
      * uuid:no bar
      */
+    @Deprecated(message = "Use uuid instead.", replaceWith = ReplaceWith("uuid()"))
     fun UUID(): String {
-        return UUID2Tidy(UUID.randomUUID()).lowercase(Locale.US)
+        return uuid()
     }
 
-    private fun UUID2Tidy(uuid: UUID): String {
+    /**
+     * uuid:no bar
+     */
+    fun uuid(): String {
+        return uuid2Tidy(UUID.randomUUID()).lowercase(Locale.US)
+    }
+
+    private fun uuid2Tidy(uuid: UUID): String {
         val mostSigBits = uuid.mostSignificantBits
         val leastSigBits = uuid.leastSignificantBits
 

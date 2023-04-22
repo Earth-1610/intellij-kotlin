@@ -54,13 +54,13 @@ class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
                     for (i in parameters.size - 1..expressions.size) {
                         lastVarArgParam.add(PsiUtils.resolveExpr(expressions[i]))
                     }
-                } catch (e: Throwable) {
+                } catch (_: Throwable) {
                 }
             } else {
                 for ((i, parameter) in parameters.withIndex()) {
                     try {
-                        params[parameter.name!!] = PsiUtils.resolveExpr(expressions[i])
-                    } catch (e: Throwable) {
+                        params[parameter.name] = PsiUtils.resolveExpr(expressions[i])
+                    } catch (_: Throwable) {
                     }
                 }
             }
@@ -212,22 +212,22 @@ class StandardEnumFieldResolverImpl : StandardEnumFieldResolver {
         if (parameters.isNotEmpty()) {
             if (parameters.last().isVarArgs) {
                 for (i in 0 until parameters.size - 1) {
-                    params[parameters[i].name!!] = paramArray[i]
+                    params[parameters[i].name] = paramArray[i]
                 }
                 try {
                     //resolve varArgs
                     val lastVarArgParam: ArrayList<Any?> = ArrayList(1)
-                    params[parameters[parameters.size - 1].name!!] = lastVarArgParam
+                    params[parameters[parameters.size - 1].name] = lastVarArgParam
                     for (i in parameters.size - 1..paramArray.size) {
                         lastVarArgParam.add(paramArray[i])
                     }
-                } catch (e: Throwable) {
+                } catch (_: Throwable) {
                 }
             } else {
                 for ((i, parameter) in parameters.withIndex()) {
                     try {
-                        params[parameter.name!!] = paramArray[i]
-                    } catch (e: Throwable) {
+                        params[parameter.name] = paramArray[i]
+                    } catch (_: Throwable) {
                     }
                 }
             }

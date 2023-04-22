@@ -133,7 +133,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
                 }
 
                 "resolveMulti" -> {
-                    this.resolveMulti = ResolveMultiType.valueOf(value.toUpperCase())
+                    this.resolveMulti = ResolveMultiType.valueOf(value.uppercase())
                     return
                 }
             }
@@ -217,7 +217,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
 
         try {
             return System.getProperty(key)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
         }
 
         return null
@@ -248,11 +248,11 @@ abstract class AbstractConfigReader : MutableConfigReader {
     }
 
     override fun foreach(keyFilter: (String) -> Boolean, action: (String, String) -> Unit) {
-        configInfo.flattenForEach(keyFilter, { key, value ->
+        configInfo.flattenForEach(keyFilter) { key, value ->
             if (keyFilter(key)) {
                 action(key, value)
             }
-        })
+        }
     }
 
     companion object : Log() {
@@ -276,7 +276,6 @@ abstract class AbstractConfigReader : MutableConfigReader {
 
     private abstract inner class MapConfigResolver : ConfigResolver {
 
-        @Suppress("UNCHECKED_CAST")
         override fun resolveConfig(content: String, kvHandle: (String, String) -> Unit) {
             parseAsMaps(content) { loadConfigInMap(it) }
         }
@@ -305,7 +304,6 @@ abstract class AbstractConfigReader : MutableConfigReader {
 
     private inner class YamlConfigResolver : MapConfigResolver() {
 
-        @Suppress("UNCHECKED_CAST")
         override fun parseAsMaps(content: String, handle: (Map<*, *>) -> Unit) {
             val yaml = Yaml()
             try {
@@ -325,7 +323,7 @@ abstract class AbstractConfigReader : MutableConfigReader {
         ) {
             for (yamlProperty in yamlProperties) {
                 if (yamlProperty is Map<*, *>) {
-                    handle(yamlProperty as Map<*, *>)
+                    handle(yamlProperty)
                 }
             }
         }

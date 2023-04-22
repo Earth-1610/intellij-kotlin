@@ -24,7 +24,6 @@ class StreamsTest {
     private val stream: Stream<String>
         get() = Stream.of(*array)
 
-    @Suppress("CAST_NEVER_SUCCEEDS", "UNCHECKED_CAST")
     @Test
     fun testToTypedArray() {
         //empty Integer[]

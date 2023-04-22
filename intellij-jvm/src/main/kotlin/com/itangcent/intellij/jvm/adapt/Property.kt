@@ -88,7 +88,7 @@ class ParamProperty(private val parameter: PsiParameter) : Property {
     }
 
     override fun name(): String {
-        return parameter.name ?: ""
+        return parameter.name
     }
 
     override fun type(): PsiType {

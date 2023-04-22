@@ -52,7 +52,7 @@ class ExplicitParameterWithGenericInfo : ExplicitElementWithGenericInfo<PsiParam
     }
 
     override fun name(): String {
-        return psiParameter.name ?: ""
+        return psiParameter.name
     }
 
     override fun toString(): String {
@@ -112,7 +112,7 @@ class ExplicitParameterWithOutGenericInfo : ExplicitElementWithOutGenericInfo<Ps
     }
 
     override fun name(): String {
-        return psiParameter.name ?: ""
+        return psiParameter.name
     }
 
     override fun toString(): String {

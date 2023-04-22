@@ -8,7 +8,7 @@ object IOUtils {
         for (closeable in closeables) {
             try {
                 closeable?.close()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
             }
         }
     }
