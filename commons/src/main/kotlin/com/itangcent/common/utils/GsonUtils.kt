@@ -10,7 +10,9 @@ import com.google.gson.stream.JsonWriter
 import com.itangcent.common.logger.Log
 import com.itangcent.common.logger.traceError
 import java.io.IOException
+import java.io.StringReader
 import kotlin.reflect.KClass
+
 
 /**
  *
@@ -29,6 +31,7 @@ object GsonUtils : Log() {
                 .registerTypeAdapter(LazilyParsedNumber::class.java, LazilyParsedNumberTypeAdapter())
                 .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
                 .disableHtmlEscaping()
+                .setLenient()
                 .create()
                 .fix()
                 .also {
@@ -52,6 +55,7 @@ object GsonUtils : Log() {
                 .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
                 .serializeNulls()
                 .disableHtmlEscaping()
+                .setLenient()
                 .create()
                 .fix()
                 .also {
@@ -75,6 +79,7 @@ object GsonUtils : Log() {
                 .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
                 .setPrettyPrinting()
                 .disableHtmlEscaping()
+                .setLenient()
                 .create()
                 .fix()
                 .also {
@@ -85,6 +90,7 @@ object GsonUtils : Log() {
             Gson()
         }
     }
+
     private val pretty_gson_with_nulls: Gson by lazy {
         try {
             val numberObjectTypeAdapter = NumberFixedObjectTypeAdapter()
@@ -98,6 +104,7 @@ object GsonUtils : Log() {
                 .disableHtmlEscaping()
                 .setPrettyPrinting()
                 .serializeNulls()
+                .setLenient()
                 .create()
                 .fix()
                 .also {
@@ -122,7 +129,10 @@ object GsonUtils : Log() {
     }
 
     fun parseToJsonTree(str: String?): JsonElement? {
-        return JsonParser().parse(str)
+        if (str == null) {
+            return null
+        }
+        return JsonParser.parseReader(JsonReader(StringReader(str)).apply { isLenient = true })
     }
 
     fun <T> fromJson(json: String, cls: Class<T>): T {
@@ -133,7 +143,6 @@ object GsonUtils : Log() {
         return gson.fromJson(json, cls.java)
     }
 
-    @Suppress("UNCHECKED_CAST")
     inline fun <reified T> fromJson(json: String): T? {
         return fromJson(json, T::class.java)
     }

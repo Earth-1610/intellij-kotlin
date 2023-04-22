@@ -49,6 +49,16 @@ class GsonUtilsTest {
     }
 
     @Test
+    fun parseToJsonTree() {
+        val jsonElement = GsonUtils.parseToJsonTree("{1:1,\"2\":null}")
+        assertNotNull(jsonElement)
+        assertTrue(jsonElement!!.isJsonObject)
+        val jsonObject = jsonElement.asJsonObject
+        assertNotNull(jsonObject)
+        assertEquals(1, jsonObject.getAsJsonPrimitive("1").asInt)
+    }
+
+    @Test
     fun testPrettyJson() {
         assertEquals(
             "{\n" +
