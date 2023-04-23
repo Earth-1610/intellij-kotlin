@@ -80,10 +80,11 @@ class MultiValuesMap<K, V> : Map<K, Collection<V>?> {
     val valueSize: Int
         get() = count
 
+    @Suppress("UNCHECKED_CAST")
     override val values: Collection<Collection<V>?>
         get() {
             val node: MutableCollection<Node<K, V>> = keyToNode.values
-            return ValueCollectionImpl<V>(node as MutableCollection<Node<*, V>>, count)
+            return ValueCollectionImpl(node as MutableCollection<Node<*, V>>, count)
         }
 
     override fun containsValue(value: Collection<V>?): Boolean {

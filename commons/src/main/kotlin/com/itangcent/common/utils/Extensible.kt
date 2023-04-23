@@ -8,7 +8,6 @@ interface Extensible {
 
     fun hasAnyExt(vararg attr: String): Boolean
 
-    @Suppress("UNCHECKED_CAST")
     fun <T> getExt(attr: String): T?
 
     fun setExt(attr: String, value: Any?)
@@ -94,5 +93,5 @@ open class ConcurrentExtensible : AbstractExtensible() {
 }
 
 fun <T> Extensible.cache(attr: String, value: () -> T?): T? {
-    return this.getExt<T>(attr) ?: value().also { this.setExt(attr, it) }
+    return getExt<T>(attr) ?: value().also { setExt(attr, it) }
 }

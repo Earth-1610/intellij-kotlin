@@ -52,7 +52,7 @@ object ClassHelper {
         constructors.filter { it.parameters.size == params.size }.forEach {
             try {
                 return it.call(*params)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
             }
         }
 

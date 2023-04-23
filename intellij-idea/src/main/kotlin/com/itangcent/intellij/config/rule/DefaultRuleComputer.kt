@@ -3,7 +3,6 @@ package com.itangcent.intellij.config.rule
 import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.PsiElement
-import com.itangcent.common.utils.Iterables
 import kotlin.reflect.KClass
 
 @Singleton
@@ -18,7 +17,7 @@ class DefaultRuleComputer : RuleComputer {
     @Inject(optional = true)
     protected val ruleComputeListener: RuleComputeListener? = null
 
-    @Suppress("UNCHECKED_CAST", "LABEL_NAME_CLASH")
+    @Suppress("UNCHECKED_CAST")
     override fun <T : Any> computer(
         ruleKey: RuleKey<T>,
         target: Any,
@@ -72,19 +71,6 @@ class DefaultRuleComputer : RuleComputer {
 
         override fun compute(): T? {
             return rules[index].compute(ruleContext)
-        }
-
-        override fun iterator(): Iterator<RuleChain<T>> {
-            var ruleChain: RuleChain<T>? = this
-            return Iterables.asIterable {
-                if (ruleChain == null) {
-                    null
-                } else {
-                    val ret = ruleChain
-                    ruleChain = ruleChain?.nextChain()
-                    ret
-                }
-            }.iterator()
         }
     }
 }

@@ -28,8 +28,8 @@ class FileResource(val path: String) : Resource() {
             return resolveFile
         }
         resolveFile = SysFileResolve.adaptive().resolveFile(path, currPath)
-        LOG!!.debug("$path resolved as ${resolveFile?.path}")
-        return (resolveFile as? File)?.takeIf { it.exists() }
+        LOG.debug("$path resolved as ${resolveFile?.path}")
+        return resolveFile?.takeIf { it.exists() }
     }
 
     override val url: URL

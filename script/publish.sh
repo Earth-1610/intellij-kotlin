@@ -18,7 +18,7 @@ else
     mv ${basedir}/script/publish.properties ${basedir}/script/publish.properties.bak
     cp ${basedir}/.gradle/publish.properties ${basedir}/script/publish.properties
     cp ${basedir}/gradle.properties ${basedir}/gradle.properties.bak
-    echo '\n' >> ${basedir}/gradle.properties
+    echo  >> ${basedir}/gradle.properties
     cat ${basedir}/script/publish.properties >> ${basedir}/gradle.properties
     echo "start clean"
     ./gradlew clean --stacktrace
