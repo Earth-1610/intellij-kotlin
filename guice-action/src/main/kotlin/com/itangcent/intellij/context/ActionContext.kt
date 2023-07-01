@@ -17,6 +17,7 @@ import com.itangcent.common.exception.ProcessCanceledException
 import com.itangcent.common.logger.traceError
 import com.itangcent.common.spi.SpiUtils
 import com.itangcent.common.utils.IDUtils
+import com.itangcent.common.utils.ThreadPoolUtils
 import com.itangcent.common.utils.safe
 import com.itangcent.intellij.CustomInfo
 import com.itangcent.intellij.constant.EventKey
@@ -31,12 +32,10 @@ import java.lang.reflect.Method
 import java.util.*
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
-import kotlin.concurrent.withLock
 import kotlin.concurrent.write
 import kotlin.reflect.KClass
 
@@ -59,8 +58,7 @@ class ActionContext {
     private lateinit var rootContextStatus: ContextStatus
 
     private var executorService: ExecutorService =
-        Executors.newFixedThreadPool(
-            32,
+        ThreadPoolUtils.newCachedThreadPool(
             BasicThreadFactory.Builder().daemon(true)
                 .namingPattern("ActionContext-%d").build()
         )
@@ -117,9 +115,7 @@ class ActionContext {
         LOG.info("compute cache [$name]")
         checkStatus()
         lock.read {
-            if (cache.containsKey(cachePrefix + name)) {
-                return cache[cachePrefix + name] as T?
-            }
+            cache[cachePrefix + name] as? T
         }
         val bean = beanSupplier()
         lock.write {
@@ -166,10 +162,10 @@ class ActionContext {
     @Suppress("UNCHECKED_CAST")
     fun call(name: String) {
         LOG.info("call event [$name]")
-        lock.read {
-            val event = cache[eventPrefix + name] as ((ActionContext) -> Unit)?
-            event?.invoke(this)
+        val event = lock.read {
+            cache[eventPrefix + name] as? ((ActionContext) -> Unit)
         }
+        event?.invoke(this)
     }
 
     //endregion event--------------------------------------------------------------
@@ -648,32 +644,6 @@ class ActionContext {
         if (isStopped() || (localContextStatus.get()?.boundaries()?.isClosed() == true)) {
             throw ProcessCanceledException("ActionContext was stopped")
         }
-    }
-
-    @Deprecated(message = "deprecated")
-    fun lastActive(): Long {
-        return System.currentTimeMillis()
-    }
-
-    @Deprecated(message = "deprecated")
-    fun keepAlive(duration: Long) {
-    }
-
-    @Deprecated(message = "deprecated")
-    fun keepAliveUtil(aliveTime: Long) {
-    }
-
-    @Deprecated(message = "deprecated")
-    fun ping() {
-    }
-
-    @Deprecated(message = "replace with [rebirth]", replaceWith = ReplaceWith("rebirth()"))
-    fun suicide() {
-        rebirth()
-    }
-
-    @Deprecated(message = "deprecated")
-    fun rebirth() {
     }
 
     fun activeThreads(): Int {

@@ -17,8 +17,8 @@ open class KV<K, V> : LinkedHashMap<K, V>() {
         return this
     }
 
-    fun set(KV: KV<K, V>): KV<K, V> {
-        super.putAll(KV)
+    fun set(kv: KV<K, V>): KV<K, V> {
+        super.putAll(kv)
         return this
     }
 

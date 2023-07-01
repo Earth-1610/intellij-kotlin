@@ -21,12 +21,14 @@ class GsonUtilsTest {
                     .set("3", "<>&='")
             )
         )
+        assertEquals("{\"int\":10}", GsonUtils.toJson(KV.by("int", 10)))
     }
 
     @Test
     fun testFromJson() {
         assertEquals("{\"x\":1,\"y\":2}", GsonUtils.toJson(GsonUtilsTestPoint(1, 2)))
         assertEquals(GsonUtilsTestPoint(1, 2), GsonUtils.fromJson("{\"x\":1,\"y\":2}", GsonUtilsTestPoint::class))
+        assertEquals("{\"int\":10}", GsonUtils.toJson(GsonUtils.fromJson("{\"int\":10}")))
     }
 
     @Test

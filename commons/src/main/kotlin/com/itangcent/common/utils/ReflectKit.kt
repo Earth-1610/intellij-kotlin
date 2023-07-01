@@ -1,9 +1,10 @@
 package com.itangcent.common.utils
 
+import com.itangcent.common.logger.Log
 import java.lang.reflect.AccessibleObject
+import java.lang.reflect.Member
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
-import java.util.*
 import kotlin.jvm.internal.CallableReference
 import kotlin.jvm.internal.PropertyReference
 import kotlin.reflect.KClass
@@ -39,9 +40,7 @@ private fun <R> changePropertyValue(classObj: Any?, property: KProperty<R>, newV
         tobeSearchMethodClass.declaredFields.forEach { field ->
             if (field.name == propertyName) {
                 field.isAccessible = true
-                val modifyFiled = field.javaClass.getDeclaredField("modifiers")
-                modifyFiled.isAccessible = true
-                modifyFiled.setInt(field, modifyFiled.getInt(field) and Modifier.FINAL.inv())
+                removeFinalModifies(field)
 
                 field.set(classObj, newValue)
                 return true
@@ -67,9 +66,7 @@ fun <R> changeClassPropertyValueByName(classObj: Any, propertyName: String, newV
         tobeSearchMethodClass.declaredFields.forEach { field ->
             if (field.name == propertyName) {
                 field.isAccessible = true
-                val modifyFiled = field.javaClass.getDeclaredField("modifiers")
-                modifyFiled.isAccessible = true
-                modifyFiled.setInt(field, modifyFiled.getInt(field) and Modifier.FINAL.inv())
+                removeFinalModifies(field)
 
                 field.set(classObj, newValue)
                 return true
@@ -102,10 +99,9 @@ fun changeTopPropertyValueByName(otherCallableReference: CallableReference, prop
         tobeSearchMethodClass.declaredFields.forEach { field ->
             if (field.name == propertyName) {
                 field.isAccessible = true
-                val modifyFiled = field.javaClass.getDeclaredField("modifiers")
-                modifyFiled.isAccessible = true
-                modifyFiled.setInt(field, modifyFiled.getInt(field) and Modifier.FINAL.inv())
-                modifyFiled.setInt(field, modifyFiled.getInt(field) and Modifier.PRIVATE.inv())
+                updateModifies(field) {
+                    (it and Modifier.FINAL.inv()) and Modifier.PRIVATE.inv()
+                }
                 /**
                  * top property(package property) should be static in java level
                  * or throw an exception
@@ -317,8 +313,10 @@ fun invokeTopMethodByMethodName(
         tobeSearchMethodClass = tobeSearchMethodClass.superclass
     }
     throw IllegalArgumentException(
-        "Can't find the method named :$methodName with args ${methodArgs.toList()
-            .toString()} in the same file with ${otherCallableReference.name}"
+        "Can't find the method named :$methodName with args ${
+            methodArgs.toList()
+                .toString()
+        } in the same file with ${otherCallableReference.name}"
     )
 
 }
@@ -336,13 +334,25 @@ fun collectDeclaredMethod(cls: Class<*>, methodHandle: (Method) -> Unit) {
 }
 
 
-private fun removeFinalModifies(method: Method) {
-    if (Modifier.isFinal(method.modifiers)) {
-        val modifyFiled = method.javaClass.getDeclaredField("modifiers")
-        modifyFiled.isAccessible = true
-        modifyFiled.setInt(method, modifyFiled.getInt(method) and Modifier.FINAL.inv())
+private fun removeFinalModifies(fieldOrMethod: Member) {
+    updateModifies(fieldOrMethod) {
+        it and Modifier.FINAL.inv()
     }
 }
+
+
+private fun updateModifies(fieldOrMethod: Member, modifier: (Int) -> Int) {
+    if (Modifier.isFinal(fieldOrMethod.modifiers)) {
+        try {
+            val modifyFiled = fieldOrMethod.javaClass.getDeclaredField("modifiers")
+            modifyFiled.isAccessible = true
+            modifyFiled.setInt(fieldOrMethod, modifier(modifyFiled.getInt(fieldOrMethod)))
+        } catch (e: Exception) {
+            Log.log("failed update modifies of $fieldOrMethod")
+        }
+    }
+}
+
 
 fun <T : AccessibleObject, R> T.privileged(handle: (T) -> R): R {
     return try {

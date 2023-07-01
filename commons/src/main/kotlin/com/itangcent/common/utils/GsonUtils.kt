@@ -22,21 +22,12 @@ object GsonUtils : Log() {
 
     private val gson: Gson by lazy {
         try {
-            val numberObjectTypeAdapter = NumberFixedObjectTypeAdapter()
             GsonBuilder()
                 .setExclusionStrategies(RegisterExclusionStrategy().exclude(Visional::class.java))
-                .registerTypeAdapter(Any::class.java, numberObjectTypeAdapter)
-                .registerTypeAdapter(Map::class.java, numberObjectTypeAdapter)
-                .registerTypeAdapter(List::class.java, numberObjectTypeAdapter)
                 .registerTypeAdapter(LazilyParsedNumber::class.java, LazilyParsedNumberTypeAdapter())
-                .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
                 .disableHtmlEscaping()
                 .setLenient()
-                .create()
-                .fix()
-                .also {
-                    numberObjectTypeAdapter.setGson(it)
-                }
+                .buildWithObjectToNumberStrategy()
         } catch (e: Exception) {
             LOG.traceError("failed init GSON module [gson].", e)
             Gson()
@@ -45,22 +36,13 @@ object GsonUtils : Log() {
 
     private val gsonWithNulls: Gson by lazy {
         try {
-            val numberObjectTypeAdapter = NumberFixedObjectTypeAdapter()
             GsonBuilder()
                 .setExclusionStrategies(RegisterExclusionStrategy().exclude(Visional::class.java))
-                .registerTypeAdapter(Any::class.java, numberObjectTypeAdapter)
-                .registerTypeAdapter(Map::class.java, numberObjectTypeAdapter)
-                .registerTypeAdapter(List::class.java, numberObjectTypeAdapter)
                 .registerTypeAdapter(LazilyParsedNumber::class.java, LazilyParsedNumberTypeAdapter())
-                .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
-                .serializeNulls()
                 .disableHtmlEscaping()
                 .setLenient()
-                .create()
-                .fix()
-                .also {
-                    numberObjectTypeAdapter.setGson(it)
-                }
+                .serializeNulls()
+                .buildWithObjectToNumberStrategy()
         } catch (e: Exception) {
             LOG.traceError("failed init GSON module [gsonWithNulls].", e)
             Gson()
@@ -69,47 +51,29 @@ object GsonUtils : Log() {
 
     private val prettyGson: Gson by lazy {
         try {
-            val numberObjectTypeAdapter = NumberFixedObjectTypeAdapter()
             GsonBuilder()
                 .setExclusionStrategies(RegisterExclusionStrategy().exclude(Visional::class.java))
-                .registerTypeAdapter(Any::class.java, numberObjectTypeAdapter)
-                .registerTypeAdapter(Map::class.java, numberObjectTypeAdapter)
-                .registerTypeAdapter(List::class.java, numberObjectTypeAdapter)
                 .registerTypeAdapter(LazilyParsedNumber::class.java, LazilyParsedNumberTypeAdapter())
-                .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
-                .setPrettyPrinting()
                 .disableHtmlEscaping()
                 .setLenient()
-                .create()
-                .fix()
-                .also {
-                    numberObjectTypeAdapter.setGson(it)
-                }
+                .setPrettyPrinting()
+                .buildWithObjectToNumberStrategy()
         } catch (e: Exception) {
             LOG.traceError("failed init GSON module [prettyGson].", e)
             Gson()
         }
     }
 
-    private val pretty_gson_with_nulls: Gson by lazy {
+    private val prettyGsonWithNulls: Gson by lazy {
         try {
-            val numberObjectTypeAdapter = NumberFixedObjectTypeAdapter()
             GsonBuilder()
                 .setExclusionStrategies(RegisterExclusionStrategy().exclude(Visional::class.java))
-                .registerTypeAdapter(Any::class.java, numberObjectTypeAdapter)
-                .registerTypeAdapter(Map::class.java, numberObjectTypeAdapter)
-                .registerTypeAdapter(List::class.java, numberObjectTypeAdapter)
                 .registerTypeAdapter(LazilyParsedNumber::class.java, LazilyParsedNumberTypeAdapter())
-                .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
                 .disableHtmlEscaping()
+                .setLenient()
                 .setPrettyPrinting()
                 .serializeNulls()
-                .setLenient()
-                .create()
-                .fix()
-                .also {
-                    numberObjectTypeAdapter.setGson(it)
-                }
+                .buildWithObjectToNumberStrategy()
         } catch (e: Exception) {
             LOG.traceError("failed init GSON module [pretty_gson_with_nulls].", e)
             Gson()
@@ -156,7 +120,7 @@ object GsonUtils : Log() {
     }
 
     fun prettyJsonWithNulls(any: Any?): String {
-        return pretty_gson_with_nulls.toJson(any)
+        return prettyGsonWithNulls.toJson(any)
     }
 
     fun copy(any: Any?): Any? = any.copy()
@@ -196,14 +160,12 @@ class LazilyParsedNumberTypeAdapter : TypeAdapter<LazilyParsedNumber>() {
 }
 
 /**
- * By default ObjectTypeAdapter,all number are deserialized to double.
- * It's not necessary to keep long to long,float to float.
- * But shouldn't deserialize short/int/long to double
- * So fix it.
+ * By default, the ObjectTypeAdapter deserializes all numbers as Double.
+ * Overrides the default behavior of number deserialization to preserve the type.
  */
 class NumberFixedObjectTypeAdapter : TypeAdapter<Any> {
 
-    private var gson: Gson? = null
+    private lateinit var gson: Gson
 
     constructor(gson: Gson) : super() {
         this.gson = gson
@@ -276,7 +238,7 @@ class NumberFixedObjectTypeAdapter : TypeAdapter<Any> {
             return
         }
 
-        val typeAdapter = gson!!.getAdapter(value.javaClass) as TypeAdapter<Any>
+        val typeAdapter = gson.getAdapter(value.javaClass) as TypeAdapter<Any>
         if (typeAdapter is NumberFixedObjectTypeAdapter) {
             out.beginObject()
             out.endObject()
@@ -298,24 +260,45 @@ class NumberFixedObjectTypeAdapter : TypeAdapter<Any> {
     }
 }
 
+private fun GsonBuilder.buildWithObjectToNumberStrategy(): Gson {
+    try {
+        return this.serializeSpecialFloatingPointValues()
+            .setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE)
+            .create()
+    } catch (e: Error) {
+        val numberObjectTypeAdapter = NumberFixedObjectTypeAdapter()
+        return this.registerTypeAdapter(Any::class.java, numberObjectTypeAdapter)
+            .registerTypeAdapter(Map::class.java, numberObjectTypeAdapter)
+            .registerTypeAdapter(List::class.java, numberObjectTypeAdapter)
+            .registerTypeAdapter(LazilyParsedNumber::class.java, LazilyParsedNumberTypeAdapter())
+            .registerTypeAdapterFactory(NumberFixedObjectTypeAdapter.FACTORY)
+            .create()
+            .apply {
+                numberObjectTypeAdapter.setGson(this)
+                fixFactories()
+            }
+
+    }
+}
 
 /**
  * try to remove default ObjectTypeAdapter from gson
  * if success,the {@link NumberFixedObjectTypeAdapter} will be used instead
  */
 @Suppress("UNCHECKED_CAST")
-private fun Gson.fix(): Gson {
-    var factories = this.getPropertyValue("factories") ?: return this
-
-    //unwrap for UnmodifiableList
-    if (factories::class.qualifiedName == "java.util.Collections.UnmodifiableRandomAccessList" ||
-        factories::class.qualifiedName == "java.util.Collections.UnmodifiableList"
-    ) {
-        factories = factories.getPropertyValue("list") ?: return this
-    }
-    val objectTypeAdapterClassName = ObjectTypeAdapter::class.qualifiedName!!
-    (factories as MutableList<TypeAdapterFactory>).removeIf {
-        it::class.java.name.startsWith(objectTypeAdapterClassName)
+private fun Gson.fixFactories(): Gson {
+    try {
+        val factories = this.getPropertyValue("factories") ?: return this
+        factories as List<TypeAdapterFactory>
+        if (factories.any { it == NumberFixedObjectTypeAdapter.FACTORY }) {
+            val objectTypeAdapterClassName = ObjectTypeAdapter::class.qualifiedName!!
+            val (objectTypeAdapters, others) = factories.partition {
+                it::class.java.name.startsWith(objectTypeAdapterClassName)
+            }
+            this.changePropertyValue("factories", others + objectTypeAdapters)
+        }
+    } catch (e: Exception) {
+        Log.warn("fix Gson failed.")
     }
     return this
 }

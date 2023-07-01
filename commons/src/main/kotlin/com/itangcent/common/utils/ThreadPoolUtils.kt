@@ -1,15 +1,15 @@
 package com.itangcent.common.utils
 
+import com.itangcent.common.logger.Log
 import com.itangcent.common.threadpool.eager.EagerThreadPoolExecutor
 import org.apache.commons.lang3.concurrent.BasicThreadFactory
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
+import java.lang.management.ManagementFactory
+import java.util.concurrent.*
 
 /**
  * Helpers for [ExecutorService]
  */
-object ThreadPoolUtils {
+object ThreadPoolUtils : Log() {
 
     fun setPoolSize(threadPool: ExecutorService, poolSize: Int?) {
         if (threadPool is ThreadPoolExecutor) {
@@ -52,5 +52,21 @@ object ThreadPoolUtils {
 
     fun createSinglePool(name: String): ExecutorService {
         return createPool(1, name)
+    }
+
+    fun newCachedThreadPool(): ExecutorService {
+        return ThreadPoolExecutor(
+            0, Int.MAX_VALUE,
+            20L, TimeUnit.SECONDS,
+            SynchronousQueue()
+        )
+    }
+
+    fun newCachedThreadPool(threadFactory: ThreadFactory): ExecutorService {
+        return ThreadPoolExecutor(
+            0, Int.MAX_VALUE,
+            20L, TimeUnit.SECONDS,
+            SynchronousQueue(), threadFactory
+        )
     }
 }
