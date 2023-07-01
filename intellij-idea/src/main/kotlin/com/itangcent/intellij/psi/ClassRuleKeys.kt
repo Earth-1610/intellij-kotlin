@@ -64,7 +64,7 @@ object ClassRuleKeys {
     val FIELD_DOC: RuleKey<String> = SimpleRuleKey(
         "field.doc",
         arrayOf("doc.field"),
-        StringRuleMode.MERGE
+        StringRuleMode.MERGE_DISTINCT
     )
 
     val TYPE_IS_FILE: RuleKey<Boolean> =
