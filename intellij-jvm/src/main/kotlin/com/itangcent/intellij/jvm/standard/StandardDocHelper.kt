@@ -5,7 +5,6 @@ import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.psi.javadoc.PsiDocComment
 import com.intellij.psi.javadoc.PsiDocTag
-import com.itangcent.common.utils.appendln
 import com.itangcent.common.utils.joinToString
 import com.itangcent.common.utils.notNullOrBlank
 import com.itangcent.intellij.jvm.DocHelper
@@ -182,7 +181,9 @@ open class StandardDocHelper : DocHelper {
         val eolComment = getEolComment(field)?.takeIf { it != attrInDoc }
         val docByRule = extendProvider?.extraDoc(field)
 
-        return attrInDoc.appendln(eolComment).appendln(docByRule)
+        return listOfNotNull(attrInDoc, eolComment, docByRule)
+            .distinct()
+            .joinToString("\n")
     }
 
     open fun Sequence<PsiElement>.findEolComment(
