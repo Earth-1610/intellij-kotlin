@@ -64,7 +64,7 @@ class EagerThreadPoolExecutorTest {
             }
         }
         Thread.sleep(5000)
-        // cores theads are all alive.
+        // cores threads are all alive.
         Assertions.assertEquals(executor.poolSize, cores, "more than cores threads alive!")
     }
 

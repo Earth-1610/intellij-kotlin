@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * If greater than corePoolSize and fewer than maximumPoolSize threads are running
  * Try to start a new thread by add Worker instead of queued the task
  */
+@Deprecated(message = "too complex")
 class EagerThreadPoolExecutor : ThreadPoolExecutor {
 
     constructor(
