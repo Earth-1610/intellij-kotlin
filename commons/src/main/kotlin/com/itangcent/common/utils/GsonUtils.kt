@@ -191,7 +191,7 @@ class NumberFixedObjectTypeAdapter : TypeAdapter<Any> {
             }
 
             JsonToken.BEGIN_OBJECT -> {
-                val map = HashMap<String, Any?>()
+                val map = LinkedHashMap<String, Any?>()
                 reader.beginObject()
                 while (reader.hasNext()) {
                     map[reader.nextName()] = read(reader)
