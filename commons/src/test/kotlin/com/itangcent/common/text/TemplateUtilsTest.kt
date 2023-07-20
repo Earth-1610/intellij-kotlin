@@ -42,49 +42,49 @@ internal class TemplateUtilsTest {
             "min-max",
             TemplateUtils.render(
                 "min-max",
-                arrayOf('$', '#'), emptyMap<String?, Any?>()
+                charArrayOf('$', '#'), emptyMap<String?, Any?>()
             )
         )
         Assertions.assertEquals(
             "-",
             TemplateUtils.render(
                 "\${min}-#{max}",
-                arrayOf('$', '#'), emptyMap<String?, Any?>()
+                charArrayOf('$', '#'), emptyMap<String?, Any?>()
             )
         )
         Assertions.assertEquals(
             "0-",
             TemplateUtils.render(
                 "\${min}-#{max}",
-                arrayOf('$', '#'), mapOf<String?, Any?>("min" to 0)
+                charArrayOf('$', '#'), mapOf<String?, Any?>("min" to 0)
             )
         )
         Assertions.assertEquals(
             "-99",
             TemplateUtils.render(
                 "\${min}-#{max}",
-                arrayOf('$', '#'), mapOf<String?, Any?>("max" to 99)
+                charArrayOf('$', '#'), mapOf<String?, Any?>("max" to 99)
             )
         )
         Assertions.assertEquals(
             "0-99",
             TemplateUtils.render(
                 "\${min}-#{max}",
-                arrayOf('$', '#'), context
+                charArrayOf('$', '#'), context
             )
         )
         Assertions.assertEquals(
             "min-max",
             TemplateUtils.render(
                 "\${'min'}-#{\"max\"}",
-                arrayOf('$', '#'), emptyMap<String?, Any?>()
+                charArrayOf('$', '#'), emptyMap<String?, Any?>()
             )
         )
         Assertions.assertEquals(
             "min-max",
             TemplateUtils.render(
                 "\${'min'}-#{\"max\"}",
-                arrayOf('$', '#'), context
+                charArrayOf('$', '#'), context
             )
         )
 
@@ -107,7 +107,7 @@ internal class TemplateUtilsTest {
 
         //render with TemplateRenderBuilder
         assertEquals("0-99", TemplateUtils.render("\${min}-#{max}")
-            .placeholder(arrayOf('$', '#'))
+            .placeholder(charArrayOf('$', '#'))
             .context(context)
             .onEval { property, resolved ->
                 assertEquals(context[property], resolved)

@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 
@@ -45,22 +46,58 @@ class CollectionKitTest {
     }
 
     @Test
-    fun testAsHashMap() {
-        val map = mapOf("x" to 1)
+    fun testMapAsHashMap() {
+        val map = mapOf("a" to 1, "b" to 2)
         val hashMap = map.asHashMap()
-        Assertions.assertEquals(HashMap::class, hashMap::class)
-        Assertions.assertFalse(map === hashMap)
-        Assertions.assertEquals(map, hashMap)
-        Assertions.assertTrue(hashMap === hashMap.asHashMap())
+        assertIs<HashMap<*,*>>(hashMap)
+        Assertions.assertEquals(mapOf("a" to 1, "b" to 2), hashMap)
     }
 
     @Test
-    fun testAsArrayList() {
-        val list = listOf("x", "y")
+    fun testEmptyMap() {
+        val emptyMap = emptyMap<String, Int>()
+        val hashMap = emptyMap.asHashMap()
+        assertIs<HashMap<*,*>>(hashMap)
+        assertTrue(hashMap.isEmpty())
+    }
+
+    @Test
+    fun testSingleMap() {
+        val singleMap = mapOf("a" to 1)
+        val hashMap = singleMap.asHashMap()
+        assertIs<HashMap<*,*>>(hashMap)
+        Assertions.assertEquals(mapOf("a" to 1), hashMap)
+    }
+
+    @Test
+    fun testListAsArrayList() {
+        val list = listOf(1, 2, 3)
         val arrayList = list.asArrayList()
-        Assertions.assertEquals(ArrayList::class, arrayList::class)
-        Assertions.assertFalse(list === arrayList)
-        Assertions.assertEquals(list, arrayList)
-        Assertions.assertTrue(arrayList === arrayList.asArrayList())
+        assertIs<ArrayList<*>>(arrayList)
+        Assertions.assertEquals(listOf(1, 2, 3), arrayList)
+    }
+
+    @Test
+    fun testEmptyList() {
+        val emptyList = emptyList<Int>()
+        val arrayList = emptyList.asArrayList()
+        assertIs<ArrayList<*>>(arrayList)
+        assertTrue(arrayList.isEmpty())
+    }
+
+    @Test
+    fun testSingleList() {
+        val singleList = listOf(1)
+        val arrayList = singleList.asArrayList()
+        assertIs<ArrayList<*>>(arrayList)
+        Assertions.assertEquals(listOf(1), arrayList)
+    }
+
+    @Test
+    fun testArrayList() {
+        val list = arrayListOf(1, 2, 3)
+        val arrayList = list.asArrayList()
+        assertIs<ArrayList<*>>(arrayList)
+        Assertions.assertEquals(listOf(1, 2, 3), arrayList)
     }
 }
