@@ -116,7 +116,7 @@ class ActionContext {
         checkStatus()
         lock.read {
             cache[cachePrefix + name] as? T
-        }
+        }?.let { return it }
         val bean = beanSupplier()
         lock.write {
             if (cache.containsKey(cachePrefix + name)) {

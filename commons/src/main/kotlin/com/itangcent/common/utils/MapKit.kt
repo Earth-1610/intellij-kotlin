@@ -6,11 +6,13 @@ fun <K, V> MutableMap<K, V>.safeComputeIfAbsent(key: K, mappingFunction: (K) -> 
         if (this.containsKey(key)) {
             return this[key]
         }
-        mappingValue = mappingFunction(key)?.also { this[key] = it }
-        mappingValue?.let { this.put(key, it) }
+        computeIfAbsent(key) {
+            mappingValue = mappingFunction(key)
+            mappingValue!!
+        }
     } catch (e: NullPointerException) {
         return null
-    } catch (e: ConcurrentModificationException) {
+    } catch (e: Exception) {
         mappingValue?.let { this[key] = it }
     }
     return mappingValue
@@ -53,6 +55,7 @@ private fun flat(path: String, value: Any?, consumer: (String, String) -> Unit) 
                 flat("$path.$k", v, consumer)
             }
         }
+
         is String -> consumer(path, value)
         else -> consumer(path, GsonUtils.toJson(value))
     }

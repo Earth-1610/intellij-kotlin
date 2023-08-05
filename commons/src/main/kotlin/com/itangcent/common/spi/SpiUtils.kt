@@ -3,6 +3,7 @@ package com.itangcent.common.spi
 import com.itangcent.common.logger.ILogger
 import com.itangcent.common.logger.ILoggerProvider
 import com.itangcent.common.utils.notNullOrEmpty
+import com.itangcent.common.utils.safeComputeIfAbsent
 import java.lang.reflect.Proxy
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -78,7 +79,7 @@ object SpiUtils {
     fun <S : Any> loadUltimateBean(
         service: KClass<S>
     ): S? {
-        return serviceUltimateBeanCache.computeIfAbsent(service) {
+        return serviceUltimateBeanCache.safeComputeIfAbsent(service) {
             createProxy(service) ?: NON
         }?.takeIf { it !== NON } as S?
     }
@@ -95,13 +96,13 @@ object SpiUtils {
     @Suppress("UNCHECKED_CAST")
     private fun <T> cache(key: Any, call: () -> T): T? {
         serviceCache[key]?.let { return it as T }
-        val stack= loadStack.getOrSet { Stack() }
+        val stack = loadStack.getOrSet { Stack() }
         if (stack.contains(key)) {
             return null
         }
         stack.push(key)
         try {
-            return serviceCache.computeIfAbsent(key) {
+            return serviceCache.safeComputeIfAbsent(key) {
                 call()
             } as T
         } finally {

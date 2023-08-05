@@ -20,11 +20,11 @@ object TemplateUtils {
         return render(msg, TemplateEvaluator.from(supplier))
     }
 
-    fun render(msg: String, placeholder: Array<Char>, context: Map<String?, *>): String? {
+    fun render(msg: String, placeholder: CharArray, context: Map<String?, *>): String? {
         return render(msg, placeholder, TemplateEvaluator.from(context))
     }
 
-    fun render(msg: String, placeholder: Array<Char>, supplier: (String) -> Any?): String? {
+    fun render(msg: String, placeholder: CharArray, supplier: (String) -> Any?): String? {
         return render(msg, placeholder, TemplateEvaluator.from(supplier))
     }
 
@@ -36,7 +36,7 @@ object TemplateUtils {
         )
     }
 
-    fun render(msg: String, placeholder: Array<Char>, templateEvaluator: TemplateEvaluator): String? {
+    fun render(msg: String, placeholder: CharArray, templateEvaluator: TemplateEvaluator): String? {
         return defaultTemplateEngine().render(
             msg,
             placeholder,
@@ -55,7 +55,7 @@ object TemplateUtils {
     }
 }
 
-private val DEFAULT_PLACEHOLDER = arrayOf('$')
+private val DEFAULT_PLACEHOLDER = charArrayOf('$')
 
 class TemplateRenderBuilder(private val msg: String) {
 
@@ -63,7 +63,7 @@ class TemplateRenderBuilder(private val msg: String) {
 
     private var templateEvaluator: TemplateEvaluator? = null
 
-    private var placeholder: Array<Char>? = null
+    private var placeholder: CharArray? = null
 
     /**
      * call back for handle the result of evaluate
@@ -89,7 +89,7 @@ class TemplateRenderBuilder(private val msg: String) {
         return this
     }
 
-    fun placeholder(placeholder: Array<Char>): TemplateRenderBuilder {
+    fun placeholder(placeholder: CharArray): TemplateRenderBuilder {
         this.placeholder = placeholder
         return this
     }

@@ -4,7 +4,7 @@ import java.util.regex.Pattern
 
 class DefaultTemplateEngine : TemplateEngine {
 
-    override fun render(msg: String, placeholder: Array<Char>, templateEvaluator: TemplateEvaluator): String {
+    override fun render(msg: String, placeholder: CharArray, templateEvaluator: TemplateEvaluator): String {
         if (msg.isBlank()) return msg
         if (placeholder.none { msg.contains(it) }) return msg
 

@@ -1,8 +1,6 @@
 package com.itangcent.common.utils
 
-import com.itangcent.common.logger.Log
 import java.lang.reflect.AccessibleObject
-import java.lang.reflect.Member
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import kotlin.jvm.internal.CallableReference
@@ -40,7 +38,6 @@ private fun <R> changePropertyValue(classObj: Any?, property: KProperty<R>, newV
         tobeSearchMethodClass.declaredFields.forEach { field ->
             if (field.name == propertyName) {
                 field.isAccessible = true
-                removeFinalModifies(field)
 
                 field.set(classObj, newValue)
                 return true
@@ -66,8 +63,6 @@ fun <R> changeClassPropertyValueByName(classObj: Any, propertyName: String, newV
         tobeSearchMethodClass.declaredFields.forEach { field ->
             if (field.name == propertyName) {
                 field.isAccessible = true
-                removeFinalModifies(field)
-
                 field.set(classObj, newValue)
                 return true
             }
@@ -99,9 +94,6 @@ fun changeTopPropertyValueByName(otherCallableReference: CallableReference, prop
         tobeSearchMethodClass.declaredFields.forEach { field ->
             if (field.name == propertyName) {
                 field.isAccessible = true
-                updateModifies(field) {
-                    (it and Modifier.FINAL.inv()) and Modifier.PRIVATE.inv()
-                }
                 /**
                  * top property(package property) should be static in java level
                  * or throw an exception
@@ -216,7 +208,6 @@ fun invokeClassMethodByMethodName(classObj: Any, methodName: String, vararg meth
         tobeSearchMethodClass.declaredMethods.forEach { method ->
             if (method.name == methodName && method.parameterTypes.size == methodArgs.size) {
                 method.isAccessible = true
-                removeFinalModifies(method)
 
                 try {
                     return if (methodArgs.isNotEmpty()) {
@@ -252,8 +243,6 @@ fun invokeStaticClassMethodByMethodName(kClass: KClass<*>, methodName: String, v
                 && Modifier.isStatic(method.modifiers)
             ) {
                 method.isAccessible = true
-
-                removeFinalModifies(method)
 
                 try {
                     return if (methodArgs.isNotEmpty()) {
@@ -297,7 +286,6 @@ fun invokeTopMethodByMethodName(
         tobeSearchMethodClass.declaredMethods.forEach { method ->
             if (method.name == methodName && method.parameterTypes.size == methodArgs.size) {
                 method.isAccessible = true
-                removeFinalModifies(method)
 
                 try {
                     return if (methodArgs.isNotEmpty()) {
@@ -332,27 +320,6 @@ fun collectDeclaredMethod(cls: Class<*>, methodHandle: (Method) -> Unit) {
         tobeSearchMethodClass = tobeSearchMethodClass.superclass
     }
 }
-
-
-private fun removeFinalModifies(fieldOrMethod: Member) {
-    updateModifies(fieldOrMethod) {
-        it and Modifier.FINAL.inv()
-    }
-}
-
-
-private fun updateModifies(fieldOrMethod: Member, modifier: (Int) -> Int) {
-    if (Modifier.isFinal(fieldOrMethod.modifiers)) {
-        try {
-            val modifyFiled = fieldOrMethod.javaClass.getDeclaredField("modifiers")
-            modifyFiled.isAccessible = true
-            modifyFiled.setInt(fieldOrMethod, modifier(modifyFiled.getInt(fieldOrMethod)))
-        } catch (e: Exception) {
-            Log.log("failed update modifies of $fieldOrMethod")
-        }
-    }
-}
-
 
 fun <T : AccessibleObject, R> T.privileged(handle: (T) -> R): R {
     return try {
