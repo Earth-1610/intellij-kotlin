@@ -12,8 +12,10 @@ import com.itangcent.common.logger.Log
 import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.cast
 import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.jvm.PsiResolver
 import org.apache.commons.lang.StringUtils
 import java.io.File
+import kotlin.reflect.KClass
 
 /**
  * Created by tangcent on 2017/2/16.
@@ -98,10 +100,10 @@ object ActionUtils : Log() {
     }
 
     inline fun <reified T : PsiElement> findContextOfType(): T? {
-        return findContextOfType(T::class.java)
+        return findContextOfType(T::class)
     }
 
-    fun <T : PsiElement> findContextOfType(cls: Class<T>): T? {
+    fun <T : PsiElement> findContextOfType(cls: KClass<T>): T? {
         val actionContext = ActionContext.getContext()!!
         val editor = actionContext.cacheOrCompute(CommonDataKeys.EDITOR.name) {
             actionContext.callInReadUI { actionContext.instance(DataContext::class).getData(CommonDataKeys.EDITOR) }
@@ -111,7 +113,9 @@ object ActionUtils : Log() {
         } ?: return null
         val referenceAt = actionContext.callInReadUI { psiFile.findElementAt(editor.caretModel.offset) } ?: return null
         try {
-            return actionContext.callInReadUI { PsiTreeUtil.getContextOfType(referenceAt, cls) }
+            return actionContext.callInReadUI {
+                actionContext.instance(PsiResolver::class).getContextOfType(referenceAt, cls)
+            }
         } catch (e: Exception) {
             //ignore
         }

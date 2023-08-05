@@ -4,15 +4,16 @@ import com.google.inject.Inject
 import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
-import com.intellij.psi.util.parentOfType
 import com.intellij.psi.util.parentOfTypes
 import com.itangcent.common.logger.Log
 import com.itangcent.common.utils.capitalize
+import com.itangcent.common.utils.mapToTypedArray
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.*
 import com.itangcent.intellij.logger.Logger
 import com.siyeh.ig.psiutils.ClassUtils
+import kotlin.reflect.KClass
 
 
 /**
@@ -364,5 +365,9 @@ open class StandardPsiResolver : PsiResolver {
 
     override fun getReturnType(psiMethod: PsiMethod): PsiType? {
         return psiMethod.returnType
+    }
+
+    override fun <T : PsiElement> getContextOfType(element: PsiElement, vararg classes: KClass<out T>): T? {
+        return PsiTreeUtil.getContextOfType(element, *classes.mapToTypedArray { it.java })
     }
 }

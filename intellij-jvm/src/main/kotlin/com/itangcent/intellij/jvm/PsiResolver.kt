@@ -4,6 +4,7 @@ import com.google.inject.ImplementedBy
 import com.intellij.psi.*
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.standard.StandardPsiResolver
+import kotlin.reflect.KClass
 
 @ImplementedBy(StandardPsiResolver::class)
 interface PsiResolver {
@@ -49,6 +50,8 @@ interface PsiResolver {
     fun getChildren(psiElement: PsiElement): Array<PsiElement>
 
     fun getReturnType(psiMethod: PsiMethod): PsiType?
+
+    fun <T : PsiElement> getContextOfType(element: PsiElement, vararg classes: KClass<out T>): T?
 }
 
 fun PsiMethod.getResolvedReturnType(): PsiType? {
