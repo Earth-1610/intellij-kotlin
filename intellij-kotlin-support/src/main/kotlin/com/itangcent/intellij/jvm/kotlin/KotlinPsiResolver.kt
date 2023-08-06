@@ -10,11 +10,9 @@ import org.jetbrains.kotlin.asJava.classes.KtLightClass
 import org.jetbrains.kotlin.asJava.classes.KtLightClassImpl
 import org.jetbrains.kotlin.asJava.elements.KtLightElement
 import org.jetbrains.kotlin.config.JvmDefaultMode
-import org.jetbrains.kotlin.psi.KtBlockExpression
-import org.jetbrains.kotlin.psi.KtElement
-import org.jetbrains.kotlin.psi.KtTypeReference
-import org.jetbrains.kotlin.psi.KtVisitor
+import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.containingClass
+import kotlin.reflect.KClass
 
 
 /**
@@ -219,6 +217,21 @@ open class KotlinPsiResolver : StandardPsiResolver() {
         }
         typeReference ?: return null
         typeReference.text?.let { findType(it, psiMethod) }?.let { return it }
+        return null
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : PsiElement> getContextOfType(element: PsiElement, vararg classes: KClass<out T>): T? {
+        super.getContextOfType(element, *classes)?.let {
+            return it
+        }
+        classes as Array<KClass<*>>
+        if (PsiClass::class in classes) {
+            val ktClass = PsiTreeUtil.getContextOfType(element, KtClass::class.java)
+            if (ktClass != null) {
+                return KtPsiUtils.ktClassToPsiClass(ktClass) as T
+            }
+        }
         return null
     }
 }
