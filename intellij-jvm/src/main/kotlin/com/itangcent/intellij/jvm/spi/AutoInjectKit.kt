@@ -4,7 +4,6 @@ import com.google.inject.ImplementedBy
 import com.itangcent.common.logger.ILogger
 import com.itangcent.common.logger.traceError
 import com.itangcent.common.spi.SpiUtils
-import com.itangcent.common.utils.KV
 import com.itangcent.common.utils.safeComputeIfAbsent
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.withUnsafe
@@ -52,7 +51,7 @@ object AutoInjectKit {
         }
     }
 
-    private val wrapCache: KV<KClass<*>, ProxyBuilder> = KV.create()
+    private val wrapCache = mutableMapOf<KClass<*>, ProxyBuilder>()
 
     fun tryLoadAndWrap(
         classLoader: ClassLoader,

@@ -1,7 +1,6 @@
 package com.itangcent.intellij.jvm
 
 import com.intellij.psi.*
-import com.itangcent.common.utils.KV
 import com.itangcent.intellij.jvm.duck.DuckType
 
 interface PsiClassHelper {
@@ -14,13 +13,13 @@ interface PsiClassHelper {
 
     fun getTypeObject(duckType: DuckType?, context: PsiElement, option: Int): Any?
 
-    fun getFields(psiClass: PsiClass?, context: PsiElement?): KV<String, Any?>
+    fun getFields(psiClass: PsiClass?, context: PsiElement?): Map<String, Any?>
 
-    fun getFields(psiClass: PsiClass?, context: PsiElement?, option: Int): KV<String, Any?>
+    fun getFields(psiClass: PsiClass?, context: PsiElement?, option: Int): Map<String, Any?>
 
-    fun getFields(psiClass: PsiClass?): KV<String, Any?>
+    fun getFields(psiClass: PsiClass?): Map<String, Any?>
 
-    fun getFields(psiClass: PsiClass?, option: Int): KV<String, Any?>
+    fun getFields(psiClass: PsiClass?, option: Int): Map<String, Any?>
 
     fun isNormalType(psiType: PsiType): Boolean
 

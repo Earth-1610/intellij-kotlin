@@ -1,14 +1,13 @@
 package com.itangcent.intellij.jvm.spi
 
 import com.itangcent.common.spi.SpiUtils
-import com.itangcent.common.utils.KV
 import com.itangcent.common.utils.safeComputeIfAbsent
 import java.lang.reflect.Proxy
 import kotlin.reflect.KClass
 
 object SpiBeanService {
 
-    private val wrapCache: KV<KClass<*>, Any> = KV.create()
+    private val wrapCache = mutableMapOf<KClass<*>, Any>()
 
     @Suppress("UNCHECKED_CAST")
     fun <S : Any> getBean(cls: KClass<S>): S? {

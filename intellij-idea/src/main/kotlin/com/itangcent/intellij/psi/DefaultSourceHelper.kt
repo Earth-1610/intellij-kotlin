@@ -83,12 +83,12 @@ open class DefaultSourceHelper : SourceHelper {
                     }
 
                     val orderEntriesForFile = idx.getOrderEntriesForFile(vFile)
-                    orderEntriesForFile.stream()
-                        .flatMap { it.getFiles(OrderRootType.SOURCES).stream() }
+                    orderEntriesForFile.asSequence()
+                        .flatMap { it.getFiles(OrderRootType.SOURCES).asSequence() }
                         .distinct()
                         .map { tryFindSourceClass(it, original) }
-                        .findFirst()
-                        .orElse(null)?.let { return it }
+                        .firstOrNull()
+                        ?.let { return it }
                 }
             }
         } catch (e: Exception) {

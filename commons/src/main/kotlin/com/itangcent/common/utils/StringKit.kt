@@ -101,7 +101,7 @@ fun String?.append(str: String?, split: String = " "): String? {
     return when {
         this.isNullOrBlank() -> str
         str.isNullOrBlank() -> this
-        else -> this + split + str
+        else -> "$this$split$str"
     }
 }
 

@@ -63,7 +63,7 @@ fun ObjectHolder?.getOrResolve(): Any? {
             }
         }
     }
-    return this.getObject().copyUnsafe()
+    return this.getObject().copyUnsafe(4096)
 }
 
 private fun Any?.getOrCircularEliminate(): Any? {
@@ -189,7 +189,7 @@ interface Extend {
 
     fun set(key: String, value: Any?): Extend
 
-    fun extends(): KV<String, Any?>?
+    fun extends(): MutableMap<String, Any?>?
 }
 
 class ResolvedObjectHolder(private val obj: Any?) : ObjectHolder {
@@ -254,18 +254,21 @@ abstract class UnstableObjectHolder<T>(protected val rawObj: T) : ObjectHolder {
                     obj = this
                     setState(UNRESOLVED)
                 }
+
                 context.contain(this) -> {
                     context.with(this, key) {
                         this.onResolve(context)
                         obj = this.circularEliminate()
                     }
                 }
+
                 this.resolved() -> {
                     context.with(this, key) {
                         this.onResolve(context)
                         obj = this.getObject()
                     }
                 }
+
                 else -> {
                     context.with(this, key) {
                         this.resolve(it)
@@ -492,17 +495,18 @@ class UpgradeObjectHolder(private val objHolder: ObjectHolder) : ObjectHolder by
 
 class ExtendObjectHolder(private val objHolder: ObjectHolder) : ObjectHolder by objHolder,
     Extend {
-    private var extend: KV<String, Any?>? = null
+
+    private var extend: MutableMap<String, Any?>? = null
 
     override fun set(key: String, value: Any?): ExtendObjectHolder {
         if (extend == null) {
-            extend = KV.create()
+            extend = linkedMapOf()
         }
         extend!![key] = value
         return this
     }
 
-    override fun extends(): KV<String, Any?>? {
+    override fun extends(): MutableMap<String, Any?>? {
         return extend
     }
 
@@ -511,7 +515,7 @@ class ExtendObjectHolder(private val objHolder: ObjectHolder) : ObjectHolder by 
         objHolder.onResolve(context)
         val target = context.nearestMap()?.getObject() as? Map<*, *> ?: return
         val property: String = context.nearestProperty() ?: return
-        this.extend?.forEach { k, v ->
+        this.extend?.forEach { (k, v) ->
             if (k.startsWith('@')) {
                 val index = k.indexOf('@', 1)
                 if (index == -1) {

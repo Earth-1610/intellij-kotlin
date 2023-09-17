@@ -141,7 +141,7 @@ open class KotlinPsiResolver : StandardPsiResolver() {
             return cls
         }
         cls = imports
-            .stream()
+            .asSequence()
             .filter { it.endsWith(".*") }
             .map { it.removeSuffix("*") + clsName }
             .map { findClass(it, psiClass) }

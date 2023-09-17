@@ -13,6 +13,14 @@ interface JvmClassHelper {
 
     fun isAccessibleField(field: PsiField): Boolean
 
+    /**
+     * Returns whether the given field is static.
+     */
+    fun isStatic(field: PsiField): Boolean
+
+    /**
+     * Returns whether the given field is static final.
+     */
     fun isStaticFinal(field: PsiField): Boolean
 
     fun isMap(psiClass: PsiClass): Boolean

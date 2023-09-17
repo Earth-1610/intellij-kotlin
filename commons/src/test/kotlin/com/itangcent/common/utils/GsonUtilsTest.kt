@@ -15,13 +15,14 @@ class GsonUtilsTest {
         assertEquals("\"123\"", GsonUtils.toJson("123"))
         assertEquals(
             "{\"1\":1,\"2\":\"2\",\"3\":\"<>&='\"}", GsonUtils.toJson(
-                KV.any()
-                    .set(1, 1)
-                    .set("2", "2")
-                    .set("3", "<>&='")
+                linkedMapOf(
+                    1 to 1,
+                    "2" to "2",
+                    "3" to "<>&='"
+                )
             )
         )
-        assertEquals("{\"int\":10}", GsonUtils.toJson(KV.by("int", 10)))
+        assertEquals("{\"int\":10}", GsonUtils.toJson(linkedMapOf("int" to 10)))
     }
 
     @Test
@@ -33,21 +34,21 @@ class GsonUtilsTest {
 
     @Test
     fun testToJsonSafely() {
-        val kv = KV.any().set(1, 1).set("2", "2")
-        kv["recursion"] = kv
-        assertThrows(StackOverflowError::class.java) { GsonUtils.toJson(kv) }
-        assertDoesNotThrow { GsonUtils.toJsonSafely(kv) }
+        val map = linkedMapOf<Any, Any>(1 to 1, "2" to "2")
+        map["recursion"] = map
+        assertThrows(StackOverflowError::class.java) { GsonUtils.toJson(map) }
+        assertDoesNotThrow { GsonUtils.toJsonSafely(map) }
         assertEquals(
             "{\"1\":1,\"2\":\"2\",\"recursion\":{\"1\":1,\"2\":\"2\",\"recursion\":{}}}",
-            GsonUtils.toJsonSafely(kv)
+            GsonUtils.toJsonSafely(map)
         )
     }
 
     @Test
     fun testToJsonWithNulls() {
-        val kv = KV.any().set(1, 1).set("2", null)
-        assertEquals("{\"1\":1}", GsonUtils.toJson(kv))
-        assertEquals("{\"1\":1,\"2\":null}", GsonUtils.toJsonWithNulls(kv))
+        val map = linkedMapOf(1 to 1, "2" to null)
+        assertEquals("{\"1\":1}", GsonUtils.toJson(map))
+        assertEquals("{\"1\":1,\"2\":null}", GsonUtils.toJsonWithNulls(map))
     }
 
     @Test
@@ -71,16 +72,16 @@ class GsonUtilsTest {
         assertEquals(
             "{\n" +
                     "  \"1\": 1\n" +
-                    "}", GsonUtils.prettyJson(KV.any().set(1, 1).set("2", null))
+                    "}", GsonUtils.prettyJson(linkedMapOf(1 to 1, "2" to null))
         )
     }
 
     @Test
     fun testPrettyJsonSafely() {
-        val kv = KV.any().set(1, 1).set("2", "2")
-        kv["recursion"] = kv
-        assertThrows(StackOverflowError::class.java) { GsonUtils.prettyJson(kv) }
-        assertDoesNotThrow { GsonUtils.prettyJsonSafely(kv) }
+        val map = linkedMapOf<Any, Any>(1 to 1, "2" to "2")
+        map["recursion"] = map
+        assertThrows(StackOverflowError::class.java) { GsonUtils.prettyJson(map) }
+        assertDoesNotThrow { GsonUtils.prettyJsonSafely(map) }
         assertEquals(
             "{\n" +
                     "  \"1\": 1,\n" +
@@ -90,23 +91,23 @@ class GsonUtilsTest {
                     "    \"2\": \"2\",\n" +
                     "    \"recursion\": {}\n" +
                     "  }\n" +
-                    "}", GsonUtils.prettyJsonSafely(kv)
+                    "}", GsonUtils.prettyJsonSafely(map)
         )
     }
 
     @Test
     fun testPrettyJsonWithNulls() {
-        val kv = KV.any().set(1, 1).set("2", null)
+        val map = linkedMapOf(1 to 1, "2" to null)
         assertEquals(
             "{\n" +
                     "  \"1\": 1\n" +
-                    "}", GsonUtils.prettyJson(kv)
+                    "}", GsonUtils.prettyJson(map)
         )
         assertEquals(
             "{\n" +
                     "  \"1\": 1,\n" +
                     "  \"2\": null\n" +
-                    "}", GsonUtils.prettyJsonWithNulls(kv)
+                    "}", GsonUtils.prettyJsonWithNulls(map)
         )
     }
 

@@ -1,119 +1,122 @@
 package com.itangcent.intellij.extend.rx
 
-import com.google.common.base.Supplier
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
-import java.util.concurrent.atomic.AtomicReference
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 
+/**
+ * A helper class for throttling requests
+ */
 class ThrottleHelper {
 
-    private var stampCache: LoadingCache<Any, TimeStamp> = CacheBuilder
-        .newBuilder()
-//        .weakKeys()
-        .build<Any, TimeStamp>(CacheLoader.from(Supplier { TimeStamp() }))
+    private val throttleMap = ConcurrentHashMap<Any, Throttle>()
 
+    /**
+     * get throttle by key
+     */
+    private fun getThrottle(key: Any) = throttleMap.computeIfAbsent(key) { Throttle() }
+
+    /**
+     * Acquires the throttle for the specified key with the given cooldown duration
+     */
     fun acquire(key: Any, cd: Long): Boolean {
-        val now = System.currentTimeMillis()
-        val maxPre = now - cd
-        val timeStamp = stampCache.getUnchecked(key)
-        for (i in 0..maxTry) {
-            val timeAndIndex = timeStamp.timeAndIndex()
-            if (timeAndIndex.first > maxPre) {
-                return false
-            }
-
-            if (timeStamp.tryUpdate(timeAndIndex.second, now)) {
-                return true
-            }
-        }
-        return false
+        return getThrottle(key).acquire(cd)
     }
 
     /**
-     * try force update stamp to now
+     * Tries to force update the last request time to the current time for the specified key
      */
     fun refresh(key: Any): Boolean {
-        return refresh(key, System.currentTimeMillis())
+        return getThrottle(key).refresh()
     }
 
     /**
-     * try force update stamp
+     * Tries to force update the last request time to the provided stamp for the specified key
      */
     fun refresh(key: Any, stamp: Long): Boolean {
-        val timeStamp = stampCache.getUnchecked(key)
-        for (i in 0..maxTry) {
-            val timeAndIndex = timeStamp.timeAndIndex()
-            if (timeStamp.tryUpdate(timeAndIndex.second, stamp)) {
-                return true
-            }
-        }
-        return false
+        return getThrottle(key).refresh(stamp)
     }
 
-    fun build(key: Any): Throttle {
-        return Throttle(this, key)
-    }
-
-    class TimeStamp {
-
-        private var timeWithIndex: AtomicReference<String> = AtomicReference()
-
-        constructor() {
-            this.timeWithIndex.set("0${split}0")
-        }
-
-        fun tryUpdate(expectIndex: Int, stamp: Long): Boolean {
-
-            val oldTimeAndIndexStr = timeWithIndex.get()
-            val timeAndIndex = parseTimeAndIndex(oldTimeAndIndexStr)
-            if (timeAndIndex.second != expectIndex) {
-                return false
-            }
-
-            val nextIndex = expectIndex + 1
-            return this.timeWithIndex.compareAndSet(
-                oldTimeAndIndexStr,
-                "$stamp$split$nextIndex"
-            )
-        }
-
-        fun timeAndIndex(): Pair<Long, Int> {
-            val timeAndIndex = timeWithIndex.get()
-            return parseTimeAndIndex(timeAndIndex)
-        }
-
-        private fun parseTimeAndIndex(timeAndIndex: String): Pair<Long, Int> {
-            val split = timeAndIndex.split(split)
-            return split[0].toLong() to split[1].toInt()
-        }
-
-    }
-
-    companion object {
-        private const val split = ','
-        private const val maxTry = 10
-    }
-
+    /**
+     * Retrieves or creates a Throttle instance for the specified key
+     */
+    fun build(key: Any): Throttle = getThrottle(key)
 }
 
-class Throttle(private var throttleHelper: ThrottleHelper, private val key: Any) {
+
+/**
+ * A throttle that limits the rate of requests
+ */
+class Throttle {
+    private val lastRequestTime = AtomicLong(0)
+
+    /**
+     * Acquires the throttle with the given cooldown duration
+     */
     fun acquire(cd: Long): Boolean {
-        return throttleHelper.acquire(key, cd)
+        val currentTime = System.currentTimeMillis()
+        val previousTime = lastRequestTime.get()
+
+        if (currentTime < previousTime + cd) {
+            return false
+        }
+        return lastRequestTime.compareAndSet(previousTime, currentTime)
     }
 
     /**
-     * try force update stamp to now
+     * Updates the last request time to the current time
      */
     fun refresh(): Boolean {
-        return throttleHelper.refresh(key)
+        val currentTime = System.currentTimeMillis()
+        lastRequestTime.set(currentTime)
+        return true
     }
 
     /**
-     * try force update stamp
+     * Tries to force update the last request time to the provided stamp
      */
     fun refresh(stamp: Long): Boolean {
-        return throttleHelper.refresh(key, stamp)
-    }
+        val previousTime = lastRequestTime.get()
 
+        if (stamp <= previousTime) {
+            return false
+        }
+        return lastRequestTime.compareAndSet(previousTime, stamp)
+    }
+}
+
+
+fun (() -> Any?).throttle(timeout: Long, timeUnit: TimeUnit): () -> Unit {
+    val timer = Timer()
+    var task: TimerTask? = null
+    val debounceTimeMillis = timeUnit.toMillis(timeout)
+    var lastExecutionTime = 0L
+
+    return {
+        synchronized(this) {
+            val currentTime = System.currentTimeMillis()
+            val timeSinceLastExecution = currentTime - lastExecutionTime
+
+            if (timeSinceLastExecution >= debounceTimeMillis) {
+                // Execute the function immediately
+                this.invoke()
+                lastExecutionTime = currentTime
+            } else {
+                // Cancel any existing task
+                task?.cancel()
+
+                // Schedule the function for execution after the debounce time window
+                task = object : TimerTask() {
+                    override fun run() {
+                        synchronized(this@throttle) {
+                            this@throttle.invoke()
+                            lastExecutionTime = System.currentTimeMillis()
+                        }
+                    }
+                }
+                timer.schedule(task, debounceTimeMillis - timeSinceLastExecution)
+            }
+        }
+    }
 }

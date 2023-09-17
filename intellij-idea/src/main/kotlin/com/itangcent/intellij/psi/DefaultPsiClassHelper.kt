@@ -5,7 +5,6 @@ import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.util.containers.isNullOrEmpty
 import com.itangcent.common.logger.traceWarn
-import com.itangcent.common.utils.KV
 import com.itangcent.common.utils.notNullOrBlank
 import com.itangcent.common.utils.notNullOrEmpty
 import com.itangcent.common.utils.sub
@@ -31,7 +30,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         resolveSeeDoc(field, sees, comment)
     }
 
-    protected open fun resolveSeeDoc(field: PsiField, fieldName: String, comment: HashMap<String, Any?>) {
+    protected open fun resolveSeeDoc(field: PsiField, fieldName: String, comment: MutableMap<String, Any?>) {
         val sees = getSees(field).takeIf { it.notNullOrEmpty() } ?: return
         devEnv?.dev {
             logger.debug("get sees from $fieldName: $sees")
@@ -42,7 +41,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     protected open fun resolveSeeDoc(
         field: PsiField,
         sees: List<String>,
-        comment: HashMap<String, Any?>
+        comment: MutableMap<String, Any?>
     ) {
         resolveSeeDoc(field, field.name, sees, comment)
     }
@@ -51,7 +50,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         field: PsiField,
         fieldName: String,
         sees: List<String>,
-        comment: HashMap<String, Any?>
+        comment: MutableMap<String, Any?>
     ) {
         val options: ArrayList<HashMap<String, Any?>> = ArrayList()
         sees.forEach { see ->
@@ -69,7 +68,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         fieldName: String,
         context: PsiMember,
         sees: List<String>,
-        comment: HashMap<String, Any?>
+        comment: MutableMap<String, Any?>
     ) {
         val options: ArrayList<HashMap<String, Any?>> = ArrayList()
         sees.forEach { see ->
@@ -242,13 +241,20 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         fieldOrMethod: ExplicitElement<*>,
         resourcePsiClass: ExplicitClass,
         resolveContext: ResolveContext,
-        kv: KV<String, Any?>
+        fields: MutableMap<String, Any?>
     ): Boolean {
         if (ruleComputer.computer(ClassRuleKeys.FIELD_IGNORE, fieldOrMethod) == true) {
             return false
         }
 
-        return super.beforeParseFieldOrMethod(fieldName, fieldType, fieldOrMethod, resourcePsiClass, resolveContext, kv)
+        return super.beforeParseFieldOrMethod(
+            fieldName,
+            fieldType,
+            fieldOrMethod,
+            resourcePsiClass,
+            resolveContext,
+            fields
+        )
     }
 
     override fun parseFieldOrMethod(
@@ -257,7 +263,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         fieldOrMethod: ExplicitElement<*>,
         resourcePsiClass: ExplicitClass,
         resolveContext: ResolveContext,
-        kv: KV<String, Any?>
+        fields: MutableMap<String, Any?>
     ) {
         if (fieldType is SingleDuckType && jvmClassHelper.isEnum(fieldType.psiClass())) {
             val convertTo = ruleComputer.computer(ClassRuleKeys.ENUM_CONVERT, fieldType, null)
@@ -278,7 +284,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                                     duckTypeHelper.explicit(convertFieldOrMethod)!!,
                                     resourcePsiClass,
                                     resolveContext,
-                                    kv
+                                    fields
                                 )
                             }
                         } else if (convertFieldOrMethod is PsiMethod) {
@@ -289,20 +295,20 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                                     duckTypeHelper.explicit(convertFieldOrMethod)!!,
                                     resourcePsiClass,
                                     resolveContext,
-                                    kv
+                                    fields
                                 )
                             }
                         }
                         //doc comment
                         if (resolveContext.option.has(JsonOption.READ_COMMENT)) {
-                            val commentKV: KV<String, Any?> = kv.sub("@comment")
+                            val comments = fields.sub("@comment")
                             resolveSeeDoc(
                                 fieldName, fieldOrMethod.psi() as? PsiMember ?: enumClass, listOf(
                                     PsiClassUtils.fullNameOfMember(
                                         classWithFieldOrMethod.first.asPsiClass(jvmClassHelper),
                                         convertFieldOrMethod
                                     )
-                                ), commentKV
+                                ), comments
                             )
                         }
                         return
@@ -318,14 +324,14 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                             fieldOrMethod,
                             resourcePsiClass,
                             resolveContext,
-                            kv
+                            fields
                         )
                         return
                     }
                 }
             }
         }
-        super.parseFieldOrMethod(fieldName, fieldType, fieldOrMethod, resourcePsiClass, resolveContext, kv)
+        super.parseFieldOrMethod(fieldName, fieldType, fieldOrMethod, resourcePsiClass, resolveContext, fields)
     }
 
     override fun afterParseFieldOrMethod(
@@ -334,20 +340,20 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         fieldOrMethod: ExplicitElement<*>,
         resourcePsiClass: ExplicitClass,
         resolveContext: ResolveContext,
-        kv: KV<String, Any?>
+        fields: MutableMap<String, Any?>
     ) {
         //doc comment
         if (resolveContext.option.has(JsonOption.READ_COMMENT)) {
-            val commentKV: KV<String, Any?> = kv.sub("@comment")
+            val comments = fields.sub("@comment")
             val psiFieldOrMethod = fieldOrMethod.psi()
             if (psiFieldOrMethod is PsiField) {
                 val field: PsiField = psiFieldOrMethod
-                commentKV[fieldName] = docHelper!!.getAttrOfField(psiFieldOrMethod)?.trim()
-                resolveSeeDoc(field, fieldName, commentKV)
+                comments[fieldName] = docHelper!!.getAttrOfField(psiFieldOrMethod)?.trim()
+                resolveSeeDoc(field, fieldName, comments)
             } else if (psiFieldOrMethod is PsiMethod) {
                 val attrInDoc = docHelper!!.getAttrOfDocComment(psiFieldOrMethod)
                 if (StringUtils.isNotBlank(attrInDoc)) {
-                    commentKV[fieldName] = attrInDoc
+                    comments[fieldName] = attrInDoc
                 }
             }
         }
