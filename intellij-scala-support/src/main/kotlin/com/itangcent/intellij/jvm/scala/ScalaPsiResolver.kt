@@ -3,7 +3,6 @@ package com.itangcent.intellij.jvm.scala
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiField
-import com.itangcent.common.utils.KV
 import com.itangcent.common.utils.asInt
 import com.itangcent.intellij.jvm.scala.adaptor.ScPatternDefinitionPsiFieldAdaptor
 import com.itangcent.intellij.jvm.standard.StandardPsiResolver
@@ -90,38 +89,38 @@ open class ScalaPsiResolver : StandardPsiResolver() {
                             i++
                         }
 
-                        return KV.create<String, Any?>()
-                            .set("name", name ?: psiField.name)
-                            .set("ordinal", index)
-                            .set("desc", attrOfField)
-                            .set(
-                                "params", KV.create<String, Any>()
-                                    .set("id", id)
-                                    .set("name", name ?: psiField.name)
+                        return linkedMapOf(
+                            "name" to (name ?: psiField.name),
+                            "ordinal" to index,
+                            "desc" to attrOfField,
+                            "params" to linkedMapOf(
+                                "id" to id,
+                                "name" to (name ?: psiField.name)
                             )
+                        )
                     } else if (exprs.size() == 1) {
                         val head = exprs.head()
-                        val value: Any? = ScPsiUtils.valueOf(head) ?: return null
+                        val value: Any = ScPsiUtils.valueOf(head) ?: return null
                         if (value is Int) {
-                            return KV.create<String, Any?>()
-                                .set("name", psiField.name)
-                                .set("ordinal", index)
-                                .set("desc", attrOfField)
-                                .set(
-                                    "params", KV.create<String, Any>()
-                                        .set("id", value)
-                                        .set("name", psiField.name)
+                            return linkedMapOf(
+                                "name" to psiField.name,
+                                "ordinal" to index,
+                                "desc" to attrOfField,
+                                "params" to linkedMapOf(
+                                    "id" to value,
+                                    "name" to psiField.name
                                 )
+                            )
                         } else if (value is String) {
-                            return KV.create<String, Any?>()
-                                .set("name", psiField.name)
-                                .set("ordinal", index)
-                                .set("desc", attrOfField)
-                                .set(
-                                    "params", KV.create<String, Any>()
-                                        .set("id", index)
-                                        .set("name", value)
+                            return linkedMapOf(
+                                "name" to psiField.name,
+                                "ordinal" to index,
+                                "desc" to attrOfField,
+                                "params" to linkedMapOf(
+                                    "id" to index,
+                                    "name" to value
                                 )
+                            )
                         }
                     }
                 }

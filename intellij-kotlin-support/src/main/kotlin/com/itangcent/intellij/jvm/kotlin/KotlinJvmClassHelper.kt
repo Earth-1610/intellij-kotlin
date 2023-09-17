@@ -17,6 +17,10 @@ class KotlinJvmClassHelper(val jvmClassHelper: JvmClassHelper) : JvmClassHelper 
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
+    override fun isStatic(field: PsiField): Boolean {
+        TODO("Not yet implemented")
+    }
+
     override fun isStaticFinal(field: PsiField): Boolean {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }

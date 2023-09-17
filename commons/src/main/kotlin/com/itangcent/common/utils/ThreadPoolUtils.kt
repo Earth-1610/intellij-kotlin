@@ -1,9 +1,7 @@
 package com.itangcent.common.utils
 
 import com.itangcent.common.logger.Log
-import com.itangcent.common.threadpool.eager.EagerThreadPoolExecutor
 import org.apache.commons.lang3.concurrent.BasicThreadFactory
-import java.lang.management.ManagementFactory
 import java.util.concurrent.*
 
 /**
@@ -23,13 +21,7 @@ object ThreadPoolUtils : Log() {
     }
 
     fun createPool(poolSize: Int, name: String): ExecutorService {
-        return EagerThreadPoolExecutor(
-            poolSize, poolSize,
-            0L, TimeUnit.MILLISECONDS,
-            BasicThreadFactory.Builder().daemon(true)
-                .namingPattern("$name-%d").build(),
-            ThreadPoolExecutor.AbortPolicy()
-        )
+        return createPool(poolSize, poolSize, name)
     }
 
     fun createPool(poolSize: Int, maximumPoolSize: Int, clazz: Class<*>): ExecutorService {
@@ -37,9 +29,12 @@ object ThreadPoolUtils : Log() {
     }
 
     fun createPool(poolSize: Int, maximumPoolSize: Int, name: String): ExecutorService {
-        return EagerThreadPoolExecutor(
-            poolSize, maximumPoolSize,
-            0L, TimeUnit.MILLISECONDS,
+        return ThreadPoolExecutor(
+            poolSize,
+            maximumPoolSize,
+            0L,
+            TimeUnit.MILLISECONDS,
+            LinkedBlockingQueue(),
             BasicThreadFactory.Builder().daemon(true)
                 .namingPattern("$name-%d").build(),
             ThreadPoolExecutor.AbortPolicy()

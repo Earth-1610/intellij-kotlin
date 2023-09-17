@@ -140,6 +140,7 @@ fun Any?.asInt(): Int? {
                 else -> 0
             }
         }
+
         this is Number -> this.toInt()
         this is String -> this.toIntOrNull()
         else -> null
@@ -156,6 +157,7 @@ fun Any?.asLong(): Long? {
                 else -> 0
             }
         }
+
         this is Number -> this.toLong()
         this is String -> this.toLongOrNull()
         else -> null
@@ -172,6 +174,7 @@ fun Any?.asFloat(): Float? {
                 else -> 0f
             }
         }
+
         this is Number -> this.toFloat()
         this is String -> this.toFloatOrNull()
         else -> null
@@ -188,6 +191,7 @@ fun Any?.asDouble(): Double? {
                 else -> 0.0
             }
         }
+
         this is Number -> this.toDouble()
         this is String -> this.toDoubleOrNull()
         else -> null
@@ -213,6 +217,7 @@ fun Any?.resolveCycle(): Any? {
             }
             return this
         }
+
         else -> return this
     }
 }
@@ -227,6 +232,7 @@ fun Any?.copy(): Any? {
         } catch (e: Exception) {
             this
         }
+
         else -> this
     }
 }
@@ -244,6 +250,7 @@ private fun Any?.copy(values: ValuePresence): Any? {
             values.pop()
             return newCopy
         }
+
         is Collection<*> -> {
             if (!values.add(this)) return ArrayList<Any?>()
             val newCopy: ArrayList<Any?> = ArrayList()
@@ -253,39 +260,51 @@ private fun Any?.copy(values: ValuePresence): Any? {
             values.pop()
             return newCopy
         }
+
         is Cloneable -> return try {
             this.invokeMethod("clone")
         } catch (e: Exception) {
             this
         }
+
         else -> return this
     }
 }
 
-fun Any?.copyUnsafe(): Any? {
-    when (this) {
-        null -> return null
-        is Map<*, *> -> {
-            val newCopy: HashMap<Any?, Any?> = LinkedHashMap()
-            this.forEach { (key, value) ->
-                newCopy[key] = value.copyUnsafe()
+fun Any?.copyUnsafe(maxElements: Int = Int.MAX_VALUE): Any? {
+    var elementsCnt = 0
+    fun Any?.innerCopyUnsafe(): Any? {
+        if (++elementsCnt > maxElements) {
+            return null
+        }
+        when (this) {
+            null -> return null
+            is Map<*, *> -> {
+                val newCopy: HashMap<Any?, Any?> = LinkedHashMap()
+                this.forEach { (key, value) ->
+                    newCopy[key] = value.innerCopyUnsafe()
+                }
+                return newCopy
             }
-            return newCopy
-        }
-        is Collection<*> -> {
-            val newCopy: ArrayList<Any?> = ArrayList()
-            this.forEach { value ->
-                newCopy.add(value.copyUnsafe())
+
+            is Collection<*> -> {
+                val newCopy: ArrayList<Any?> = ArrayList()
+                this.forEach { value ->
+                    newCopy.add(value.innerCopyUnsafe())
+                }
+                return newCopy
             }
-            return newCopy
+
+            is Cloneable -> return try {
+                this.invokeMethod("clone")
+            } catch (e: Exception) {
+                this
+            }
+
+            else -> return this
         }
-        is Cloneable -> return try {
-            this.invokeMethod("clone")
-        } catch (e: Exception) {
-            this
-        }
-        else -> return this
     }
+    return this.innerCopyUnsafe()
 }
 
 private fun Any?.collectValues(): Boolean {

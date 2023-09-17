@@ -46,7 +46,7 @@ open class StandardAnnotationHelper : AnnotationHelper {
 
     protected fun annToMap(psiAnn: PsiAnnotation): Map<String, Any?> {
         val map: LinkedHashMap<String, Any?> = LinkedHashMap()
-        psiAnn.parameterList.attributes.stream()
+        psiAnn.parameterList.attributes
             .forEach { attr ->
                 map[attr.name ?: "value"] = attr.value?.let { psiExpressionResolver!!.process(it) }
             }
@@ -74,11 +74,11 @@ open class StandardAnnotationHelper : AnnotationHelper {
         val ann = findAnn(psiElement, annName) ?: return null
         return actionContext!!.callInReadUI {
             return@callInReadUI attrs
-                .stream()
+                .asSequence()
                 .mapNotNull { ann.findAttributeValue(it) }
                 .mapNotNull { psiExpressionResolver!!.process(it) }
                 .mapNotNull { tinyAnnStr(it.gracefulString()) }
-                .longest()
+                .maxByOrNull { it.length }
         }
     }
 

@@ -5,7 +5,6 @@ import com.google.inject.Singleton
 import com.intellij.psi.*
 import com.intellij.psi.javadoc.PsiDocComment
 import com.intellij.psi.javadoc.PsiDocTag
-import com.itangcent.common.utils.joinToString
 import com.itangcent.common.utils.notNullOrBlank
 import com.itangcent.intellij.jvm.DocHelper
 import com.itangcent.intellij.jvm.ExtendProvider
@@ -112,14 +111,10 @@ open class StandardDocHelper : DocHelper {
         val descriptions = docComment.descriptionElements
         val text = descriptions.joinToString(separator = "") { desc -> desc.tinyText() }.trim()
         val lines = text.lines()
-        if (lines.size > 1 && lines.stream().skip(1)
-                .filter { it.startsWith(" ") }.count() >= lines.size / 2
-        ) {
-            return lines[0] + "\n" + lines.stream().skip(1)
-                .map { it.removePrefix(" ") }
-                .joinToString(separator = "\n")
-        }
-        return text
+        return lines.asSequence()
+            .map { it.removePrefix(" ").trimEnd() }
+            .joinToString(separator = "\n")
+            .trim()
     }
 
     private fun PsiElement.tinyText(): String {

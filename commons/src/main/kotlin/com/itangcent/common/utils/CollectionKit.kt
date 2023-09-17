@@ -1,5 +1,7 @@
 package com.itangcent.common.utils
 
+import java.util.*
+
 /**
  * Accumulates value starting with the first element and applying [operation] from left to right to current accumulator value and each element.
  */
@@ -21,24 +23,27 @@ fun Collection<*>?.notNullOrEmpty(): Boolean {
     return !this.isNullOrEmpty()
 }
 
-fun Map<*, *>?.notNullOrEmpty(): Boolean {
-    return !this.isNullOrEmpty()
-}
-
-fun <K, V> Map<K, V>.asHashMap(): HashMap<K, V> {
-    if (this is HashMap<K, V>) {
-        return this
-    }
-    val map: HashMap<K, V> = HashMap()
-    this.entries.forEach { map[it.key] = it.value }
-    return map
-}
-
 fun <E> List<E>.asArrayList(): ArrayList<E> {
     if (this is ArrayList<E>) {
         return this
     }
-    val list: ArrayList<E> = ArrayList()
-    this.forEach { list.add(it) }
-    return list
+    return ArrayList(this)
+}
+
+private val IMMUTABLE_LIST_CLASSES = listOf(
+    emptyList<Any>().javaClass,
+    Collections.emptyList<Any>().javaClass,
+    Collections.singletonList("").javaClass,
+)
+
+private val IMMUTABLE_SET_CLASSES = listOf(
+    emptySet<Any>().javaClass,
+    Collections.emptySet<Any>().javaClass,
+)
+
+private val IMMUTABLE_COLLECTION_CLASSES = IMMUTABLE_LIST_CLASSES + IMMUTABLE_SET_CLASSES
+
+fun Any.isMutableCollection(): Boolean {
+    if (this !is Collection<*>) return false
+    return !IMMUTABLE_COLLECTION_CLASSES.contains(this.javaClass)
 }

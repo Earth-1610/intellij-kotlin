@@ -205,6 +205,10 @@ open class StandardJvmClassHelper : JvmClassHelper {
         return false
     }
 
+    override fun isStatic(field: PsiField): Boolean {
+        return hasModify(field, PsiModifier.STATIC)
+    }
+
     override fun isStaticFinal(field: PsiField): Boolean {
         return hasAllModify(field, staticFinalFieldModifiers)
     }

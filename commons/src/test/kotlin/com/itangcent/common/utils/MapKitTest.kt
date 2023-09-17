@@ -1,9 +1,6 @@
 package com.itangcent.common.utils
 
-import com.itangcent.common.utils.*
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
-import java.util.*
+import org.junit.jupiter.api.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertEquals
 
@@ -12,6 +9,19 @@ import kotlin.test.assertEquals
  * Test case of [com.itangcent.common.utils.MapKit]
  */
 class MapKitTest {
+
+    private var map = KV.any()
+
+    @BeforeEach
+    fun before() {
+        map[1] = 1
+        map[2] = 2
+    }
+
+    @AfterEach
+    fun after() {
+        map.clear()
+    }
 
     @Test
     fun testSafeComputeIfAbsent() {
@@ -95,5 +105,215 @@ class MapKitTest {
             ),
             map.flatMulti()
         )
+    }
+
+    @Test
+    fun testMutable() {
+        Assertions.assertEquals(1, mapOf(1 to 1, 2 to 2).mutable()[1])
+        hashMapOf(1 to 1, 2 to 2).let {
+            Assertions.assertSame(it, it.mutable())
+            Assertions.assertNotSame(it, it.mutable(true))
+            Assertions.assertEquals(it, it.mutable(true))
+        }
+    }
+
+    @Test
+    fun testMerge() {
+        //simple
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3),
+            hashMapOf(1 to 1, 2 to 2).merge(mapOf(1 to 2, 3 to 3))
+        )
+
+
+        //merge sub map
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 1, 2 to 2, 3 to 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 1, 2 to 2))
+                .merge(mapOf(1 to 2, 3 to 3, 4 to hashMapOf(1 to 2, 3 to 3)))
+        )
+
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 1, 2 to 2, 3 to 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 1, 2 to 2))
+                .merge(mapOf(1 to 2, 3 to 3, 4 to mapOf(1 to 2, 3 to 3)))
+        )
+
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 1, 2 to 2, 3 to 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to mapOf(1 to 1, 2 to 2))
+                .merge(mapOf(1 to 2, 3 to 3, 4 to hashMapOf(1 to 2, 3 to 3)))
+        )
+
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 1, 2 to 2, 3 to 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to mapOf(1 to 1, 2 to 2))
+                .merge(mapOf(1 to 2, 3 to 3, 4 to mapOf(1 to 2, 3 to 3)))
+        )
+
+
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 2, 3 to 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to emptyMap<Int, Int>())
+                .merge(mapOf(1 to 2, 3 to 3, 4 to mapOf(1 to 2, 3 to 3)))
+        )
+
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashMapOf(1 to 2, 3 to 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to mapOf(1 to 2, 3 to 3))
+                .merge(mapOf(1 to 2, 3 to 3, 4 to emptyMap<Int, Int>()))
+        )
+
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to emptyMap<Int, Int>()),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to emptyMap<Int, Int>())
+                .merge(mapOf(1 to 2, 3 to 3, 4 to emptyMap<Int, Int>()))
+        )
+
+        //merge sub list
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to arrayListOf(1, 2))
+                .merge(mapOf(1 to 2, 3 to 3, 4 to arrayListOf(2, 3)))
+        )
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to arrayListOf(1, 2))
+                .merge(mapOf(1 to 2, 3 to 3, 4 to listOf(2, 3)))
+        )
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2))
+                .merge(mapOf(1 to 2, 3 to 3, 4 to arrayListOf(2, 3)))
+        )
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(1, 2))
+                .merge(mapOf(1 to 2, 3 to 3, 4 to listOf(2, 3)))
+        )
+
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to emptyList<Int>())
+                .merge(mapOf(1 to 2, 3 to 3, 4 to listOf(2, 3)))
+        )
+
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to listOf(2, 3))
+                .merge(mapOf(1 to 2, 3 to 3, 4 to emptyList<Int>()))
+        )
+
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to emptyList<Int>()),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to emptyList<Int>())
+                .merge(mapOf(1 to 2, 3 to 3, 4 to emptyList<Int>()))
+        )
+
+        //merge sub set
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to setOf(1, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashSetOf(1, 2))
+                .merge(mapOf(1 to 2, 3 to 3, 4 to hashSetOf(2, 3)))
+        )
+
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to setOf(1, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to hashSetOf(1, 2))
+                .merge(mapOf(1 to 2, 3 to 3, 4 to setOf(2, 3)))
+        )
+
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to setOf(1, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to setOf(1, 2))
+                .merge(mapOf(1 to 2, 3 to 3, 4 to hashSetOf(2, 3)))
+        )
+
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to setOf(1, 2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to setOf(1, 2))
+                .merge(mapOf(1 to 2, 3 to 3, 4 to setOf(2, 3)))
+        )
+
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to setOf(2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to emptySet<Int>())
+                .merge(mapOf(1 to 2, 3 to 3, 4 to setOf(2, 3)))
+        )
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to setOf(2, 3)),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to setOf(2, 3))
+                .merge(mapOf(1 to 2, 3 to 3, 4 to emptySet<Int>()))
+        )
+        Assertions.assertEquals(
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to emptySet<Int>()),
+            hashMapOf(1 to 1, 2 to 2, 3 to 3, 4 to emptySet<Int>())
+                .merge(mapOf(1 to 2, 3 to 3, 4 to emptySet<Int>()))
+        )
+    }
+
+    @Test
+    fun trySet() {
+        assertEquals(
+            mapOf("x" to 1),
+            mapOf("x" to 1).also {
+                it.trySet("y", 2)
+            }
+        )
+        assertEquals(
+            hashMapOf("x" to 1, "y" to 2),
+            hashMapOf("x" to 1).also {
+                it.trySet("y", 2)
+            }
+        )
+    }
+
+    @Test
+    fun testGetAs() {
+        map["string"] = "string"
+        map["kv"] = KV.by(2, 2)
+
+        Assertions.assertEquals(null, map.getAs<String>(1))
+        Assertions.assertEquals(null, map.getAs<Int>("string"))
+        Assertions.assertEquals(1, map.getAs<Int>(1))
+        Assertions.assertEquals("string", map.getAs<String>("string"))
+
+    }
+
+    @Test
+    fun testSubGetAs() {
+        map["string"] = "string"
+        map["kv"] = linkedMapOf(3 to 3, "string" to "string")
+
+        Assertions.assertEquals(null, map.getAs<String>(1, 1))
+        Assertions.assertEquals(null, map.getAs<Int>("string", "string"))
+        Assertions.assertEquals(null, map.getAs<String>("kv", 3))
+        Assertions.assertEquals(null, map.getAs<Int>("kv", "string"))
+        Assertions.assertEquals(3, map.getAs<Int>("kv", 3))
+        Assertions.assertEquals("string", map.getAs<String>("kv", "string"))
+    }
+
+    @Test
+    fun testGrandGetAs() {
+        map["string"] = "string"
+        map["kv"] = linkedMapOf(3 to 3, "string" to "string", "kv" to linkedMapOf(4 to 4, "string" to "string"))
+
+
+        Assertions.assertEquals(null, map.getAs<String>(1, 1, 1))
+        Assertions.assertEquals(null, map.getAs<Int>("string", "string", "string"))
+        Assertions.assertEquals(null, map.getAs<String>("kv", "kv", 4))
+        Assertions.assertEquals(null, map.getAs<Int>("kv", "kv", "string"))
+        Assertions.assertEquals(4, map.getAs<Int>("kv", "kv", 4))
+        Assertions.assertEquals("string", map.getAs<String>("kv", "kv", "string"))
+    }
+
+    @Test
+    fun testGetSub() {
+        map["string"] = "string"
+        map["sub"] = linkedMapOf(3 to 3, "string" to "string", "sub" to linkedMapOf(4 to 4, "string" to "string2"))
+
+        Assertions.assertEquals(null, map.getSub("string"))
+        Assertions.assertEquals("string", map.getSub("sub")!!["string"])
+        Assertions.assertEquals("string2", map.getSub("sub")!!.getSub("sub")!!["string"])
     }
 }

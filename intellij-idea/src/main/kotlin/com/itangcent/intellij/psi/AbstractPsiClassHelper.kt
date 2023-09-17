@@ -110,7 +110,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         val resolveContext = getResolveContext().copy()
         val result = doGetTypeObject(psiType, context, resolveContext)?.getOrResolve()
         if (resolveContext.blocked()) {
-            logger.error("${psiType?.canonicalText} is too complex. Blocked by ${resolveContext.blockInfo()}")
+            logger.error("The complexity of [${psiType?.canonicalText}] has exceeded the limit. It is blocked due to ${resolveContext.blockInfo()}.")
         }
         return result
     }
@@ -119,7 +119,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         val resolveContext = getResolveContext().withOption(option)
         val result = doGetTypeObject(psiType, context, resolveContext).getOrResolve()
         if (resolveContext.blocked()) {
-            logger.error("${psiType?.canonicalText} is too complex. Blocked by ${resolveContext.blockInfo()}")
+            logger.error("The complexity of [${psiType?.canonicalText}] has exceeded the limit. It is blocked due to ${resolveContext.blockInfo()}.")
         }
         return result
     }
@@ -128,7 +128,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         val resolveContext = getResolveContext().copy()
         val result = doGetTypeObject(duckType, context, resolveContext).getOrResolve()
         if (resolveContext.blocked()) {
-            logger.error("${duckType?.canonicalText()} is too complex. Blocked by ${resolveContext.blockInfo()}")
+            logger.error("The complexity of ${duckType?.canonicalText()} has exceeded the limit. It is blocked due to ${resolveContext.blockInfo()}")
         }
         return result
     }
@@ -137,7 +137,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         val resolveContext = getResolveContext().withOption(option)
         val result = doGetTypeObject(duckType, context, resolveContext).getOrResolve()
         if (resolveContext.blocked()) {
-            logger.error("${duckType?.canonicalText()} is too complex. Blocked by ${resolveContext.blockInfo()}")
+            logger.error("The complexity of ${duckType?.canonicalText()} has exceeded the limit. It is blocked due to ${resolveContext.blockInfo()}")
         }
         return result
     }
@@ -298,29 +298,28 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         return null
     }
 
-    override fun getFields(psiClass: PsiClass?): KV<String, Any?> {
+    override fun getFields(psiClass: PsiClass?): Map<String, Any?> {
         return getFields(psiClass, psiClass)
     }
 
-    override fun getFields(psiClass: PsiClass?, context: PsiElement?): KV<String, Any?> {
+    override fun getFields(psiClass: PsiClass?, context: PsiElement?): Map<String, Any?> {
         val resolveContext = getResolveContext()
-        val result = doGetFields(psiClass, context, resolveContext).getOrResolve().asKV()
+        val result = doGetFields(psiClass, context, resolveContext).getOrResolve().asMap()
         if (resolveContext.blocked()) {
-            logger.error("${psiClass?.qualifiedName} is too complex. Blocked by ${resolveContext.blockInfo()}")
+            logger.error("The complexity of ${psiClass?.qualifiedName} has exceeded the limit. It is blocked due to ${resolveContext.blockInfo()}.")
         }
         return result
     }
 
-    override fun getFields(psiClass: PsiClass?, option: Int): KV<String, Any?> {
+    override fun getFields(psiClass: PsiClass?, option: Int): Map<String, Any?> {
         return getFields(psiClass, psiClass, option)
     }
 
-    @Suppress("UNCHECKED_CAST")
-    override fun getFields(psiClass: PsiClass?, context: PsiElement?, option: Int): KV<String, Any?> {
+    override fun getFields(psiClass: PsiClass?, context: PsiElement?, option: Int): Map<String, Any?> {
         val resolveContext = getResolveContext().withOption(option)
-        val result = doGetFields(psiClass, context, resolveContext).getOrResolve().asKV()
+        val result = doGetFields(psiClass, context, resolveContext).getOrResolve().asMap()
         if (resolveContext.blocked()) {
-            logger.error("${psiClass?.qualifiedName} is too complex. Blocked by ${resolveContext.blockInfo()}")
+            logger.error("The complexity of ${psiClass?.qualifiedName} has exceeded the limit. It is blocked due to ${resolveContext.blockInfo()}.")
         }
         return result
     }
@@ -356,11 +355,11 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             return NULL_OBJECT_HOLDER
         }
 
-        val kv: KV<String, Any?> = KV()
-        val objectHolder = kv.asObjectHolder()
+        val fields = linkedMapOf<String, Any?>()
+        val objectHolder = fields.asObjectHolder()
         cacheResolvedInfo(cacheKey, objectHolder)
 
-        beforeParseClass(resourcePsiClass, resolveContext, kv)
+        beforeParseClass(resourcePsiClass, resolveContext, fields)
 
         val explicitClass = duckTypeHelper!!.explicit(resourcePsiClass)
         foreachField(explicitClass, resolveContext.option) { fieldName, fieldType, fieldOrMethod ->
@@ -371,7 +370,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     fieldOrMethod,
                     explicitClass,
                     resolveContext,
-                    kv
+                    fields
                 )
             ) {
                 onIgnoredParseFieldOrMethod(
@@ -380,15 +379,15 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     fieldOrMethod,
                     explicitClass,
                     resolveContext,
-                    kv
+                    fields
                 )
                 return@foreachField
             }
 
-            if (!kv.contains(fieldName)) {
+            if (!fields.contains(fieldName)) {
                 resolveContext.incrementElement()
 
-                parseFieldOrMethod(fieldName, fieldType, fieldOrMethod, explicitClass, resolveContext.next(), kv)
+                parseFieldOrMethod(fieldName, fieldType, fieldOrMethod, explicitClass, resolveContext.next(), fields)
 
                 afterParseFieldOrMethod(
                     fieldName,
@@ -396,12 +395,12 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     fieldOrMethod,
                     explicitClass,
                     resolveContext,
-                    kv
+                    fields
                 )
             }
         }
 
-        afterParseClass(resourcePsiClass, resolveContext, kv)
+        afterParseClass(resourcePsiClass, resolveContext, fields)
 
         return objectHolder
     }
@@ -540,12 +539,10 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         return ""//by default use enum name `String`
     }
 
-    @Suppress("UNCHECKED_CAST")
-    protected open fun getFields(clsWithParam: SingleDuckType, context: PsiElement?, option: Int): KV<String, Any?> {
-        return doGetFields(clsWithParam, context, getResolveContext().withOption(option)).getOrResolve().asKV()
+    protected open fun getFields(clsWithParam: SingleDuckType, context: PsiElement?, option: Int): Map<String, Any?> {
+        return doGetFields(clsWithParam, context, getResolveContext().withOption(option)).getOrResolve().asMap()
     }
 
-    @Suppress("UNCHECKED_CAST")
     protected open fun doGetFields(
         clsWithParam: SingleDuckType,
         context: PsiElement?,
@@ -569,10 +566,10 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         } else {
             clsWithParam.psiClass()
         }
-        val kv: KV<String, Any?> = KV()
-        val objectHolder = kv.asObjectHolder()
+        val fields = linkedMapOf<String, Any?>()
+        val objectHolder = fields.asObjectHolder()
         cacheResolvedInfo(cacheKey, objectHolder)
-        beforeParseType(psiClass, clsWithParam, resolveContext, kv)
+        beforeParseType(psiClass, clsWithParam, resolveContext, fields)
 
         val explicitClass = duckTypeHelper!!.explicit(getResourceType(clsWithParam))
         foreachField(explicitClass, resolveContext.option) { fieldName, fieldType, fieldOrMethod ->
@@ -583,23 +580,23 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     fieldOrMethod,
                     explicitClass,
                     resolveContext,
-                    kv
+                    fields
                 )
             ) {
-                onIgnoredParseFieldOrMethod(fieldName, fieldType, fieldOrMethod, explicitClass, resolveContext, kv)
+                onIgnoredParseFieldOrMethod(fieldName, fieldType, fieldOrMethod, explicitClass, resolveContext, fields)
                 return@foreachField
             }
 
-            if (!kv.contains(fieldName)) {
+            if (!fields.contains(fieldName)) {
                 resolveContext.incrementElement()
 
-                parseFieldOrMethod(fieldName, fieldType, fieldOrMethod, explicitClass, resolveContext.next(), kv)
+                parseFieldOrMethod(fieldName, fieldType, fieldOrMethod, explicitClass, resolveContext.next(), fields)
 
-                afterParseFieldOrMethod(fieldName, fieldType, fieldOrMethod, explicitClass, resolveContext, kv)
+                afterParseFieldOrMethod(fieldName, fieldType, fieldOrMethod, explicitClass, resolveContext, fields)
             }
         }
 
-        afterParseType(psiClass, clsWithParam, resolveContext, kv)
+        afterParseType(psiClass, clsWithParam, resolveContext, fields)
 
         return objectHolder
     }
@@ -780,7 +777,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         return resolveEnumOrStatic(context, cls, property, defaultPropertyName)
     }
 
-    @Suppress("UNCHECKED_CAST")
     override fun resolveEnumOrStatic(
         context: PsiElement,
         cls: PsiClass?,
@@ -857,9 +853,10 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     val desc = constant["desc"] ?: constant["name"]
 
                     options.add(
-                        KV.create<String, Any?>()
-                            .set("value", mappedVal)
-                            .set("desc", desc)
+                        linkedMapOf(
+                            "value" to mappedVal,
+                            "desc" to desc
+                        )
                     )
                     break
                 }
@@ -872,9 +869,10 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     val mappedVal = constant["value"]
                     val desc = constant["desc"] ?: constant["name"]
                     options.add(
-                        KV.create<String, Any?>()
-                            .set("value", mappedVal)
-                            .set("desc", desc)
+                        linkedMapOf(
+                            "value" to mappedVal,
+                            "desc" to desc
+                        )
                     )
                 }
             }
@@ -947,9 +945,10 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 desc = enumConstant["name"]
             }
             options.add(
-                KV.create<String, Any?>()
-                    .set("value", mappedVal)
-                    .set("desc", desc)
+                hashMapOf(
+                    "value" to mappedVal,
+                    "desc" to desc
+                )
             )
         }
     }
@@ -981,17 +980,18 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             val value = field.computeConstantValue() ?: continue
 
             res.add(
-                KV.create<String, Any?>()
-                    .set("name", field.name)
-                    .set("value", value.toString())
-                    .set("desc", docHelper!!.getAttrOfField(field)?.trim())
+                linkedMapOf(
+                    "name" to field.name,
+                    "value" to value.toString(),
+                    "desc" to docHelper!!.getAttrOfField(field)?.trim()
+                )
             )
         }
         staticResolvedInfo[resourceClass] = res
         return res
     }
 
-    protected open fun ignoreField(psiField: PsiField) = jvmClassHelper.isStaticFinal(psiField)
+    protected open fun ignoreField(psiField: PsiField) = jvmClassHelper.isStatic(psiField)
 
     override fun parseEnumConstant(psiClass: PsiClass): List<Map<String, Any?>> {
         actionContext.checkStatus()
@@ -1108,11 +1108,11 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         }
     }
 
-    open fun beforeParseClass(psiClass: PsiClass, resolveContext: ResolveContext, kv: KV<String, Any?>) {
+    open fun beforeParseClass(psiClass: PsiClass, resolveContext: ResolveContext, fields: MutableMap<String, Any?>) {
 
     }
 
-    open fun afterParseClass(psiClass: PsiClass, resolveContext: ResolveContext, kv: KV<String, Any?>) {
+    open fun afterParseClass(psiClass: PsiClass, resolveContext: ResolveContext, fields: MutableMap<String, Any?>) {
 
     }
 
@@ -1123,7 +1123,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         fieldOrMethod: ExplicitElement<*>,
         resourcePsiClass: ExplicitClass,
         resolveContext: ResolveContext,
-        kv: KV<String, Any?>
+        fields: MutableMap<String, Any?>
     ): Boolean {
         return true
     }
@@ -1134,13 +1134,13 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         fieldOrMethod: ExplicitElement<*>,
         resourcePsiClass: ExplicitClass,
         resolveContext: ResolveContext,
-        kv: KV<String, Any?>
+        fields: MutableMap<String, Any?>
     ) {
         var typeObject = doGetTypeObject(fieldType, fieldOrMethod.psi(), resolveContext)
         if (ruleComputer.computer(ClassRuleKeys.JSON_UNWRAPPED, fieldOrMethod) == true) {
             typeObject = typeObject?.upgrade()
         }
-        kv[fieldName] = typeObject
+        fields[fieldName] = typeObject
     }
 
     open fun afterParseFieldOrMethod(
@@ -1149,7 +1149,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         fieldOrMethod: ExplicitElement<*>,
         resourcePsiClass: ExplicitClass,
         resolveContext: ResolveContext,
-        kv: KV<String, Any?>
+        fields: MutableMap<String, Any?>
     ) {
 
     }
@@ -1160,7 +1160,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         fieldOrMethod: ExplicitElement<*>,
         resourcePsiClass: ExplicitClass,
         resolveContext: ResolveContext,
-        kv: KV<String, Any?>
+        fields: MutableMap<String, Any?>
     ) {
 
     }
@@ -1169,7 +1169,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         psiClass: PsiClass,
         duckType: SingleDuckType,
         resolveContext: ResolveContext,
-        kv: KV<String, Any?>
+        fields: MutableMap<String, Any?>
     ) {
 
     }
@@ -1178,32 +1178,17 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         psiClass: PsiClass,
         duckType: SingleDuckType,
         resolveContext: ResolveContext,
-        kv: KV<String, Any?>
+        fields: MutableMap<String, Any?>
     ) {
 
     }
 
-    inner class SimpleResolveContext : ResolveContext {
-
-        override val basePackage: String?
-        override val deep: Int
-        override val option: Int
-
-        private val shareData: ShareData
-
-        constructor(basePackage: String?, deep: Int, option: Int) {
-            this.basePackage = basePackage
-            this.deep = deep
-            this.option = option
-            this.shareData = ShareData()
-        }
-
-        private constructor(basePackage: String?, deep: Int, option: Int, shareData: ShareData) {
-            this.basePackage = basePackage
-            this.deep = deep
-            this.option = option
-            this.shareData = shareData
-        }
+    inner class SimpleResolveContext(
+        override val basePackage: String?,
+        override val deep: Int,
+        override val option: Int,
+        private val shareData: ShareData = ShareData()
+    ) : ResolveContext {
 
         override fun blocked(): Boolean {
             return shareData.blocked()
@@ -1277,14 +1262,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         fun blockInfo(): String? {
             return blockInfo
         }
-    }
-
-    companion object {
-        val appropriatePropertyMatcher: Array<(String, String) -> Int> = arrayOf(
-            { propertyName, candidate ->
-                1
-            }
-        )
     }
 }
 

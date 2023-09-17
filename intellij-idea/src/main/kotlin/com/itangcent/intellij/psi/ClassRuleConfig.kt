@@ -11,17 +11,17 @@ import com.itangcent.intellij.jvm.duck.DuckType
 interface ClassRuleConfig {
 
     /**
-     * try convert one class to another for parse
+     * try to convert one class to another for parse
      */
     fun tryConvert(psiType: PsiType, context: PsiElement? = null): PsiType
 
     /**
-     * try convert one class to another for parse
+     * try to convert one class to another for parse
      */
     fun tryConvert(duckType: DuckType, context: PsiElement? = null): DuckType
 
     /**
-     * try convert one class to another for parse
+     * try to convert one class to another for parse
      */
     fun tryConvert(psiClass: PsiClass): PsiClass
 
