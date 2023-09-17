@@ -52,37 +52,9 @@ object SelectedHelper {
 
         private val logger = actionContext.instance(Logger::class)
 
-        public fun traversal() {
-            try {
-                val psiFile = actionContext.cacheOrCompute(CommonDataKeys.PSI_FILE.name) {
-                    actionContext.instance(DataContext::class).getData(CommonDataKeys.PSI_FILE)
-                }
-                if (psiFile != null) {
-                    if (fileFilter(psiFile)) {
-                        actionContext.runInReadUI {
-                            onFile(psiFile)
-                        }
-                    }
-                    return
-                }
-            } catch (e: Exception) {
-                logger.traceWarn("error handle class", e)
-            }
+        fun traversal() {
 
-            try {
-                val navigatable = actionContext.cacheOrCompute(CommonDataKeys.NAVIGATABLE.name) {
-                    actionContext.instance(DataContext::class).getData(CommonDataKeys.NAVIGATABLE)
-                }
-                if (navigatable != null) {
-                    actionContext.runInReadUI {
-                        onNavigatable(navigatable)
-                    }
-                    return
-                }
-            } catch (e: Exception) {
-                logger.traceWarn("error handle navigatable", e)
-            }
-
+            //try to get navigatables
             try {
                 val navigatables = actionContext.cacheOrCompute(CommonDataKeys.NAVIGATABLE_ARRAY.name) {
                     actionContext.instance(DataContext::class).getData(CommonDataKeys.NAVIGATABLE_ARRAY)
@@ -105,6 +77,38 @@ object SelectedHelper {
             } catch (e: Exception) {
                 logger.traceWarn("error handle navigatables", e)
             }
+
+            //try to get navigatable
+            try {
+                val navigatable = actionContext.cacheOrCompute(CommonDataKeys.NAVIGATABLE.name) {
+                    actionContext.instance(DataContext::class).getData(CommonDataKeys.NAVIGATABLE)
+                }
+                if (navigatable != null) {
+                    actionContext.runInReadUI {
+                        onNavigatable(navigatable)
+                    }
+                    return
+                }
+            } catch (e: Exception) {
+                logger.traceWarn("error handle navigatable", e)
+            }
+
+            //try to get psiFile
+            try {
+                val psiFile = actionContext.cacheOrCompute(CommonDataKeys.PSI_FILE.name) {
+                    actionContext.instance(DataContext::class).getData(CommonDataKeys.PSI_FILE)
+                }
+                if (psiFile != null) {
+                    if (fileFilter(psiFile)) {
+                        actionContext.runInReadUI {
+                            onFile(psiFile)
+                        }
+                    }
+                    return
+                }
+            } catch (e: Exception) {
+                logger.traceWarn("error handle class", e)
+            }
         }
 
         private fun onNavigatable(navigatable: Navigatable) {
@@ -112,12 +116,15 @@ object SelectedHelper {
                 is PsiDirectory -> {//select dir
                     onDirectory(navigatable)
                 }
+
                 is PsiClass -> {//select class
                     onClass(navigatable)
                 }
+
                 is ClassTreeNode -> {
                     onClass(navigatable.psiClass)
                 }
+
                 is PsiDirectoryNode -> {
                     navigatable.element?.value?.let { onDirectory(it) }
                 }
@@ -162,5 +169,4 @@ object SelectedHelper {
             }
         }
     }
-
 }
