@@ -5,8 +5,7 @@ import com.intellij.psi.*
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
 import com.itangcent.common.utils.*
-import com.itangcent.intellij.config.rule.RuleComputer
-import com.itangcent.intellij.config.rule.computer
+import com.itangcent.intellij.config.rule.*
 import com.itangcent.intellij.constant.RuleConstant
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.PostConstruct
@@ -19,7 +18,8 @@ import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.duck.SingleDuckType
 import com.itangcent.intellij.jvm.duck.SingleUnresolvedDuckType
 import com.itangcent.intellij.jvm.element.ExplicitClass
-import com.itangcent.intellij.jvm.element.ExplicitElement
+import com.itangcent.intellij.jvm.element.ExplicitField
+import com.itangcent.intellij.jvm.element.ExplicitMethod
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.ELEMENT_OF_COLLECTION
 import com.itangcent.intellij.logger.Logger
@@ -72,7 +72,6 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
     protected open fun <T> getResolvedInfo(key: String): ObjectHolder? {
         return resolvedInfo[key]
     }
@@ -362,21 +361,17 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         beforeParseClass(resourcePsiClass, resolveContext, fields)
 
         val explicitClass = duckTypeHelper!!.explicit(resourcePsiClass)
-        foreachField(explicitClass, resolveContext.option) { fieldName, fieldType, fieldOrMethod ->
+        foreachField(explicitClass, resolveContext.option) { accessibleField ->
 
-            if (!beforeParseFieldOrMethod(
-                    fieldName,
-                    fieldType,
-                    fieldOrMethod,
+            if (!beforeParseField(
+                    accessibleField,
                     explicitClass,
                     resolveContext,
                     fields
                 )
             ) {
-                onIgnoredParseFieldOrMethod(
-                    fieldName,
-                    fieldType,
-                    fieldOrMethod,
+                onIgnoredParseField(
+                    accessibleField,
                     explicitClass,
                     resolveContext,
                     fields
@@ -384,15 +379,13 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 return@foreachField
             }
 
-            if (!fields.contains(fieldName)) {
+            if (!fields.contains(accessibleField.jsonFieldName())) {
                 resolveContext.incrementElement()
 
-                parseFieldOrMethod(fieldName, fieldType, fieldOrMethod, explicitClass, resolveContext.next(), fields)
+                parseField(accessibleField, explicitClass, resolveContext.next(), fields)
 
-                afterParseFieldOrMethod(
-                    fieldName,
-                    fieldType,
-                    fieldOrMethod,
+                afterParseField(
+                    accessibleField,
                     explicitClass,
                     resolveContext,
                     fields
@@ -492,16 +485,12 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     val realValueType = duckType.genericInfo?.get(StandardJvmClassHelper.VALUE_OF_MAP)
                     defaultValue = doGetTypeObject(realValueType, context, resolveContext.next())
                 }
-                if (defaultValue == null) {
-                    defaultValue = if (valueType == null) {
-                        null
-                    } else {
-                        doGetTypeObject(
-                            duckTypeHelper.ensureType(valueType, duckType.genericInfo),
-                            context,
-                            resolveContext.next()
-                        )
-                    }
+                if (defaultValue == null && valueType != null) {
+                    defaultValue = doGetTypeObject(
+                        duckTypeHelper.ensureType(valueType, duckType.genericInfo),
+                        context,
+                        resolveContext.next()
+                    )
                 }
 
                 if (defaultKey != null) {
@@ -572,27 +561,25 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         beforeParseType(psiClass, clsWithParam, resolveContext, fields)
 
         val explicitClass = duckTypeHelper!!.explicit(getResourceType(clsWithParam))
-        foreachField(explicitClass, resolveContext.option) { fieldName, fieldType, fieldOrMethod ->
+        foreachField(explicitClass, resolveContext.option) { accessibleField ->
 
-            if (!beforeParseFieldOrMethod(
-                    fieldName,
-                    fieldType,
-                    fieldOrMethod,
+            if (!beforeParseField(
+                    accessibleField,
                     explicitClass,
                     resolveContext,
                     fields
                 )
             ) {
-                onIgnoredParseFieldOrMethod(fieldName, fieldType, fieldOrMethod, explicitClass, resolveContext, fields)
+                onIgnoredParseField(accessibleField, explicitClass, resolveContext, fields)
                 return@foreachField
             }
 
-            if (!fields.contains(fieldName)) {
+            if (!fields.contains(accessibleField.jsonFieldName())) {
                 resolveContext.incrementElement()
 
-                parseFieldOrMethod(fieldName, fieldType, fieldOrMethod, explicitClass, resolveContext.next(), fields)
+                parseField(accessibleField, explicitClass, resolveContext.next(), fields)
 
-                afterParseFieldOrMethod(fieldName, fieldType, fieldOrMethod, explicitClass, resolveContext, fields)
+                afterParseField(accessibleField, explicitClass, resolveContext, fields)
             }
         }
 
@@ -604,43 +591,21 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     protected open fun foreachField(
         explicitClass: ExplicitClass,
         option: Int,
-        handle: (
-            name: String,
-            type: DuckType,
-            fieldOrMethod: ExplicitElement<*>
-        ) -> Unit
+        handle: (DefaultAccessibleField) -> Unit
     ) {
         actionContext.checkStatus()
 
-        val readMethod = option.has(JsonOption.READ_GETTER_OR_SETTER)
 
-        val fieldNames: HashSet<String> by lazy {
-            HashSet()
-        }
-
-        for (explicitField in explicitClass.fields()) {
-            val psiField = explicitField.psi()
-            if (ignoreField(psiField)) {
-                continue
+        val accessibleFieldMap = linkedMapOf<String, DefaultAccessibleField>()
+        explicitClass.fields().forEach {
+            if (ignoreField(it.psi())) {
+                return@forEach
             }
-
-            //it should be decided by rule {@link com.itangcent.intellij.psi.ClassRuleKeys#FIELD_IGNORE}
-//            if (!jvmClassHelper.isAccessibleField(psiField)) {
-//                continue
-//            }
-
-            if (!readMethod || fieldNames.add(explicitField.name())) {
-                handle(
-                    getJsonFieldName(psiField),
-                    explicitField.jsonType(explicitField.getType()),
-                    explicitField
-                )
-            }
+            accessibleFieldMap[it.name()] = DefaultAccessibleField(field = it)
         }
-
-        if (readMethod) {
-            val readGetter = option.has(JsonOption.READ_GETTER)
-            val readSetter = option.has(JsonOption.READ_SETTER)
+        val readGetter = option.has(JsonOption.READ_GETTER)
+        val readSetter = option.has(JsonOption.READ_SETTER)
+        if (readGetter or readSetter) {
             for (explicitMethod in explicitClass.methods()) {
                 val method = explicitMethod.psi()
                 val methodName = method.name
@@ -653,23 +618,25 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 if (!method.hasModifierProperty(PsiModifier.PUBLIC)) continue
 
                 if (readGetter && methodName.maybeGetterMethodPropertyName()) {
-                    val propertyName = methodName.getterPropertyName()
-                    if (!fieldNames.add(propertyName)) continue
                     if (method.parameters.isNotEmpty()) continue
-                    explicitMethod.getReturnType()?.let {
-                        handle(propertyName, explicitMethod.jsonType(it), explicitMethod)
-                    }
+                    val propertyName = methodName.getterPropertyName()
+                    accessibleFieldMap.computeIfAbsent(propertyName) {
+                        DefaultAccessibleField()
+                    }.getter = explicitMethod
                 }
 
                 if (readSetter && methodName.maybeSetterMethodPropertyName()) {
-                    val propertyName = methodName.setterPropertyName()
-                    if (!fieldNames.add(propertyName)) continue
                     if (method.parameters.isEmpty()) continue
-                    explicitMethod.getParameters().firstOrNull()?.getType()?.let {
-                        handle(propertyName, explicitMethod.jsonType(it), explicitMethod)
-                    }
+                    val propertyName = methodName.setterPropertyName()
+                    accessibleFieldMap.computeIfAbsent(propertyName) {
+                        DefaultAccessibleField()
+                    }.setter = explicitMethod
                 }
             }
+        }
+
+        for (accessibleField in accessibleFieldMap.values) {
+            handle(accessibleField)
         }
     }
 
@@ -1057,25 +1024,13 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         }
     }
 
-    override fun getJsonFieldName(psiField: PsiField): String {
-        return psiField.name
-    }
+    override fun getJsonFieldName(psiField: PsiField): String = psiField.name
 
-    override fun getJsonFieldName(psiMethod: PsiMethod): String {
-        val name = psiMethod.name
-        if (name.startsWith("is")) {
-            return name.removePrefix("is").replaceFirstChar { it.lowercase(Locale.getDefault()) }
-        }
-        if (name.startsWith("get")) {
-            return name.removePrefix("get").replaceFirstChar { it.lowercase(Locale.getDefault()) }
-        }
-        return name
-    }
+    override fun getJsonFieldName(psiMethod: PsiMethod): String = psiMethod.name.propertyName()
 
-    protected fun ExplicitElement<*>.jsonType(originDuckType: DuckType): DuckType {
-        val fieldType = ruleComputer.computer(ClassRuleKeys.FIELD_TYPE, this) ?: return originDuckType
-        return duckTypeHelper!!.findDuckType(fieldType, this.psi()) ?: originDuckType
-    }
+    override fun getJsonFieldName(accessibleField: AccessibleField): String = accessibleField.name
+
+    open fun getJsonFieldType(accessibleField: AccessibleField): DuckType = accessibleField.type
 
     open fun getResourceClass(psiClass: PsiClass): PsiClass {
         return psiClass
@@ -1117,10 +1072,8 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     }
 
     //return false to ignore current fieldOrMethod
-    open fun beforeParseFieldOrMethod(
-        fieldName: String,
-        fieldType: DuckType,
-        fieldOrMethod: ExplicitElement<*>,
+    open fun beforeParseField(
+        accessibleField: AccessibleField,
         resourcePsiClass: ExplicitClass,
         resolveContext: ResolveContext,
         fields: MutableMap<String, Any?>
@@ -1128,25 +1081,21 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         return true
     }
 
-    open fun parseFieldOrMethod(
-        fieldName: String,
-        fieldType: DuckType,
-        fieldOrMethod: ExplicitElement<*>,
+    open fun parseField(
+        accessibleField: AccessibleField,
         resourcePsiClass: ExplicitClass,
         resolveContext: ResolveContext,
         fields: MutableMap<String, Any?>
     ) {
-        var typeObject = doGetTypeObject(fieldType, fieldOrMethod.psi(), resolveContext)
-        if (ruleComputer.computer(ClassRuleKeys.JSON_UNWRAPPED, fieldOrMethod) == true) {
+        var typeObject = doGetTypeObject(accessibleField.jsonFieldType(), accessibleField.psi, resolveContext)
+        if (ruleComputer.computer(ClassRuleKeys.JSON_UNWRAPPED, accessibleField) == true) {
             typeObject = typeObject?.upgrade()
         }
-        fields[fieldName] = typeObject
+        fields[accessibleField.jsonFieldName()] = typeObject
     }
 
-    open fun afterParseFieldOrMethod(
-        fieldName: String,
-        fieldType: DuckType,
-        fieldOrMethod: ExplicitElement<*>,
+    open fun afterParseField(
+        accessibleField: AccessibleField,
         resourcePsiClass: ExplicitClass,
         resolveContext: ResolveContext,
         fields: MutableMap<String, Any?>
@@ -1154,10 +1103,8 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     }
 
-    open fun onIgnoredParseFieldOrMethod(
-        fieldName: String,
-        fieldType: DuckType,
-        fieldOrMethod: ExplicitElement<*>,
+    open fun onIgnoredParseField(
+        accessibleField: AccessibleField,
         resourcePsiClass: ExplicitClass,
         resolveContext: ResolveContext,
         fields: MutableMap<String, Any?>
@@ -1237,7 +1184,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         }
     }
 
-    class ShareData() {
+    class ShareData {
 
         private var elements: Int = 0
 
@@ -1263,6 +1210,14 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             return blockInfo
         }
     }
+
+    fun AccessibleField.jsonFieldName(): String = cache("jsonFieldName") {
+        getJsonFieldName(this)
+    }!!
+
+    fun AccessibleField.jsonFieldType(): DuckType = cache("jsonFieldType") {
+        getJsonFieldType(this)
+    }!!
 }
 
 interface ResolveContext {
@@ -1287,4 +1242,87 @@ interface ResolveContext {
     fun elements(): Int
 
     fun withOption(option: Int): ResolveContext
+}
+
+/**
+ * Default implementation of the [AccessibleField] interface.
+ *
+ * This class represents an accessible field in a class. It allows for
+ * setting and getting the explicit field, getter, and setter representations.
+ * It also provides default implementations for the [name], [type], and [psi]
+ * properties, which are lazily evaluated based on the available explicit representations.
+ *
+ * @param field The explicit field representation, or `null` if not available.
+ * @param getter The explicit getter method representation, or `null` if not available.
+ * @param setter The explicit setter method representation, or `null` if not available.
+ * @param extensible The [Extensible] implementation to delegate additional attributes.
+ */
+class DefaultAccessibleField(
+    override val field: ExplicitField? = null,
+    override var getter: ExplicitMethod? = null,
+    override var setter: ExplicitMethod? = null,
+    private val extensible: Extensible = SimpleExtensible()
+) : AccessibleField, Extensible by extensible {
+
+    /**
+     * Lazily evaluates and returns the name of the field.
+     *
+     * The name is determined based on the available explicit representations.
+     * If none of the explicit representations are available, an [IllegalArgumentException] is thrown.
+     */
+    override val name: String by lazy {
+        field?.name()
+            ?: getter?.name()?.getterPropertyName()
+            ?: setter?.name()?.setterPropertyName()
+            ?: throw IllegalArgumentException("invalid field")
+    }
+
+    /**
+     * Lazily evaluates and returns the type of the field.
+     *
+     * The type is determined based on the available explicit representations.
+     * If none of the explicit representations are available, an [IllegalArgumentException] is thrown.
+     */
+    override val type: DuckType by lazy {
+        field?.getType()
+            ?: getter?.getReturnType()
+            ?: setter?.getParameters()?.firstOrNull()?.getType()
+            ?: throw IllegalArgumentException("invalid field")
+    }
+
+    /**
+     * Lazily evaluates and returns the PSI element representing the field.
+     *
+     * The PSI element is determined based on the available explicit representations.
+     * If none of the explicit representations are available, an [IllegalArgumentException] is thrown.
+     */
+    override val psi: PsiElement by lazy {
+        field?.psi()
+            ?: getter?.psi()
+            ?: setter?.psi()
+            ?: throw IllegalArgumentException("invalid field")
+    }
+}
+
+/**
+ * Computes the value of a rule using the provided accessible field.
+ *
+ * @param ruleKey The rule key to compute the value for.
+ * @param accessibleField The accessible field to compute the rule value from.
+ * @param contextHandle The optional lambda function to handle the rule computation context.
+ * @return The computed value of the rule, or `null` if it cannot be computed.
+ */
+@Suppress("UNCHECKED_CAST")
+fun <T : Any> RuleComputer.computer(
+    ruleKey: RuleKey<T>,
+    accessibleField: AccessibleField,
+    contextHandle: (RuleContext) -> Unit = {}
+): T? {
+    val map: RuleChain<T> = sequenceOf(accessibleField.field, accessibleField.getter, accessibleField.setter)
+        .filterNotNull().map {
+            {
+                this.computer(ruleKey, it, accessibleField.psi, contextHandle)
+            }
+        }
+    return (ruleKey.mode() as RuleMode<T>).compute(map) as? T
 }

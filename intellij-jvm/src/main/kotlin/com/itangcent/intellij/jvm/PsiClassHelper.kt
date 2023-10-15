@@ -1,7 +1,10 @@
 package com.itangcent.intellij.jvm
 
 import com.intellij.psi.*
+import com.itangcent.common.utils.Extensible
 import com.itangcent.intellij.jvm.duck.DuckType
+import com.itangcent.intellij.jvm.element.ExplicitField
+import com.itangcent.intellij.jvm.element.ExplicitMethod
 
 interface PsiClassHelper {
 
@@ -35,28 +38,17 @@ interface PsiClassHelper {
 
     fun getJsonFieldName(psiMethod: PsiMethod): String
 
+    fun getJsonFieldName(accessibleField: AccessibleField): String
+
     fun parseStaticFields(psiClass: PsiClass): List<Map<String, Any?>>
 
     fun parseEnumConstant(psiClass: PsiClass): List<Map<String, Any?>>
-
-    @Deprecated(message = "replace with [DocHelper#getAttrOfField]")
-    fun getAttrOfField(field: PsiField): String?
 
     fun resolveEnumOrStatic(
         classNameWithProperty: String,
         context: PsiElement,
         defaultPropertyName: String
     ): ArrayList<HashMap<String, Any?>>?
-
-    @Deprecated(
-        "use [com.itangcent.intellij.jvm.PsiClassHelper.resolveEnumOrStatic(com.intellij.psi.PsiClass, java.lang.String, java.lang.String)]",
-        ReplaceWith("resolveEnumOrStatic(cls, property, property)")
-    )
-    fun resolveEnumOrStatic(
-        context: PsiElement, cls: PsiClass?, property: String?
-    ): ArrayList<HashMap<String, Any?>>? {
-        return resolveEnumOrStatic(context, cls, property, "")
-    }
 
     fun resolveEnumOrStatic(
         context: PsiElement,
@@ -102,4 +94,26 @@ object JsonOption {
     fun Int.hasAny(vararg flag: Int): Boolean {
         return flag.any { (this and it) != 0 }
     }
+}
+
+/**
+ * Represents an accessible field in a class.
+ *
+ * An `AccessibleField` extends the `Extensible` interface, which allows
+ * for attaching additional attributes to the field.
+ *
+ * @property field The explicit field representation, or `null` if not available.
+ * @property getter The explicit getter method representation, or `null` if not available.
+ * @property setter The explicit setter method representation, or `null` if not available.
+ * @property name The name of the field.
+ * @property type The type of the field.
+ * @property psi The PSI element representing the field.
+ */
+interface AccessibleField : Extensible {
+    val field: ExplicitField?
+    var getter: ExplicitMethod?
+    var setter: ExplicitMethod?
+    val name: String
+    val type: DuckType
+    val psi: PsiElement
 }

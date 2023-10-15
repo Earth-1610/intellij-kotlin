@@ -17,7 +17,6 @@ class SimpleRuleKey<T : Any> : RuleKey<T> {
         this.alias = null
     }
 
-    @Suppress("UNCHECKED_CAST")
     constructor(name: String, alias: Array<String>?, mode: RuleMode<*>) {
         this.name = name
         this.alias = alias
@@ -25,7 +24,6 @@ class SimpleRuleKey<T : Any> : RuleKey<T> {
         this.defaultVal = null
     }
 
-    @Suppress("UNCHECKED_CAST")
     constructor(name: String, mode: RuleMode<*>, defaultVal: T?) {
         this.name = name
         this.alias = null
@@ -33,7 +31,6 @@ class SimpleRuleKey<T : Any> : RuleKey<T> {
         this.defaultVal = defaultVal
     }
 
-    @Suppress("UNCHECKED_CAST")
     constructor(name: String, alias: Array<String>, mode: RuleMode<*>, defaultVal: T?) {
         this.name = name
         this.alias = alias
@@ -43,7 +40,6 @@ class SimpleRuleKey<T : Any> : RuleKey<T> {
 
 
     @Deprecated(message = "ruleType is unnecessary")
-    @Suppress("UNCHECKED_CAST")
     constructor(name: String, ruleType: KClass<*>, mode: RuleMode<*>) {
         this.name = name
         this.mode = mode
@@ -52,7 +48,6 @@ class SimpleRuleKey<T : Any> : RuleKey<T> {
     }
 
     @Deprecated(message = "ruleType is unnecessary")
-    @Suppress("UNCHECKED_CAST")
     constructor(name: String, alias: Array<String>?, ruleType: KClass<*>, mode: RuleMode<*>) {
         this.name = name
         this.alias = alias
@@ -61,7 +56,6 @@ class SimpleRuleKey<T : Any> : RuleKey<T> {
     }
 
     @Deprecated(message = "ruleType is unnecessary")
-    @Suppress("UNCHECKED_CAST")
     constructor(name: String, ruleType: KClass<*>, mode: RuleMode<*>, defaultVal: T?) {
         this.name = name
         this.alias = null
@@ -70,7 +64,6 @@ class SimpleRuleKey<T : Any> : RuleKey<T> {
     }
 
     @Deprecated(message = "ruleType is unnecessary")
-    @Suppress("UNCHECKED_CAST")
     constructor(name: String, alias: Array<String>, ruleType: KClass<*>, mode: RuleMode<*>, defaultVal: T?) {
         this.name = name
         this.alias = alias

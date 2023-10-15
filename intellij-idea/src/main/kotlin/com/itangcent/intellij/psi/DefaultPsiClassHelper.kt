@@ -8,16 +8,11 @@ import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.notNullOrBlank
 import com.itangcent.common.utils.notNullOrEmpty
 import com.itangcent.common.utils.sub
-import com.itangcent.intellij.config.rule.computer
-import com.itangcent.intellij.jvm.JsonOption
+import com.itangcent.intellij.jvm.*
 import com.itangcent.intellij.jvm.JsonOption.has
-import com.itangcent.intellij.jvm.SourceHelper
-import com.itangcent.intellij.jvm.asPsiClass
 import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.duck.SingleDuckType
 import com.itangcent.intellij.jvm.element.ExplicitClass
-import com.itangcent.intellij.jvm.element.ExplicitElement
-import org.apache.commons.lang3.StringUtils
 
 @Singleton
 open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
@@ -155,6 +150,34 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         return super.getJsonFieldName(psiMethod)
     }
 
+    override fun getJsonFieldName(accessibleField: AccessibleField): String {
+        try {
+            val nameByRule = ruleComputer.computer(ClassRuleKeys.FIELD_NAME, accessibleField)
+            var name = if (nameByRule.isNullOrBlank()) {
+                accessibleField.name
+            } else {
+                nameByRule
+            }
+            ruleComputer.computer(ClassRuleKeys.FIELD_NAME_PREFIX, accessibleField)?.let {
+                name = it + name
+            }
+            ruleComputer.computer(ClassRuleKeys.FIELD_NAME_SUFFIX, accessibleField)?.let {
+                name += it
+            }
+            return name
+        } catch (e: Exception) {
+            logger.traceWarn("error to get field name:${PsiClassUtils.fullNameOfMember(accessibleField.psi)}", e)
+        }
+
+        return accessibleField.name
+    }
+
+    override fun getJsonFieldType(accessibleField: AccessibleField): DuckType {
+        return ruleComputer.computer(ClassRuleKeys.FIELD_TYPE, accessibleField)?.let {
+            duckTypeHelper!!.findDuckType(it, accessibleField.psi)
+        } ?: accessibleField.type
+    }
+
     override fun getResourceClass(psiClass: PsiClass): PsiClass {
         return sourceHelper?.getSourceClass(psiClass) ?: psiClass
     }
@@ -235,36 +258,31 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         return super.doGetTypeObject(duckType, context, resolveContext)
     }
 
-    override fun beforeParseFieldOrMethod(
-        fieldName: String,
-        fieldType: DuckType,
-        fieldOrMethod: ExplicitElement<*>,
+    override fun beforeParseField(
+        accessibleField: AccessibleField,
         resourcePsiClass: ExplicitClass,
         resolveContext: ResolveContext,
         fields: MutableMap<String, Any?>
     ): Boolean {
-        if (ruleComputer.computer(ClassRuleKeys.FIELD_IGNORE, fieldOrMethod) == true) {
+        if (ruleComputer.computer(ClassRuleKeys.FIELD_IGNORE, accessibleField) == true) {
             return false
         }
 
-        return super.beforeParseFieldOrMethod(
-            fieldName,
-            fieldType,
-            fieldOrMethod,
+        return super.beforeParseField(
+            accessibleField,
             resourcePsiClass,
             resolveContext,
             fields
         )
     }
 
-    override fun parseFieldOrMethod(
-        fieldName: String,
-        fieldType: DuckType,
-        fieldOrMethod: ExplicitElement<*>,
+    override fun parseField(
+        accessibleField: AccessibleField,
         resourcePsiClass: ExplicitClass,
         resolveContext: ResolveContext,
         fields: MutableMap<String, Any?>
     ) {
+        val fieldType = accessibleField.jsonFieldType()
         if (fieldType is SingleDuckType && jvmClassHelper.isEnum(fieldType.psiClass())) {
             val convertTo = ruleComputer.computer(ClassRuleKeys.ENUM_CONVERT, fieldType, null)
             val enumClass = fieldType.psiClass()
@@ -278,10 +296,8 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                         val convertFieldOrMethod = classWithFieldOrMethod.second!!
                         if (convertFieldOrMethod is PsiField) {
                             duckTypeHelper!!.ensureType(convertFieldOrMethod.type)?.let {
-                                super.parseFieldOrMethod(
-                                    fieldName,
-                                    it,
-                                    duckTypeHelper.explicit(convertFieldOrMethod)!!,
+                                super.parseField(
+                                    ConvertedAccessibleField(accessibleField, it),
                                     resourcePsiClass,
                                     resolveContext,
                                     fields
@@ -289,10 +305,8 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                             }
                         } else if (convertFieldOrMethod is PsiMethod) {
                             duckTypeHelper!!.ensureType(convertFieldOrMethod.returnType!!)?.let {
-                                super.parseFieldOrMethod(
-                                    fieldName,
-                                    it,
-                                    duckTypeHelper.explicit(convertFieldOrMethod)!!,
+                                super.parseField(
+                                    ConvertedAccessibleField(accessibleField, it),
                                     resourcePsiClass,
                                     resolveContext,
                                     fields
@@ -303,7 +317,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                         if (resolveContext.option.has(JsonOption.READ_COMMENT)) {
                             val comments = fields.sub("@comment")
                             resolveSeeDoc(
-                                fieldName, fieldOrMethod.psi() as? PsiMember ?: enumClass, listOf(
+                                accessibleField.jsonFieldName(), accessibleField.psi as? PsiMember ?: enumClass, listOf(
                                     PsiClassUtils.fullNameOfMember(
                                         classWithFieldOrMethod.first.asPsiClass(jvmClassHelper),
                                         convertFieldOrMethod
@@ -314,14 +328,12 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                         return
                     }
                 } else {
-                    val resolveClass = duckTypeHelper!!.resolve(convertTo, fieldOrMethod.psi())
+                    val resolveClass = duckTypeHelper!!.resolve(convertTo, accessibleField.psi)
                     if (resolveClass == null) {
                         logger.error("failed to resolve class:$convertTo")
                     } else {
-                        super.parseFieldOrMethod(
-                            fieldName,
-                            resolveClass,
-                            fieldOrMethod,
+                        super.parseField(
+                            accessibleField,
                             resourcePsiClass,
                             resolveContext,
                             fields
@@ -331,13 +343,11 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                 }
             }
         }
-        super.parseFieldOrMethod(fieldName, fieldType, fieldOrMethod, resourcePsiClass, resolveContext, fields)
+        super.parseField(accessibleField, resourcePsiClass, resolveContext, fields)
     }
 
-    override fun afterParseFieldOrMethod(
-        fieldName: String,
-        fieldType: DuckType,
-        fieldOrMethod: ExplicitElement<*>,
+    override fun afterParseField(
+        accessibleField: AccessibleField,
         resourcePsiClass: ExplicitClass,
         resolveContext: ResolveContext,
         fields: MutableMap<String, Any?>
@@ -345,21 +355,18 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         //doc comment
         if (resolveContext.option.has(JsonOption.READ_COMMENT)) {
             val comments = fields.sub("@comment")
-            val psiFieldOrMethod = fieldOrMethod.psi()
+            val psiFieldOrMethod = accessibleField.psi
             if (psiFieldOrMethod is PsiField) {
-                val field: PsiField = psiFieldOrMethod
-                comments[fieldName] = docHelper!!.getAttrOfField(psiFieldOrMethod)?.trim()
-                resolveSeeDoc(field, fieldName, comments)
+                comments[accessibleField.jsonFieldName()] = docHelper!!.getAttrOfField(psiFieldOrMethod)?.trim()
+                resolveSeeDoc(psiFieldOrMethod, accessibleField.jsonFieldName(), comments)
             } else if (psiFieldOrMethod is PsiMethod) {
-                val attrInDoc = docHelper!!.getAttrOfDocComment(psiFieldOrMethod)
-                if (StringUtils.isNotBlank(attrInDoc)) {
-                    comments[fieldName] = attrInDoc
-                }
+                comments[accessibleField.jsonFieldName()] = docHelper!!.getAttrOfDocComment(psiFieldOrMethod)?.trim()
             }
         }
     }
-
-    override fun getAttrOfField(field: PsiField): String? {
-        return docHelper!!.getAttrOfField(field)?.trim()
-    }
 }
+
+class ConvertedAccessibleField(
+    private val accessibleField: AccessibleField,
+    override val type: DuckType
+) : AccessibleField by accessibleField

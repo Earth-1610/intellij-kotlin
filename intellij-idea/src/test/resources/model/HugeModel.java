@@ -1,8 +1,8 @@
 package com.itangcent.model;
 
 import com.itangcent.constant.JavaVersion;
-import com.itangcent.model.UserInfo;
 import com.itangcent.constant.MyNoArgConstant;
+import com.itangcent.model.UserInfo;
 
 import java.util.List;
 
@@ -61,6 +61,7 @@ class HugeModel {
      * <p>
      * see {@link somelink}
      * tail line
+     *
      * @type com.itangcent.model.Node
      */
     private String d;
@@ -71,6 +72,10 @@ class HugeModel {
      * R, or r, is the eighteenth letter of the modern English alphabet and the ISO basic Latin alphabet.
      */
     private String r;//It's before s
+
+    private String ignoreByGetter;
+
+    private String ignoreBySetter;
 
     /**
      * candidates versions
@@ -98,5 +103,19 @@ class HugeModel {
      */
     private String methodA(int a, int b) {
 
+    }
+
+    /**
+     * @ignore
+     */
+    public String getIgnoreByGetter() {
+        return ignoreByGetter;
+    }
+
+    /**
+     * @ignore
+     */
+    public void setIgnoreBySetter(String ignoreBySetter) {
+        this.ignoreBySetter = ignoreBySetter;
     }
 }
