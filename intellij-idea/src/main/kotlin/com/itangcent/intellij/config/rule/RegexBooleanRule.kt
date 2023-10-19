@@ -3,12 +3,7 @@ package com.itangcent.intellij.config.rule
 import java.util.*
 import java.util.regex.Pattern
 
-abstract class RegexBooleanRule : BooleanRule {
-    protected val keyRegexStr: String
-
-    constructor(keyRegexStr: String) {
-        this.keyRegexStr = keyRegexStr
-    }
+abstract class RegexBooleanRule(protected val keyRegexStr: String) : BooleanRule {
 
     protected abstract fun match(name: String): Pair<Boolean, Map<Int, String>?>?
 
@@ -16,17 +11,17 @@ abstract class RegexBooleanRule : BooleanRule {
         return match(context.toString())
     }
 
-    override fun compute(context: RuleContext): Boolean? {
+    override fun invoke(context: RuleContext): Boolean? {
         return match(context)?.first
     }
 
     fun asFilterOf(stringRule: StringRule): StringRule {
-        return StringRule.of { context ->
+        return { context ->
             val match = this.match(context)
             if (match?.first == true) {
-                return@of renderVal(stringRule.compute(context), match.second)
+                renderVal(stringRule(context), match.second)
             } else {
-                return@of null
+                null
             }
         }
     }

@@ -25,7 +25,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         resolveSeeDoc(field, sees, comment)
     }
 
-    protected open fun resolveSeeDoc(field: PsiField, fieldName: String, comment: MutableMap<String, Any?>) {
+    protected open fun resolveSeeDoc(field: PsiElement, fieldName: String, comment: MutableMap<String, Any?>) {
         val sees = getSees(field).takeIf { it.notNullOrEmpty() } ?: return
         devEnv?.dev {
             logger.debug("get sees from $fieldName: $sees")
@@ -42,7 +42,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     }
 
     protected open fun resolveSeeDoc(
-        field: PsiField,
+        field: PsiElement,
         fieldName: String,
         sees: List<String>,
         comment: MutableMap<String, Any?>
@@ -75,7 +75,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
         }
     }
 
-    protected open fun getSees(field: PsiJavaDocumentedElement): List<String>? {
+    protected open fun getSees(field: PsiElement): List<String>? {
         val sees: List<String>? = docHelper!!.findDocsByTag(field, "see")
         if (sees.isNullOrEmpty()) {
             return null
@@ -358,10 +358,10 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
             val psiFieldOrMethod = accessibleField.psi
             if (psiFieldOrMethod is PsiField) {
                 comments[accessibleField.jsonFieldName()] = docHelper!!.getAttrOfField(psiFieldOrMethod)?.trim()
-                resolveSeeDoc(psiFieldOrMethod, accessibleField.jsonFieldName(), comments)
             } else if (psiFieldOrMethod is PsiMethod) {
                 comments[accessibleField.jsonFieldName()] = docHelper!!.getAttrOfDocComment(psiFieldOrMethod)?.trim()
             }
+            resolveSeeDoc(psiFieldOrMethod, accessibleField.jsonFieldName(), comments)
         }
     }
 }

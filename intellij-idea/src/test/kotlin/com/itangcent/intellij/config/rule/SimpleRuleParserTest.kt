@@ -24,6 +24,7 @@ internal class SimpleRuleParserTest : ContextLightCodeInsightFixtureTestCase() {
     private lateinit var greetingPsiMethod: PsiMethod
 
     private lateinit var getUserInfoPsiMethod: PsiMethod
+
     override fun bind(builder: ActionContext.ActionContextBuilder) {
         super.bind(builder)
         builder.bind(RuleParser::class) { it.with(SimpleRuleParser::class) }
@@ -44,86 +45,114 @@ internal class SimpleRuleParserTest : ContextLightCodeInsightFixtureTestCase() {
         getUserInfoPsiMethod = userCtrlPsiClass.methods[1]
     }
 
+    fun testParseAnyRule() {
+        val ruleReadRequestMapping =
+            ruleParser.parseAnyRule("@org.springframework.web.bind.annotation.RequestMapping")!!
+        assertEquals(
+            "/greeting",
+            ruleReadRequestMapping(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod))
+        )
+        assertEquals(
+            null,
+            ruleReadRequestMapping(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
+        )
+
+        val ruleReadGetMapping =
+            ruleParser.parseAnyRule("@org.springframework.web.bind.annotation.GetMapping")!!
+        assertEquals(null, ruleReadGetMapping(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
+        assertEquals(
+            "/get/{id}",
+            ruleReadGetMapping(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
+        )
+
+        val ruleReadTagFolder = ruleParser.parseAnyRule("#folder")!!
+        assertEquals(null, ruleReadTagFolder(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
+        assertEquals(
+            "update-apis",
+            ruleReadTagFolder(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
+        )
+
+    }
+
     fun testParseStringRule() {
         val ruleReadRequestMapping: StringRule =
             ruleParser.parseStringRule("@org.springframework.web.bind.annotation.RequestMapping")!!
         assertEquals(
             "/greeting",
-            ruleReadRequestMapping.compute(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod))
+            ruleReadRequestMapping(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod))
         )
         assertEquals(
             null,
-            ruleReadRequestMapping.compute(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
+            ruleReadRequestMapping(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
         )
 
         val ruleReadGetMapping: StringRule =
             ruleParser.parseStringRule("@org.springframework.web.bind.annotation.GetMapping")!!
-        assertEquals(null, ruleReadGetMapping.compute(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
+        assertEquals(null, ruleReadGetMapping(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
         assertEquals(
             "/get/{id}",
-            ruleReadGetMapping.compute(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
+            ruleReadGetMapping(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
         )
 
         val ruleReadTagFolder: StringRule = ruleParser.parseStringRule("#folder")!!
-        assertEquals(null, ruleReadTagFolder.compute(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
+        assertEquals(null, ruleReadTagFolder(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
         assertEquals(
             "update-apis",
-            ruleReadTagFolder.compute(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
+            ruleReadTagFolder(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
         )
 
     }
 
-
     fun testParseBooleanRule() {
 
         val ruleCheckSimpleName: BooleanRule = ruleParser.parseBooleanRule("greeting")!!
-        assertEquals(true, ruleCheckSimpleName.compute(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
+        assertEquals(true, ruleCheckSimpleName(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
         assertEquals(
             false,
-            ruleCheckSimpleName.compute(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
+            ruleCheckSimpleName(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
         )
 
         val ruleCheckQualifiedName: BooleanRule = ruleParser.parseBooleanRule("com.itangcent.api.UserCtrl#greeting")!!
-        assertEquals(true, ruleCheckQualifiedName.compute(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
+        assertEquals(true, ruleCheckQualifiedName(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
         assertEquals(
             false,
-            ruleCheckQualifiedName.compute(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
+            ruleCheckQualifiedName(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
         )
 
         val ruleCheckPublic: BooleanRule = ruleParser.parseBooleanRule("@com.itangcent.common.annotation.Public")!!
-        assertEquals(true, ruleCheckPublic.compute(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
-        assertEquals(false, ruleCheckPublic.compute(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod)))
+        assertEquals(true, ruleCheckPublic(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
+        assertEquals(false, ruleCheckPublic(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod)))
 
         val ruleCheckNotPublic: BooleanRule = ruleParser.parseBooleanRule("!@com.itangcent.common.annotation.Public")!!
-        assertEquals(false, ruleCheckNotPublic.compute(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
-        assertEquals(true, ruleCheckNotPublic.compute(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod)))
+        assertEquals(false, ruleCheckNotPublic(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
+        assertEquals(true, ruleCheckNotPublic(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod)))
 
         val ruleCheckDeprecated: BooleanRule = ruleParser.parseBooleanRule("@java.lang.Deprecated")!!
-        assertEquals(false, ruleCheckDeprecated.compute(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
+        assertEquals(false, ruleCheckDeprecated(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
         assertEquals(
             true,
-            ruleCheckDeprecated.compute(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
+            ruleCheckDeprecated(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
         )
 
         val ruleCheckUndone: BooleanRule = ruleParser.parseBooleanRule("#undone")!!
-        assertEquals(false, ruleCheckUndone.compute(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
+        assertEquals(false, ruleCheckUndone(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
         assertEquals(
             true,
-            ruleCheckUndone.compute(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
+            ruleCheckUndone(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
         )
 
         val ruleCheckDone: BooleanRule = ruleParser.parseBooleanRule("!#undone")!!
-        assertEquals(true, ruleCheckDone.compute(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
+        assertEquals(true, ruleCheckDone(ruleParser.contextOf(greetingPsiMethod, greetingPsiMethod)))
         assertEquals(
             false,
-            ruleCheckDone.compute(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
+            ruleCheckDone(ruleParser.contextOf(getUserInfoPsiMethod, getUserInfoPsiMethod))
         )
 
         val ruleCheckIsCollection = ruleParser.parseBooleanRule("\$class:? extend java.util.Collection")!!
-        assertEquals(false, ruleCheckIsCollection.compute(ruleParser.contextOf(modelPsiClass, modelPsiClass)))
+        assertEquals(false, ruleCheckIsCollection(ruleParser.contextOf(modelPsiClass, modelPsiClass)))
         assertEquals(
             true,
-            ruleCheckIsCollection.compute(ruleParser.contextOf(listPsiClass, listPsiClass))
+            ruleCheckIsCollection(ruleParser.contextOf(listPsiClass, listPsiClass))
         )
     }
 

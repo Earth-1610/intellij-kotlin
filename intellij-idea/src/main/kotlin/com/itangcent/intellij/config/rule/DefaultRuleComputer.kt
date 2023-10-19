@@ -9,7 +9,7 @@ import kotlin.reflect.KClass
 class DefaultRuleComputer : RuleComputer {
 
     @Inject
-    protected val ruleLookUp: RuleLookUp? = null
+    protected lateinit var ruleLookUp: RuleLookUp
 
     @Inject
     protected val ruleParser: RuleParser? = null
@@ -40,11 +40,7 @@ class DefaultRuleComputer : RuleComputer {
         context: PsiElement?,
         contextHandle: (RuleContext) -> Unit
     ): T? {
-        val rules: List<Rule<Any>> =
-            ruleLookUp!!.doLookUp(
-                ruleKey.nameAndAlias(),
-                ruleKey.mode().targetType() as KClass<Any>
-            )
+        val rules: List<Rule<Any>> = ruleLookUp.lookUp(ruleKey)
 
         if (rules.isEmpty()) return ruleKey.defaultVal()
 
@@ -56,6 +52,11 @@ class DefaultRuleComputer : RuleComputer {
     }
 
     private fun <T> List<Rule<T>>.asChain(ruleContext: RuleContext): RuleChain<T> =
-        asSequence().map { { it.compute(ruleContext) } }
-
+        asSequence().map { { it(ruleContext) } }
 }
+
+@Suppress("UNCHECKED_CAST")
+fun <T : Any> RuleLookUp.lookUp(ruleKey: RuleKey<T>) = lookUp(
+    ruleKey.nameAndAlias(),
+    ruleKey.mode().targetType() as KClass<Any>
+)

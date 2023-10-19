@@ -1,9 +1,6 @@
 package com.itangcent.intellij.psi
 
-import com.itangcent.intellij.config.rule.BooleanRuleMode
-import com.itangcent.intellij.config.rule.RuleKey
-import com.itangcent.intellij.config.rule.SimpleRuleKey
-import com.itangcent.intellij.config.rule.StringRuleMode
+import com.itangcent.intellij.config.rule.*
 
 object ClassRuleKeys {
 
@@ -35,6 +32,12 @@ object ClassRuleKeys {
             "field.ignore",
             arrayOf("json.rule.field.ignore"),
             BooleanRuleMode.ANY
+        )
+
+    val FIELD_ORDER: RuleKey<Int> =
+        SimpleRuleKey(
+            "field.order",
+            IntRuleMode
         )
 
     val ENUM_USE_CUSTOM: RuleKey<String> =

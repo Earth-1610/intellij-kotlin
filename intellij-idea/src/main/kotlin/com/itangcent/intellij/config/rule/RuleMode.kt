@@ -1,5 +1,6 @@
 package com.itangcent.intellij.config.rule
 
+import com.itangcent.common.utils.asInt
 import com.itangcent.common.utils.notNullOrEmpty
 import kotlin.reflect.KClass
 
@@ -8,6 +9,24 @@ interface RuleMode<T : Any> {
 
     fun targetType(): KClass<T>
 }
+
+open class AnyRuleMode<T : Any>(
+    val computer: (Sequence<Any>) -> T?,
+    private val targetType: KClass<T>
+) : RuleMode<T> {
+    override fun compute(rules: RuleChain<T>): T? {
+        return computer(rules.mapNotNull { it() })
+    }
+
+    override fun targetType(): KClass<T> {
+        return targetType
+    }
+}
+
+object IntRuleMode : AnyRuleMode<Int>(
+    computer = { sequence -> sequence.map { it.asInt() }.firstOrNull() },
+    targetType = Int::class
+)
 
 enum class StringRuleMode : RuleMode<String> {
     SINGLE {
@@ -45,15 +64,15 @@ enum class BooleanRuleMode : RuleMode<Boolean> {
     ANY {
         override fun compute(rules: RuleChain<Boolean>): Any {
             return rules
-                .map { it() }
-                .any { it == true }
+                .mapNotNull { it() }
+                .any { it }
         }
     },
     ALL {
         override fun compute(rules: RuleChain<Boolean>): Any {
             return rules
-                .map { it() }
-                .all { it == true }
+                .mapNotNull { it() }
+                .all { it }
         }
     };
 

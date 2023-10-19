@@ -3,6 +3,7 @@ package com.itangcent.intellij.jvm
 import com.intellij.psi.*
 import com.itangcent.common.utils.Extensible
 import com.itangcent.intellij.jvm.duck.DuckType
+import com.itangcent.intellij.jvm.element.ExplicitElement
 import com.itangcent.intellij.jvm.element.ExplicitField
 import com.itangcent.intellij.jvm.element.ExplicitMethod
 
@@ -113,7 +114,9 @@ interface AccessibleField : Extensible {
     val field: ExplicitField?
     var getter: ExplicitMethod?
     var setter: ExplicitMethod?
+
     val name: String
     val type: DuckType
     val psi: PsiElement
+    val explicitElement: ExplicitElement<*>
 }

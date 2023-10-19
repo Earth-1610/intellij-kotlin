@@ -8,6 +8,9 @@ interface RuleLookUp {
     fun <T : Any> lookUp(key: String, ruleType: KClass<T>): List<Rule<T>>
 }
 
-fun <T : Any> RuleLookUp.doLookUp(keys: Array<String>, ruleType: KClass<T>): List<Rule<T>> {
+fun <T : Any> RuleLookUp.lookUp(keys: Array<String>, ruleType: KClass<T>): List<Rule<T>> {
     return keys.flatMap { this.lookUp(it, ruleType) }
 }
+
+@Deprecated("use lookUp instead", ReplaceWith("lookUp(keys, ruleType)"))
+fun <T : Any> RuleLookUp.doLookUp(keys: Array<String>, ruleType: KClass<T>): List<Rule<T>> = lookUp(keys, ruleType)

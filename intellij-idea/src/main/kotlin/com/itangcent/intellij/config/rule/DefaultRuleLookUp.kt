@@ -59,8 +59,8 @@ open class DefaultRuleLookUp : RuleLookUp {
                     if (filterTxt.startsWith("#regex:")) {
                         val regexBooleanRule = RegexBooleanRule.compile(filterTxt, value)
                         ruleParser.parseRule(value, ruleType)?.let {
-                            if (it is StringRule) {
-                                rules.add(regexBooleanRule.asFilterOf(it))
+                            if (ruleType == String::class) {
+                                rules.add(regexBooleanRule.asFilterOf(it as StringRule))
                             } else {
                                 rules.add(it.filterWith(regexBooleanRule))
                             }
