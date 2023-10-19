@@ -46,31 +46,16 @@ class DefaultRuleComputer : RuleComputer {
                 ruleKey.mode().targetType() as KClass<Any>
             )
 
-        if (rules.isNullOrEmpty()) return ruleKey.defaultVal()
+        if (rules.isEmpty()) return ruleKey.defaultVal()
 
         val ruleContext: RuleContext = ruleParser!!.contextOf(target, context)
         contextHandle(ruleContext)
 
-        return (ruleKey.mode() as RuleMode<Any>).compute(RuleChainImpl(rules, ruleContext)) as? T
+        return (ruleKey.mode() as RuleMode<Any>).compute(rules.asChain(ruleContext)) as? T
             ?: ruleKey.defaultVal()
     }
 
+    private fun <T> List<Rule<T>>.asChain(ruleContext: RuleContext): RuleChain<T> =
+        asSequence().map { { it.compute(ruleContext) } }
 
-    private class RuleChainImpl<T>(
-        private val rules: List<Rule<T>>,
-        private val ruleContext: RuleContext,
-        private val index: Int = 0
-    ) : RuleChain<T> {
-
-        override fun nextChain(): RuleChain<T>? {
-            val nextIndex = index + 1
-            return if (nextIndex < rules.size)
-                RuleChainImpl(rules, ruleContext, nextIndex)
-            else null
-        }
-
-        override fun compute(): T? {
-            return rules[index].compute(ruleContext)
-        }
-    }
 }

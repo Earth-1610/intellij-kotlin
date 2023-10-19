@@ -269,7 +269,7 @@ object FileUtils : Log() {
 
     fun isSymlink(file: File?): Boolean {
         if (file == null) {
-            LOG?.error("File must not be null")
+            LOG.error("File must not be null")
             return false
         }
         return Files.isSymbolicLink(file.toPath())

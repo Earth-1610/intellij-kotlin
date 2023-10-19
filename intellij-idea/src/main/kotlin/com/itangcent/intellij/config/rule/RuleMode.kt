@@ -13,8 +13,7 @@ enum class StringRuleMode : RuleMode<String> {
     SINGLE {
         override fun compute(rules: RuleChain<String>): Any? {
             return rules
-                .asSequence()
-                .map { it.compute() }
+                .map { it() }
                 .filter { it.notNullOrEmpty() }
                 .firstOrNull()
         }
@@ -22,8 +21,7 @@ enum class StringRuleMode : RuleMode<String> {
     MERGE {
         override fun compute(rules: RuleChain<String>): Any {
             return rules
-                .asSequence()
-                .map { it.compute() }
+                .map { it() }
                 .filter { it.notNullOrEmpty() }
                 .joinToString(separator = "\n")
         }
@@ -31,8 +29,7 @@ enum class StringRuleMode : RuleMode<String> {
     MERGE_DISTINCT {
         override fun compute(rules: RuleChain<String>): Any {
             return rules
-                .asSequence()
-                .map { it.compute() }
+                .map { it() }
                 .filter { it.notNullOrEmpty() }
                 .distinct()
                 .joinToString(separator = "\n")
@@ -48,16 +45,14 @@ enum class BooleanRuleMode : RuleMode<Boolean> {
     ANY {
         override fun compute(rules: RuleChain<Boolean>): Any {
             return rules
-                .asSequence()
-                .map { it.compute() }
+                .map { it() }
                 .any { it == true }
         }
     },
     ALL {
         override fun compute(rules: RuleChain<Boolean>): Any {
             return rules
-                .asSequence()
-                .map { it.compute() }
+                .map { it() }
                 .all { it == true }
         }
     };
@@ -70,9 +65,9 @@ enum class BooleanRuleMode : RuleMode<Boolean> {
 enum class EventRuleMode : RuleMode<Unit> {
     IGNORE_ERROR {
         override fun compute(rules: RuleChain<Unit>): Any? {
-            rules.asSequence().forEach {
+            rules.forEach {
                 try {
-                    it.compute()
+                    it()
                 } catch (ignore: Exception) {
                 }
             }
@@ -81,8 +76,8 @@ enum class EventRuleMode : RuleMode<Unit> {
     },
     THROW_IN_ERROR {
         override fun compute(rules: RuleChain<Unit>): Any? {
-            rules.asSequence().forEach {
-                it.compute()
+            rules.forEach {
+                it()
             }
             return null
         }

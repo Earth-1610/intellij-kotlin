@@ -1,6 +1,5 @@
 package com.itangcent.intellij.extend.rx
 
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -9,6 +8,9 @@ import kotlin.concurrent.thread
 import kotlin.math.ceil
 import kotlin.test.assertTrue
 
+/**
+ * Test case of [ThrottleHelper]
+ */
 class ThrottleHelperKtTest {
 
     @Test
