@@ -4,6 +4,7 @@ import com.google.inject.Inject
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTypesUtil
 import com.intellij.psi.util.PsiUtil
+import com.itangcent.common.logger.traceError
 import com.itangcent.common.utils.*
 import com.itangcent.intellij.config.rule.*
 import com.itangcent.intellij.constant.RuleConstant
@@ -18,6 +19,7 @@ import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.duck.SingleDuckType
 import com.itangcent.intellij.jvm.duck.SingleUnresolvedDuckType
 import com.itangcent.intellij.jvm.element.ExplicitClass
+import com.itangcent.intellij.jvm.element.ExplicitElement
 import com.itangcent.intellij.jvm.element.ExplicitField
 import com.itangcent.intellij.jvm.element.ExplicitMethod
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
@@ -51,6 +53,9 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
     @Inject
     protected lateinit var ruleComputer: RuleComputer
+
+    @Inject
+    protected lateinit var ruleLookUp: RuleLookUp
 
     @Inject
     protected val docHelper: DocHelper? = null
@@ -361,8 +366,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         beforeParseClass(resourcePsiClass, resolveContext, fields)
 
         val explicitClass = duckTypeHelper!!.explicit(resourcePsiClass)
-        foreachField(explicitClass, resolveContext.option) { accessibleField ->
-
+        collectFields(explicitClass, resolveContext.option).forEach { accessibleField ->
             if (!beforeParseField(
                     accessibleField,
                     explicitClass,
@@ -376,7 +380,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     resolveContext,
                     fields
                 )
-                return@foreachField
+                return@forEach
             }
 
             if (!fields.contains(accessibleField.jsonFieldName())) {
@@ -561,8 +565,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         beforeParseType(psiClass, clsWithParam, resolveContext, fields)
 
         val explicitClass = duckTypeHelper!!.explicit(getResourceType(clsWithParam))
-        foreachField(explicitClass, resolveContext.option) { accessibleField ->
-
+        collectFields(explicitClass, resolveContext.option).forEach { accessibleField ->
             if (!beforeParseField(
                     accessibleField,
                     explicitClass,
@@ -571,7 +574,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 )
             ) {
                 onIgnoredParseField(accessibleField, explicitClass, resolveContext, fields)
-                return@foreachField
+                return@forEach
             }
 
             if (!fields.contains(accessibleField.jsonFieldName())) {
@@ -588,11 +591,10 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         return objectHolder
     }
 
-    protected open fun foreachField(
+    protected open fun collectFields(
         explicitClass: ExplicitClass,
-        option: Int,
-        handle: (DefaultAccessibleField) -> Unit
-    ) {
+        option: Int
+    ): Collection<DefaultAccessibleField> {
         actionContext.checkStatus()
 
 
@@ -635,9 +637,17 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             }
         }
 
-        for (accessibleField in accessibleFieldMap.values) {
-            handle(accessibleField)
+        var fields: Collection<DefaultAccessibleField> = accessibleFieldMap.values
+        if (ruleLookUp.lookUp(ClassRuleKeys.FIELD_ORDER).isNotEmpty()) {
+            try {
+                fields = fields.asSequence().withIndex().sortedBy { (index, field) ->
+                    ruleComputer.computer(ClassRuleKeys.FIELD_ORDER, field) ?: (index + 1)
+                }.map { it.value }.toList()
+            } catch (e: Exception) {
+                logger.traceError("Failed to sort fields. Please check the rule of ${ClassRuleKeys.FIELD_ORDER}", e)
+            }
         }
+        return fields
     }
 
     protected open fun tryCastTo(psiType: PsiType, context: PsiElement): PsiType {
@@ -1297,10 +1307,11 @@ class DefaultAccessibleField(
      * If none of the explicit representations are available, an [IllegalArgumentException] is thrown.
      */
     override val psi: PsiElement by lazy {
-        field?.psi()
-            ?: getter?.psi()
-            ?: setter?.psi()
-            ?: throw IllegalArgumentException("invalid field")
+        explicitElement.psi()
+    }
+
+    override val explicitElement: ExplicitElement<*> by lazy {
+        field ?: getter ?: setter ?: throw IllegalArgumentException("invalid field")
     }
 }
 

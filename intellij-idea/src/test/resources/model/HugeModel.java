@@ -73,6 +73,13 @@ class HugeModel {
      */
     private String r;//It's before s
 
+    /**
+     * @order 100
+     */
+    private Integer shouldBeLast;
+
+    private Integer shouldBeLastIfSetter;
+
     private String ignoreByGetter;
 
     private String ignoreBySetter;
@@ -98,6 +105,13 @@ class HugeModel {
     private UserInfo userInfo;
 
     /**
+     * @order 0
+     */
+    private Integer shouldBeFirst;
+
+    private Integer shouldBeFirstIfGetter;
+
+    /**
      * @param a A
      * @param b B
      */
@@ -117,5 +131,23 @@ class HugeModel {
      */
     public void setIgnoreBySetter(String ignoreBySetter) {
         this.ignoreBySetter = ignoreBySetter;
+    }
+
+    public void setShouldBeLast(Integer shouldBeLast) {
+        this.shouldBeLast = shouldBeLast;
+    }
+
+    /**
+     * @order -1
+     */
+    public Integer getShouldBeFirstIfGetter() {
+        return shouldBeFirstIfGetter;
+    }
+
+    /**
+     * @order 999
+     */
+    public void setShouldBeLastIfSetter(Integer shouldBeLastIfSetter) {
+        this.shouldBeLastIfSetter = shouldBeLastIfSetter;
     }
 }

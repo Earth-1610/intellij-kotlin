@@ -19,7 +19,7 @@ import com.itangcent.intellij.logger.Logger
 import java.util.regex.Pattern
 
 @Singleton
-open class SimpleRuleParser : RuleParser {
+open class SimpleRuleParser : AbstractRuleParser() {
 
     @Inject
     private val annotationHelper: AnnotationHelper? = null
@@ -32,47 +32,82 @@ open class SimpleRuleParser : RuleParser {
 
     @Inject
     private val jvmClassHelper: JvmClassHelper? = null
+    override fun parseAnyRule(rule: String): AnyRule? {
+        if (rule.isBlank()) return null
 
-    private val stringRuleParseCache: HashMap<String, StringRule> = HashMap()
+        val anyRule: AnyRule
+        when {
+            rule.startsWith("!") -> {
+                val inverseRuleStr = rule.substring(1)
+                val inverseRule: BooleanRule = parseBooleanRule(inverseRuleStr) ?: return null
+                anyRule = inverseRule.inverse()
+            }
 
-    private val booleanRuleParseCache: HashMap<String, BooleanRule> = HashMap()
+            rule.startsWith("@") -> {
+                val annStr = rule.substringAfter("@")
+                val annName = annStr.substringBefore("#").trim()
+                val annValue = annStr.substringAfter("#", "value").trim()
+                anyRule = { context ->
+                    context.getResource()?.let { element ->
+                        annotationHelper!!.findAttr(element, annName, annValue)
+                    }
+                }
+            }
+
+            rule.startsWith("#") -> {
+                val tag = rule.substringAfter("#").trim()
+                anyRule = { context ->
+                    docHelper!!.findDocByTag(context.getResource(), tag)
+                }
+            }
+
+            rule.startsWith("~") -> {
+                val suffix = rule.removePrefix("~")
+                anyRule = { it.toString() + suffix }
+            }
+
+            else -> {
+                anyRule = { rule }
+            }
+        }
+
+        return anyRule
+    }
 
     override fun parseStringRule(rule: String): StringRule? {
         if (rule.isBlank()) return null
 
-        if (stringRuleParseCache.containsKey(rule)) {
-            return stringRuleParseCache[rule]
-        }
-
-        val tinyRuleStr = rule.trim()
-
-        val srule: StringRule = when {
-            tinyRuleStr.startsWith("@") -> {
-                val annStr = tinyRuleStr.substringAfter("@")
+        val strRule: StringRule
+        when {
+            rule.startsWith("@") -> {
+                val annStr = rule.substringAfter("@")
                 val annName = annStr.substringBefore("#").trim()
                 val annValue = annStr.substringAfter("#", "value").trim()
-                StringRule.of { context ->
+                strRule = { context ->
                     context.getResource()?.let {
                         annotationHelper!!.findAttrAsString(it, annName, annValue)
                     }
                 }
             }
-            tinyRuleStr.startsWith("#") -> {
-                val tag = tinyRuleStr.substringAfter("#").trim()
-                StringRule.of { context ->
+
+            rule.startsWith("#") -> {
+                val tag = rule.substringAfter("#").trim()
+                strRule = { context ->
                     docHelper!!.findDocByTag(context.getResource(), tag)
                 }
             }
-            tinyRuleStr.startsWith("~") -> {
-                val suffix = tinyRuleStr.removePrefix("~")
-                StringRule.of { it.toString() + suffix }
+
+            rule.startsWith("~") -> {
+                val suffix = rule.removePrefix("~")
+                strRule = { it.toString() + suffix }
             }
-            else -> StringRule.of { tinyRuleStr }
+
+            else -> {
+                strRule = { rule }
+            }
         }
 
-        stringRuleParseCache[rule] = srule
-
-        return srule
+        return strRule
     }
 
     override fun parseBooleanRule(rule: String): BooleanRule? {
@@ -85,68 +120,64 @@ open class SimpleRuleParser : RuleParser {
     }
 
     private fun parseBooleanRule(rule: String, defaultValue: Boolean): BooleanRule? {
-        if (rule.isBlank()) return null
-
-        if (booleanRuleParseCache.containsKey(rule + defaultValue)) {
-            return booleanRuleParseCache[rule + defaultValue]
-        }
-
-        val tinyRuleStr = rule.trim()
-
-        val srule: BooleanRule?
+        val boolRule: BooleanRule?
         when {
-            tinyRuleStr.startsWith("!") -> {
-                val inverseRuleStr = tinyRuleStr.substring(1)
+            rule.startsWith("!") -> {
+                val inverseRuleStr = rule.substring(1)
                 val inverseRule: BooleanRule = parseBooleanRule(inverseRuleStr, !defaultValue) ?: return null
                 return inverseRule.inverse()
             }
-            tinyRuleStr.startsWith("@") -> {
-                val annStr = tinyRuleStr.substringAfter("@")
+
+            rule.startsWith("@") -> {
+                val annStr = rule.substringAfter("@")
                 val annName = annStr.substringBefore("#").trim()
                 val annValue = annStr.substringAfter("#", "").trim()
-                srule = if (annValue.isBlank()) {
-                    BooleanRule.of { context ->
+                boolRule = if (annValue.isBlank()) {
+                    { context ->
                         context.getResource()?.let { annotationHelper!!.hasAnn(it, annName) }
                     }
                 } else {
-                    BooleanRule.of { context ->
+                    { context ->
                         context.getResource()?.let { annotationHelper!!.findAttrAsString(it, annName, annValue) }
                             ?.toBool(defaultValue)
                     }
                 }
             }
-            tinyRuleStr.startsWith("#") -> {
-                val tag = tinyRuleStr.substringAfter("#").trim()
-                srule = BooleanRule.of { context ->
+
+            rule.startsWith("#") -> {
+                val tag = rule.substringAfter("#").trim()
+                boolRule = { context ->
                     docHelper!!.hasTag(context.getResource(), tag)
                 }
             }
-            tinyRuleStr.startsWith("\$class:") -> {
-                val content = tinyRuleStr.removePrefix("\$class:")
+
+            rule.startsWith("\$class:") -> {
+                val content = rule.removePrefix("\$class:")
                 if (content.isEmpty()) {
                     return null
                 }
 
-                srule = if (content.startsWith("? extend")) {
+                boolRule = if (content.startsWith("? extend")) {
                     val extendClass = content.removePrefix("? extend").trim()
                     val extendClassRegex = parseRegexOrConstant(extendClass)
-                    BooleanRule.of { context ->
+                    ({ context ->
                         checkExtend(context.getResource()?.let { findClass(it) }, extendClassRegex)
-                    }
-
+                    })
                 } else {
                     val contentRegex = parseRegexOrConstant(content)
-                    BooleanRule.of { context ->
+                    ({ context ->
                         findClass(context.getResource())?.let { contentRegex(it.qualifiedName) } ?: false
-                    }
+                    })
                 }
             }
-            TRUE_OR_FALSE.contains(tinyRuleStr) -> {
-                srule = BooleanRule.of(tinyRuleStr.toBool())
+
+            TRUE_OR_FALSE.contains(rule.lowercase()) -> {
+                boolRule = { rule.toBool() }
             }
+
             else -> {
                 //default =
-                srule = BooleanRule.of { context ->
+                boolRule = { context ->
                     context.toString() == rule
                             || context.getName() == rule
                             || context.getSimpleName() == rule
@@ -154,9 +185,7 @@ open class SimpleRuleParser : RuleParser {
             }
         }
 
-        booleanRuleParseCache[rule] = srule
-
-        return srule
+        return boolRule
     }
 
     private fun checkExtend(psiClass: PsiClass?, extendClassRegex: (String?) -> Boolean): Boolean {
@@ -234,21 +263,25 @@ open class SimpleRuleParser : RuleParser {
                     else -> CompanionUnknownPsiElementContext(target, target.psi())
                 }
             }
+
             is PsiType -> PsiTypeContext(
                 target,
                 jvmClassHelper!!.resolveClassInType(target)
             )
+
             is DuckType -> {
                 return when (target) {
                     is SingleDuckType -> {
                         DuckTypeContext(target, target.psiClass())
                     }
+
                     is SingleUnresolvedDuckType -> {
                         DuckTypeContext(
                             target,
                             jvmClassHelper!!.resolveClassInType(target.psiType())
                         )
                     }
+
                     else -> {
                         DuckTypeContext(
                             target,
@@ -257,10 +290,12 @@ open class SimpleRuleParser : RuleParser {
                     }
                 }
             }
+
             is String -> StringRuleContext(
                 target,
                 context!!
             )
+
             else -> throw IllegalArgumentException("unable to build context of:$target")
         }
     }

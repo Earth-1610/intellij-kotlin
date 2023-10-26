@@ -1,17 +1,27 @@
 package com.itangcent.intellij.config.rule
 
-interface Rule<T> {
-    fun compute(context: RuleContext): T?
+typealias Rule<T> = (RuleContext) -> T?
 
-    fun filterWith(filter: Rule<Boolean>): Rule<T> {
-        return object : Rule<T> {
-            override fun compute(context: RuleContext): T? {
-                return if (filter.compute(context) == true) {
-                    this.compute(context)
-                } else {
-                    null
-                }
-            }
+fun <T> Rule<T>.filterWith(filter: Rule<Boolean>): Rule<T> {
+    return { context ->
+        if (filter(context) == true) {
+            this@filterWith(context)
+        } else {
+            null
         }
+    }
+}
+
+typealias AnyRule = Rule<Any>
+
+typealias BooleanRule = Rule<Boolean>
+
+typealias StringRule = Rule<String>
+
+typealias EventRule = Rule<Unit>
+fun BooleanRule.inverse(): BooleanRule {
+    val origin = this
+    return { context ->
+        origin(context)?.let { !it }
     }
 }

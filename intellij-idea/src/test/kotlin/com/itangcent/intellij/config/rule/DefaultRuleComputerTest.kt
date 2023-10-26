@@ -175,18 +175,23 @@ var cnt = 0
 internal class RuleParserImpl : SimpleRuleParser() {
 
     override fun parseEventRule(rule: String): EventRule? {
-        return EventRule.of {
-            when (rule) {
-                "ILLEGAL" -> {
-                    throw IllegalArgumentException()
-                }
-                "NPE" -> {
-                    throw NullPointerException()
-                }
-                "COUNT" -> {
-                    ++cnt
-                }
+        return when (rule) {
+            "ILLEGAL" -> {
+                ({ throw IllegalArgumentException() })
             }
+
+            "NPE" -> {
+                ({ throw NullPointerException() })
+            }
+
+            "COUNT" -> {
+                ({
+                    ++cnt
+                    Unit
+                })
+            }
+
+            else -> ({})
         }
     }
 }
