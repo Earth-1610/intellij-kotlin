@@ -145,3 +145,14 @@ fun String.capitalize(): String {
 fun String.decapitalize(): String {
     return this.replaceFirstChar { it.lowercase(Locale.ENGLISH) }
 }
+
+/**
+ * Extension function on String to retrieve the index of the nth occurrence of a specified character.
+ * Returns -1 if the character is not found or if the occurrence number is invalid.
+ */
+fun String.getNthIndex(char: Char, n: Int): Int {
+    return this.asSequence().withIndex()
+        .filter { it.value == char }
+        .drop(n - 1)
+        .firstOrNull()?.index ?: -1
+}
