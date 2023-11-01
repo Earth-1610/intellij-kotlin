@@ -213,7 +213,6 @@ object PsiClassUtils {
         return "anonymous"
     }
 
-
     fun logicalNameOfMember(psiElement: PsiElement): String {
         if (psiElement is PsiMethod) {
             return psiElement.name + "()"
@@ -236,5 +235,10 @@ object PsiClassUtils {
         } else {
             this.substringBefore('.')
         }
+    }
+
+    fun getPackageNameOf(psiClass: PsiClass): String? {
+        val className = psiClass.qualifiedName ?: return null
+        return className.substringBeforeLast('.')
     }
 }

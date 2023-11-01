@@ -197,6 +197,38 @@ class StringKitTest {
         assertEquals("abc", "Abc".decapitalize())
         assertEquals("+++", "+++".decapitalize())
     }
+    @Test
+    fun testGetNthIndex() {
+        // Test case 1: String with multiple occurrences of the target character
+        val str1 = "Hello, World!"
+        val targetChar1 = 'o'
+        val n1 = 2
+        val expectedIndex1 = 8
 
-    private val n = System.getProperty("line.separator")
+        assertEquals(expectedIndex1, str1.getNthIndex(targetChar1, n1))
+
+        // Test case 2: String with no occurrences of the target character
+        val str2 = "Lorem ipsum dolor sit amet"
+        val targetChar2 = 'x'
+        val n2 = 1
+        val expectedIndex2 = -1
+
+        assertEquals(expectedIndex2, str2.getNthIndex(targetChar2, n2))
+
+        // Test case 3: String with only one occurrence of the target character
+        val str3 = "Hello, World!"
+        val targetChar3 = ','
+        val n3 = 2
+        val expectedIndex3 = -1
+
+        assertEquals(expectedIndex3, str3.getNthIndex(targetChar3, n3))
+
+        // Test case 4: Empty string
+        val str4 = ""
+        val targetChar4 = 'a'
+        val n4 = 1
+        val expectedIndex4 = -1
+
+        assertEquals(expectedIndex4, str4.getNthIndex(targetChar4, n4))
+    }
 }

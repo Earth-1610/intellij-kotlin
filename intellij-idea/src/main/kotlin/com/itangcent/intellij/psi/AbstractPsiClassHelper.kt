@@ -97,13 +97,12 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     protected fun getResolveContext(): ResolveContext {
         resolveContext?.let { return it }
         val psiClass = contextSwitchListener.getContext().asPsiClass(jvmClassHelper)
-        val className = psiClass?.qualifiedName
-        val basePackage = if (!className.isNullOrBlank()) {
-            var dotIndex = className.indexOf('.')
-            dotIndex = className.indexOf('.', dotIndex + 1)
-            className.substring(0, dotIndex)
-        } else {
+        val packageName = psiClass?.let { PsiClassUtils.getPackageNameOf(it) } ?: ""
+        val basePackage = if (packageName.isEmpty()) {
             null
+        } else {
+            packageName.getNthIndex('.', 2).takeIf { it != -1 }
+                ?.let { packageName.substring(0, it) } ?: packageName
         }
         val resolveContext = SimpleResolveContext(basePackage, 0, JsonOption.NONE)
         this.resolveContext = resolveContext
