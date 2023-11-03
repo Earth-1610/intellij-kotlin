@@ -3,13 +3,16 @@ package com.itangcent.intellij.jvm.spi
 import com.itangcent.common.logger.ILogger
 import com.itangcent.common.spi.ProxyBean
 import com.itangcent.common.spi.SpiUtils
-import com.itangcent.common.utils.privileged
 import com.itangcent.intellij.context.ActionContext
-import java.lang.reflect.*
+import com.itangcent.intellij.extend.guice.EnhancedInvocationHandler
+import java.lang.reflect.InvocationHandler
+import java.lang.reflect.Method
+import java.lang.reflect.Proxy
 import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
+
 
 class ProxyBuilder {
 
@@ -57,14 +60,19 @@ class ProxyBuilder {
         private var logger: ILogger? = SpiUtils.loadService(ILogger::class)
     }
 
-    fun buildProxy(): Any {
+    fun buildProxy(actionContextBuilder: ActionContext.ActionContextBuilder): Any {
         val delegates: Array<Any?> = Array(delegateBuilders.size) { null }
         for ((index, delegateBuilder) in delegateBuilders.withIndex()) {
             delegates[index] = delegateBuilder.buildInstance(delegates)
         }
+        val interceptors = actionContextBuilder.getInterceptorFor(injectClass.java)
+        var proxyBean: InvocationHandler = ContextProxyBean(delegates.requireNoNulls().reversedArray())
+        if (interceptors.isNotEmpty()) {
+            proxyBean = EnhancedInvocationHandler(proxyBean, interceptors)
+        }
         return Proxy.newProxyInstance(
             injectClass.java.classLoader, arrayOf(injectClass.java),
-            ContextProxyBean(delegates.requireNoNulls().reversedArray())
+            proxyBean
         )
     }
 
@@ -76,12 +84,14 @@ class ProxyBuilder {
         if (!injected) {
             injected = true
             ActionContext.addDefaultInject { actionContextBuilder ->
-                val buildProxy = this.buildProxy()
-                actionContextBuilder.bindInstance(injectClass as KClass<Any>, buildProxy)
+                actionContextBuilder.bindInstanceWith(injectClass as KClass<Any>) {
+                    this@ProxyBuilder.buildProxy(actionContextBuilder)
+                }
             }
         }
     }
 }
+
 
 interface DelegateBuilder {
     fun buildInstance(delegates: Array<Any?>): Any

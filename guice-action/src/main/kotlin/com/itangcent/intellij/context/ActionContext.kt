@@ -21,14 +21,13 @@ import com.itangcent.common.utils.ThreadPoolUtils
 import com.itangcent.common.utils.safe
 import com.itangcent.intellij.CustomInfo
 import com.itangcent.intellij.constant.EventKey
-import com.itangcent.intellij.extend.guice.KotlinModule
-import com.itangcent.intellij.extend.guice.instance
-import com.itangcent.intellij.extend.guice.singleton
+import com.itangcent.intellij.extend.guice.*
 import com.itangcent.intellij.logger.Logger
 import org.aopalliance.intercept.MethodInterceptor
 import org.apache.commons.lang3.concurrent.BasicThreadFactory
 import java.awt.EventQueue
 import java.lang.reflect.Method
+import java.lang.reflect.Proxy
 import java.util.*
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
@@ -824,10 +823,10 @@ class ActionContext {
 
         override fun <T : Any> bind(type: Class<T>, callBack: (LinkedBindingBuilder<T>) -> Unit) {
             moduleActions.removeIf {
-                (it.size == 3 && it[0] == BIND_INSTANCE_WITH_CLASS && it[1] == type) ||
-                        (it.size == 3 && it[0] == BIND && it[1] == type)
+                (it.size == 3 && it[0] == BindAction.BIND_INSTANCE_WITH_CLASS && it[1] == type) ||
+                        (it.size == 3 && it[0] == BindAction.BIND && it[1] == type)
             }
-            moduleActions.add(arrayOf(BIND, type, callBack))
+            moduleActions.add(arrayOf(BindAction.BIND, type, callBack))
         }
 
         override fun <T : Any> bind(
@@ -836,9 +835,9 @@ class ActionContext {
             callBack: (LinkedBindingBuilder<T>) -> Unit
         ) {
             moduleActions.removeIf {
-                it.size == 4 && it[0] == BIND_WITH_ANNOTATION_TYPE && it[1] == type && it[2] == annotationType
+                it.size == 4 && it[0] == BindAction.BIND_WITH_ANNOTATION_TYPE && it[1] == type && it[2] == annotationType
             }
-            moduleActions.add(arrayOf(BIND_WITH_ANNOTATION_TYPE, type, annotationType, callBack))
+            moduleActions.add(arrayOf(BindAction.BIND_WITH_ANNOTATION_TYPE, type, annotationType, callBack))
         }
 
         override fun <T : Any> bind(
@@ -847,23 +846,23 @@ class ActionContext {
             callBack: (LinkedBindingBuilder<T>) -> Unit
         ) {
             moduleActions.removeIf {
-                it.size == 4 && it[0] == BIND_WITH_ANNOTATION && it[1] == type && it[2] == annotation
+                it.size == 4 && it[0] == BindAction.BIND_WITH_ANNOTATION && it[1] == type && it[2] == annotation
             }
-            moduleActions.add(arrayOf(BIND_WITH_ANNOTATION, type, annotation, callBack))
+            moduleActions.add(arrayOf(BindAction.BIND_WITH_ANNOTATION, type, annotation, callBack))
         }
 
         override fun <T : Any> bind(type: Class<T>, namedText: String, callBack: (LinkedBindingBuilder<T>) -> Unit) {
             moduleActions.removeIf {
-                it.size == 4 && it[0] == BIND_WITH_NAME && it[1] == type && it[2] == namedText
+                it.size == 4 && it[0] == BindAction.BIND_WITH_NAME && it[1] == type && it[2] == namedText
             }
-            moduleActions.add(arrayOf(BIND_WITH_NAME, type, namedText, callBack))
+            moduleActions.add(arrayOf(BindAction.BIND_WITH_NAME, type, namedText, callBack))
         }
 
         override fun <T : Any> bindInstance(name: String, instance: T) {
             moduleActions.removeIf {
-                it.size == 3 && it[0] == BIND_INSTANCE_WITH_NAME && it[1] == name
+                it.size == 3 && it[0] == BindAction.BIND_INSTANCE_WITH_NAME && it[1] == name
             }
-            moduleActions.add(arrayOf(BIND_INSTANCE_WITH_NAME, name, instance))
+            moduleActions.add(arrayOf(BindAction.BIND_INSTANCE_WITH_NAME, name, instance))
         }
 
         @Suppress("UNCHECKED_CAST")
@@ -873,10 +872,14 @@ class ActionContext {
 
         override fun <T : Any> bindInstance(cls: Class<T>, instance: T) {
             moduleActions.removeIf {
-                (it.size == 3 && it[0] == BIND_INSTANCE_WITH_CLASS && it[1] == cls) ||
-                        (it.size == 3 && it[0] == BIND && it[1] == cls)
+                (it.size == 3 && it[0] == BindAction.BIND_INSTANCE_WITH_CLASS && it[1] == cls) ||
+                        (it.size == 3 && it[0] == BindAction.BIND && it[1] == cls)
             }
-            moduleActions.add(arrayOf(BIND_INSTANCE_WITH_CLASS, cls, instance))
+            moduleActions.add(arrayOf(BindAction.BIND_INSTANCE_WITH_CLASS, cls, instance))
+        }
+
+        override fun <T : Any> bindInstanceWith(cls: Class<T>, instance: () -> T) {
+            moduleActions.add(arrayOf(BindAction.BIND_INSTANCE_WITH_GENERATOR, cls, instance))
         }
 
         override fun bindInterceptor(
@@ -884,11 +887,11 @@ class ActionContext {
             methodMatcher: Matcher<in Method>,
             vararg interceptors: MethodInterceptor
         ) {
-            moduleActions.add(arrayOf(BIND_INTERCEPTOR, classMatcher, methodMatcher, interceptors))
+            moduleActions.add(arrayOf(BindAction.BIND_INTERCEPTOR, classMatcher, methodMatcher, interceptors))
         }
 
         override fun bindConstant(callBack: (AnnotatedConstantBindingBuilder) -> Unit) {
-            moduleActions.add(arrayOf(BIND_CONSTANT, callBack))
+            moduleActions.add(arrayOf(BindAction.BIND_CONSTANT, callBack))
         }
 
         private val appendModules: MutableList<Module> = LinkedList()
@@ -917,10 +920,19 @@ class ActionContext {
             contextActions.add(action)
         }
 
+        @Suppress("UNCHECKED_CAST")
+        fun getInterceptorFor(injectClass: Class<*>): List<MethodInterceptor> {
+            return moduleActions.asSequence()
+                .filter { it[0] == BindAction.BIND_INTERCEPTOR }
+                .filter { (it[1] as Matcher<in Class<*>>).matches(injectClass) }
+                .map { it[3] as Array<MethodInterceptor> }
+                .flatMap { it.asSequence() }
+                .toList()
+        }
+
         fun build(): ActionContext {
             if (moduleActions.isNotEmpty()) {
-                appendModules.add(ConfiguredModule(ArrayList(moduleActions)))
-                moduleActions.clear()
+                appendModules.add(ConfiguredModule(this, ArrayList(moduleActions)))
             }
 
             val actionContext = ActionContext(*appendModules.toTypedArray())
@@ -932,83 +944,107 @@ class ActionContext {
 
             return actionContext
         }
-
-        companion object {
-            const val BIND_WITH_ANNOTATION_TYPE = "bindWithAnnotationType"
-            const val BIND_WITH_ANNOTATION = "bindWithAnnotation"
-            const val BIND = "bind"
-            const val BIND_WITH_NAME = "bindWithName"
-
-            @Deprecated(
-                message = "instead of bindInstanceWithClass",
-                replaceWith = ReplaceWith("BIND_INSTANCE_WITH_CLASS")
-            )
-            const val BIND_INSTANCE = "bindInstance"
-            const val BIND_INSTANCE_WITH_CLASS = "bindInstanceWithClass"
-            const val BIND_INSTANCE_WITH_NAME = "bindInstanceWithName"
-            const val BIND_INTERCEPTOR = "bindInterceptor"
-            const val BIND_CONSTANT = "bindConstant"
-        }
     }
 
-    class ConfiguredModule(private val moduleActions: MutableList<Array<Any>> = ArrayList()) : KotlinModule() {
+    enum class BindAction(val key: String) {
+        BIND_WITH_ANNOTATION_TYPE("bindWithAnnotationType"),
+        BIND_WITH_ANNOTATION("bindWithAnnotation"),
+        BIND("bind"),
+        BIND_WITH_NAME("bindWithName"),
+        BIND_INSTANCE("bindInstance"),
+        BIND_INSTANCE_WITH_CLASS("bindInstanceWithClass"),
+        BIND_INSTANCE_WITH_GENERATOR("bindInstanceWithGenerator"),
+        BIND_INSTANCE_WITH_NAME("bindInstanceWithName"),
+        BIND_INTERCEPTOR("bindInterceptor"),
+        BIND_CONSTANT("bindConstant")
+    }
+
+    class ConfiguredModule(
+        private val actionContextBuilder: ActionContextBuilder,
+        private val moduleActions: MutableList<Array<Any>> = ArrayList()
+    ) : KotlinModule() {
 
         @Suppress("UNCHECKED_CAST")
         override fun configure() {
             super.configure()
-            for (moduleAction in moduleActions) {
-                when (moduleAction[0]) {
-                    ActionContextBuilder.BIND_WITH_ANNOTATION_TYPE -> {
-                        (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit))(
-                            bind(moduleAction[1] as Class<*>, moduleAction[2] as Class<Annotation>)
-                        )
-                    }
+            moduleActions.asSequence()
+                .sortedBy { (it[0] as BindAction).ordinal }
+                .forEach { moduleAction ->
+                    when (moduleAction[0]) {
+                        BindAction.BIND_WITH_ANNOTATION_TYPE -> {
+                            (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit))(
+                                bind(moduleAction[1] as Class<*>, moduleAction[2] as Class<Annotation>)
+                            )
+                        }
 
-                    ActionContextBuilder.BIND_WITH_ANNOTATION -> {
-                        (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit))(
-                            bind(moduleAction[1] as Class<*>, moduleAction[2] as Annotation)
-                        )
-                    }
+                        BindAction.BIND_WITH_ANNOTATION -> {
+                            (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit))(
+                                bind(moduleAction[1] as Class<*>, moduleAction[2] as Annotation)
+                            )
+                        }
 
-                    ActionContextBuilder.BIND_WITH_NAME -> {
-                        (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit))(
-                            bind(moduleAction[1] as Class<*>, moduleAction[2] as String)
-                        )
-                    }
+                        BindAction.BIND_WITH_NAME -> {
+                            (moduleAction[3] as ((LinkedBindingBuilder<*>) -> Unit))(
+                                bind(moduleAction[1] as Class<*>, moduleAction[2] as String)
+                            )
+                        }
 
-                    ActionContextBuilder.BIND_INSTANCE_WITH_NAME -> {
-                        bindInstance(moduleAction[1] as String, moduleAction[2])
-                    }
+                        BindAction.BIND_INSTANCE_WITH_NAME -> {
+                            bindInstance(moduleAction[1] as String, moduleAction[2])
+                        }
 
-                    ActionContextBuilder.BIND_INSTANCE -> {
-                        bindInstance(moduleAction[1])
-                    }
+                        BindAction.BIND_INSTANCE -> {
+                            bindInstance(moduleAction[1])
+                        }
 
-                    ActionContextBuilder.BIND_INSTANCE_WITH_CLASS -> {
-                        bindInstance(moduleAction[1] as Class<Any>, moduleAction[2])
-                    }
+                        BindAction.BIND_INSTANCE_WITH_CLASS -> {
+                            val injectClass = moduleAction[1] as Class<Any>
+                            val instance = moduleAction[2]
+                            bindInstance(injectClass, processBean(injectClass, instance))
+                        }
 
-                    ActionContextBuilder.BIND -> {
-                        (moduleAction[2] as ((LinkedBindingBuilder<*>) -> Unit))(
-                            bind(moduleAction[1] as Class<*>)
-                        )
-                    }
+                        BindAction.BIND_INSTANCE_WITH_GENERATOR -> {
+                            val injectClass = moduleAction[1] as Class<Any>
+                            val instance = (moduleAction[2] as () -> Any).invoke()
+                            bindInstance(injectClass, processBean(injectClass, instance))
+                        }
 
-                    ActionContextBuilder.BIND_INTERCEPTOR -> {
-                        bindInterceptor(
-                            moduleAction[1] as Matcher<in Class<*>>?,
-                            moduleAction[2] as Matcher<in Method>?,
-                            moduleAction[3] as MethodInterceptor?
-                        )
-                    }
+                        BindAction.BIND -> {
+                            (moduleAction[2] as ((LinkedBindingBuilder<*>) -> Unit))(
+                                bind(moduleAction[1] as Class<*>)
+                            )
+                        }
 
-                    ActionContextBuilder.BIND_CONSTANT -> {
-                        (moduleAction[1] as ((AnnotatedConstantBindingBuilder) -> Unit)).invoke(
-                            bindConstant()
-                        )
+                        BindAction.BIND_INTERCEPTOR -> {
+                            bindInterceptor(
+                                moduleAction[1] as Matcher<in Class<*>>?,
+                                moduleAction[2] as Matcher<in Method>?,
+                                *(moduleAction[3] as Array<MethodInterceptor>)
+                            )
+                        }
+
+                        BindAction.BIND_CONSTANT -> {
+                            (moduleAction[1] as ((AnnotatedConstantBindingBuilder) -> Unit)).invoke(
+                                bindConstant()
+                            )
+                        }
                     }
                 }
+        }
+
+        private fun processBean(injectClass: Class<Any>, bean: Any): Any {
+            if (Proxy.isProxyClass(bean.javaClass)) {
+                return bean
             }
+            val interceptors = this.actionContextBuilder.getInterceptorFor(injectClass)
+            if (interceptors.isEmpty()) {
+                return bean
+            }
+            return Proxy.newProxyInstance(
+                injectClass.classLoader,
+                arrayOf(injectClass),
+                EnhancedInvocationHandler(DelegateInvocationHandler(bean), interceptors)
+            )
         }
     }
 
@@ -1089,7 +1125,13 @@ class ActionContext {
             bindInstance(cls.java, instance)
         }
 
+        fun <T : Any> bindInstanceWith(cls: KClass<T>, instance: () -> T) {
+            bindInstanceWith(cls.java, instance)
+        }
+
         fun <T : Any> bindInstance(cls: Class<T>, instance: T)
+
+        fun <T : Any> bindInstanceWith(cls: Class<T>, instance: () -> T)
 
         fun cache(name: String, bean: Any?)
 
