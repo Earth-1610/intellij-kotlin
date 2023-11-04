@@ -9,7 +9,6 @@ import java.io.File
 
 object ModuleAdaptor : Log() {
 
-    @Suppress("UNCHECKED_CAST")
     private val MODULE_FILE_PATH_GETTER: ModuleFilePathGetter by lazy {
         val getters = ArrayList<ModuleFilePathGetter>()
         try {
