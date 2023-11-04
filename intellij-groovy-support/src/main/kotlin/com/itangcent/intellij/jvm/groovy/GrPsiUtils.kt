@@ -12,4 +12,13 @@ object GrPsiUtils {
     fun isGrPsiInst(any: Any): Boolean {
         return any::class.qualifiedName?.contains("groovy") ?: false
     }
+
+    /**
+     * Assert that the bean is an instance of class that in groovy-plugin
+     */
+    fun assertGrPsiInst(any: Any) {
+        if (!isGrPsiInst(any)) {
+            throw NotImplementedError()
+        }
+    }
 }

@@ -18,6 +18,15 @@ object KtPsiUtils {
         return any::class.qualifiedName?.contains("kotlin") ?: false
     }
 
+    /**
+     * Assert that the bean is an instance of class that in kotlin-plugin
+     */
+    fun assertKtPsiInst(any: Any) {
+        if (!isKtPsiInst(any)) {
+            throw NotImplementedError()
+        }
+    }
+
     fun ktClassToPsiClass(ktClass: KtClass): PsiClass {
         return KtLightClassForSourceDeclaration.create(ktClass, JvmDefaultMode.ALL_COMPATIBILITY)!!
     }

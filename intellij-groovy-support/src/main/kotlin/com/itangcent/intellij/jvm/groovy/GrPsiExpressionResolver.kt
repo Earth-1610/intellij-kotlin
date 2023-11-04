@@ -17,9 +17,7 @@ class GrPsiExpressionResolver : PsiExpressionResolver {
     private val psiExpressionResolver: PsiExpressionResolver = ActionContext.local()
 
     override fun process(psiElement: PsiElement): Any? {
-        if (!GrPsiUtils.isGrPsiInst(psiElement)) {
-            throw NotImplementedError()
-        }
+        GrPsiUtils.assertGrPsiInst(psiElement)
 
         return doProcess(psiElement).also {
             LOG.debug(
@@ -30,9 +28,7 @@ class GrPsiExpressionResolver : PsiExpressionResolver {
     }
 
     override fun process(psiExpression: PsiExpression): Any? {
-        if (!GrPsiUtils.isGrPsiInst(psiExpression)) {
-            throw NotImplementedError()
-        }
+        GrPsiUtils.assertGrPsiInst(psiExpression)
 
         return doProcess(psiExpression).also {
             LOG.debug(
@@ -51,19 +47,18 @@ class GrPsiExpressionResolver : PsiExpressionResolver {
                 }
             }
         }
-        throw NotImplementedError("not implemented")
+        throw NotImplementedError()
     }
 
     override fun processStaticField(psiField: PsiField): Any? {
-        TODO("Not yet implemented")
+        throw NotImplementedError()
     }
 
     override fun <T : Any> registerExpressionResolver(cls: KClass<T>, handle: (T) -> Any?) {
-        TODO("Not yet implemented")
+        throw NotImplementedError()
     }
 
     override fun <T : Any> registerExpressionResolver(predicate: (Any) -> Boolean, handle: (T) -> Any?) {
-        TODO("Not yet implemented")
+        throw NotImplementedError()
     }
-
 }

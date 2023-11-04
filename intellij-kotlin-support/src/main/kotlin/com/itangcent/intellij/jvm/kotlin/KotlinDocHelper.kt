@@ -28,9 +28,7 @@ class KotlinDocHelper : StandardDocHelper() {
     private val actionContext: ActionContext? = null
 
     override fun getEolComment(psiElement: PsiElement): String? {
-        if (!KtPsiUtils.isKtPsiInst(psiElement)) {
-            throw NotImplementedError()
-        }
+        KtPsiUtils.assertKtPsiInst(psiElement)
 
         //text maybe null
         val text = psiElement.text?.trim() ?: return null
@@ -61,9 +59,7 @@ class KotlinDocHelper : StandardDocHelper() {
     }
 
     override fun getDocCommentContent(docComment: PsiDocComment): String? {
-        if (!KtPsiUtils.isKtPsiInst(docComment)) {
-            throw NotImplementedError()
-        }
+        KtPsiUtils.assertKtPsiInst(docComment)
 
         return super.getDocCommentContent(docComment)
     }
@@ -74,9 +70,7 @@ class KotlinDocHelper : StandardDocHelper() {
             return false
         }
 
-        if (!KtPsiUtils.isKtPsiInst(psiElement)) {
-            return false
-        }
+        KtPsiUtils.assertKtPsiInst(psiElement)
 
         val kDoc = findKDoc(psiElement)
         if (kDoc != null) {
@@ -107,9 +101,7 @@ class KotlinDocHelper : StandardDocHelper() {
             return null
         }
 
-        if (!KtPsiUtils.isKtPsiInst(psiElement)) {
-            return null
-        }
+        KtPsiUtils.assertKtPsiInst(psiElement)
 
         val kDoc = findKDoc(psiElement)
         if (kDoc != null) {
@@ -141,9 +133,7 @@ class KotlinDocHelper : StandardDocHelper() {
             return null
         }
 
-        if (!KtPsiUtils.isKtPsiInst(psiElement)) {
-            return null
-        }
+        KtPsiUtils.assertKtPsiInst(psiElement)
 
         val kDoc = findKDoc(psiElement)
         if (kDoc != null) {
@@ -166,9 +156,7 @@ class KotlinDocHelper : StandardDocHelper() {
             return null
         }
 
-        if (!KtPsiUtils.isKtPsiInst(psiElement)) {
-            return null
-        }
+        KtPsiUtils.assertKtPsiInst(psiElement)
 
         val kDoc = findKDoc(psiElement)
         if (kDoc != null) {
@@ -201,9 +189,7 @@ class KotlinDocHelper : StandardDocHelper() {
             return null
         }
 
-        if (!KtPsiUtils.isKtPsiInst(psiElement)) {
-            return null
-        }
+        KtPsiUtils.assertKtPsiInst(psiElement)
 
         val kDoc = findKDoc(psiElement)
         if (kDoc != null) {
@@ -221,9 +207,7 @@ class KotlinDocHelper : StandardDocHelper() {
             return Collections.emptyMap()
         }
 
-        if (!KtPsiUtils.isKtPsiInst(psiElement)) {
-            return emptyMap()
-        }
+        KtPsiUtils.assertKtPsiInst(psiElement)
 
         val kDoc = findKDoc(psiElement)
 
@@ -248,9 +232,7 @@ class KotlinDocHelper : StandardDocHelper() {
             return Collections.emptyMap()
         }
 
-        if (!KtPsiUtils.isKtPsiInst(psiElement)) {
-            return emptyMap()
-        }
+        KtPsiUtils.assertKtPsiInst(psiElement)
 
         val kDoc = findKDoc(psiElement)
         if (kDoc != null) {
@@ -309,10 +291,7 @@ class KotlinDocHelper : StandardDocHelper() {
     }
 
     override fun getAttrOfField(field: PsiField): String? {
-
-        if (!KtPsiUtils.isKtPsiInst(field)) {
-            throw NotImplementedError()
-        }
+        KtPsiUtils.assertKtPsiInst(field)
 
         val containingClass = field.containingClass ?: return super.getAttrOfField(field)
         val attrFromPropertyTag = containingClass.constructors.firstNotNullOfOrNull {
