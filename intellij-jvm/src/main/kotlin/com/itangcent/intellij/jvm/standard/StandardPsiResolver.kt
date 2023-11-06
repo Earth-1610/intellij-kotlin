@@ -216,7 +216,7 @@ open class StandardPsiResolver : PsiResolver {
         if (clsName.contains(".")) {
             val outClassName = clsName.substringBefore('.')
             val outClass = resolveClassFromImport(psiClass, outClassName) ?: return null
-            return findClass(outClass.qualifiedName!! + "." + clsName.substringAfter('.'), psiClass)
+            return resolveClassOrType(outClass.qualifiedName!! + "." + clsName.substringAfter('.'), psiClass)
         }
 
         return null
@@ -250,10 +250,11 @@ open class StandardPsiResolver : PsiResolver {
             ?.let { return it to null }
 
         val resolveReference = getContainingClass(context)?.let { resolveReferenceFromClass(it, linkClassName) }
+            ?: return null
         if (resolveReference is PsiElement) {
             getContainingClass(resolveReference)?.let { return it to resolveReference }
         }
-        return null
+        return resolveReference to null
     }
 
     override fun resolvePropertyOrMethodOfClass(psiClass: PsiClass, propertyOrMethod: String): PsiElement? {
