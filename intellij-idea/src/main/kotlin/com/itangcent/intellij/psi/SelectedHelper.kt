@@ -72,6 +72,7 @@ object SelectedHelper {
             //try to process navigatables
             if (!navigatables.isNullOrEmpty()) {
                 onNavigatables(navigatables)
+                return
             }
 
             //try to get navigatable
