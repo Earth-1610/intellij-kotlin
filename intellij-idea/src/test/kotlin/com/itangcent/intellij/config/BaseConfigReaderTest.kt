@@ -7,9 +7,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 /**
- * Test case of [AbstractConfigReader]
+ * Test case of [BaseConfigReader]
  */
-internal class AbstractConfigReaderTest : AdvancedContextTest() {
+internal class BaseConfigReaderTest : AdvancedContextTest() {
 
     @Inject
     private lateinit var configReader: ConfigReader

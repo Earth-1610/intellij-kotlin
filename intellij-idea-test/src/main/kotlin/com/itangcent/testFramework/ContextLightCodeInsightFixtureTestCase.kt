@@ -16,7 +16,7 @@ import com.itangcent.common.logger.Log
 import com.itangcent.common.spi.Setup
 import com.itangcent.common.utils.ResourceUtils
 import com.itangcent.common.utils.forceDelete
-import com.itangcent.intellij.config.AbstractConfigReader
+import com.itangcent.intellij.config.BaseConfigReader
 import com.itangcent.intellij.config.ConfigReader
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.PostConstruct
@@ -258,15 +258,11 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightJavaCodeInsightFixt
         }
     }
 
-    private inner class ConfigReaderAdaptor(val config: String) : AbstractConfigReader() {
+    private inner class ConfigReaderAdaptor(val config: String) : BaseConfigReader() {
 
         @PostConstruct
         fun init() {
             loadConfigInfoContent(config, "properties")
-        }
-
-        override fun findConfigFiles(): List<String>? {
-            return null
         }
     }
 
