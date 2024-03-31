@@ -12,7 +12,7 @@ import com.itangcent.intellij.tip.TipsHelper
 import org.yaml.snakeyaml.Yaml
 import java.util.regex.Pattern
 
-abstract class AbstractConfigReader : MutableConfigReader {
+abstract class BaseConfigReader : MutableConfigReader {
 
     protected var configInfo: MultiValuesMap<String, String> =
         MultiValuesMap()
@@ -33,15 +33,6 @@ abstract class AbstractConfigReader : MutableConfigReader {
     private var ignoreNotFoundFile: Boolean = false
 
     private var resolveMulti: ResolveMultiType = ResolveMultiType.FIRST
-
-    fun loadConfigInfo() {
-//        if (configInfo.isNotEmpty()) return
-
-        val configFiles = findConfigFiles() ?: return
-        configFiles.forEach { path ->
-            loadConfigFile(path)
-        }
-    }
 
     override fun reset() {
         configInfo = MultiValuesMap()
@@ -143,8 +134,6 @@ abstract class AbstractConfigReader : MutableConfigReader {
         logger.warn("unknown comment setting:$setting")
 
     }
-
-    protected abstract fun findConfigFiles(): List<String>?
 
     override fun resolveProperty(property: String): String {
         if (!resolveProperty) {
@@ -408,3 +397,6 @@ enum class ResolveMultiType {
      */
     SHORTEST
 }
+
+@Deprecated("use BaseConfigReader instead")
+typealias AbstractConfigReader = BaseConfigReader

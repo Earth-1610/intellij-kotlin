@@ -6,7 +6,8 @@ import com.itangcent.intellij.psi.ContextSwitchListener
 import com.itangcent.intellij.util.ActionUtils
 import java.io.File
 
-abstract class PathSearchConfigReader : AbstractConfigReader() {
+@Deprecated(message = "use BaseConfigReader/FileHelper instead")
+abstract class PathSearchConfigReader : BaseConfigReader() {
 
     @Inject
     protected val contextSwitchListener: ContextSwitchListener? = null

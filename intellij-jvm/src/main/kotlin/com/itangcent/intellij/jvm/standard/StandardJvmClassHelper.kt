@@ -587,7 +587,6 @@ open class StandardJvmClassHelper : JvmClassHelper {
             return modifies.any { modifierList.hasModifierProperty(it) }
         }
 
-
         fun hasAllModify(modifierListOwner: PsiModifierListOwner, modifies: Set<String>): Boolean {
             val modifierList = modifierListOwner.modifierList ?: return false
             return modifies.all { modifierList.hasModifierProperty(it) }

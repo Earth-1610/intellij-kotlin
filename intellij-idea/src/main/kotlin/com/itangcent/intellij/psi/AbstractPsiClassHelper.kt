@@ -46,7 +46,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     protected val devEnv: DevEnv? = null
 
     @Inject
-    protected val duckTypeHelper: DuckTypeHelper? = null
+    protected lateinit var duckTypeHelper: DuckTypeHelper
 
     @Inject
     protected lateinit var actionContext: ActionContext
@@ -229,7 +229,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             else -> {
                 val typeCanonicalText = castTo.canonicalText
                 if (typeCanonicalText.contains('<') && typeCanonicalText.endsWith('>')) {
-                    val duckType = duckTypeHelper!!.resolve(castTo, context)
+                    val duckType = duckTypeHelper.resolve(castTo, context)
                     return when {
                         duckType != null -> {
                             val result = doGetTypeObject(duckType, context, resolveContext)
@@ -364,7 +364,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
 
         beforeParseClass(resourcePsiClass, resolveContext, fields)
 
-        val explicitClass = duckTypeHelper!!.explicit(resourcePsiClass)
+        val explicitClass = duckTypeHelper.explicit(resourcePsiClass)
         collectFields(explicitClass, resolveContext.option).forEach { accessibleField ->
             if (!beforeParseField(
                     accessibleField,
@@ -454,7 +454,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             jvmClassHelper.isMap(duckType) -> {
                 resolveContext.incrementElement()
 
-                val typeOfCls = duckTypeHelper!!.buildPsiType(duckType, context)
+                val typeOfCls = duckTypeHelper.buildPsiType(duckType, context)
 
                 //map type
                 val map: HashMap<Any, Any?> = HashMap()
@@ -563,7 +563,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         cacheResolvedInfo(cacheKey, objectHolder)
         beforeParseType(psiClass, clsWithParam, resolveContext, fields)
 
-        val explicitClass = duckTypeHelper!!.explicit(getResourceType(clsWithParam))
+        val explicitClass = duckTypeHelper.explicit(getResourceType(clsWithParam))
         collectFields(explicitClass, resolveContext.option).forEach { accessibleField ->
             if (!beforeParseField(
                     accessibleField,
@@ -683,10 +683,10 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                         if (index >= parameters.size) {
                             return null
                         }
-                        return duckTypeHelper!!.ensureType(parameters[index])
+                        return duckTypeHelper.ensureType(parameters[index])
                     }
                 }
-                return parameters.firstOrNull()?.let { duckTypeHelper!!.ensureType(it) }
+                return parameters.firstOrNull()?.let { duckTypeHelper.ensureType(it) }
             }
         }
         return null
@@ -744,7 +744,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         } else {
             clsName = classNameWithProperty.trim()
         }
-        val cls = duckTypeHelper!!.resolveClass(clsName, context)?.let { getResourceClass(it) }
+        val cls = duckTypeHelper.resolveClass(clsName, context)?.let { getResourceClass(it) }
         if (cls == null) {
             devEnv?.dev {
                 logger.debug("failed resolve $classNameWithProperty")
@@ -765,96 +765,122 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         val options: ArrayList<HashMap<String, Any?>> = ArrayList()
 
         if (jvmClassHelper.isEnum(cls)) {
-            val enumConstants = parseEnumConstant(cls)
-
-            var valProperty = property.trimToNull() ?: defaultPropertyName
-            if (valProperty.maybeGetterMethodPropertyName()) {
-                val candidateProperty = valProperty.getterPropertyName()
-                if (valProperty != candidateProperty) {
-                    val allFields = jvmClassHelper.getAllFields(cls)
-                    if (!allFields.any { it.name == valProperty }
-                        && allFields.any { it.name == candidateProperty }
-                    ) {
-                        valProperty = candidateProperty
-                    }
-                }
-            }
-
-            if (valProperty.isNotBlank()) {
-                findConstantsByProperty(enumConstants, valProperty, options)
-            }
-
-            if (options.isEmpty() && property.isNullOrBlank()) {
-                val customFieldName = ruleComputer.computer(ClassRuleKeys.ENUM_USE_CUSTOM, cls)
-                if (!customFieldName.isNullOrBlank()) {
-                    findConstantsByProperty(enumConstants, customFieldName, options)
-                } else if (ruleComputer.computer(ClassRuleKeys.ENUM_USE_BY_TYPE, cls) == true) {
-                    val appropriateProperty = findAppropriateProperty(context, cls)
-                    if (appropriateProperty.isNullOrBlank()) {
-                        logger.warn(
-                            "can not resolve ${cls.qualifiedName} for ${
-                                PsiClassUtils.qualifiedNameOfMember(
-                                    context
-                                )
-                            }"
-                        )
-                    } else {
-                        devEnv?.dev {
-                            logger.debug(
-                                "select $appropriateProperty in ${cls.qualifiedName} for ${
-                                    PsiClassUtils.qualifiedNameOfMember(
-                                        context
-                                    )
-                                }"
-                            )
-                        }
-                        findConstantsByProperty(enumConstants, appropriateProperty, options)
-                    }
-                } else if (ruleComputer.computer(ClassRuleKeys.ENUM_USE_ORDINAL, cls) == true) {
-                    findConstantsByProperty(enumConstants, "ordinal()", options)
-                    valueTypeHandle?.let { it(duckTypeHelper!!.resolve("java.lang.Integer", context)!!) }
-                } else if (ruleComputer.computer(ClassRuleKeys.ENUM_USE_NAME, cls) != false) {
-                    findConstantsByProperty(enumConstants, "name()", options)
-                    valueTypeHandle?.let { it(duckTypeHelper!!.resolve("java.lang.String", context)!!) }
-                }
-            }
+            resolveEnum(context, cls, property, defaultPropertyName, valueTypeHandle, options)
         } else {
-            val constants = parseStaticFields(cls)
-            if (property.notNullOrBlank()) {
-                for (constant in constants) {
-                    val name = constant["name"] as String
-
-                    if (name != property) continue
-                    val mappedVal = constant["value"]
-                    val desc = constant["desc"] ?: constant["name"]
-
-                    options.add(
-                        linkedMapOf(
-                            "value" to mappedVal,
-                            "desc" to desc
-                        )
-                    )
-                    break
-                }
-
-                if (options.isNotEmpty()) {
-                    return options
-                }
-            } else {
-                for (constant in constants) {
-                    val mappedVal = constant["value"]
-                    val desc = constant["desc"] ?: constant["name"]
-                    options.add(
-                        linkedMapOf(
-                            "value" to mappedVal,
-                            "desc" to desc
-                        )
-                    )
-                }
-            }
+            resolveConstant(cls, property, options)
 
         }
         return options
+    }
+
+    private fun resolveEnum(
+        context: PsiElement,
+        cls: PsiClass,
+        property: String?,
+        defaultPropertyName: String,
+        valueTypeHandle: ((DuckType) -> Unit)?,
+        options: ArrayList<HashMap<String, Any?>>
+    ) {
+        val enumConstants = parseEnumConstant(cls)
+
+        var valProperty = property.trimToNull() ?: defaultPropertyName
+        if (valProperty.maybeGetterMethodPropertyName()) {
+            val candidateProperty = valProperty.getterPropertyName()
+            if (valProperty != candidateProperty) {
+                val allFields = jvmClassHelper.getAllFields(cls)
+                if (!allFields.any { it.name == valProperty }
+                    && allFields.any { it.name == candidateProperty }
+                ) {
+                    valProperty = candidateProperty
+                }
+            }
+        }
+
+        if (valProperty.isNotBlank()) {
+            findConstantsByProperty(enumConstants, valProperty, options)
+            if (options.isNotEmpty()) return
+        }
+
+        if (property.isNullOrBlank()) {
+            val customFieldName = ruleComputer.computer(ClassRuleKeys.ENUM_USE_CUSTOM, cls)
+            if (!customFieldName.isNullOrBlank()) {
+                findConstantsByProperty(enumConstants, customFieldName, options)
+                if (options.isNotEmpty()) {
+                    jvmClassHelper.getField(cls, customFieldName)?.let { appropriateField ->
+                        valueTypeHandle?.invoke(duckTypeHelper.resolve(appropriateField.type, appropriateField)!!)
+                    }
+                    return
+                }
+            }
+        }
+
+        if (ruleComputer.computer(ClassRuleKeys.ENUM_USE_BY_TYPE, cls) == true) {
+            val appropriateProperty = findAppropriateProperty(context, cls)
+            if (appropriateProperty.isNullOrBlank()) {
+                logger.warn(
+                    "can not resolve ${cls.qualifiedName} for ${
+                        PsiClassUtils.qualifiedNameOfMember(
+                            context
+                        )
+                    }"
+                )
+            } else {
+                devEnv?.dev {
+                    logger.debug(
+                        "select $appropriateProperty in ${cls.qualifiedName} for ${
+                            PsiClassUtils.qualifiedNameOfMember(
+                                context
+                            )
+                        }"
+                    )
+                }
+                findConstantsByProperty(enumConstants, appropriateProperty, options)
+                if (options.isNotEmpty()) {
+                    jvmClassHelper.getField(cls, appropriateProperty)?.let { appropriateField ->
+                        valueTypeHandle?.invoke(duckTypeHelper.resolve(appropriateField.type, appropriateField)!!)
+                    }
+                    return
+                }
+            }
+        }
+
+        if (ruleComputer.computer(ClassRuleKeys.ENUM_USE_ORDINAL, cls) == true) {
+            findConstantsByProperty(enumConstants, "ordinal()", options)
+            valueTypeHandle?.let { it(duckTypeHelper.resolve("java.lang.Integer", context)!!) }
+            return
+        }
+
+        if (ruleComputer.computer(ClassRuleKeys.ENUM_USE_NAME, cls) != false) {
+            findConstantsByProperty(enumConstants, "name()", options)
+            valueTypeHandle?.let { it(duckTypeHelper.resolve("java.lang.String", context)!!) }
+        }
+    }
+
+
+    private fun resolveConstant(
+        cls: PsiClass,
+        property: String?,
+        options: ArrayList<HashMap<String, Any?>>
+    ) {
+        var constants = parseStaticFields(cls)
+        if (property.notNullOrBlank()) {
+            constants = constants.filter { it["name"] == property }
+        }
+        for (constant in constants) {
+            options.add(constantToOption(constant))
+        }
+    }
+
+    private fun constantToOption(
+        constant: Map<String, Any?>
+    ): LinkedHashMap<String, Any?> {
+        val mappedVal = constant["value"]
+        val desc = constant["desc"] ?: constant["name"]
+
+        return linkedMapOf(
+            "value" to mappedVal,
+            "desc" to desc
+        )
     }
 
     private fun findAppropriateProperty(
@@ -897,12 +923,12 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         valProperty: String,
         options: ArrayList<HashMap<String, Any?>>
     ) {
-        loop@ for (enumConstant in enumConstants) {
+        for (enumConstant in enumConstants) {
             val mappedVal: Any = when (valProperty) {
                 "name()" -> enumConstant["name"]!!
                 "ordinal()" -> enumConstant["ordinal"]!!
                 else -> (enumConstant["params"] as? HashMap<String, Any?>?)
-                    ?.get(valProperty) ?: continue@loop
+                    ?.get(valProperty) ?: continue
             }
 
             var desc = enumConstant["desc"]

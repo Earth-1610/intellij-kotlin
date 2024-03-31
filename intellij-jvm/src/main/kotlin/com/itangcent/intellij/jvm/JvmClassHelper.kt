@@ -211,3 +211,7 @@ fun Any?.asPsiClass(jvmClassHelper: JvmClassHelper): PsiClass? {
 fun JvmClassHelper.isAccepted(psiType: PsiType, anotherType: PsiType): Boolean {
     return psiType == anotherType || this.isAccepted(psiType.canonicalText, anotherType.canonicalText)
 }
+
+fun JvmClassHelper.getField(psiClass: PsiClass, fieldName: String): PsiField? {
+    return getAllFields(psiClass).firstOrNull { it.name == fieldName }
+}

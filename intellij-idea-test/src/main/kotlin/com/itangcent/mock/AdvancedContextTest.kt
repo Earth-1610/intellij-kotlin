@@ -2,7 +2,7 @@ package com.itangcent.mock
 
 import com.itangcent.common.spi.Setup
 import com.itangcent.common.utils.FileUtils
-import com.itangcent.intellij.config.AbstractConfigReader
+import com.itangcent.intellij.config.BaseConfigReader
 import com.itangcent.intellij.config.ConfigReader
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.extend.guice.PostConstruct
@@ -59,19 +59,15 @@ abstract class AdvancedContextTest : BaseContextTest() {
         }
     }
 
-    private inner class ConfigReaderAdaptor(val config: String) : AbstractConfigReader() {
+    private inner class ConfigReaderAdaptor(val config: String) : BaseConfigReader() {
 
         @PostConstruct
         fun init() {
             loadConfigInfoContent(config, "properties")
         }
-
-        override fun findConfigFiles(): List<String>? {
-            return null
-        }
     }
 
-    protected val n = System.getProperty("line.separator")
+    protected val n = System.lineSeparator()
     protected val s = File.separator
 
     @AfterEach
