@@ -4,8 +4,8 @@ import com.intellij.ide.projectView.impl.nodes.ClassTreeNode
 import com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.project.Project
+import com.intellij.pom.Navigatable
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
 import com.itangcent.common.logger.Log
@@ -13,6 +13,8 @@ import com.itangcent.common.logger.traceWarn
 import com.itangcent.common.utils.cast
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.jvm.PsiResolver
+import com.itangcent.intellij.psi.DataContextProvider
+import com.itangcent.intellij.psi.SelectedContext
 import org.apache.commons.lang.StringUtils
 import java.io.File
 import kotlin.reflect.KClass
@@ -22,40 +24,40 @@ import kotlin.reflect.KClass
  */
 object ActionUtils : Log() {
 
+    @Suppress("UNCHECKED_CAST")
     fun findCurrentPath(): String? {
         val actionContext = ActionContext.getContext()!!
-        val psiFile = actionContext.cacheOrCompute(CommonDataKeys.PSI_FILE.name) {
-            actionContext.callInReadUI { actionContext.instance(DataContext::class).getData(CommonDataKeys.PSI_FILE) }
-        }
-        if (psiFile != null) return findCurrentPath(psiFile)
+        val selectedContext = actionContext.instance(SelectedContext::class).selected()
+        if (selectedContext != null) {
+            val (type, target) = selectedContext
+            when (type) {
+                CommonDataKeys.PSI_FILE -> {
+                    return findCurrentPath(target as PsiFile)
+                }
 
-        val navigatable = actionContext.cacheOrCompute(CommonDataKeys.NAVIGATABLE.name) {
-            actionContext.callInReadUI {
-                actionContext.instance(DataContext::class).getData(CommonDataKeys.NAVIGATABLE)
-            }
-        }
-        if (navigatable != null && navigatable is PsiDirectory) {//select dir
-            return findCurrentPath(navigatable)
-        }
-
-        val navigatables = actionContext.cacheOrCompute(CommonDataKeys.NAVIGATABLE_ARRAY.name) {
-            actionContext.callInReadUI {
-                actionContext.instance(DataContext::class).getData(CommonDataKeys.NAVIGATABLE_ARRAY)
-            }
-        }
-        if (navigatables != null) {//select mult dir
-            for (node in navigatables) {
-                when (navigatable) {
-                    is PsiDirectory -> {//select dir
-                        return findCurrentPath(navigatable)
+                CommonDataKeys.NAVIGATABLE -> {
+                    //select dir
+                    if (target != null && target is PsiDirectory) {
+                        return findCurrentPath(target)
                     }
+                }
 
-                    is ClassTreeNode -> {
-                        return findCurrentPath(navigatable.psiClass.containingFile)
-                    }
+                CommonDataKeys.NAVIGATABLE_ARRAY -> {
+                    val navigatables = target as Array<Navigatable>
+                    for (navigatable in navigatables) {
+                        when (navigatable) {
+                            is PsiDirectory -> {//select dir
+                                return findCurrentPath(navigatable)
+                            }
 
-                    is PsiDirectoryNode -> {
-                        return navigatable.element?.value?.let { findCurrentPath(it) }
+                            is ClassTreeNode -> {
+                                return findCurrentPath(navigatable.psiClass.containingFile)
+                            }
+
+                            is PsiDirectoryNode -> {
+                                return navigatable.element?.value?.let { findCurrentPath(it) }
+                            }
+                        }
                     }
                 }
             }
@@ -81,18 +83,14 @@ object ActionUtils : Log() {
     fun findCurrentClass(): PsiClass? {
         findContextOfType<PsiClass>()?.let { return it }
         val actionContext = ActionContext.getContext()!!
-        return actionContext.cacheOrCompute(CommonDataKeys.PSI_FILE.name) {
-            actionContext.callInReadUI { actionContext.instance(DataContext::class).getData(CommonDataKeys.PSI_FILE) }
-        }.cast(PsiClassOwner::class)?.classes?.firstOrNull()
+        return actionContext.instance(DataContextProvider::class).getData(CommonDataKeys.PSI_FILE)
+            .cast(PsiClassOwner::class)?.classes?.firstOrNull()
     }
 
     fun findCurrentMethod(): PsiMethod? {
         val actionContext = ActionContext.getContext()!!
-        actionContext.cacheOrCompute(CommonDataKeys.PSI_ELEMENT.name) {
-            actionContext.callInReadUI {
-                actionContext.instance(DataContext::class).getData(CommonDataKeys.PSI_ELEMENT)
-            }
-        }?.let { actionContext.callInReadUI { PsiTreeUtil.getContextOfType<PsiElement>(it, PsiMethod::class.java) } }
+        actionContext.instance(DataContextProvider::class).getData(CommonDataKeys.PSI_ELEMENT)
+            ?.let { actionContext.callInReadUI { PsiTreeUtil.getContextOfType<PsiElement>(it, PsiMethod::class.java) } }
             .cast(PsiMethod::class)
             ?.let { return it }
 
@@ -105,12 +103,8 @@ object ActionUtils : Log() {
 
     fun <T : PsiElement> findContextOfType(cls: KClass<T>): T? {
         val actionContext = ActionContext.getContext()!!
-        val editor = actionContext.cacheOrCompute(CommonDataKeys.EDITOR.name) {
-            actionContext.callInReadUI { actionContext.instance(DataContext::class).getData(CommonDataKeys.EDITOR) }
-        } ?: return null
-        val psiFile = actionContext.cacheOrCompute(CommonDataKeys.PSI_FILE.name) {
-            actionContext.callInReadUI { actionContext.instance(DataContext::class).getData(CommonDataKeys.PSI_FILE) }
-        } ?: return null
+        val editor = actionContext.instance(DataContextProvider::class).getData(CommonDataKeys.EDITOR) ?: return null
+        val psiFile = actionContext.instance(DataContextProvider::class).getData(CommonDataKeys.PSI_FILE) ?: return null
         val referenceAt = actionContext.callInReadUI { psiFile.findElementAt(editor.caretModel.offset) } ?: return null
         try {
             return actionContext.callInReadUI {
@@ -139,5 +133,4 @@ object ActionUtils : Log() {
         }
 
     }
-
 }

@@ -1,13 +1,15 @@
 package com.itangcent.intellij.psi
 
+import com.google.inject.Inject
+import com.google.inject.Singleton
 import com.intellij.ide.projectView.impl.nodes.ClassTreeNode
 import com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode
 import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.actionSystem.DataContext
+import com.intellij.openapi.actionSystem.DataKey
 import com.intellij.pom.Navigatable
 import com.intellij.psi.*
 import com.itangcent.intellij.context.ActionContext
-import com.itangcent.intellij.logger.Logger
+import com.itangcent.intellij.extend.guice.PostConstruct
 import com.itangcent.intellij.util.DirFilter
 import com.itangcent.intellij.util.FileFilter
 import com.itangcent.intellij.util.FileUtils
@@ -46,44 +48,25 @@ object SelectedHelper {
 
         private val actionContext = ActionContext.getContext()!!
 
+        @Suppress("UNCHECKED_CAST")
         fun traversal() {
-            //try to get navigatables
-            val navigatables = actionContext.cacheOrCompute(CommonDataKeys.NAVIGATABLE_ARRAY.name) {
-                actionContext.instance(DataContext::class).getData(CommonDataKeys.NAVIGATABLE_ARRAY)
-            }
-            if (navigatables != null && navigatables.size > 1) {
-                onNavigatables(navigatables)
-                return
-            }
+            val (type, target) = actionContext.instance(SelectedContext::class).selected() ?: return
+            when (type) {
+                CommonDataKeys.NAVIGATABLE_ARRAY -> {
+                    onNavigatables(target as Array<Navigatable>)
+                }
 
-            //try to get psiFile
-            val psiFile = actionContext.cacheOrCompute(CommonDataKeys.PSI_FILE.name) {
-                actionContext.instance(DataContext::class).getData(CommonDataKeys.PSI_FILE)
-            }
-            if (psiFile != null) {
-                if (fileFilter(psiFile)) {
+                CommonDataKeys.PSI_FILE -> {
                     actionContext.runInReadUI {
-                        onFile(psiFile)
+                        onFile(target as PsiFile)
                     }
                 }
-                return
-            }
 
-            //try to process navigatables
-            if (!navigatables.isNullOrEmpty()) {
-                onNavigatables(navigatables)
-                return
-            }
-
-            //try to get navigatable
-            val navigatable = actionContext.cacheOrCompute(CommonDataKeys.NAVIGATABLE.name) {
-                actionContext.instance(DataContext::class).getData(CommonDataKeys.NAVIGATABLE)
-            }
-            if (navigatable != null) {
-                actionContext.runInReadUI {
-                    onNavigatable(navigatable)
+                CommonDataKeys.NAVIGATABLE -> {
+                    actionContext.runInReadUI {
+                        onNavigatable(target as Navigatable)
+                    }
                 }
-                return
             }
         }
 
@@ -165,5 +148,60 @@ object SelectedHelper {
                 }
             }
         }
+    }
+}
+
+@Singleton
+class SelectedContext {
+
+    @Inject
+    private lateinit var dataContextProvider: DataContextProvider
+
+    private var context: Pair<DataKey<out Any>, Any>? = null
+
+    @PostConstruct
+    fun init() {
+        findContext()
+    }
+
+    @Synchronized
+    fun findContext() {
+        if (context != null) {
+            return
+        }
+
+        //try to get navigatables
+        val navigatables = dataContextProvider.getData(CommonDataKeys.NAVIGATABLE_ARRAY)
+        if (navigatables != null && navigatables.size > 1) {
+            context = CommonDataKeys.NAVIGATABLE_ARRAY to navigatables
+            return
+        }
+
+        //try to get psiFile
+        val psiFile = dataContextProvider.getData(CommonDataKeys.PSI_FILE)
+        if (psiFile != null) {
+            context = CommonDataKeys.PSI_FILE to psiFile
+            return
+        }
+
+        //try to process navigatables
+        if (!navigatables.isNullOrEmpty()) {
+            context = CommonDataKeys.NAVIGATABLE_ARRAY to navigatables
+            return
+        }
+
+        //try to get navigatable
+        val navigatable = dataContextProvider.getData(CommonDataKeys.NAVIGATABLE)
+        if (navigatable != null) {
+            context = CommonDataKeys.NAVIGATABLE to navigatable
+            return
+        }
+    }
+
+    fun selected(): Pair<DataKey<out Any>, Any>? {
+        if (context == null) {
+            findContext()
+        }
+        return context
     }
 }

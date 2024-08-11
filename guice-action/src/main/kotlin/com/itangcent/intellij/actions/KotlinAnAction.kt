@@ -9,8 +9,6 @@ import com.itangcent.common.exception.ProcessCanceledException
 import com.itangcent.common.logger.Log
 import com.itangcent.common.spi.Setup
 import com.itangcent.intellij.context.ActionContext
-import com.itangcent.intellij.extend.guice.singleton
-import com.itangcent.intellij.extend.guice.with
 import com.itangcent.intellij.logger.NotificationHelper
 import org.apache.commons.lang3.exception.ExceptionUtils
 import javax.swing.Icon
@@ -37,7 +35,7 @@ abstract class KotlinAnAction : AnAction {
         val actionContextBuilder = ActionContext.builder()
         actionContextBuilder.bindInstance(Project::class, project)
         actionContextBuilder.bindInstance(AnActionEvent::class, anActionEvent)
-        actionContextBuilder.bind(DataContext::class) { it.with(ActionEventDataContextAdaptor::class).singleton() }
+        actionContextBuilder.bind(DataContext::class) { it.toInstance(anActionEvent.dataContext) }
         onBuildActionContext(anActionEvent, actionContextBuilder)
         val actionContext = actionContextBuilder.build()
         actionContext.init(this)
