@@ -320,26 +320,26 @@ abstract class BaseConfigReader : MutableConfigReader {
 
     private inner class PropertiesConfigResolver : ConfigResolver {
         override fun resolveConfig(content: String, kvHandle: (String, String) -> Unit) {
-            LineReader(content) { line ->
+            LineReader(content).lines { line ->
                 //ignore blank line
                 if (line.isBlank()) {
-                    return@LineReader
+                    return@lines
                 }
 
                 //resolve comment setting
                 if (line.startsWith("###")) {
                     resolveSetting(line.removePrefix("###").trim())
-                    return@LineReader
+                    return@lines
                 }
 
                 //ignore comment
                 if (line.startsWith("#")) {
-                    return@LineReader
+                    return@lines
                 }
 
                 //resolve name&value
                 parseEqualLine(line, kvHandle)
-            }.lines()
+            }
         }
 
         private fun parseEqualLine(line: String, kvHandle: (String, String) -> Unit) {

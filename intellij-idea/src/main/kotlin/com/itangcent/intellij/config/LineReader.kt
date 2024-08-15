@@ -1,68 +1,117 @@
 package com.itangcent.intellij.config
 
-import com.itangcent.common.utils.append
-import com.itangcent.common.utils.appendln
+class LineReader(private val content: String) {
 
-class LineReader(private val content: String, private val lineHandle: (String) -> Unit) {
+    /**
+     * Processes each line of the content using the provided lineHandle function.
+     */
+    fun lines(lineHandle: (String) -> Unit) {
+        LineReaderProcessor(content, lineHandle).process()
+    }
 
-    private var oneLine = ""
+    /**
+     * Returns a list of all processed lines.
+     */
+    fun lines(): MutableList<String> {
+        val result = mutableListOf<String>()
+        lines { result.add(it) }
+        return result
+    }
+}
 
-    private var status = common
+private class LineReaderProcessor(
+    private val content: String,
+    private val lineHandle: (String) -> Unit
+) {
+    private var oneLine = StringBuilder()
+    private var status: Status = Default
 
-    fun lines() {
-        loop@ for (line in content.lines()) {
-            val trimLine = line.trim()
-            when (status) {
-                common -> {
-                    when {
-                        trimLine.endsWith("\\") -> {
-                            oneLine = oneLine.append(trimLine.removeSuffix("\\"))!!
-                            status = wrap
-                        }
-                        trimLine.endsWith("```") -> {
-                            oneLine = oneLine.append(trimLine.removeSuffix("```"))!!
-                            status = block
-                        }
-                        else -> lineHandle(trimLine)
-                    }
+    /**
+     * Processes the content by splitting it into lines and handling each line
+     * according to the current status.
+     */
+    fun process() {
+        content.lines()
+            .map { it.trimEnd() }
+            .filter { it.isNotEmpty() }
+            .forEach { line ->
+                status.handle(line, this)
+            }
+        if (oneLine.isNotEmpty()) {
+            lineHandle(oneLine.toString())
+        }
+    }
+
+    /**
+     * Finalizes the current line and resets the status.
+     */
+    private fun nextLine() {
+        lineHandle(oneLine.toString())
+        oneLine.clear()
+        status = Default
+    }
+
+    /**
+     * Interface representing the state for handling lines.
+     */
+    interface Status {
+        fun LineReaderProcessor.handle(line: String)
+    }
+
+    fun Status.handle(line: String, lineReaderProcessor: LineReaderProcessor) {
+        lineReaderProcessor.handle(line)
+    }
+
+    /**
+     * Default state for handling lines.
+     */
+    object Default : Status {
+        override fun LineReaderProcessor.handle(line: String) {
+            when {
+                line.endsWith("\\") -> {
+                    oneLine.append(line.removeSuffix("\\"))
+                    status = Wrap
                 }
-                wrap -> {
-                    if (trimLine.endsWith("\\")) {
-                        oneLine += trimLine.removeSuffix("\\")
-                        continue@loop
-                    } else {
-                        oneLine += trimLine
-                        next()
-                        continue@loop
-                    }
+
+                line.endsWith("```") -> {
+                    val backticks = line.takeLastWhile { it == '`' }
+                    oneLine.append(line.removeSuffix(backticks))
+                    status = Block(backticks)
                 }
-                block -> {
-                    if (trimLine.endsWith("```")) {
-                        oneLine = oneLine.appendln(trimLine.removeSuffix("```"))!!
-                        next()
-                        continue@loop
-                    } else {
-                        oneLine = oneLine.appendln(trimLine)!!
-                        continue@loop
-                    }
-                }
+
+                else -> lineHandle(line.trimStart())
             }
         }
     }
 
     /**
-     * line end.
-     * start read next line.
+     * State for handling lines that are wrapped with a backslash.
      */
-    private fun next() {
-        lineHandle(oneLine)
-        oneLine = ""
-        status = common
+    object Wrap : Status {
+        override fun LineReaderProcessor.handle(line: String) {
+            if (line.endsWith("\\")) {
+                oneLine.append(line.removeSuffix("\\"))
+            } else {
+                oneLine.append(line)
+                nextLine()
+            }
+        }
     }
 
-    companion object {
-        private const val common = 1
-        private const val wrap = 2
-        private const val block = 3
+    /**
+     * State for handling lines within a code block.
+     */
+    class Block(private val backticks: String) : Status {
+        override fun LineReaderProcessor.handle(line: String) {
+            if (line.endsWith(backticks)) {
+                val content = line.removeSuffix(backticks)
+                if (content.isNotEmpty()) {
+                    oneLine.appendLine().append(content)
+                }
+                nextLine()
+            } else {
+                oneLine.appendLine().append(line)
+            }
+        }
     }
 }
