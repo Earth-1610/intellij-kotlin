@@ -109,6 +109,11 @@ object SpiUtils {
             loadStack.get().pop()
         }
     }
+
+    fun clearCache() {
+        serviceCache.clear()
+        serviceUltimateBeanCache.clear()
+    }
 }
 
 //background idea log

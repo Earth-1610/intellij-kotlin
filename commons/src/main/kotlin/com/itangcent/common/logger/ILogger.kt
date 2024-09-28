@@ -18,12 +18,24 @@ interface ILogger {
     fun error(msg: String)
 }
 
+@Deprecated("use traceWarn(e: Throwable, msg: String) instead")
 fun ILogger.traceWarn(msg: String, e: Throwable) {
     this.warn(msg)
     this.traceError(e)
 }
 
+fun ILogger.traceWarn(e: Throwable, msg: String) {
+    this.warn(msg)
+    this.traceError(e)
+}
+
+@Deprecated("use traceError(e: Throwable, msg: String) instead")
 fun ILogger.traceError(msg: String, e: Throwable) {
+    this.error(msg)
+    this.traceError(e)
+}
+
+fun ILogger.traceError(e: Throwable, msg: String) {
     this.error(msg)
     this.traceError(e)
 }
