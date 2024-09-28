@@ -1,7 +1,5 @@
 package com.itangcent.common.spi
 
-import com.itangcent.common.logger.ILogger
-import com.itangcent.common.logger.ILoggerProvider
 import com.itangcent.common.logger.Log
 import com.itangcent.common.logger.traceError
 import java.util.*
