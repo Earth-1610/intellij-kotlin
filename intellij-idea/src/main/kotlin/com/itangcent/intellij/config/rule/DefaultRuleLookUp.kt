@@ -40,7 +40,7 @@ open class DefaultRuleLookUp : RuleLookUp {
     override fun <T : Any> lookUp(key: String, ruleType: KClass<T>): List<Rule<T>> {
         return ruleCaches.safeComputeIfAbsent(key) {
             doLookUp(key, ruleType)
-        } as List<Rule<T>>
+        } as? List<Rule<T>> ?: emptyList()
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -82,7 +82,7 @@ open class DefaultRuleLookUp : RuleLookUp {
                     rules.add(it)
                 }
             } catch (e: Exception) {
-                logger!!.traceError("error to parse module rule:$key=$value", e)
+                logger!!.traceError(e, "error to parse module rule:$key=$value")
             }
         }
         return (rules.takeIf { it.isNotEmpty() } ?: emptyList()) as List<Rule<T>>
