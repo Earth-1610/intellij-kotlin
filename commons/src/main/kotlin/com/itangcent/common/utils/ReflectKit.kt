@@ -309,15 +309,34 @@ fun invokeTopMethodByMethodName(
 
 }
 
-fun collectDeclaredMethod(kClass: KClass<*>, methodHandle: (Method) -> Unit) {
-    collectDeclaredMethod(kClass.java, methodHandle)
+@Deprecated("use collectDeclaredMethods instead", ReplaceWith("collectDeclaredMethods(kClass, methodHandle)"))
+fun collectDeclaredMethod(kClass: KClass<*>, methodHandle: (Method) -> Unit) =
+    kClass.collectDeclaredMethods(methodHandle)
+
+fun KClass<*>.collectDeclaredMethods(methodHandle: (Method) -> Unit) {
+    java.collectDeclaredMethods(methodHandle)
 }
 
-fun collectDeclaredMethod(cls: Class<*>, methodHandle: (Method) -> Unit) {
-    var tobeSearchMethodClass: Class<*>? = cls
+@Deprecated("use collectDeclaredMethods instead", ReplaceWith("collectDeclaredMethods(cls, methodHandle)"))
+fun collectDeclaredMethod(cls: Class<*>, methodHandle: (Method) -> Unit) = cls.collectDeclaredMethods(methodHandle)
+
+fun Class<*>.collectDeclaredMethods(methodHandle: (Method) -> Unit) {
+    var tobeSearchMethodClass: Class<*>? = this
     while (tobeSearchMethodClass != null) {
         tobeSearchMethodClass.declaredMethods.forEach(methodHandle)
         tobeSearchMethodClass = tobeSearchMethodClass.superclass
+    }
+}
+
+fun Class<*>.collectDeclaredMethods(): Sequence<Method> {
+    return sequence {
+        var tobeSearchMethodClass: Class<*>? = this@collectDeclaredMethods
+        while (tobeSearchMethodClass != null) {
+            tobeSearchMethodClass.declaredMethods.forEach {
+                yield(it)
+            }
+            tobeSearchMethodClass = tobeSearchMethodClass.superclass
+        }
     }
 }
 

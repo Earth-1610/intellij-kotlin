@@ -49,7 +49,7 @@ object SystemUtils {
             return "~"
         }
 
-    private val NEW_LINE = System.getProperty("line.separator")
+    private val NEW_LINE = System.lineSeparator()
 
     val isWindows: Boolean
         get() {
@@ -60,4 +60,8 @@ object SystemUtils {
     fun newLine(): String {
         return NEW_LINE ?: "\r\n"
     }
+
+    val javaVersion = System.getProperty("java.version")
+
+    val majorVersion = javaVersion.substringBefore(".").toIntOrNull() ?: 0
 }

@@ -15,6 +15,7 @@ import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase
 import com.itangcent.common.logger.Log
 import com.itangcent.common.spi.Setup
 import com.itangcent.common.utils.ResourceUtils
+import com.itangcent.common.utils.SystemUtils.majorVersion
 import com.itangcent.common.utils.forceDelete
 import com.itangcent.intellij.config.BaseConfigReader
 import com.itangcent.intellij.config.ConfigReader
@@ -49,7 +50,18 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightJavaCodeInsightFixt
 
     override fun getProjectDescriptor(): LightProjectDescriptor {
         //use java11
-        return JAVA_11
+        return when (majorVersion) {
+            8 -> JAVA_8
+            10 -> JAVA_10
+            11 -> JAVA_11
+            12 -> JAVA_12
+            13 -> JAVA_13
+            14 -> JAVA_14
+            15 -> JAVA_15
+            16 -> JAVA_16
+            17 -> JAVA_17
+            else -> JAVA_LATEST
+        }
     }
 
     open fun customConfig(): String? {
@@ -186,9 +198,12 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightJavaCodeInsightFixt
         //try load from local
         var location = cls.protectionDomain?.codeSource?.location
         if (location == null) {
-            location = AccessController.doPrivileged(PrivilegedAction {
-                return@PrivilegedAction cls.protectionDomain?.codeSource?.location
-            })
+            if (majorVersion < 17) {
+                // Use AccessController for JDK versions lower than 17
+                location = AccessController.doPrivileged(PrivilegedAction {
+                    cls.protectionDomain?.codeSource?.location
+                })
+            }
         }
         if (location != null) {
             return readSourceFile(location, cls)

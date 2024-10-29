@@ -18,6 +18,7 @@ import com.itangcent.common.logger.traceError
 import com.itangcent.common.spi.SpiUtils
 import com.itangcent.common.utils.IDUtils
 import com.itangcent.common.utils.ThreadPoolUtils
+import com.itangcent.common.utils.collectDeclaredMethods
 import com.itangcent.common.utils.safe
 import com.itangcent.intellij.CustomInfo
 import com.itangcent.intellij.constant.EventKey
@@ -925,9 +926,14 @@ class ActionContext {
             return moduleActions.asSequence()
                 .filter { it[0] == BindAction.BIND_INTERCEPTOR }
                 .filter { (it[1] as Matcher<in Class<*>>).matches(injectClass) }
+                .filter { (it[2] as Matcher<in Method>).matches(injectClass) }
                 .map { it[3] as Array<MethodInterceptor> }
                 .flatMap { it.asSequence() }
                 .toList()
+        }
+
+        private fun Matcher<in Method>.matches(injectClass: Class<*>): Boolean {
+            return injectClass.collectDeclaredMethods().any { this.matches(it) }
         }
 
         fun build(): ActionContext {
