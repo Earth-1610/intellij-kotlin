@@ -1,3 +1,2 @@
 com.itangcent.intellij.spi.IdeaAutoInject
 com.itangcent.intellij.tip.OnlyOnceInContextTipSetup
-com.itangcent.intellij.extend.feature.FeatureToggleSupport

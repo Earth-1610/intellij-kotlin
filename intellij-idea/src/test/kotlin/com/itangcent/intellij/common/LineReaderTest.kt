@@ -11,16 +11,16 @@ class LineReaderTest {
 
     @Test
     fun testOneLine() {
-        LineReader("key=value").lines {
+        LineReader("key=value") {
             assertEquals("key=value", it)
         }
-        LineReader("key=value\\\n&1\\\n&2").lines {
+        LineReader("key=value\\\n&1\\\n&2") {
             assertEquals("key=value&1&2", it)
         }
-        LineReader("key=js:```\nvar x = 1;\nreturn x+1;\n```").lines {
+        LineReader("key=js:```\nvar x = 1;\nreturn x+1;\n```") {
             assertEquals("key=js:\nvar x = 1;\nreturn x+1;", it)
         }
-        LineReader("key=js:```\nvar x = 1;\nreturn x+1;\n```").lines {
+        LineReader("key=js:```\nvar x = 1;\nreturn x+1;\n```") {
             assertEquals("key=js:\nvar x = 1;\nreturn x+1;", it)
         }
         LineReader(
@@ -36,7 +36,7 @@ class LineReaderTest {
 ```
 ``````
 """
-        ).lines {
+        ) {
             assertEquals(
                 """key=
 ```xml
@@ -59,7 +59,7 @@ class LineReaderTest {
 key2=value2
 key3=value3
 """
-        ).lines().let { lines ->
+        ) { lines ->
             assertEquals("key1=value1", lines[0])
             assertEquals("key2=value2", lines[1])
             assertEquals("key3=value3", lines[2])
@@ -70,7 +70,7 @@ key3=value3
 value1
 value2
 ```"""
-        ).lines().let { lines ->
+        ) { lines ->
             assertEquals("key1=\nvalue1\nvalue2", lines[0])
         }
 
@@ -79,7 +79,7 @@ value2
 value1
 value2```
 """
-        ).lines().let { lines ->
+        ) { lines ->
             assertEquals("key1=\nvalue1\nvalue2", lines[0])
         }
 
@@ -87,7 +87,7 @@ value2```
             """key1=```
 value1
 """
-        ).lines().let { lines ->
+        ) { lines ->
             assertEquals("key1=\nvalue1", lines[0])
         }
     }
