@@ -82,7 +82,7 @@ open class DefaultRuleLookUp : RuleLookUp {
                     rules.add(it)
                 }
             } catch (e: Exception) {
-                logger!!.traceError(e, "error to parse module rule:$key=$value")
+                logger!!.traceError("error to parse module rule:$key=$value", e)
             }
         }
         return (rules.takeIf { it.isNotEmpty() } ?: emptyList()) as List<Rule<T>>

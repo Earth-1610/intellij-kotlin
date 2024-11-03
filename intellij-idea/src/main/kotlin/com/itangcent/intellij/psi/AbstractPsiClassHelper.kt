@@ -817,7 +817,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         if (ruleComputer.computer(ClassRuleKeys.ENUM_USE_BY_TYPE, cls) == true) {
             val appropriateProperty = findAppropriateProperty(context, cls)
             if (appropriateProperty.isNullOrBlank()) {
-                logger.warn(
+                logger.debug(
                     "can not resolve ${cls.qualifiedName} for ${
                         PsiClassUtils.qualifiedNameOfMember(
                             context

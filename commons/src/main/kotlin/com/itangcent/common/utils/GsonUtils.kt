@@ -11,7 +11,6 @@ import com.itangcent.common.logger.Log
 import com.itangcent.common.logger.traceError
 import java.io.IOException
 import java.io.StringReader
-import java.lang.reflect.Type
 import kotlin.reflect.KClass
 
 
@@ -30,7 +29,7 @@ object GsonUtils : Log() {
                 .setLenient()
                 .buildWithObjectToNumberStrategy()
         } catch (e: Exception) {
-            LOG.traceError(e, "failed init GSON module [gson].")
+            LOG.traceError("failed init GSON module [gson].", e)
             Gson()
         }
     }
@@ -45,7 +44,7 @@ object GsonUtils : Log() {
                 .serializeNulls()
                 .buildWithObjectToNumberStrategy()
         } catch (e: Exception) {
-            LOG.traceError(e, "failed init GSON module [gsonWithNulls].")
+            LOG.traceError("failed init GSON module [gsonWithNulls].", e)
             Gson()
         }
     }
@@ -106,10 +105,6 @@ object GsonUtils : Log() {
 
     fun <T : Any> fromJson(json: String, cls: KClass<T>): T {
         return gson.fromJson(json, cls.java)
-    }
-
-    fun <T> fromJson(json: String, type: Type): T {
-        return gson.fromJson(json, type)
     }
 
     inline fun <reified T> fromJson(json: String): T? {
