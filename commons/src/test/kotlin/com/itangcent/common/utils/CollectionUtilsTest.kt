@@ -63,14 +63,4 @@ class CollectionUtilsTest {
         assertFalse(CollectionUtils.containsAll(arrayOf("a", "b"), listOf("c", "b")))
 
     }
-
-    @Test
-    fun testIsEmpty() {
-        assertTrue(CollectionUtils.isEmpty(null))
-        assertTrue(CollectionUtils.isEmpty(emptyList<String>()))
-        assertFalse(CollectionUtils.isEmpty(listOf("a", "b", "a")))
-        assertFalse(CollectionUtils.isEmpty(listOf(null)))
-
-    }
-
 }

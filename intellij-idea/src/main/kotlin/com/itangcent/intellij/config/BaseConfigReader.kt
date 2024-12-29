@@ -397,6 +397,3 @@ enum class ResolveMultiType {
      */
     SHORTEST
 }
-
-@Deprecated("use BaseConfigReader instead")
-typealias AbstractConfigReader = BaseConfigReader

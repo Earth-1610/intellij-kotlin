@@ -271,7 +271,7 @@ class MapKitTest {
     @Test
     fun testGetAs() {
         map["string"] = "string"
-        map["kv"] = KV.by(2, 2)
+        map["kv"] = KV.of(2, 2)
 
         Assertions.assertEquals(null, map.getAs<String>(1))
         Assertions.assertEquals(null, map.getAs<Int>("string"))

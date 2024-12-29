@@ -1,6 +1,5 @@
 package com.itangcent.common.utils
 
-import com.itangcent.common.utils.IDUtils
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -25,11 +24,6 @@ class IDUtilsTest {
             assertEquals(length, id.length)
             assertTrue(ids.add(id))
         }
-    }
-
-    @Test
-    fun testUUID() {
-        testIDGenerate(32) { IDUtils.UUID() }
     }
 
     @Test

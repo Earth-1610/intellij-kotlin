@@ -15,14 +15,6 @@ object IDUtils {
     /**
      * uuid:no bar
      */
-    @Deprecated(message = "Use uuid instead.", replaceWith = ReplaceWith("uuid()"))
-    fun UUID(): String {
-        return uuid()
-    }
-
-    /**
-     * uuid:no bar
-     */
     fun uuid(): String {
         return uuid2Tidy(UUID.randomUUID()).lowercase(Locale.US)
     }

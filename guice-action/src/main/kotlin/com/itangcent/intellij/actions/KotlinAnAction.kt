@@ -20,9 +20,6 @@ abstract class KotlinAnAction : AnAction {
     constructor(text: String?) : super(text)
     constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
 
-    @Deprecated(replaceWith = ReplaceWith("LOG"), message = "use LOG instead")
-    private val log = LOG
-
     protected open fun onBuildActionContext(
         event: AnActionEvent,
         builder: ActionContext.ActionContextBuilder

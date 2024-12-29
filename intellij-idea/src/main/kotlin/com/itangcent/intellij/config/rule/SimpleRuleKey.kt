@@ -9,7 +9,6 @@ class SimpleRuleKey<T : Any> : RuleKey<T> {
     private val mode: RuleMode<*>
     private val defaultVal: T?
 
-    @Suppress("UNCHECKED_CAST")
     constructor(name: String, mode: RuleMode<*>) {
         this.name = name
         this.mode = mode
@@ -74,10 +73,6 @@ class SimpleRuleKey<T : Any> : RuleKey<T> {
 
     override fun name(): String {
         return name
-    }
-
-    override fun ruleType(): KClass<Rule<T>> {
-        throw NotImplementedError("ruleType is not implemented")
     }
 
     override fun mode(): RuleMode<*> {

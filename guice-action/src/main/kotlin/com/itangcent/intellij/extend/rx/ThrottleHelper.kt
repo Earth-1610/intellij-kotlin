@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicLong
 /**
  * A helper class for throttling requests
  */
+@Deprecated("Directly use [Throttle] instead")
 class ThrottleHelper {
 
     private val throttleMap = ConcurrentHashMap<Any, Throttle>()
@@ -44,7 +45,6 @@ class ThrottleHelper {
     fun build(key: Any): Throttle = getThrottle(key)
 }
 
-
 /**
  * A throttle that limits the rate of requests
  */
@@ -67,6 +67,7 @@ class Throttle {
     /**
      * Updates the last request time to the current time
      */
+    @Deprecated("will be removed in the future")
     fun refresh(): Boolean {
         val currentTime = System.currentTimeMillis()
         lastRequestTime.set(currentTime)
@@ -76,6 +77,7 @@ class Throttle {
     /**
      * Tries to force update the last request time to the provided stamp
      */
+    @Deprecated("will be removed in the future")
     fun refresh(stamp: Long): Boolean {
         val previousTime = lastRequestTime.get()
 
@@ -86,7 +88,9 @@ class Throttle {
     }
 }
 
+fun throttle(): Throttle = Throttle()
 
+@Deprecated("will be removed in the future")
 fun (() -> Any?).throttle(timeout: Long, timeUnit: TimeUnit): () -> Unit {
     val timer = Timer()
     var task: TimerTask? = null
