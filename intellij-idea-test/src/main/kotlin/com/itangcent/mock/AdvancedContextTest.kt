@@ -2,6 +2,7 @@ package com.itangcent.mock
 
 import com.itangcent.common.spi.Setup
 import com.itangcent.common.utils.FileUtils
+import com.itangcent.intellij.bindPluginName
 import com.itangcent.intellij.config.BaseConfigReader
 import com.itangcent.intellij.config.ConfigReader
 import com.itangcent.intellij.context.ActionContext
@@ -35,7 +36,7 @@ abstract class AdvancedContextTest : BaseContextTest() {
 
     override fun bind(builder: ActionContext.ActionContextBuilder) {
         super.bind(builder)
-        builder.bindInstance("plugin.name", "intellij-kotlin")
+        builder.bindPluginName("intellij-kotlin")
         builder.bind(LocalFileRepository::class) {
             it.toInstance(TempFileRepository())
         }

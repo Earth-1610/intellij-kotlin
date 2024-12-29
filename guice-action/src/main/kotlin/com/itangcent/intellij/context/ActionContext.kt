@@ -338,6 +338,10 @@ class ActionContext {
         }
     }
 
+    private val pluginName: String by lazy {
+        SpiUtils.loadService(CustomInfo::class)?.pluginName() ?: "intellij-plugin"
+    }
+
     fun runInWriteUI(runnable: () -> Unit) {
         checkStatus()
         if (getFlag() == ThreadFlag.WRITE.value) {
@@ -348,8 +352,8 @@ class ActionContext {
             val boundaries = contextStatus.boundaries()
             boundaries?.down()
             try {
-                WriteCommandAction.runWriteCommandAction(project, "CallInWriteUI",
-                    SpiUtils.loadService(CustomInfo::class)?.pluginName() ?: "intellij-plugin", Runnable {
+                WriteCommandAction.runWriteCommandAction(
+                    project, "CallInWriteUI", pluginName, {
                         try {
                             activeThreadCnt[ThreadFlag.WRITE.ordinal].getAndIncrement()
                             checkStatus()
@@ -383,9 +387,10 @@ class ActionContext {
             val boundaries = contextStatus.boundaries()
             boundaries?.down()
             val valueHolder: ValueHolder<T> = ValueHolder()
-            WriteCommandAction.runWriteCommandAction(project, "CallInWriteUI",
-                SpiUtils.loadService(CustomInfo::class)?.pluginName() ?: "intellij-plugin",
-                Runnable {
+            WriteCommandAction.runWriteCommandAction(
+                project, "CallInWriteUI",
+                pluginName,
+                {
                     try {
                         activeThreadCnt[ThreadFlag.WRITE.ordinal].getAndIncrement()
                         setContext(

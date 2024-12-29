@@ -9,13 +9,14 @@ import com.intellij.notification.NotificationGroup
 import com.intellij.notification.Notifications
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindowId
+import com.itangcent.intellij.PLUGIN_NAME
 
 @Singleton
 class DefaultNotificationHelper : NotificationHelper {
 
     @Inject(optional = true)
-    @Named("plugin.name")
-    protected val pluginName: String = "default_notify"
+    @Named(PLUGIN_NAME)
+    protected val pluginName: String = "intellij-plugin"
 
     @Inject(optional = true)
     protected val notificationDisplayType: NotificationDisplayType = NotificationDisplayType.BALLOON
@@ -33,8 +34,10 @@ class DefaultNotificationHelper : NotificationHelper {
             notificationGroup = when (notificationDisplayType) {
                 NotificationDisplayType.BALLOON ->
                     NotificationGroup.balloonGroup(notificationId)
+
                 NotificationDisplayType.TOOL_WINDOW ->
                     NotificationGroup.toolWindowGroup(notificationId, ToolWindowId.RUN, true)
+
                 else ->
                     NotificationGroup.logOnlyGroup(notificationId)
             }
