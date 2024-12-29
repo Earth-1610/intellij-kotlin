@@ -3,7 +3,7 @@ package com.itangcent.intellij.logger
 import com.google.inject.ImplementedBy
 
 
-@ImplementedBy(ConsoleRunnerLogger::class)
+@ImplementedBy(IdeaConsoleLogger::class)
 interface Logger : com.itangcent.common.logger.ILogger {
     override fun log(msg: String) {
         log(BasicLevel.ALL, msg)
