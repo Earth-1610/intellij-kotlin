@@ -9,11 +9,6 @@ object FileFilters {
 
     val defaultHandle: FileFilter = { true }
 
-    @Deprecated("useless", ReplaceWith("use directly"))
-    fun from(filter: (file: FileWrap) -> Boolean): FileFilter {
-        return filter
-    }
-
     fun filterFile(filter: (file: FileWrap) -> Boolean): FileFilter {
         return { it.file.isDirectory || filter(it) }
     }

@@ -49,7 +49,10 @@ object SystemUtils {
             return "~"
         }
 
-    private val NEW_LINE = System.getProperty("line.separator")
+    val LINE_SEPARATOR: String = System.lineSeparator()
+
+    @Deprecated("Use LINE_SEPARATOR instead", ReplaceWith("LINE_SEPARATOR"))
+    private val NEW_LINE = System.lineSeparator()
 
     val isWindows: Boolean
         get() {
@@ -57,6 +60,7 @@ object SystemUtils {
             return OS.lowercase().contains("windows")
         }
 
+    @Deprecated("Use LINE_SEPARATOR instead", ReplaceWith("LINE_SEPARATOR"))
     fun newLine(): String {
         return NEW_LINE ?: "\r\n"
     }

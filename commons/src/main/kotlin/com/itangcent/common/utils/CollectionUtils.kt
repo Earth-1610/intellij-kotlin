@@ -103,18 +103,4 @@ object CollectionUtils {
         }
         return true
     }
-
-    /**
-     * Null-safe check if the specified collection is empty.
-     *
-     *
-     * Null returns true.
-     *
-     * @param coll  the collection to check, may be null
-     * @return true if empty or null
-     * @since 3.2
-     */
-    @Deprecated(message = "deprecated", replaceWith = ReplaceWith("Collection.isNullOrEmpty"))
-    fun isEmpty(coll: Collection<*>?): Boolean = coll.isNullOrEmpty()
-
 }

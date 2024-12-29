@@ -72,22 +72,6 @@ object JsonOption {
     const val READ_GETTER_OR_SETTER =
         READ_GETTER or READ_SETTER//Try to find the available getter or setter method as property
 
-    @Deprecated(
-        message = "use #has",
-        replaceWith = ReplaceWith("has(JsonOption.READ_COMMENT)")
-    )
-    fun needComment(flag: Int): Boolean {
-        return (flag and READ_COMMENT) != 0
-    }
-
-    @Deprecated(
-        message = "use #has",
-        replaceWith = ReplaceWith("has(JsonOption.READ_GETTER)")
-    )
-    fun readGetter(flag: Int): Boolean {
-        return (flag and READ_GETTER) != 0
-    }
-
     fun Int.has(flag: Int): Boolean {
         return (this and flag) != 0
     }
