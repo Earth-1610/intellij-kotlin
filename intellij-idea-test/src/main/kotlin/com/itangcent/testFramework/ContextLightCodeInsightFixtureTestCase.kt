@@ -16,6 +16,7 @@ import com.itangcent.common.logger.Log
 import com.itangcent.common.spi.Setup
 import com.itangcent.common.utils.ResourceUtils
 import com.itangcent.common.utils.forceDelete
+import com.itangcent.intellij.bindPluginName
 import com.itangcent.intellij.config.BaseConfigReader
 import com.itangcent.intellij.config.ConfigReader
 import com.itangcent.intellij.context.ActionContext
@@ -66,7 +67,7 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightJavaCodeInsightFixt
         builder.bind(DevEnv::class) { it.toInstance(mockDevEnv) }
         builder.bind(ConfigReader::class) { it.toInstance(mockConfigReader) }
 
-        builder.bindInstance("plugin.name", "intellij_kotlin")
+        builder.bindPluginName("intellij_kotlin")
         builder.bind(LocalFileRepository::class) {
             it.toInstance(TempFileRepository())
         }

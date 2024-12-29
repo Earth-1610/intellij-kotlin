@@ -4,6 +4,7 @@ import com.google.inject.Inject
 import com.google.inject.name.Named
 import com.itangcent.common.utils.forceDelete
 import com.itangcent.common.utils.forceMkdirParent
+import com.itangcent.intellij.PLUGIN_NAME
 import com.itangcent.intellij.logger.Logger
 import org.apache.commons.lang3.exception.ExceptionUtils
 import java.io.File
@@ -15,8 +16,8 @@ abstract class AbstractLocalFileRepository : LocalFileRepository {
     abstract fun basePath(): String
 
     @Inject(optional = true)
-    @Named("plugin.name")
-    protected val pluginName: String = "shadow"
+    @Named(PLUGIN_NAME)
+    protected val pluginName: String = "intellij-plugin"
 
     private fun fileOf(path: String): File {
         val repositoryFile = "${basePath()}${File.separator}.$pluginName${File.separator}$path"

@@ -2,6 +2,7 @@ package com.itangcent.intellij.logger
 
 import com.google.inject.Inject
 import com.google.inject.Singleton
+import com.google.inject.name.Named
 import com.intellij.execution.filters.TextConsoleBuilderFactory
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
@@ -9,8 +10,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.RegisterToolWindowTask
 import com.intellij.openapi.wm.ToolWindowAnchor
 import com.intellij.openapi.wm.ToolWindowManager
-import com.itangcent.common.spi.SpiUtils
-import com.itangcent.intellij.CustomInfo
+import com.itangcent.intellij.PLUGIN_NAME
 import com.itangcent.intellij.context.ActionContext
 
 /**
@@ -28,12 +28,9 @@ class IdeaConsoleLogger : AbstractLogger() {
     @Inject
     private lateinit var actionContext: ActionContext
 
-    /**
-     * The ID for the tool window.
-     */
-    private val toolWindowId: String by lazy {
-        SpiUtils.loadService(CustomInfo::class)?.pluginName() ?: "Plugin Log"
-    }
+    @Inject(optional = true)
+    @Named(PLUGIN_NAME)
+    private val pluginName: String = "intellij-plugin"
 
     /**
      * Lazily initialized console view that handles the actual display of log messages.
@@ -49,12 +46,12 @@ class IdeaConsoleLogger : AbstractLogger() {
         // Run UI operations in the Swing EDT thread
         actionContext.runInSwingUI {
             val toolWindowManager = ToolWindowManager.getInstance(project)
-            val toolWindow = toolWindowManager.getToolWindow(toolWindowId)
+            val toolWindow = toolWindowManager.getToolWindow(pluginName)
             if (toolWindow == null) {
                 // Register a new tool window if it doesn't exist
                 toolWindowManager.registerToolWindow(
                     RegisterToolWindowTask(
-                        id = toolWindowId,
+                        id = pluginName,
                         anchor = ToolWindowAnchor.BOTTOM,
                         canCloseContent = false,
                         component = console.component
