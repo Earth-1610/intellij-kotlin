@@ -12,6 +12,7 @@ import com.intellij.openapi.wm.ToolWindowAnchor
 import com.intellij.openapi.wm.ToolWindowManager
 import com.itangcent.intellij.PLUGIN_NAME
 import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.utils.ApplicationUtils
 
 /**
  * A logger implementation that outputs messages to the IntelliJ IDEA console window.
@@ -46,10 +47,10 @@ class IdeaConsoleLogger : AbstractLogger() {
         // Run UI operations in the Swing EDT thread
         actionContext.runInSwingUI {
             val toolWindowManager = ToolWindowManager.getInstance(project)
-            val toolWindow = toolWindowManager.getToolWindow(pluginName)
+            var toolWindow = toolWindowManager.getToolWindow(pluginName)
             if (toolWindow == null) {
                 // Register a new tool window if it doesn't exist
-                toolWindowManager.registerToolWindow(
+                toolWindow = toolWindowManager.registerToolWindow(
                     RegisterToolWindowTask(
                         id = pluginName,
                         anchor = ToolWindowAnchor.BOTTOM,
@@ -58,9 +59,23 @@ class IdeaConsoleLogger : AbstractLogger() {
                     )
                 )
             } else {
-                // Update existing tool window with the new console component
-                toolWindow.contentManager.getContent(0)?.component = console.component
+                if (ApplicationUtils.isIdeaVersionLessThan2023) {
+                    // Remove existing content if any
+                    toolWindow.contentManager.removeAllContents(true)
+
+                    // Add new content
+                    val content = toolWindow.contentManager.factory.createContent(
+                        console.component,
+                        "",
+                        false
+                    )
+                    toolWindow.contentManager.addContent(content)
+                } else {
+                    // Update existing tool window with the new console component
+                    toolWindow.contentManager.getContent(0)?.component = console.component
+                }
             }
+            toolWindow.show()
         }
 
         console
