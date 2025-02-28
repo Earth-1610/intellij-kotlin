@@ -11,6 +11,19 @@ repositories {
     mavenCentral()
 }
 
+tasks.withType<JavaCompile>().configureEach {
+    sourceCompatibility = "11"
+    targetCompatibility = "11"
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    kotlinOptions {
+        jvmTarget = "11"
+        apiVersion = "1.8"
+        languageVersion = "1.8"
+    }
+}
+
 dependencies {
     implementation(project(":commons"))
     implementation(project(":guice-action"))

@@ -3,7 +3,7 @@ package com.itangcent.intellij.config.rule
 import com.google.inject.Inject
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiMethod
-import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.context.ActionContextBuilder
 import com.itangcent.intellij.extend.guice.with
 import com.itangcent.testFramework.ContextLightCodeInsightFixtureTestCase
 import java.util.Collection
@@ -25,7 +25,7 @@ internal class SimpleRuleParserTest : ContextLightCodeInsightFixtureTestCase() {
 
     private lateinit var getUserInfoPsiMethod: PsiMethod
 
-    override fun bind(builder: ActionContext.ActionContextBuilder) {
+    override fun bind(builder: ActionContextBuilder) {
         super.bind(builder)
         builder.bind(RuleParser::class) { it.with(SimpleRuleParser::class) }
     }

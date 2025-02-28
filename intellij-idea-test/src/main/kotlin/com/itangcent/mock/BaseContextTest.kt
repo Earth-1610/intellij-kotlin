@@ -4,6 +4,7 @@ import com.google.inject.Inject
 import com.intellij.openapi.project.Project
 import com.itangcent.intellij.config.ConfigReader
 import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.context.ActionContextBuilder
 import com.itangcent.intellij.extend.guice.with
 import com.itangcent.intellij.jvm.dev.DevEnv
 import com.itangcent.intellij.logger.Logger
@@ -54,7 +55,7 @@ abstract class BaseContextTest {
 
     }
 
-    protected open fun bind(builder: ActionContext.ActionContextBuilder) {}
+    protected open fun bind(builder: ActionContextBuilder) {}
 
     @AfterEach
     fun tearDown() {

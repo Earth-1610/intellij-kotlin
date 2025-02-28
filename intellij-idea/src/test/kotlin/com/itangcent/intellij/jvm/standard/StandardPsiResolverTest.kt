@@ -4,6 +4,7 @@ import com.google.inject.Inject
 import com.intellij.psi.PsiClass
 import com.itangcent.common.utils.GsonUtils
 import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.context.ActionContextBuilder
 import com.itangcent.intellij.extend.guice.with
 import com.itangcent.intellij.jvm.PsiResolver
 import com.itangcent.testFramework.ContextLightCodeInsightFixtureTestCase
@@ -46,7 +47,7 @@ internal class StandardPsiResolverTest : ContextLightCodeInsightFixtureTestCase(
         staticInnerClassBPsiClass = nestedClassBPsiClass.allInnerClasses.last()
     }
 
-    override fun bind(builder: ActionContext.ActionContextBuilder) {
+    override fun bind(builder: ActionContextBuilder) {
         super.bind(builder)
         builder.bind(PsiResolver::class) {
             it.with(StandardPsiResolver::class)

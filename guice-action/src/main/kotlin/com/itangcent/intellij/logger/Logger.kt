@@ -101,7 +101,7 @@ interface Logger : com.itangcent.common.logger.ILogger {
             }
 
             fun toLevel(levelStr: String?, defaultLevel: Level): Level {
-                return when (levelStr?.toUpperCase()) {
+                return when (levelStr?.uppercase()) {
                     null -> defaultLevel
                     "ALL" -> ALL
                     "DEBUG" -> DEBUG

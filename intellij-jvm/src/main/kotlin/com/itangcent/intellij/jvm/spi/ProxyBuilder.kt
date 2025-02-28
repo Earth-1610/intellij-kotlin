@@ -4,6 +4,7 @@ import com.itangcent.common.logger.ILogger
 import com.itangcent.common.spi.ProxyBean
 import com.itangcent.common.spi.SpiUtils
 import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.context.ActionContextBuilder
 import com.itangcent.intellij.extend.guice.EnhancedInvocationHandler
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
@@ -60,7 +61,7 @@ class ProxyBuilder {
         private var logger: ILogger? = SpiUtils.loadService(ILogger::class)
     }
 
-    fun buildProxy(actionContextBuilder: ActionContext.ActionContextBuilder): Any {
+    fun buildProxy(actionContextBuilder: ActionContextBuilder): Any {
         val delegates: Array<Any?> = Array(delegateBuilders.size) { null }
         for ((index, delegateBuilder) in delegateBuilders.withIndex()) {
             delegates[index] = delegateBuilder.buildInstance(delegates)

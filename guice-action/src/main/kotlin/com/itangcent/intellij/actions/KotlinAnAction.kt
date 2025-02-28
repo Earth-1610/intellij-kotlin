@@ -7,8 +7,8 @@ import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.project.Project
 import com.itangcent.common.exception.ProcessCanceledException
 import com.itangcent.common.logger.Log
-import com.itangcent.common.spi.Setup
 import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.context.ActionContextBuilder
 import com.itangcent.intellij.logger.NotificationHelper
 import org.apache.commons.lang3.exception.ExceptionUtils
 import javax.swing.Icon
@@ -22,7 +22,7 @@ abstract class KotlinAnAction : AnAction {
 
     protected open fun onBuildActionContext(
         event: AnActionEvent,
-        builder: ActionContext.ActionContextBuilder
+        builder: ActionContextBuilder
     ) {
     }
 
@@ -64,10 +64,6 @@ abstract class KotlinAnAction : AnAction {
         anActionEvent: AnActionEvent
     )
 
-    companion object : Log() {
-        init {
-            Setup.load(KotlinAnAction::class.java.classLoader)
-        }
-    }
+    companion object : Log()
 }
 
