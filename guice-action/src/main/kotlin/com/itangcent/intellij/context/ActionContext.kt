@@ -14,13 +14,16 @@ import com.itangcent.common.concurrent.AQSCountLatch
 import com.itangcent.common.concurrent.CountLatch
 import com.itangcent.common.concurrent.ValueHolder
 import com.itangcent.common.exception.ProcessCanceledException
+import com.itangcent.common.logger.Log
 import com.itangcent.common.logger.traceError
+import com.itangcent.common.spi.Setup
 import com.itangcent.common.spi.SpiUtils
 import com.itangcent.common.utils.IDUtils
 import com.itangcent.common.utils.ThreadPoolUtils
 import com.itangcent.common.utils.safe
 import com.itangcent.intellij.CustomInfo
 import com.itangcent.intellij.constant.EventKey
+import com.itangcent.intellij.context.ActionContext.*
 import com.itangcent.intellij.extend.guice.*
 import com.itangcent.intellij.logger.Logger
 import org.aopalliance.intercept.MethodInterceptor
@@ -65,12 +68,12 @@ class ActionContext {
     //Use guice to manage the current context instance lifecycle and dependencies
     private var injector: Injector
 
-    private constructor(vararg modules: Module) {
+    internal constructor(vararg modules: Module) {
         val appendModules: MutableList<Module> = ArrayList()
         appendModules.addAll(modules)
         appendModules.add(ContextModule(this))
-        injector = Guice.createInjector(appendModules)!!
         initContextStatus()
+        injector = Guice.createInjector(appendModules)!!
     }
 
     private fun initContextStatus() {
@@ -658,18 +661,22 @@ class ActionContext {
         return activeThreadCnt[threadFlag.ordinal].get()
     }
 
-    private fun onStart() {
+    internal fun onStart() {
         this.call(EventKey.ON_START)
     }
 
     private var parentActionContext: ActionContext? = null
 
-    private fun setParentContext(actionContext: ActionContext) {
+    internal fun setParentContext(actionContext: ActionContext) {
         parentActionContext = actionContext
     }
 
     fun parentActionContext(): ActionContext? {
         return this.parentActionContext
+    }
+
+    private fun isReady(): Boolean {
+        return this.injector != null && !isStopped()
     }
 
     companion object {
@@ -683,7 +690,7 @@ class ActionContext {
          * Get actionContext in the current thread
          */
         fun getContext(): ActionContext? {
-            return getLocalContextStatus()?.actionContext
+            return getLocalContextStatus()?.actionContext?.takeIf { it.isReady() }
         }
 
         fun getFlag(): Int {
@@ -821,136 +828,6 @@ class ActionContext {
         return getLocalContextStatus() ?: rootContextStatus
     }
 
-    /**
-     * Allows overridden existing bindings,instead of throwing exceptions
-     */
-    class ActionContextBuilder : ModuleActions {
-
-        override fun <T : Any> bind(type: Class<T>, callBack: (LinkedBindingBuilder<T>) -> Unit) {
-            moduleActions.removeIf {
-                (it.size == 3 && it[0] == BindAction.BIND_INSTANCE_WITH_CLASS && it[1] == type) ||
-                        (it.size == 3 && it[0] == BindAction.BIND && it[1] == type)
-            }
-            moduleActions.add(arrayOf(BindAction.BIND, type, callBack))
-        }
-
-        override fun <T : Any> bind(
-            type: Class<T>,
-            annotationType: Class<out Annotation>,
-            callBack: (LinkedBindingBuilder<T>) -> Unit
-        ) {
-            moduleActions.removeIf {
-                it.size == 4 && it[0] == BindAction.BIND_WITH_ANNOTATION_TYPE && it[1] == type && it[2] == annotationType
-            }
-            moduleActions.add(arrayOf(BindAction.BIND_WITH_ANNOTATION_TYPE, type, annotationType, callBack))
-        }
-
-        override fun <T : Any> bind(
-            type: Class<T>,
-            annotation: Annotation,
-            callBack: (LinkedBindingBuilder<T>) -> Unit
-        ) {
-            moduleActions.removeIf {
-                it.size == 4 && it[0] == BindAction.BIND_WITH_ANNOTATION && it[1] == type && it[2] == annotation
-            }
-            moduleActions.add(arrayOf(BindAction.BIND_WITH_ANNOTATION, type, annotation, callBack))
-        }
-
-        override fun <T : Any> bind(type: Class<T>, namedText: String, callBack: (LinkedBindingBuilder<T>) -> Unit) {
-            moduleActions.removeIf {
-                it.size == 4 && it[0] == BindAction.BIND_WITH_NAME && it[1] == type && it[2] == namedText
-            }
-            moduleActions.add(arrayOf(BindAction.BIND_WITH_NAME, type, namedText, callBack))
-        }
-
-        override fun <T : Any> bindInstance(name: String, instance: T) {
-            moduleActions.removeIf {
-                it.size == 3 && it[0] == BindAction.BIND_INSTANCE_WITH_NAME && it[1] == name
-            }
-            moduleActions.add(arrayOf(BindAction.BIND_INSTANCE_WITH_NAME, name, instance))
-        }
-
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : Any> bindInstance(instance: T) {
-            bindInstance(instance::class as KClass<T>, instance)
-        }
-
-        override fun <T : Any> bindInstance(cls: Class<T>, instance: T) {
-            moduleActions.removeIf {
-                (it.size == 3 && it[0] == BindAction.BIND_INSTANCE_WITH_CLASS && it[1] == cls) ||
-                        (it.size == 3 && it[0] == BindAction.BIND && it[1] == cls)
-            }
-            moduleActions.add(arrayOf(BindAction.BIND_INSTANCE_WITH_CLASS, cls, instance))
-        }
-
-        override fun <T : Any> bindInstanceWith(cls: Class<T>, instance: () -> T) {
-            moduleActions.add(arrayOf(BindAction.BIND_INSTANCE_WITH_GENERATOR, cls, instance))
-        }
-
-        override fun bindInterceptor(
-            classMatcher: Matcher<in Class<*>>,
-            methodMatcher: Matcher<in Method>,
-            vararg interceptors: MethodInterceptor
-        ) {
-            moduleActions.add(arrayOf(BindAction.BIND_INTERCEPTOR, classMatcher, methodMatcher, interceptors))
-        }
-
-        override fun bindConstant(callBack: (AnnotatedConstantBindingBuilder) -> Unit) {
-            moduleActions.add(arrayOf(BindAction.BIND_CONSTANT, callBack))
-        }
-
-        private val appendModules: MutableList<Module> = LinkedList()
-
-        private val moduleActions: MutableList<Array<Any>> = LinkedList()
-
-        private val contextActions: MutableList<(ActionContext) -> Unit> = LinkedList()
-
-        fun setParentContext(actionContext: ActionContext) {
-            contextActions.add { it.setParentContext(actionContext) }
-        }
-
-        fun <T : Any> inheritFrom(parent: ActionContext, cls: KClass<T>) {
-            this.bindInstance(cls, parent.instance(cls))
-        }
-
-        fun addModule(vararg modules: Module) {
-            this.appendModules.addAll(modules)
-        }
-
-        override fun cache(name: String, bean: Any?) {
-            contextActions.add { it.cache(name, bean) }
-        }
-
-        override fun addAction(action: (ActionContext) -> Unit) {
-            contextActions.add(action)
-        }
-
-        @Suppress("UNCHECKED_CAST")
-        fun getInterceptorFor(injectClass: Class<*>): List<MethodInterceptor> {
-            return moduleActions.asSequence()
-                .filter { it[0] == BindAction.BIND_INTERCEPTOR }
-                .filter { (it[1] as Matcher<in Class<*>>).matches(injectClass) }
-                .map { it[3] as Array<MethodInterceptor> }
-                .flatMap { it.asSequence() }
-                .toList()
-        }
-
-        fun build(): ActionContext {
-            if (moduleActions.isNotEmpty()) {
-                appendModules.add(ConfiguredModule(this, ArrayList(moduleActions)))
-            }
-
-            val actionContext = ActionContext(*appendModules.toTypedArray())
-            actionContext.mainBoundary = actionContext.createBoundary() as InnerBoundary
-            contextActions.forEach { it(actionContext) }
-            actionContext.runAsync {
-                actionContext.onStart()
-            }
-
-            return actionContext
-        }
-    }
-
     enum class BindAction(val key: String) {
         BIND_WITH_ANNOTATION_TYPE("bindWithAnnotationType"),
         BIND_WITH_ANNOTATION("bindWithAnnotation"),
@@ -961,7 +838,9 @@ class ActionContext {
         BIND_INSTANCE_WITH_GENERATOR("bindInstanceWithGenerator"),
         BIND_INSTANCE_WITH_NAME("bindInstanceWithName"),
         BIND_INTERCEPTOR("bindInterceptor"),
-        BIND_CONSTANT("bindConstant")
+        BIND_CONSTANT("bindConstant"),
+        BIND_METHOD_HANDLER("bindMethodHandler"),
+        BIND_FIELD_HANDLER("bindFieldHandler")
     }
 
     class ConfiguredModule(
@@ -1016,7 +895,11 @@ class ActionContext {
 
                         BindAction.BIND -> {
                             (moduleAction[2] as ((LinkedBindingBuilder<*>) -> Unit))(
-                                bind(moduleAction[1] as Class<*>)
+                                try {
+                                    bind(moduleAction[1] as Class<*>)
+                                } catch (e: Exception) {
+                                    TODO("Not yet implemented")
+                                }
                             )
                         }
 
@@ -1031,6 +914,20 @@ class ActionContext {
                         BindAction.BIND_CONSTANT -> {
                             (moduleAction[1] as ((AnnotatedConstantBindingBuilder) -> Unit)).invoke(
                                 bindConstant()
+                            )
+                        }
+
+                        BindAction.BIND_METHOD_HANDLER -> {
+                            bindMethodHandler(
+                                moduleAction[1] as Class<Annotation>,
+                                moduleAction[2] as MethodHandler<Any?, Annotation>
+                            )
+                        }
+
+                        BindAction.BIND_FIELD_HANDLER -> {
+                            bindFieldHandler(
+                                moduleAction[1] as Class<Annotation>,
+                                moduleAction[2] as FieldHandler<Any?, Annotation>
                             )
                         }
                     }
@@ -1149,6 +1046,172 @@ class ActionContext {
         )
 
         fun bindConstant(callBack: (AnnotatedConstantBindingBuilder) -> Unit)
+
+        fun <A : Annotation> bindMethodHandler(
+            annotationType: Class<A>,
+            methodHandler: MethodHandler<Any?, Annotation>
+        )
+
+        fun <A : Annotation> bindFieldHandler(
+            annotationType: Class<A>,
+            fieldHandler: FieldHandler<Any?, Annotation>
+        )
+    }
+}
+
+/**
+ * Allows overridden existing bindings,instead of throwing exceptions
+ */
+class ActionContextBuilder : ModuleActions {
+
+    override fun <T : Any> bind(type: Class<T>, callBack: (LinkedBindingBuilder<T>) -> Unit) {
+        moduleActions.removeIf {
+            (it.size == 3 && it[0] == BindAction.BIND_INSTANCE_WITH_CLASS && it[1] == type) ||
+                    (it.size == 3 && it[0] == BindAction.BIND && it[1] == type)
+        }
+        moduleActions.add(arrayOf(BindAction.BIND, type, callBack))
+    }
+
+    override fun <T : Any> bind(
+        type: Class<T>,
+        annotationType: Class<out Annotation>,
+        callBack: (LinkedBindingBuilder<T>) -> Unit
+    ) {
+        moduleActions.removeIf {
+            it.size == 4 && it[0] == BindAction.BIND_WITH_ANNOTATION_TYPE && it[1] == type && it[2] == annotationType
+        }
+        moduleActions.add(arrayOf(BindAction.BIND_WITH_ANNOTATION_TYPE, type, annotationType, callBack))
+    }
+
+    override fun <T : Any> bind(
+        type: Class<T>,
+        annotation: Annotation,
+        callBack: (LinkedBindingBuilder<T>) -> Unit
+    ) {
+        moduleActions.removeIf {
+            it.size == 4 && it[0] == BindAction.BIND_WITH_ANNOTATION && it[1] == type && it[2] == annotation
+        }
+        moduleActions.add(arrayOf(BindAction.BIND_WITH_ANNOTATION, type, annotation, callBack))
+    }
+
+    override fun <T : Any> bind(type: Class<T>, namedText: String, callBack: (LinkedBindingBuilder<T>) -> Unit) {
+        moduleActions.removeIf {
+            it.size == 4 && it[0] == BindAction.BIND_WITH_NAME && it[1] == type && it[2] == namedText
+        }
+        moduleActions.add(arrayOf(BindAction.BIND_WITH_NAME, type, namedText, callBack))
+    }
+
+    override fun <T : Any> bindInstance(name: String, instance: T) {
+        moduleActions.removeIf {
+            it.size == 3 && it[0] == BindAction.BIND_INSTANCE_WITH_NAME && it[1] == name
+        }
+        moduleActions.add(arrayOf(BindAction.BIND_INSTANCE_WITH_NAME, name, instance))
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : Any> bindInstance(instance: T) {
+        bindInstance(instance::class as KClass<T>, instance)
+    }
+
+    override fun <T : Any> bindInstance(cls: Class<T>, instance: T) {
+        moduleActions.removeIf {
+            (it.size == 3 && it[0] == BindAction.BIND_INSTANCE_WITH_CLASS && it[1] == cls) ||
+                    (it.size == 3 && it[0] == BindAction.BIND && it[1] == cls)
+        }
+        moduleActions.add(arrayOf(BindAction.BIND_INSTANCE_WITH_CLASS, cls, instance))
+    }
+
+    override fun <T : Any> bindInstanceWith(cls: Class<T>, instance: () -> T) {
+        moduleActions.add(arrayOf(BindAction.BIND_INSTANCE_WITH_GENERATOR, cls, instance))
+    }
+
+    override fun bindInterceptor(
+        classMatcher: Matcher<in Class<*>>,
+        methodMatcher: Matcher<in Method>,
+        vararg interceptors: MethodInterceptor
+    ) {
+        moduleActions.add(arrayOf(BindAction.BIND_INTERCEPTOR, classMatcher, methodMatcher, interceptors))
+    }
+
+    override fun bindConstant(callBack: (AnnotatedConstantBindingBuilder) -> Unit) {
+        moduleActions.add(arrayOf(BindAction.BIND_CONSTANT, callBack))
+    }
+
+    override fun <A : Annotation> bindMethodHandler(
+        annotationType: Class<A>,
+        methodHandler: MethodHandler<Any?, Annotation>
+    ) {
+        moduleActions.removeIf {
+            it.size == 3 && it[0] == BindAction.BIND_METHOD_HANDLER && it[1] == annotationType
+        }
+        moduleActions.add(arrayOf(BindAction.BIND_METHOD_HANDLER, annotationType, methodHandler))
+    }
+
+    override fun <A : Annotation> bindFieldHandler(
+        annotationType: Class<A>,
+        fieldHandler: FieldHandler<Any?, Annotation>
+    ) {
+        moduleActions.removeIf {
+            it.size == 3 && it[0] == BindAction.BIND_FIELD_HANDLER && it[1] == annotationType
+        }
+        moduleActions.add(arrayOf(BindAction.BIND_FIELD_HANDLER, annotationType, fieldHandler))
+    }
+
+    private val appendModules: MutableList<Module> = LinkedList()
+
+    private val moduleActions: MutableList<Array<Any>> = LinkedList()
+
+    private val contextActions: MutableList<(ActionContext) -> Unit> = LinkedList()
+
+    fun setParentContext(actionContext: ActionContext) {
+        contextActions.add { it.setParentContext(actionContext) }
+    }
+
+    fun <T : Any> inheritFrom(parent: ActionContext, cls: KClass<T>) {
+        this.bindInstance(cls, parent.instance(cls))
+    }
+
+    fun addModule(vararg modules: Module) {
+        this.appendModules.addAll(modules)
+    }
+
+    override fun cache(name: String, bean: Any?) {
+        contextActions.add { it.cache(name, bean) }
+    }
+
+    override fun addAction(action: (ActionContext) -> Unit) {
+        contextActions.add(action)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun getInterceptorFor(injectClass: Class<*>): List<MethodInterceptor> {
+        return moduleActions.asSequence()
+            .filter { it[0] == BindAction.BIND_INTERCEPTOR }
+            .filter { (it[1] as Matcher<in Class<*>>).matches(injectClass) }
+            .map { it[3] as Array<MethodInterceptor> }
+            .flatMap { it.asSequence() }
+            .toList()
+    }
+
+    fun build(): ActionContext {
+        if (moduleActions.isNotEmpty()) {
+            appendModules.add(ConfiguredModule(this, ArrayList(moduleActions)))
+        }
+
+        val actionContext = ActionContext(*appendModules.toTypedArray())
+        actionContext.mainBoundary = actionContext.createBoundary() as InnerBoundary
+        contextActions.forEach { it(actionContext) }
+        actionContext.runAsync {
+            actionContext.onStart()
+        }
+
+        return actionContext
+    }
+
+    companion object : Log() {
+        init {
+            Setup.load(ActionContextBuilder::class.java.classLoader)
+        }
     }
 }
 

@@ -1,7 +1,7 @@
 package com.itangcent.intellij.config
 
 import com.google.inject.Inject
-import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.context.ActionContextBuilder
 import com.itangcent.intellij.extend.guice.with
 import com.itangcent.intellij.jvm.dev.DevEnv
 import com.itangcent.mock.AdvancedContextTest
@@ -20,7 +20,7 @@ internal class ConfigReaderDevEnvSupporterTest : AdvancedContextTest() {
         return "dev=true"
     }
 
-    override fun bind(builder: ActionContext.ActionContextBuilder) {
+    override fun bind(builder: ActionContextBuilder) {
         super.bind(builder)
         builder.bind(DevEnv::class) { it.with(ConfigReaderDevEnvSupporter::class) }
     }

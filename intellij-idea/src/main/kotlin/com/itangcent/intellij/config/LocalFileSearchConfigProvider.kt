@@ -1,11 +1,9 @@
 package com.itangcent.intellij.config
 
 import com.google.inject.Inject
-import com.intellij.util.containers.isNullOrEmpty
 import com.itangcent.intellij.config.resource.ResourceResolver
 import com.itangcent.intellij.file.FileHelper
 import com.itangcent.intellij.logger.Logger
-import java.util.*
 
 abstract class LocalFileSearchConfigProvider : ConfigProvider {
     override fun loadConfig(): Sequence<ConfigContent> {
@@ -26,13 +24,5 @@ abstract class LocalFileSearchConfigProvider : ConfigProvider {
 
     abstract fun configFileNames(): List<String>
 
-    private fun findConfigFiles(): List<String>? {
-        val configFiles = fileHelper.searchConfigFiles(configFileNames())
-        if (configFiles.isNullOrEmpty()) {
-            logger.trace("No config be found")
-        } else {
-            return configFiles
-        }
-        return Collections.emptyList()
-    }
+    private fun findConfigFiles(): List<String>? = fileHelper.searchConfigFiles(configFileNames())
 }

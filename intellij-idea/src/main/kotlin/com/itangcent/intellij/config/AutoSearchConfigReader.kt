@@ -1,9 +1,7 @@
 package com.itangcent.intellij.config
 
 import com.google.inject.Inject
-import com.intellij.util.containers.isNullOrEmpty
 import com.itangcent.intellij.file.FileHelper
-import java.util.*
 
 @Deprecated("use LocalFileSearchConfigProvider")
 abstract class AutoSearchConfigReader : BaseConfigReader() {
@@ -20,13 +18,5 @@ abstract class AutoSearchConfigReader : BaseConfigReader() {
         }
     }
 
-    private fun findConfigFiles(): List<String>? {
-        val configFiles = fileHelper.searchConfigFiles(configFileNames())
-        if (configFiles.isNullOrEmpty()) {
-            logger.trace("No config be found")
-        } else {
-            return configFiles
-        }
-        return Collections.emptyList()
-    }
+    private fun findConfigFiles(): List<String>? = fileHelper.searchConfigFiles(configFileNames())
 }

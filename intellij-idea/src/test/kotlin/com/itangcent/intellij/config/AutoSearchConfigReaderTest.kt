@@ -4,7 +4,7 @@ import com.google.inject.Inject
 import com.intellij.openapi.module.Module
 import com.itangcent.common.utils.ResourceUtils
 import com.itangcent.common.utils.forceMkdirParent
-import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.context.ActionContextBuilder
 import com.itangcent.intellij.extend.guice.PostConstruct
 import com.itangcent.intellij.extend.guice.with
 import com.itangcent.intellij.psi.ContextSwitchListener
@@ -37,7 +37,7 @@ class AutoSearchConfigReaderTest : AdvancedContextTest() {
         }
     }
 
-    override fun bind(builder: ActionContext.ActionContextBuilder) {
+    override fun bind(builder: ActionContextBuilder) {
         super.bind(builder)
         builder.bind(ConfigReader::class) { it.with(TestPathSearchConfigReader::class) }
 

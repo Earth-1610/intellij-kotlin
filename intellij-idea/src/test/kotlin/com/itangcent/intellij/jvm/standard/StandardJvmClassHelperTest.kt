@@ -3,14 +3,13 @@ package com.itangcent.intellij.jvm.standard
 import com.google.inject.Inject
 import com.intellij.psi.PsiClass
 import com.intellij.psi.util.PsiTypesUtil
-import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.context.ActionContextBuilder
 import com.itangcent.intellij.extend.guice.with
 import com.itangcent.intellij.jvm.JvmClassHelper
 import com.itangcent.testFramework.ContextLightCodeInsightFixtureTestCase
 import junit.framework.Assert
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
 
 /**
  * Test case of [StandardJvmClassHelper]
@@ -58,7 +57,7 @@ internal class StandardJvmClassHelperTest : ContextLightCodeInsightFixtureTestCa
         numbersPsiClass = loadClass("constant/Numbers.java")!!
     }
 
-    override fun bind(builder: ActionContext.ActionContextBuilder) {
+    override fun bind(builder: ActionContextBuilder) {
         super.bind(builder)
         builder.bind(JvmClassHelper::class.java) { it.with(StandardJvmClassHelper::class) }
     }
@@ -230,14 +229,15 @@ internal class StandardJvmClassHelperTest : ContextLightCodeInsightFixtureTestCa
         assertFalse(jvmClassHelper.isPrimitiveWrapper(javaVersionPsiClass.qualifiedName!!))
         assertFalse(jvmClassHelper.isPrimitiveWrapper(numbersPsiClass.qualifiedName!!))
     }
-    fun testIsAccepted() {
-        assertTrue(jvmClassHelper.isAccepted("int","int"))
-        assertTrue(jvmClassHelper.isAccepted(integerPsiClass.qualifiedName!!,"int"))
-        assertTrue(jvmClassHelper.isAccepted("int",integerPsiClass.qualifiedName!!))
 
-        assertTrue(jvmClassHelper.isAccepted("long","long"))
-        assertTrue(jvmClassHelper.isAccepted(longPsiClass.qualifiedName!!,"long"))
-        assertTrue(jvmClassHelper.isAccepted("long",longPsiClass.qualifiedName!!))
+    fun testIsAccepted() {
+        assertTrue(jvmClassHelper.isAccepted("int", "int"))
+        assertTrue(jvmClassHelper.isAccepted(integerPsiClass.qualifiedName!!, "int"))
+        assertTrue(jvmClassHelper.isAccepted("int", integerPsiClass.qualifiedName!!))
+
+        assertTrue(jvmClassHelper.isAccepted("long", "long"))
+        assertTrue(jvmClassHelper.isAccepted(longPsiClass.qualifiedName!!, "long"))
+        assertTrue(jvmClassHelper.isAccepted("long", longPsiClass.qualifiedName!!))
     }
 
     fun testGetDefaultValue() {

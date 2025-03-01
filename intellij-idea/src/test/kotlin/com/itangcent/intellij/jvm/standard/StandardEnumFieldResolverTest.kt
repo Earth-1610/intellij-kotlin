@@ -3,7 +3,7 @@ package com.itangcent.intellij.jvm.standard
 import com.google.inject.Inject
 import com.intellij.psi.*
 import com.itangcent.common.utils.GsonUtils
-import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.context.ActionContextBuilder
 import com.itangcent.intellij.extend.guice.with
 import com.itangcent.testFramework.ContextLightCodeInsightFixtureTestCase
 import junit.framework.Assert
@@ -33,7 +33,7 @@ internal class StandardEnumFieldResolverTest : ContextLightCodeInsightFixtureTes
         myNoArgConstantPsiClass = loadClass("constant/MyNoArgConstant.java")!!
     }
 
-    override fun bind(builder: ActionContext.ActionContextBuilder) {
+    override fun bind(builder: ActionContextBuilder) {
         super.bind(builder)
         builder.bind(StandardEnumFieldResolver::class.java) { it.with(StandardEnumFieldResolverImpl::class) }
     }
@@ -138,7 +138,7 @@ internal class StandardEnumFieldResolverTest : ContextLightCodeInsightFixtureTes
         }
         val psiClass: PsiClass = mock {
             Mockito.`when`(it.constructors).thenReturn(
-                arrayOf(construct0,construct1)
+                arrayOf(construct0, construct1)
             )
         }
         run {

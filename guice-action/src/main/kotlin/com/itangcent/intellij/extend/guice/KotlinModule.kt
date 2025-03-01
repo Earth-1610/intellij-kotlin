@@ -20,7 +20,7 @@ import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import kotlin.reflect.KClass
 import kotlin.reflect.full.declaredMemberProperties
-import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.findAnnotations
 import kotlin.reflect.jvm.javaField
 
 open class KotlinModule : AbstractModule() {
@@ -117,20 +117,17 @@ open class KotlinModule : AbstractModule() {
                         })
                     }
                 }
-                val kotlinCls = annotationType.kotlin
+                val kotlinCls = type.kotlin
+                val annotationTypeKCls = annotationType.kotlin
                 for (declaredMemberProperty in kotlinCls.declaredMemberProperties) {
-                    val annotation = declaredMemberProperty.findAnnotation<PostConstruct>()
+                    val annotation = declaredMemberProperty.findAnnotations(annotationTypeKCls).firstOrNull()
                     if (annotation != null && names.add(declaredMemberProperty.name)) {
                         val provider = encounterProvider[encounter]
-                        declaredMemberProperty.javaField?.let {
+                        declaredMemberProperty.javaField?.let { field ->
                             encounter.register(InjectionListener { injectee ->
                                 val fieldHandler = provider.get()
-
                                 try {
-                                    fieldHandler.afterInjection(
-                                        injectee, annotation,
-                                        it
-                                    )
+                                    fieldHandler.afterInjection(injectee, annotation, field)
                                 } catch (ie: InvocationTargetException) {
                                     val e = ie.targetException
                                     throw ProvisionException(e.message, e)

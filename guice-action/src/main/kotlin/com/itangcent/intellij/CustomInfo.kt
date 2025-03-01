@@ -3,6 +3,7 @@ package com.itangcent.intellij
 import com.itangcent.common.spi.SetupAble
 import com.itangcent.common.spi.SpiUtils
 import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.context.ActionContextBuilder
 
 /**
  * Interface for providing custom plugin information.
@@ -23,10 +24,10 @@ const val PLUGIN_NAME = "plugin.name"
 
 /**
  * Extension function for ActionContextBuilder to bind a plugin name.
- * 
+ *
  * @param pluginName The name of the plugin to be bound
  */
-fun ActionContext.ActionContextBuilder.bindPluginName(pluginName: String) {
+fun ActionContextBuilder.bindPluginName(pluginName: String) {
     bindInstance(PLUGIN_NAME, pluginName)
 }
 
@@ -37,9 +38,10 @@ class CustomInfoSupporter : SetupAble {
     override fun init() {
         // Load CustomInfo service implementation if available
         SpiUtils.loadService(CustomInfo::class)?.let { customInfo ->
+            val pluginName = customInfo.pluginName()
             // Add default injection to ActionContext with the plugin name
             ActionContext.addDefaultInject {
-                it.bindPluginName(customInfo.pluginName())
+                it.bindPluginName(pluginName)
             }
         }
     }

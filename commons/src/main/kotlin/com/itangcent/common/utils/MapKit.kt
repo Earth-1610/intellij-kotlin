@@ -7,21 +7,17 @@ import com.itangcent.common.spi.SpiUtils
 object MapKit
 
 fun <K, V> MutableMap<K, V>.safeComputeIfAbsent(key: K, mappingFunction: (K) -> V?): V? {
-    var mappingValue: V? = null
+    val computedValue by lazy { safe { mappingFunction(key) } }
     try {
         if (this.containsKey(key)) {
             return this[key]
         }
-        computeIfAbsent(key) {
-            mappingValue = mappingFunction(key)
-            mappingValue!!
+        return computeIfAbsent(key) {
+            computedValue!!
         }
-    } catch (e: NullPointerException) {
-        return null
-    } catch (e: Exception) {
-        mappingValue?.let { this[key] = it }
+    } catch (_: Exception) {
     }
-    return mappingValue
+    return computedValue
 }
 
 fun <K, V> Map<K, V>?.any(vararg ks: K): V? {
@@ -101,7 +97,7 @@ fun Map<*, *>.sub(key: String): MutableMap<String, Any?> {
 
 @Suppress("UNCHECKED_CAST")
 fun Map<*, *>.getSub(key: String): Map<String, Any?>? {
-    return this[key] as?  Map<String, Any?>
+    return this[key] as? Map<String, Any?>
 }
 
 fun MutableMap<*, *>.merge(map: Map<*, *>): MutableMap<*, *> {

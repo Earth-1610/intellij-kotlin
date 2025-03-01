@@ -20,6 +20,7 @@ import com.itangcent.intellij.bindPluginName
 import com.itangcent.intellij.config.BaseConfigReader
 import com.itangcent.intellij.config.ConfigReader
 import com.itangcent.intellij.context.ActionContext
+import com.itangcent.intellij.context.ActionContextBuilder
 import com.itangcent.intellij.extend.guice.PostConstruct
 import com.itangcent.intellij.extend.guice.singleton
 import com.itangcent.intellij.extend.guice.with
@@ -106,7 +107,7 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightJavaCodeInsightFixt
         }
     }
 
-    protected open fun bind(builder: ActionContext.ActionContextBuilder) {
+    protected open fun bind(builder: ActionContextBuilder) {
 
     }
 

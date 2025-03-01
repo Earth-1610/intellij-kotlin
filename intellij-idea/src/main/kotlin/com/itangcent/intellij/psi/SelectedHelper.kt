@@ -154,8 +154,8 @@ object SelectedHelper {
 @Singleton
 class SelectedContext {
 
-    @Inject
-    private lateinit var dataContextProvider: DataContextProvider
+    @Inject(optional = true)
+    private var dataContextProvider: DataContextProvider? = null
 
     private var context: Pair<DataKey<out Any>, Any>? = null
 
@@ -166,19 +166,19 @@ class SelectedContext {
 
     @Synchronized
     fun findContext() {
-        if (context != null) {
+        if (context != null || dataContextProvider == null) {
             return
         }
 
         //try to get navigatables
-        val navigatables = dataContextProvider.getData(CommonDataKeys.NAVIGATABLE_ARRAY)
+        val navigatables = dataContextProvider?.getData(CommonDataKeys.NAVIGATABLE_ARRAY)
         if (navigatables != null && navigatables.size > 1) {
             context = CommonDataKeys.NAVIGATABLE_ARRAY to navigatables
             return
         }
 
         //try to get psiFile
-        val psiFile = dataContextProvider.getData(CommonDataKeys.PSI_FILE)
+        val psiFile = dataContextProvider?.getData(CommonDataKeys.PSI_FILE)
         if (psiFile != null) {
             context = CommonDataKeys.PSI_FILE to psiFile
             return
@@ -191,7 +191,7 @@ class SelectedContext {
         }
 
         //try to get navigatable
-        val navigatable = dataContextProvider.getData(CommonDataKeys.NAVIGATABLE)
+        val navigatable = dataContextProvider?.getData(CommonDataKeys.NAVIGATABLE)
         if (navigatable != null) {
             context = CommonDataKeys.NAVIGATABLE to navigatable
             return
