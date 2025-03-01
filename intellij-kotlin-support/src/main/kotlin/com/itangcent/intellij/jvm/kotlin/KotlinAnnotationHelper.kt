@@ -14,6 +14,8 @@ import org.jetbrains.kotlin.asJava.classes.KtLightClass
 import org.jetbrains.kotlin.asJava.classes.KtLightClassForSourceDeclaration
 import org.jetbrains.kotlin.asJava.elements.KtLightMember
 import org.jetbrains.kotlin.idea.util.findAnnotation
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.ValueArgument
@@ -25,7 +27,7 @@ import org.jetbrains.kotlin.psi.ValueArgument
 class KotlinAnnotationHelper : AnnotationHelper {
 
     @Inject
-    private val fqNameHelper: FqNameHelper? = null
+    private lateinit var fqNameHelper: FqNameHelper
 
     @Inject(optional = true)
     private val psiClassHelper: PsiClassHelper? = null
@@ -37,7 +39,7 @@ class KotlinAnnotationHelper : AnnotationHelper {
     protected lateinit var actionContext: ActionContext
 
     @Inject
-    private val psiExpressionResolver: PsiExpressionResolver? = null
+    private lateinit var psiExpressionResolver: PsiExpressionResolver
 
     override fun hasAnn(psiElement: PsiElement?, annName: String): Boolean {
 
@@ -61,20 +63,20 @@ class KotlinAnnotationHelper : AnnotationHelper {
                         if (index == 0 && argumentName == "value") {
                             allValue = 1
                             ret[argumentName] =
-                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
+                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver.process(it) }
                         } else if (argumentName != null) {
                             allValue = -1
                             ret[argumentName] =
-                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
+                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver.process(it) }
                         } else if (allValue == 1) {
                             ++allValue
                             ret["value"] = arrayListOf(
                                 ret["value"],
-                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
+                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver.process(it) }
                             )
                         } else if (allValue > 1) {
                             (ret["value"] as ArrayList<Any?>).add(
-                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
+                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver.process(it) }
                             )
                         }
                     }
@@ -109,22 +111,22 @@ class KotlinAnnotationHelper : AnnotationHelper {
                         if (index == 0 && argumentName == "value") {
                             allValue = 1
                             values =
-                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
+                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver.process(it) }
                         } else if (argumentName != null) {
                             allValue = -1
                             if (attrs.contains(argumentName)) {
                                 return@callInReadUI valueArgument.getArgumentExpression()
-                                    ?.let { psiExpressionResolver!!.process(it) }
+                                    ?.let { psiExpressionResolver.process(it) }
                             }
                         } else if (allValue == 1) {
                             ++allValue
                             values = arrayListOf(
                                 values,
-                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
+                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver.process(it) }
                             )
                         } else if (allValue > 1) {
                             (values as ArrayList<Any?>).add(
-                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver!!.process(it) }
+                                valueArgument.getArgumentExpression()?.let { psiExpressionResolver.process(it) }
                             )
                         }
                     }
@@ -137,7 +139,7 @@ class KotlinAnnotationHelper : AnnotationHelper {
                         } == true
                     }
                     .mapNotNull { it.getArgumentExpression() }
-                    .map { psiExpressionResolver!!.process(it) }
+                    .map { psiExpressionResolver.process(it) }
                     .firstOrNull()
             }
         }
@@ -157,7 +159,7 @@ class KotlinAnnotationHelper : AnnotationHelper {
                     } == true
                 }
                 .mapNotNull { it.getArgumentExpression() }
-                .mapNotNull { psiExpressionResolver!!.process(it) }
+                .mapNotNull { psiExpressionResolver.process(it) }
                 .mapNotNull { tinyAnnStr(it) }
                 .longest()
         }
@@ -203,29 +205,25 @@ class KotlinAnnotationHelper : AnnotationHelper {
     }
 
     private fun findKtAnnotation(psiElement: PsiElement?, annName: String): KtAnnotationEntry? {
+        if (psiElement == null) return null
 
-        if (psiElement is KtLightMember<*>) {
-            val kotlinOrigin = psiElement.kotlinOrigin
-            if (kotlinOrigin != null) {
-                return actionContext.callInReadUI {
-                    return@callInReadUI kotlinOrigin.findAnnotation(fqNameHelper!!.of(annName))
+        return actionContext.callInReadUI {
+            when (psiElement) {
+                is KtLightMember<*> -> {
+                    psiElement.kotlinOrigin?.resolveAnnotation(annName)
                 }
-            }
-        }
 
-        if (psiElement is KtLightClassForSourceDeclaration) {
-            val kotlinOrigin = psiElement.kotlinOrigin
-            return actionContext.callInReadUI {
-                return@callInReadUI kotlinOrigin.findAnnotation(fqNameHelper!!.of(annName))
-            }
-        }
+                is KtLightClassForSourceDeclaration -> {
+                    psiElement.kotlinOrigin.resolveAnnotation(annName)
+                }
 
-        if (psiElement is KtDeclaration) {
-            return actionContext.callInReadUI {
-                return@callInReadUI psiElement.findAnnotation(fqNameHelper!!.of(annName))
+                is KtDeclaration -> {
+                    psiElement.resolveAnnotation(annName)
+                }
+
+                else -> null
             }
         }
-        return null
     }
 
     fun tinyAnnStr(annStr: Any?): String? {
@@ -235,6 +233,32 @@ class KotlinAnnotationHelper : AnnotationHelper {
             is Collection<*> -> annStr.joinToString(separator = "\n")
             is String -> annStr
             else -> GsonUtils.toJson(annStr)
+        }
+    }
+
+    /**
+     * Resolves an annotation on a Kotlin element by its fully qualified name.
+     *
+     * This function attempts to find an annotation in two ways:
+     * 1. First tries using Kotlin's standard [findAnnotation] API
+     * 2. If that fails (particularly in K2 mode where [findAnnotation] throws IllegalStateException
+     *    with message "KotlinCacheService should not be used for the K2 mode"),
+     *    falls back to manually searching through [annotationEntries]
+     *
+     * For K2 mode migration details, see https://kotl.in/analysis-api/
+     *
+     * @param annotationFqName The fully qualified name or simple name of the annotation to find
+     * @return The found [KtAnnotationEntry] or null if not found
+     */
+    private fun KtAnnotated.resolveAnnotation(annotationFqName: String): KtAnnotationEntry? {
+        return try {
+            findAnnotation(fqNameHelper.of(annotationFqName))
+        } catch (e: IllegalStateException) {
+            // Fallback for K2 mode or any other cases where findAnnotation fails
+            annotationEntries.find {
+                it.shortName?.asString() == FqName(annotationFqName).shortName().asString() ||
+                        it.shortName?.asString() == annotationFqName
+            }
         }
     }
 }
