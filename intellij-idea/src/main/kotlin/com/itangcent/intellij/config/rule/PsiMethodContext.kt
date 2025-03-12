@@ -7,7 +7,7 @@ import com.intellij.psi.PsiModifierListOwner
 import com.itangcent.common.utils.SimpleExtensible
 import com.itangcent.common.utils.cache
 import com.itangcent.intellij.jvm.element.ExplicitMethod
-import com.itangcent.intellij.psi.PsiClassUtils
+import com.itangcent.intellij.jvm.psi.PsiClassUtil
 
 open class PsiMethodContext : SimpleExtensible, RuleContext {
 
@@ -22,7 +22,7 @@ open class PsiMethodContext : SimpleExtensible, RuleContext {
     }
 
     override fun getName(): String? {
-        return this.cache("_name") { PsiClassUtils.qualifiedNameOfMethod(psiMethod) }
+        return this.cache("_name") { PsiClassUtil.qualifiedNameOfMethod(psiMethod) }
     }
 
     override fun getSimpleName(): String? {

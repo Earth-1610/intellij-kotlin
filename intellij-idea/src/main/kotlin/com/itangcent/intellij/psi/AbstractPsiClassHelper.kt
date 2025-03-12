@@ -22,6 +22,7 @@ import com.itangcent.intellij.jvm.element.ExplicitClass
 import com.itangcent.intellij.jvm.element.ExplicitElement
 import com.itangcent.intellij.jvm.element.ExplicitField
 import com.itangcent.intellij.jvm.element.ExplicitMethod
+import com.itangcent.intellij.jvm.psi.PsiClassUtil
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper
 import com.itangcent.intellij.jvm.standard.StandardJvmClassHelper.Companion.ELEMENT_OF_COLLECTION
 import com.itangcent.intellij.logger.Logger
@@ -97,7 +98,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     protected fun getResolveContext(): ResolveContext {
         resolveContext?.let { return it }
         val psiClass = contextSwitchListener.getContext().asPsiClass(jvmClassHelper)
-        val packageName = psiClass?.let { PsiClassUtils.getPackageNameOf(it) } ?: ""
+        val packageName = psiClass?.let { PsiClassUtil.getPackageNameOf(it) } ?: ""
         val basePackage = if (packageName.isEmpty()) {
             null
         } else {
@@ -718,7 +719,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                     resolveEnumOrStatic(
                         context,
                         first,
-                        PsiClassUtils.logicalNameOfMember(classAndPropertyOrMethod.second!!),
+                        PsiClassUtil.logicalNameOfMember(classAndPropertyOrMethod.second!!),
                         defaultPropertyName
                     )
                 } else {
@@ -819,7 +820,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             if (appropriateProperty.isNullOrBlank()) {
                 logger.debug(
                     "can not resolve ${cls.qualifiedName} for ${
-                        PsiClassUtils.qualifiedNameOfMember(
+                        PsiClassUtil.qualifiedNameOfMember(
                             context
                         )
                     }"
@@ -828,7 +829,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 devEnv?.dev {
                     logger.debug(
                         "select $appropriateProperty in ${cls.qualifiedName} for ${
-                            PsiClassUtils.qualifiedNameOfMember(
+                            PsiClassUtil.qualifiedNameOfMember(
                                 context
                             )
                         }"

@@ -35,8 +35,7 @@ public enum MyConstant {
     /**
      * 7th
      */
-    SEVEN
-    ;
+    SEVEN;
 
     /**
      * The standard name.
@@ -48,7 +47,6 @@ public enum MyConstant {
      */
     private final float value;
 
-
     /**
      * Constructor
      */
@@ -56,7 +54,6 @@ public enum MyConstant {
         this.value = 0;//default
         this.name = "default";
     }
-
 
     /**
      * Constructor.
@@ -127,5 +124,13 @@ public enum MyConstant {
     MyConstant(final float v, final String n) {
         this.value = v;
         this.name = n;
+    }
+
+    public String getFullName() {
+        return this.name() + "/" + value;
+    }
+
+    public String getCode() {
+        return name();
     }
 }

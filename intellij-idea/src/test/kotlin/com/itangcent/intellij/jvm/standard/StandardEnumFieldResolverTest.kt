@@ -2,11 +2,10 @@ package com.itangcent.intellij.jvm.standard
 
 import com.google.inject.Inject
 import com.intellij.psi.*
-import com.itangcent.common.utils.GsonUtils
 import com.itangcent.intellij.context.ActionContextBuilder
 import com.itangcent.intellij.extend.guice.with
 import com.itangcent.testFramework.ContextLightCodeInsightFixtureTestCase
-import junit.framework.Assert
+import com.itangcent.testFramework.assertMapEquals
 import org.mockito.Mockito
 import org.mockito.kotlin.mock
 
@@ -38,61 +37,98 @@ internal class StandardEnumFieldResolverTest : ContextLightCodeInsightFixtureTes
         builder.bind(StandardEnumFieldResolver::class.java) { it.with(StandardEnumFieldResolverImpl::class) }
     }
 
-
     fun testResolveEnumFields() {
         run {
             val fields = javaVersionPsiClass.fields
-            Assert.assertEquals(
-                "{\"name\":\"0.9\",\"value\":1.5}",
-                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(fields[0] as PsiEnumConstant))
+            assertMapEquals(
+                mapOf(
+                    "name" to "0.9",
+                    "value" to 1.5
+                ),
+                standardEnumFieldResolver.resolveEnumFields(fields[0] as PsiEnumConstant)
             )
         }
         run {
             val fields = myConstantPsiClass.fields
                 .filterIsInstance<PsiEnumConstant>()
-            Assert.assertEquals(
-                "{\"name\":\"a\",\"value\":1.1}",
-                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(fields[0] as PsiEnumConstant))
+            assertMapEquals(
+                mapOf(
+                    "name" to "a",
+                    "value" to 1.1,
+                    "fullName" to "ONE/1.1",
+                    "code" to "ONE"
+                ),
+                standardEnumFieldResolver.resolveEnumFields(fields[0] as PsiEnumConstant)
             )
-            Assert.assertEquals(
-                "{\"name\":\"b-s\",\"value\":4.4}",
-                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(fields[1]))
+            assertMapEquals(
+                mapOf(
+                    "name" to "b-s",
+                    "value" to 4.4,
+                    "fullName" to "TWO/4.4",
+                    "code" to "TWO"
+                ),
+                standardEnumFieldResolver.resolveEnumFields(fields[1])
             )
-            Assert.assertEquals(
-                "{\"name\":\"c\",\"value\":3.3}",
-                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(fields[2]))
+            assertMapEquals(
+                mapOf(
+                    "name" to "c",
+                    "value" to 3.3,
+                    "fullName" to "THREE/3.3",
+                    "code" to "THREE"
+                ),
+                standardEnumFieldResolver.resolveEnumFields(fields[2])
             )
-            Assert.assertEquals(
-                "{\"name\":\"d\",\"value\":0}",
-                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(fields[3]))
+            assertMapEquals(
+                mapOf(
+                    "name" to "d",
+                    "value" to 0,
+                    "fullName" to "FOUR/0",
+                    "code" to "FOUR"
+                ),
+                standardEnumFieldResolver.resolveEnumFields(fields[3])
             )
-            Assert.assertEquals(
-                "{\"name\":\"default:5.5\",\"value\":5.5}",
-                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(fields[4]))
+            assertMapEquals(
+                mapOf(
+                    "name" to "default:5.5",
+                    "value" to 5.5,
+                    "fullName" to "FIVE/5.5",
+                    "code" to "FIVE"
+                ),
+                standardEnumFieldResolver.resolveEnumFields(fields[4])
             )
-            Assert.assertEquals(
-                "{\"name\":\"f\",\"value\":23.1}",
-                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(fields[5]))
+            assertMapEquals(
+                mapOf(
+                    "name" to "f",
+                    "value" to 23.1,
+                    "fullName" to "SIX/23.1",
+                    "code" to "SIX"
+                ),
+                standardEnumFieldResolver.resolveEnumFields(fields[5])
             )
-            Assert.assertEquals(
-                "{\"name\":\"default\",\"value\":0}",
-                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(fields[6]))
+            assertMapEquals(
+                mapOf(
+                    "name" to "default",
+                    "value" to 0,
+                    "fullName" to "SEVEN/0",
+                    "code" to "SEVEN"
+                ),
+                standardEnumFieldResolver.resolveEnumFields(fields[6])
             )
         }
         run {
             val fields = myNoArgConstantPsiClass.fields
                 .filterIsInstance<PsiEnumConstant>()
-            Assert.assertEquals(
-                "{}",
-                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(fields[0] as PsiEnumConstant))
+            assertMapEquals(
+                mapOf<String, Any>(),
+                standardEnumFieldResolver.resolveEnumFields(fields[0] as PsiEnumConstant)
             )
-            Assert.assertEquals(
-                "{}",
-                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(fields[1]))
+            assertMapEquals(
+                mapOf<String, Any>(),
+                standardEnumFieldResolver.resolveEnumFields(fields[1])
             )
-            Assert.assertEquals(
-                "{}",
-                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(fields[2]))
+            assertMapEquals(
+                mapOf<String, Any>(),
+                standardEnumFieldResolver.resolveEnumFields(fields[2])
             )
         }
     }
@@ -140,6 +176,12 @@ internal class StandardEnumFieldResolverTest : ContextLightCodeInsightFixtureTes
             Mockito.`when`(it.constructors).thenReturn(
                 arrayOf(construct0, construct1)
             )
+            Mockito.`when`(it.methods).thenReturn(
+                emptyArray<PsiMethod>()
+            )
+            Mockito.`when`(it.interfaces).thenReturn(
+                emptyArray<PsiClass>()
+            )
         }
         run {
             val psiEnumConstant: PsiEnumConstant = mock {
@@ -147,9 +189,12 @@ internal class StandardEnumFieldResolverTest : ContextLightCodeInsightFixtureTes
                 Mockito.`when`(it.text).thenReturn("ERROR(40, \"ERROR\")")
                 Mockito.`when`(it.containingClass).thenReturn(psiClass)
             }
-            Assert.assertEquals(
-                "{\"levelInt\":40,\"levelStr\":\"ERROR\"}",
-                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(psiEnumConstant))
+            assertMapEquals(
+                mapOf(
+                    "levelInt" to 40,
+                    "levelStr" to "ERROR"
+                ),
+                standardEnumFieldResolver.resolveEnumFields(psiEnumConstant)
             )
         }
         run {
@@ -158,9 +203,12 @@ internal class StandardEnumFieldResolverTest : ContextLightCodeInsightFixtureTes
                 Mockito.`when`(it.text).thenReturn("DEFAULT")
                 Mockito.`when`(it.containingClass).thenReturn(psiClass)
             }
-            Assert.assertEquals(
-                "{\"levelInt\":-1,\"levelStr\":\"default\"}",
-                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(psiEnumConstant))
+            assertMapEquals(
+                mapOf(
+                    "levelInt" to -1,
+                    "levelStr" to "default"
+                ),
+                standardEnumFieldResolver.resolveEnumFields(psiEnumConstant)
             )
         }
         run {
@@ -169,9 +217,12 @@ internal class StandardEnumFieldResolverTest : ContextLightCodeInsightFixtureTes
                 Mockito.`when`(it.text).thenReturn("DEFAULT()")
                 Mockito.`when`(it.containingClass).thenReturn(psiClass)
             }
-            Assert.assertEquals(
-                "{\"levelInt\":-1,\"levelStr\":\"default\"}",
-                GsonUtils.toJson(standardEnumFieldResolver.resolveEnumFields(psiEnumConstant))
+            assertMapEquals(
+                mapOf(
+                    "levelInt" to -1,
+                    "levelStr" to "default"
+                ),
+                standardEnumFieldResolver.resolveEnumFields(psiEnumConstant)
             )
         }
     }
