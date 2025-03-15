@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 import kotlin.test.*
 
 /**
- * Test case of [PsiClassUtils]
+ * Test case of [com.itangcent.intellij.psi.ObjectHolder]
  */
 internal class ObjectHolderTest {
 

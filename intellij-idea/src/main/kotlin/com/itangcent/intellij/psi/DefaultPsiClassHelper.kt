@@ -13,6 +13,7 @@ import com.itangcent.intellij.jvm.JsonOption.has
 import com.itangcent.intellij.jvm.duck.DuckType
 import com.itangcent.intellij.jvm.duck.SingleDuckType
 import com.itangcent.intellij.jvm.element.ExplicitClass
+import com.itangcent.intellij.jvm.psi.PsiClassUtil
 
 @Singleton
 open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
@@ -123,7 +124,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
             }
             return name
         } catch (e: Exception) {
-            logger.traceWarn("error to get field name:${PsiClassUtils.fullNameOfField(psiField)}", e)
+            logger.traceWarn("error to get field name:${PsiClassUtil.fullNameOfField(psiField)}", e)
         }
 
         return psiField.name
@@ -144,7 +145,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                 name += it
             }
         } catch (e: Exception) {
-            logger.traceWarn("error to get field name:${PsiClassUtils.fullNameOfMethod(psiMethod)}", e)
+            logger.traceWarn("error to get field name:${PsiClassUtil.fullNameOfMethod(psiMethod)}", e)
         }
 
         return super.getJsonFieldName(psiMethod)
@@ -166,7 +167,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
             }
             return name
         } catch (e: Exception) {
-            logger.traceWarn("error to get field name:${PsiClassUtils.fullNameOfMember(accessibleField.psi)}", e)
+            logger.traceWarn("error to get field name:${PsiClassUtil.fullNameOfMember(accessibleField.psi)}", e)
         }
 
         return accessibleField.name
@@ -318,7 +319,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                             val comments = fields.sub("@comment")
                             resolveSeeDoc(
                                 accessibleField.jsonFieldName(), accessibleField.psi as? PsiMember ?: enumClass, listOf(
-                                    PsiClassUtils.fullNameOfMember(
+                                    PsiClassUtil.fullNameOfMember(
                                         classWithFieldOrMethod.first.asPsiClass(jvmClassHelper),
                                         convertFieldOrMethod
                                     )

@@ -7,7 +7,7 @@ import com.intellij.psi.PsiModifierListOwner
 import com.itangcent.common.utils.SimpleExtensible
 import com.itangcent.common.utils.cache
 import com.itangcent.intellij.jvm.element.ExplicitField
-import com.itangcent.intellij.psi.PsiClassUtils
+import com.itangcent.intellij.jvm.psi.PsiClassUtil
 
 open class PsiFieldContext : SimpleExtensible, RuleContext {
 
@@ -22,7 +22,7 @@ open class PsiFieldContext : SimpleExtensible, RuleContext {
     }
 
     override fun getName(): String? {
-        return this.cache("_name") { PsiClassUtils.qualifiedNameOfField(psiField) }
+        return this.cache("_name") { PsiClassUtil.qualifiedNameOfField(psiField) }
     }
 
     override fun getSimpleName(): String? {
