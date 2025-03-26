@@ -66,6 +66,27 @@ public class LinkCase {
     public void methodH() {
     }
 
+    /**
+     * @return `hashCode`
+     * @see `equals`
+     */
+    public void methodI() {
+    }
+
+    /**
+     * @return `toString` and `hashCode`
+     * @see `equals` and `clone`
+     */
+    public void methodJ() {
+    }
+
+    /**
+     * @return {@link UserInfo} and `hashCode`
+     * @see `equals` and {@link Model}
+     */
+    public void methodK() {
+    }
+
     private class MyInnerClass {
 
     }

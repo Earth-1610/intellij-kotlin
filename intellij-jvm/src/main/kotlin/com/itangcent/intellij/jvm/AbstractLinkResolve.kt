@@ -3,7 +3,7 @@ package com.itangcent.intellij.jvm
 import com.intellij.psi.*
 import com.itangcent.intellij.context.ActionContext
 
-public abstract class AbstractLinkResolve : LinkResolver {
+abstract class AbstractLinkResolve : LinkResolver {
 
     override fun linkToPsiElement(plainText: String, linkTo: Any?): String? {
         return when (linkTo) {
@@ -43,5 +43,4 @@ public abstract class AbstractLinkResolve : LinkResolver {
         }
         return plainText
     }
-
 }

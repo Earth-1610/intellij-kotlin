@@ -21,13 +21,20 @@ tasks.getByName<Test>("test") {
     useJUnitPlatform()
 }
 
+// Load version compatibility matrix
+val ideaVersions = loadProperties(project.rootDir.path + "/script/idea-versions.properties")
+val ideaVersion = properties["idea_version"] as String
+val compatibleVersions = ideaVersions[ideaVersion]?.toString()?.split(",")
+    ?: throw GradleException("No compatible versions found for IDEA version: $ideaVersion")
+
+val scalaPluginVersion = compatibleVersions[0]
 
 intellij {
-    version.set("2021.2.1")
+    version.set(ideaVersion)
     type.set("IC")
     pluginName.set("${properties["plugin_name"]}")
     sandboxDir.set("idea-sandbox")
-    plugins.set(listOf("java", "org.intellij.scala:2021.2.22"))
+    plugins.set(listOf("java", "org.intellij.scala:$scalaPluginVersion"))
 }
 
 

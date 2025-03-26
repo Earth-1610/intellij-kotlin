@@ -35,10 +35,8 @@ internal class StandardDocHelperTest : ContextLightCodeInsightFixtureTestCase() 
         assertEquals(listOf("low case of A"), standardDocHelper.findDocsByTag(commentDemoPsiClass.fields[0], "desc"))
         assertNull(standardDocHelper.findDocByTag(commentDemoPsiClass.fields[1], "desc"))
         assertEquals(
-            listOf(
-                "x\n" +
-                        " x1 x2 x3", "y"
-            ), standardDocHelper.findDocsByTag(commentDemoPsiClass.fields[1], "module")
+            listOf("x\nx1 x2 x3", "y"),
+            standardDocHelper.findDocsByTag(commentDemoPsiClass.fields[1], "module")
         )
         assertNull(standardDocHelper.findDocByTag(commentDemoPsiClass.fields[0], "module"))
     }
