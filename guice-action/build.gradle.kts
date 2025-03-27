@@ -19,7 +19,7 @@ dependencies {
         exclude("com.google.guava", "guava")
     }
 
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.0")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:${properties["kotlin_version"]}")
 }
 
 tasks.getByName<Test>("test") {
@@ -27,7 +27,7 @@ tasks.getByName<Test>("test") {
 }
 
 intellij {
-    version.set("2021.2.1")
+    version.set(properties["idea_version"] as String)
     type.set("IC")
     pluginName.set("${properties["plugin_name"]}")
     sandboxDir.set("idea-sandbox")

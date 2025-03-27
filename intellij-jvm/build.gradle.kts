@@ -15,7 +15,7 @@ dependencies {
     implementation(project(":commons"))
     implementation(project(":guice-action"))
 
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.0")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:${properties["kotlin_version"]}")
 
     implementation("com.google.inject:guice:4.2.2") {
         exclude("org.checkerframework", "checker-compat-qual")
@@ -29,7 +29,7 @@ tasks.getByName<Test>("test") {
 
 
 intellij {
-    version.set("2021.2.1")
+    version.set(properties["idea_version"] as String)
     type.set("IC")
     pluginName.set("${properties["plugin_name"]}")
     sandboxDir.set("idea-sandbox")

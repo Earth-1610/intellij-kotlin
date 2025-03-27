@@ -39,7 +39,7 @@ repositories {
 dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test")
 
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:${properties["kotlin_version"]}")
 
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
     implementation("com.google.code.gson:gson:2.8.9")
@@ -52,7 +52,7 @@ dependencies {
     implementation("commons-io:commons-io:2.7")
 
     // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-reflect
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.0")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:${properties["kotlin_version"]}")
 
     implementation("com.google.inject:guice:4.2.2")
 

@@ -11,12 +11,32 @@ import com.itangcent.intellij.jvm.ExtendProvider
 import com.itangcent.intellij.jvm.docComment
 import java.util.*
 
+/**
+ * The standard single-line comment prefix used in most programming languages
+ */
 const val COMMENT_PREFIX = "//"
+
+/**
+ * Regular expression to match block comments in the format /* ... */
+ * The pattern captures the content between /* and */, handling multiple asterisks
+ */
 val BLOCK_COMMENT_REGEX =
     Regex(
         "/\\*+(.*?)\\**/",
         setOf(RegexOption.MULTILINE, RegexOption.DOT_MATCHES_ALL)
     )
+
+/**
+ * List of common documentation comment prefixes that can appear in doc comments.
+ * These prefixes are stripped when processing documentation text to get clean content.
+ * Includes:
+ * - "*" for Javadoc-style comments
+ * - "///" for Markdown Documentation Comments (JEP 467)
+ * - "//" for single-line comments
+ */
+val DOC_COMMENT_PREFIXES = listOf<String>(
+    "*", "///", "//"
+)
 
 @Singleton
 open class StandardDocHelper : DocHelper {
@@ -59,14 +79,29 @@ open class StandardDocHelper : DocHelper {
         }
         for (i in 1 until lines.size) {
             lines[i].trim()
-                .removePrefix("*")
+                .removeCommentPrefix()
                 .takeIf { it.isNotBlank() }
                 ?.let {
-                    ret += '\n'
-                    ret += it
+                    ret = "$ret\n$it"
                 }
         }
         return ret
+    }
+
+    /**
+     * Removes any documentation comment prefix from the beginning of a line.
+     * This is used to clean up documentation text by removing comment markers
+     * like "*", "///", or "//" from the start of each line.
+     * 
+     * @return The line text with any matching prefix removed and trimmed
+     */
+    private fun String.removeCommentPrefix(): String {
+        for (prefix in DOC_COMMENT_PREFIXES) {
+            if (this.startsWith(prefix)) {
+                return this.removePrefix(prefix).trim()
+            }
+        }
+        return this
     }
 
     override fun findDocsByTag(psiElement: PsiElement?, tag: String?): List<String>? {

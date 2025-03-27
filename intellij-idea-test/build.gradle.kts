@@ -35,7 +35,7 @@ tasks.getByName<Test>("test") {
 }
 
 intellij {
-    version.set("2021.2.1")
+    version.set(properties["idea_version"] as String)
     type.set("IC")
     pluginName.set("${properties["plugin_name"]}")
     sandboxDir.set("idea-sandbox")

@@ -39,13 +39,27 @@ tasks.getByName<Test>("test") {
     useJUnitPlatform()
 }
 
+// Load version compatibility matrix
+val ideaVersions = loadProperties(project.rootDir.path + "/script/idea-versions.properties")
+val ideaVersion = properties["idea_version"] as String
+val compatibleVersions = ideaVersions[ideaVersion]?.toString()?.split(",")
+    ?: throw GradleException("No compatible versions found for IDEA version: $ideaVersion")
+
+val kotlinPluginVersion = compatibleVersions[1]
 
 intellij {
-    version.set("2021.2.1")
+    version.set(ideaVersion)
     type.set("IC")
     pluginName.set("${properties["plugin_name"]}")
     sandboxDir.set("idea-sandbox")
-    plugins.set(listOf("java", "org.jetbrains.kotlin:212-1.5.31-release-546-IJ4638.7"))
+    
+    // Only include Kotlin plugin if IDEA version is less than 2024
+    val majorVersion = ideaVersion.split(".")[0].toInt()
+    val collectPlugins = mutableListOf("java")
+    if (majorVersion < 2024) {
+        collectPlugins.add("org.jetbrains.kotlin:$kotlinPluginVersion")
+    }
+    plugins.set(collectPlugins)
 }
 
 

@@ -1,7 +1,5 @@
 package com.itangcent.intellij.jvm
 
-import com.intellij.psi.PsiElement
-
 interface LinkResolver {
 
     /**

@@ -15,7 +15,7 @@ dependencies {
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
     implementation("com.google.code.gson:gson:2.8.9")
 
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.0")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:${properties["kotlin_version"]}")
 
     // https://mvnrepository.com/artifact/org.apache.groovy/groovy-jsr223
     testImplementation("org.apache.groovy:groovy-jsr223:4.0.0")
@@ -25,12 +25,12 @@ dependencies {
 
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-test-common
-    implementation("org.jetbrains.kotlin:kotlin-test-common:1.8.0")
+    implementation("org.jetbrains.kotlin:kotlin-test-common:${properties["kotlin_version"]}")
 
     testImplementation("org.junit.jupiter:junit-jupiter-params:${properties["junit_version"]}")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${properties["junit_version"]}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${properties["junit_version"]}")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:1.8.0")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:${properties["kotlin_version"]}")
 
 }
 
