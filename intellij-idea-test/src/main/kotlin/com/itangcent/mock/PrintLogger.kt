@@ -1,12 +1,12 @@
 package com.itangcent.mock
 
 import com.google.inject.Singleton
-import com.itangcent.intellij.logger.AbstractLogger
+import com.itangcent.intellij.logger.Level
+import com.itangcent.intellij.logger.Logger
 
 @Singleton
-class PrintLogger : AbstractLogger() {
-
-    override fun processLog(logData: String?) {
-        println(logData)
+class PrintLogger : Logger {
+    override fun log(level: Level, msg: String) {
+        println("[${level.name}]\t$msg")
     }
 }

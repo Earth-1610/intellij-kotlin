@@ -15,10 +15,20 @@ import javax.swing.Icon
 
 abstract class KotlinAnAction : AnAction {
 
+    /**
+     * The title of the action.
+     */
+    var title: String? = null
+        protected set
+    
     constructor() : super()
     constructor(icon: Icon?) : super(icon)
-    constructor(text: String?) : super(text)
-    constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon)
+    constructor(text: String?) : super(text) {
+        this.title = text
+    }
+    constructor(text: String?, description: String?, icon: Icon?) : super(text, description, icon) {
+        this.title = text
+    }
 
     protected open fun onBuildActionContext(
         event: AnActionEvent,
@@ -30,6 +40,7 @@ abstract class KotlinAnAction : AnAction {
         val project = anActionEvent.project ?: return
 
         val actionContextBuilder = ActionContext.builder()
+        actionContextBuilder.bindInstance(AnAction::class, this)
         actionContextBuilder.bindInstance(Project::class, project)
         actionContextBuilder.bindInstance(AnActionEvent::class, anActionEvent)
         actionContextBuilder.bind(DataContext::class) { it.toInstance(anActionEvent.dataContext) }

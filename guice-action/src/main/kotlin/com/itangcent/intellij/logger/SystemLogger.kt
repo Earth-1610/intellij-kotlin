@@ -1,6 +1,5 @@
 package com.itangcent.intellij.logger
 
-import org.apache.commons.lang3.StringUtils
 import kotlin.reflect.KClass
 
 class SystemLogger : Logger {
@@ -19,11 +18,13 @@ class SystemLogger : Logger {
         this.delegate = delegate
     }
 
-    override fun log(level: Logger.Level, msg: String) {
-        if (StringUtils.isEmpty(level.getLevelStr())) {
-            delegate.info(msg)
-        } else {
-            delegate.info("[$level]$msg")
+    override fun log(level: Level, msg: String) {
+        when (level) {
+            Level.TRACE -> delegate.trace(msg)
+            Level.DEBUG -> delegate.debug(msg)
+            Level.INFO -> delegate.info(msg)
+            Level.WARN -> delegate.warn(msg)
+            Level.ERROR -> delegate.warn(msg)
         }
     }
 

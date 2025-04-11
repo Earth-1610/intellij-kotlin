@@ -6,31 +6,37 @@ import com.google.inject.ImplementedBy
 @ImplementedBy(IdeaConsoleLogger::class)
 interface Logger : com.itangcent.common.logger.ILogger {
     override fun log(msg: String) {
-        log(BasicLevel.ALL, msg)
+        log(com.itangcent.intellij.logger.Level.INFO, msg)
     }
 
-    fun log(level: Level, msg: String)
+    @Deprecated("Use log(com.itangcent.intellij.logger.Level,String) instead")
+    fun log(level: Level, msg: String) {
+        log(com.itangcent.intellij.logger.Level.INFO, msg)
+    }
+
+    fun log(level: com.itangcent.intellij.logger.Level, msg: String)
 
     override fun trace(msg: String) {
-        log(BasicLevel.TRACE, msg)
+        log(com.itangcent.intellij.logger.Level.TRACE, msg)
     }
 
     override fun debug(msg: String) {
-        log(BasicLevel.DEBUG, msg)
+        log(com.itangcent.intellij.logger.Level.DEBUG, msg)
     }
 
     override fun info(msg: String) {
-        log(BasicLevel.INFO, msg)
+        log(com.itangcent.intellij.logger.Level.INFO, msg)
     }
 
     override fun warn(msg: String) {
-        log(BasicLevel.WARN, msg)
+        log(com.itangcent.intellij.logger.Level.WARN, msg)
     }
 
     override fun error(msg: String) {
-        log(BasicLevel.ERROR, msg)
+        log(com.itangcent.intellij.logger.Level.ERROR, msg)
     }
 
+    @Deprecated("Use com.itangcent.intellij.logger.Level instead")
     interface Level {
 
         fun getLevelStr(): String
@@ -43,6 +49,7 @@ interface Logger : com.itangcent.common.logger.ILogger {
      * But only a partial available log level is provided,
      * And no OFF level,It means that plugin log cannot be turned OFF
      */
+    @Deprecated("Use com.itangcent.intellij.logger.Level instead")
     enum class BasicLevel : Level {
         ALL("", -1),
         TRACE("TRACE", 100),
@@ -113,5 +120,20 @@ interface Logger : com.itangcent.common.logger.ILogger {
                 }
             }
         }
+    }
+}
+
+
+enum class Level {
+    TRACE(100),
+    DEBUG(200),
+    INFO(300),
+    WARN(400),
+    ERROR(500);
+
+    val level: Int
+
+    constructor(level: Int) {
+        this.level = level
     }
 }
