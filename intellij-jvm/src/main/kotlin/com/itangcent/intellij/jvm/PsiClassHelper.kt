@@ -65,7 +65,7 @@ interface PsiClassHelper {
 
 object JsonOption {
     const val NONE = 0b0000//None additional options
-    const val READ_COMMENT = 0b0001//try find comments
+    const val READ_COMMENT = 0b0001//try to find comments
     const val READ_GETTER = 0b0010//Try to find the available getter method as property
     const val READ_SETTER = 0b0100//Try to find the available setter method as property
     const val ALL = READ_COMMENT or READ_GETTER or READ_SETTER//All additional options

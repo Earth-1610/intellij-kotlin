@@ -77,7 +77,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     }
 
     protected open fun getSees(field: PsiElement): List<String>? {
-        val sees: List<String>? = docHelper!!.findDocsByTag(field, "see")
+        val sees: List<String>? = docHelper.findDocsByTag(field, "see")
         if (sees.isNullOrEmpty()) {
             return null
         }
@@ -93,19 +93,23 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
     }
 
     override fun isNormalType(psiType: PsiType): Boolean {
-        return jvmClassHelper.isNormalType(classRuleConfig!!.tryConvert(psiType).canonicalText)
+        return jvmClassHelper.isNormalType((classRuleConfig?.tryConvert(psiType) ?: psiType).canonicalText)
     }
 
     override fun isNormalType(psiClass: PsiClass): Boolean {
-        return jvmClassHelper.isNormalType(classRuleConfig!!.tryConvert(psiClass).qualifiedName ?: return false)
+        return jvmClassHelper.isNormalType(
+            (classRuleConfig?.tryConvert(psiClass) ?: psiClass).qualifiedName ?: return false
+        )
     }
 
     override fun getDefaultValue(psiType: PsiType): Any? {
-        return jvmClassHelper.getDefaultValue(classRuleConfig!!.tryConvert(psiType).canonicalText)
+        return jvmClassHelper.getDefaultValue((classRuleConfig?.tryConvert(psiType) ?: psiType).canonicalText)
     }
 
     override fun getDefaultValue(psiClass: PsiClass): Any? {
-        return jvmClassHelper.getDefaultValue(classRuleConfig!!.tryConvert(psiClass).qualifiedName ?: return null)
+        return jvmClassHelper.getDefaultValue(
+            (classRuleConfig?.tryConvert(psiClass) ?: psiClass).qualifiedName ?: return null
+        )
     }
 
     override fun getJsonFieldName(psiField: PsiField): String {
@@ -144,6 +148,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
             ruleComputer.computer(ClassRuleKeys.FIELD_NAME_SUFFIX, psiMethod)?.let {
                 name += it
             }
+            return name
         } catch (e: Exception) {
             logger.traceWarn("error to get field name:${PsiClassUtil.fullNameOfMethod(psiMethod)}", e)
         }
@@ -175,7 +180,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
 
     override fun getJsonFieldType(accessibleField: AccessibleField): DuckType {
         return ruleComputer.computer(ClassRuleKeys.FIELD_TYPE, accessibleField)?.let {
-            duckTypeHelper!!.findDuckType(it, accessibleField.psi)
+            duckTypeHelper.findDuckType(it, accessibleField.psi)
         } ?: accessibleField.type
     }
 
@@ -201,17 +206,17 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                     } else {
                         val convertFieldOrMethod = classWithFieldOrMethod.second!!
                         if (convertFieldOrMethod is PsiField) {
-                            duckTypeHelper!!.ensureType(convertFieldOrMethod.type)?.let {
+                            duckTypeHelper.ensureType(convertFieldOrMethod.type)?.let {
                                 typeObj = super.doGetTypeObject(it, context, resolveContext)
                             }
                         } else if (convertFieldOrMethod is PsiMethod) {
-                            duckTypeHelper!!.ensureType(convertFieldOrMethod.returnType!!)?.let {
+                            duckTypeHelper.ensureType(convertFieldOrMethod.returnType!!)?.let {
                                 typeObj = super.doGetTypeObject(it, context, resolveContext)
                             }
                         }
                     }
                 } else {
-                    val resolveClass = duckTypeHelper!!.resolve(convertTo, context)
+                    val resolveClass = duckTypeHelper.resolve(convertTo, context)
                     if (resolveClass == null) {
                         logger.error("failed to resolve class:$convertTo")
                     } else {
@@ -242,7 +247,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                 //use java.lang.String by default.
                 typeObj =
                     super.doGetTypeObject(
-                        duckTypeHelper!!.resolve("java.lang.String", context)!!,
+                        duckTypeHelper.resolve("java.lang.String", context)!!,
                         context,
                         resolveContext
                     )
@@ -296,7 +301,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                     } else {
                         val convertFieldOrMethod = classWithFieldOrMethod.second!!
                         if (convertFieldOrMethod is PsiField) {
-                            duckTypeHelper!!.ensureType(convertFieldOrMethod.type)?.let {
+                            duckTypeHelper.ensureType(convertFieldOrMethod.type)?.let {
                                 super.parseField(
                                     ConvertedAccessibleField(accessibleField, it),
                                     resourcePsiClass,
@@ -305,7 +310,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                                 )
                             }
                         } else if (convertFieldOrMethod is PsiMethod) {
-                            duckTypeHelper!!.ensureType(convertFieldOrMethod.returnType!!)?.let {
+                            duckTypeHelper.ensureType(convertFieldOrMethod.returnType!!)?.let {
                                 super.parseField(
                                     ConvertedAccessibleField(accessibleField, it),
                                     resourcePsiClass,
@@ -329,7 +334,7 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
                         return
                     }
                 } else {
-                    val resolveClass = duckTypeHelper!!.resolve(convertTo, accessibleField.psi)
+                    val resolveClass = duckTypeHelper.resolve(convertTo, accessibleField.psi)
                     if (resolveClass == null) {
                         logger.error("failed to resolve class:$convertTo")
                     } else {
@@ -358,9 +363,9 @@ open class DefaultPsiClassHelper : AbstractPsiClassHelper() {
             val comments = fields.sub("@comment")
             val psiFieldOrMethod = accessibleField.psi
             if (psiFieldOrMethod is PsiField) {
-                comments[accessibleField.jsonFieldName()] = docHelper!!.getAttrOfField(psiFieldOrMethod)?.trim()
+                comments[accessibleField.jsonFieldName()] = docHelper.getAttrOfField(psiFieldOrMethod)?.trim()
             } else if (psiFieldOrMethod is PsiMethod) {
-                comments[accessibleField.jsonFieldName()] = docHelper!!.getAttrOfDocComment(psiFieldOrMethod)?.trim()
+                comments[accessibleField.jsonFieldName()] = docHelper.getAttrOfDocComment(psiFieldOrMethod)?.trim()
             }
             resolveSeeDoc(psiFieldOrMethod, accessibleField.jsonFieldName(), comments)
         }

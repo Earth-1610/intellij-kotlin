@@ -1,6 +1,7 @@
 package com.itangcent.testFramework
 
 import com.itangcent.common.logger.Log
+import com.itangcent.common.utils.asUrl
 import com.itangcent.intellij.config.resource.DefaultResourceResolver
 import com.itangcent.intellij.config.resource.URLResource
 import com.itangcent.intellij.file.DefaultLocalFileRepository
@@ -16,7 +17,7 @@ class TestCachedResourceResolver : DefaultResourceResolver() {
     private var cacheRepository = DefaultLocalFileRepository()
 
     override fun createUrlResource(url: String): URLResource {
-        return CachedURLResource(URL(url))
+        return CachedURLResource(url.asUrl())
     }
 
     open inner class CachedURLResource(url: URL) : URLResource(url) {

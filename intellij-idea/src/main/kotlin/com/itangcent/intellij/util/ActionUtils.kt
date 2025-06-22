@@ -37,7 +37,7 @@ object ActionUtils : Log() {
 
                 CommonDataKeys.NAVIGATABLE -> {
                     //select dir
-                    if (target != null && target is PsiDirectory) {
+                    if (target is PsiDirectory) {
                         return findCurrentPath(target)
                     }
                 }

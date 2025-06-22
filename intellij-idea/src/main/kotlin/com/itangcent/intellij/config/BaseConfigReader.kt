@@ -2,6 +2,7 @@ package com.itangcent.intellij.config
 
 import com.google.inject.Inject
 import com.itangcent.common.logger.Log
+import com.itangcent.common.logger.traceError
 import com.itangcent.common.text.TemplateUtils
 import com.itangcent.common.utils.*
 import com.itangcent.intellij.config.resource.FileResource
@@ -95,7 +96,7 @@ abstract class BaseConfigReader : MutableConfigReader {
                 loadConfigInfoContent(content, path.substringAfterLast("."))
             }
         } catch (e: Exception) {
-            LOG.warn("Error reading config file:$path")
+            LOG.traceError("Error reading config file:$path", e)
         }
     }
 

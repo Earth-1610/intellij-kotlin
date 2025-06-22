@@ -1052,6 +1052,12 @@ class ActionContext {
             annotationType: Class<A>,
             fieldHandler: FieldHandler<Any?, Annotation>
         )
+
+        fun isBound(type: KClass<*>): Boolean {
+            return isBound(type.java)
+        }
+
+        fun isBound(type: Class<*>): Boolean
     }
 }
 
@@ -1170,6 +1176,19 @@ class ActionContextBuilder : ModuleActions {
             it.size == 3 && it[0] == BindAction.BIND_FIELD_HANDLER && it[1] == annotationType
         }
         moduleActions.add(arrayOf(BindAction.BIND_FIELD_HANDLER, annotationType, fieldHandler))
+    }
+
+    override fun isBound(type: Class<*>): Boolean {
+        return moduleActions.any { action ->
+            when (action[0]) {
+                BindAction.BIND -> action[1] == type
+                BindAction.BIND_WITH_ANNOTATION_TYPE -> action[1] == type
+                BindAction.BIND_WITH_ANNOTATION -> action[1] == type
+                BindAction.BIND_WITH_NAME -> action[1] == type
+                BindAction.BIND_INSTANCE_WITH_CLASS -> action[1] == type
+                else -> false
+            }
+        }
     }
 
     private val appendModules: MutableList<Module> = LinkedList()

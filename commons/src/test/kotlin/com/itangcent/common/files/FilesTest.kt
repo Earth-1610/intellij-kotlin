@@ -105,7 +105,7 @@ class FilesTest {
         ModelBaseTest.equal(FileWrap(tempDir.toString(), tempDir!!.sub("C/c/3.kt")), ktFiles[0])
 
         //travel unexisted directory
-        DefaultFileTraveler(tempDir.toString() + "/Z")
+        DefaultFileTraveler("$tempDir/Z")
             .onFile { Assertions.fail() }
             .travel()
 
@@ -127,7 +127,7 @@ class FilesTest {
         traveler.copy()
             .onDirectory { folders.add(it.path()) }
             .onFile(FileHandles.collectFiles(files) { it.path() })
-            .filterDirectory { !it.path().contains("/C/") }
+            .filterDirectory { !it.path().replace("\\", "/").contains("/C/") }
             .onCompleted(object : FileCompleted {
                 override fun onCompleted(fileCnt: Int, folderCnt: Int, time: Long) {
                     assertEquals(1, fileCnt)
