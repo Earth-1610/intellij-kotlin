@@ -55,3 +55,8 @@ fun <T : Any> LinkedBindingBuilder<T>.withUnsafe(implementation: KClass<*>): Sco
 inline fun <T : Any, TE : T> LinkedBindingBuilder<T>.withProvider(noinline provider: () -> TE): ScopedBindingBuilder {
     return this.toProvider(com.google.inject.Provider { provider() })
 }
+
+/** See the EDSL examples at [com.google.inject.Binder].  */
+fun <T : Any> LinkedBindingBuilder<T>.withProvider(providerClass: KClass<out com.google.inject.Provider<out T>>): ScopedBindingBuilder {
+    return this.toProvider(providerClass.java)
+}

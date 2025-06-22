@@ -4,6 +4,8 @@ import com.itangcent.common.spi.SetupAble
 import com.itangcent.common.spi.SpiUtils
 import com.itangcent.intellij.context.ActionContext
 import com.itangcent.intellij.context.ActionContextBuilder
+import com.itangcent.intellij.extend.guice.singleton
+import com.itangcent.intellij.extend.guice.with
 
 /**
  * Interface for providing custom plugin information.
@@ -41,6 +43,7 @@ class CustomInfoSupporter : SetupAble {
             val pluginName = customInfo.pluginName()
             // Add default injection to ActionContext with the plugin name
             ActionContext.addDefaultInject {
+                it.bind(CustomInfo::class) { it.with(customInfo::class).singleton() }
                 it.bindPluginName(pluginName)
             }
         }

@@ -133,30 +133,16 @@ class ActionContext {
 
     //region event--------------------------------------------------------------
     @Suppress("UNCHECKED_CAST")
-    fun on(name: String, event: ((ActionContext) -> Unit)) {
+    fun on(name: String, event: ActionContextEvent) {
         LOG.info("register event [$name]")
         checkStatus()
         lock.write {
             val key = eventPrefix + name
-            val oldEvent: ((ActionContext) -> Unit)? = cache[key] as ((ActionContext) -> Unit)?
+            val oldEvent: ActionContextEvent? = cache[key] as ActionContextEvent?
             if (oldEvent == null) {
                 cache[key] = event
             } else {
-                val merge: ((ActionContext) -> Unit) = { actionContext ->
-                    var error: Throwable? = null
-                    try {
-                        oldEvent(actionContext)
-                    } catch (e: Exception) {
-                        error = e
-                    }
-                    try {
-                        event(actionContext)
-                    } catch (e: Exception) {
-                        error = e
-                    }
-                    error?.let { throw it }
-                }
-                cache[key] = merge
+                cache[key] = oldEvent.and(event)
             }
         }
     }
@@ -165,7 +151,7 @@ class ActionContext {
     fun call(name: String) {
         LOG.info("call event [$name]")
         val event = lock.read {
-            cache[eventPrefix + name] as? ((ActionContext) -> Unit)
+            cache[eventPrefix + name] as? ActionContextEvent
         }
         event?.invoke(this)
     }
@@ -585,6 +571,16 @@ class ActionContext {
     //region content object-----------------------------------------------------
     fun <T : Any> instance(kClass: KClass<T>): T {
         return this.injector.instance(kClass)
+    }
+
+    /**
+     * Tries to get an instance of the specified type, returning null if not available
+     * instead of throwing an exception.
+     */
+    fun <T : Any> tryInstance(kClass: KClass<T>): T? {
+        return safe {
+            this.injector.instance(kClass)
+        }
     }
 
     fun <T : Any> instance(init: () -> T): T {
@@ -1057,6 +1053,25 @@ class ActionContext {
             fieldHandler: FieldHandler<Any?, Annotation>
         )
     }
+}
+
+typealias ActionContextEvent = (ActionContext) -> Unit
+
+class CombinedActionContextEvent(
+    internal val events: List<ActionContextEvent>
+) : ActionContextEvent {
+    override fun invoke(actionContext: ActionContext) {
+        events.forEach { it(actionContext) }
+    }
+}
+
+fun ActionContextEvent.and(event: ActionContextEvent): ActionContextEvent {
+    val events = if (this is CombinedActionContextEvent) {
+        this.events + event
+    } else {
+        listOf(this, event)
+    }
+    return CombinedActionContextEvent(events)
 }
 
 /**
