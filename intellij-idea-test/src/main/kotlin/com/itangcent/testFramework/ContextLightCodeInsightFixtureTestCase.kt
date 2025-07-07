@@ -15,6 +15,7 @@ import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase
 import com.itangcent.common.logger.Log
 import com.itangcent.common.spi.Setup
 import com.itangcent.common.utils.ResourceUtils
+import com.itangcent.common.utils.asUrl
 import com.itangcent.common.utils.forceDelete
 import com.itangcent.intellij.bindPluginName
 import com.itangcent.intellij.config.BaseConfigReader
@@ -83,7 +84,9 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightJavaCodeInsightFixt
                 }
             }
 
-        builder.bind(PsiClassHelper::class) { it.with(DefaultPsiClassHelper::class).singleton() }
+        if (!builder.isBound(PsiClassHelper::class)) {
+            builder.bind(PsiClassHelper::class) { it.with(DefaultPsiClassHelper::class).singleton() }
+        }
 
         bind(builder)
         builder.build().init(this)
@@ -230,14 +233,14 @@ abstract class ContextLightCodeInsightFixtureTestCase : LightJavaCodeInsightFixt
     private fun readSourceFile(location: URL, cls: Class<*>): VirtualFile {
         val path = cls.name.replace('.', '/')
         try {
-            URL("$location/$path.java").readBytes().also { content ->
+            "$location/$path.java".asUrl().readBytes().also { content ->
                 return createVFile("$path.java", content)
             }
         } catch (e: Exception) {
             //ignore
         }
         try {
-            URL("$location/$path.class").readBytes().also { content ->
+            "$location/$path.class".asUrl().readBytes().also { content ->
                 return createVFile("$path.class", content)
             }
         } catch (e: Exception) {

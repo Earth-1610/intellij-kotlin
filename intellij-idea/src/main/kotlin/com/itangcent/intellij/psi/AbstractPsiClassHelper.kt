@@ -59,7 +59,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
     protected lateinit var ruleLookUp: RuleLookUp
 
     @Inject
-    protected val docHelper: DocHelper? = null
+    protected lateinit var docHelper: DocHelper
 
     @Inject
     protected lateinit var jvmClassHelper: JvmClassHelper
@@ -672,7 +672,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         for (superType in superTypes) {
             if (jvmClassHelper.isCollection(superType)) {
                 val parameters = superType.parameters
-                if (parameters.isNullOrEmpty()) {
+                if (parameters.isEmpty()) {
                     continue
                 }
                 val typeParameters = superType.resolve()?.typeParameters
@@ -986,7 +986,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
                 linkedMapOf(
                     "name" to field.name,
                     "value" to value.toString(),
-                    "desc" to docHelper!!.getAttrOfField(field)?.trim()
+                    "desc" to docHelper.getAttrOfField(field)?.trim()
                 )
             )
         }
