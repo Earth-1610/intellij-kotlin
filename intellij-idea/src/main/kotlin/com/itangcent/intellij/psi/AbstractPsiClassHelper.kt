@@ -790,7 +790,7 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
             if (valProperty != candidateProperty) {
                 val allFields = jvmClassHelper.getAllFields(cls)
                 if (!allFields.any { it.name == valProperty }
-                    && allFields.any { it.name == candidateProperty }
+                    && isCandidatePropertyValid(allFields, candidateProperty, enumConstants)
                 ) {
                     valProperty = candidateProperty
                 }
@@ -857,6 +857,25 @@ abstract class AbstractPsiClassHelper : PsiClassHelper {
         }
     }
 
+    /**
+     * Check if the candidate property is valid.
+     * A candidate property is valid if it is a field of the class or it is a parameter of an enum constant.
+     */
+    private fun isCandidatePropertyValid(
+        allFields: Array<PsiField>,
+        candidateProperty: String,
+        enumConstants: List<Map<String, Any?>>
+    ): Boolean {
+        if (allFields.any { it.name == candidateProperty }) {
+            return true
+        }
+
+        return enumConstants.any { enumConstant ->
+            @Suppress("UNCHECKED_CAST")
+            val params = enumConstant["params"] as? Map<String, Any?>
+            params?.containsKey(candidateProperty) == true
+        }
+    }
 
     private fun resolveConstant(
         cls: PsiClass,
