@@ -54,6 +54,7 @@ val sourcesJar by tasks.registering(Jar::class) {
 }
 val javadocJar by tasks.registering(Jar::class) {
     archiveClassifier.set("javadoc")
+    from(kotlin.sourceSets["main"].kotlin.srcDirs)
 }
 
 publishing {
@@ -95,14 +96,8 @@ publishing {
 
     repositories {
         maven {
-            val releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
-            val snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
-            url = uri(if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl)
-
-            credentials {
-                username = "${publishProps["sonatypeUsername"]}"
-                password = "${publishProps["sonatypePassword"]}"
-            }
+            name = "local"
+            url = uri("${rootProject.buildDir}/repo")
         }
     }
 }
